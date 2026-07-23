@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Robo Rules — Teach Chip!</title>
+<meta name="description" content="Teach Chip the robot pet with IF-THIS-THEN-THAT rules. A first taste of coding for kids!">
+<meta name="theme-color" content="#4fc3f7">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a class="back-link" href="../" title="Back to games">&lsaquo; Games</a>
+    <h1>🤖 Robo Rules</h1>
+  </div>
+  <div class="header-right">
+    <span id="starCount" class="stars">⭐ 0</span>
+    <button id="muteBtn" class="icon-btn" title="Sound on/off">🔊</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ THE WORLD ============ -->
+  <section id="scene" class="sky-day">
+    <div id="weatherLayer"></div>
+    <div id="banner" class="hidden"></div>
+    <div id="speech" class="hidden"></div>
+
+    <div id="petZone">
+      <div id="pet">
+        <div id="hatSlot"></div>
+        <div id="faceSlot"></div>
+        <div id="neckSlot"></div>
+        <svg id="petSvg" viewBox="0 0 200 220" aria-label="Chip the robot pet">
+          <!-- antenna -->
+          <line x1="100" y1="30" x2="100" y2="8" stroke="#8a9bb0" stroke-width="6" stroke-linecap="round"/>
+          <circle id="antennaBall" cx="100" cy="8" r="9" fill="#ff5d8f"/>
+          <!-- head -->
+          <rect x="45" y="28" width="110" height="85" rx="26" fill="#e8f1fb" stroke="#8a9bb0" stroke-width="5"/>
+          <!-- eyes -->
+          <g id="eyesOpen">
+            <circle cx="80" cy="65" r="11" fill="#243b55"/>
+            <circle cx="120" cy="65" r="11" fill="#243b55"/>
+            <circle cx="84" cy="61" r="4" fill="#fff"/>
+            <circle cx="124" cy="61" r="4" fill="#fff"/>
+          </g>
+          <g id="eyesClosed" style="display:none">
+            <path d="M70 65 Q80 73 90 65" stroke="#243b55" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M110 65 Q120 73 130 65" stroke="#243b55" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </g>
+          <!-- mouth -->
+          <path id="mouthHappy" d="M82 90 Q100 104 118 90" stroke="#243b55" stroke-width="5" fill="none" stroke-linecap="round"/>
+          <path id="mouthFlat" d="M85 94 L115 94" stroke="#243b55" stroke-width="5" fill="none" stroke-linecap="round" style="display:none"/>
+          <!-- neck bow slot -->
+          <g id="bowSlot"></g>
+          <!-- body -->
+          <rect x="58" y="118" width="84" height="62" rx="18" fill="#4fc3f7" stroke="#2f88b7" stroke-width="5"/>
+          <circle cx="100" cy="148" r="14" fill="#fff176" stroke="#2f88b7" stroke-width="4"/>
+          <!-- arms -->
+          <g id="armL"><rect x="34" y="126" width="20" height="42" rx="10" fill="#b3d6f2" stroke="#8a9bb0" stroke-width="4"/></g>
+          <g id="armR"><rect x="146" y="126" width="20" height="42" rx="10" fill="#b3d6f2" stroke="#8a9bb0" stroke-width="4"/></g>
+          <!-- feet -->
+          <rect x="62" y="182" width="30" height="18" rx="9" fill="#8a9bb0"/>
+          <rect x="108" y="182" width="30" height="18" rx="9" fill="#8a9bb0"/>
+        </svg>
+        <div id="propSlot"></div>
+      </div>
+      <div id="shadow"></div>
+    </div>
+    <div id="effects"></div>
+    <div id="ground"></div>
+  </section>
+
+  <!-- ============ EVENTS ============ -->
+  <section class="panel" id="eventsPanel">
+    <h2>⚡ Make something happen!</h2>
+    <div id="eventButtons" class="btn-grid"></div>
+  </section>
+
+  <!-- ============ MISSION ============ -->
+  <section class="panel mission" id="missionPanel">
+    <h2>🎯 Mission</h2>
+    <p id="missionText"></p>
+    <div id="missionDone" class="hidden">🎉 Mission complete!</div>
+  </section>
+
+  <!-- ============ RULE BUILDER ============ -->
+  <section class="panel" id="builderPanel">
+    <h2>🧠 Teach Chip a rule</h2>
+    <p class="tip">This is real coding: <b>IF this happens, THEN do that!</b></p>
+
+    <div class="builder-row">
+      <span class="kw kw-when">WHEN</span>
+      <div id="whenChoices" class="choice-grid"></div>
+    </div>
+    <div class="builder-row">
+      <span class="kw kw-then">THEN</span>
+      <div id="thenChoices" class="choice-grid"></div>
+    </div>
+
+    <div class="builder-preview">
+      <span id="rulePreview">Pick a WHEN and a THEN 👆</span>
+      <button id="teachBtn" disabled>✨ Teach Chip!</button>
+    </div>
+  </section>
+
+  <!-- ============ CHIP'S BRAIN ============ -->
+  <section class="panel" id="brainPanel">
+    <h2>💾 Chip's brain <span class="sub">(his program)</span></h2>
+    <ul id="ruleList"></ul>
+    <p id="emptyBrain" class="tip">Empty! Chip knows nothing yet. Robots only do what their rules say. 🤷</p>
+  </section>
+
+  <!-- ============ WARDROBE ============ -->
+  <section class="panel hidden" id="wardrobePanel">
+    <h2>🧢 Chip's prizes</h2>
+    <div id="wardrobe" class="btn-grid"></div>
+  </section>
+</main>
+
+<script src="./app.js"></script>
+</body>
+</html>

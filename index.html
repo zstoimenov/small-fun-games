@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Game Box — Small Fun Games</title>
+<meta name="description" content="A little box of fun games. Tap one to play!">
+<meta name="theme-color" content="#6c4cf0">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Game Box">
+<style>
+  :root{
+    --bg1:#f3f0ff; --bg2:#e7f6ff; --ink:#20264a; --muted:#5a6690;
+    --card:#ffffff; --cardline:#e7e3ff; --shadow:rgba(60,40,140,.16);
+    --chip:#f0edff; --chipink:#5b4bd0;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg1:#12132a; --bg2:#0d1a26; --ink:#eef1ff; --muted:#9aa4cf;
+      --card:#1a1d38; --cardline:#2c2f56; --shadow:rgba(0,0,0,.5);
+      --chip:#242861; --chipink:#c7cdff; }
+  }
+  :root[data-theme="dark"]{ --bg1:#12132a; --bg2:#0d1a26; --ink:#eef1ff; --muted:#9aa4cf;
+    --card:#1a1d38; --cardline:#2c2f56; --shadow:rgba(0,0,0,.5); --chip:#242861; --chipink:#c7cdff; }
+  :root[data-theme="light"]{ --bg1:#f3f0ff; --bg2:#e7f6ff; --ink:#20264a; --muted:#5a6690;
+    --card:#ffffff; --cardline:#e7e3ff; --shadow:rgba(60,40,140,.16); --chip:#f0edff; --chipink:#5b4bd0; }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;min-height:100dvh;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 15% -10%, var(--bg2), transparent 60%),
+      linear-gradient(160deg, var(--bg1), var(--bg2));
+    -webkit-text-size-adjust:100%;
+    padding:max(18px,env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));
+    touch-action:manipulation;
+  }
+  .wrap{max-width:940px;margin:0 auto}
+  header{display:flex;align-items:center;gap:14px;margin:10px 4px 6px}
+  .logo{
+    width:60px;height:60px;flex:0 0 auto;border-radius:18px;
+    display:grid;place-items:center;font-size:34px;
+    background:linear-gradient(145deg,#7b5cff,#4bc8ff);
+    box-shadow:0 8px 20px var(--shadow);
+  }
+  h1{margin:0;font-size:clamp(24px,5vw,34px);letter-spacing:-.5px}
+  .tag{margin:2px 0 0;color:var(--muted);font-size:14px}
+  .grid{
+    display:grid;gap:18px;margin-top:22px;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  }
+  .card{
+    position:relative;display:flex;flex-direction:column;
+    background:var(--card);border:1px solid var(--cardline);border-radius:20px;
+    text-decoration:none;color:inherit;overflow:hidden;
+    box-shadow:0 10px 26px var(--shadow);
+    transition:transform .12s ease, box-shadow .12s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .card:active{transform:scale(.975)}
+  @media (hover:hover){ .card:hover{transform:translateY(-4px);box-shadow:0 16px 34px var(--shadow)} }
+  .thumb{
+    height:150px;display:grid;place-items:center;position:relative;overflow:hidden;
+  }
+  .thumb .emoji{font-size:74px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22));z-index:1}
+  .thumb .blob{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55}
+  .body{padding:15px 17px 17px}
+  .body h2{margin:0 0 5px;font-size:20px}
+  .body p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .chip{
+    font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;
+    background:var(--chip);color:var(--chipink);
+  }
+  .play{
+    margin-top:14px;align-self:flex-start;font-weight:800;font-size:14px;
+    color:#fff;padding:9px 18px;border-radius:999px;
+    background:linear-gradient(145deg,#7b5cff,#4bc8ff);
+    box-shadow:0 6px 14px var(--shadow);
+  }
+  footer{margin:30px 6px 0;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
+  .install{display:none}
+  .install.show{display:inline-block;margin-top:10px;cursor:pointer;
+    background:var(--chip);color:var(--chipink);border:none;font:inherit;font-weight:700;
+    padding:10px 18px;border-radius:999px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🎮</div>
+    <div>
+      <h1>Game Box</h1>
+      <p class="tag">A little box of fun games — tap one to play!</p>
+    </div>
+  </header>
+
+  <main class="grid" id="grid" aria-label="Game catalogue"></main>
+
+  <footer>
+    Works offline once loaded. On a tablet, tap your browser menu and
+    <b>“Add to Home screen”</b> to play it like a real app.
+    <br>
+    <button class="install" id="installBtn">⬇️ Install Game Box</button>
+  </footer>
+</div>
+
+<script>
+// ---- The catalogue. Add a new game = add one entry here. ----
+const GAMES = [
+  {
+    title: "Robo Rules",
+    folder: "robo-rules",
+    emoji: "🤖",
+    blurb: "Teach Chip the robot pet using IF-THIS-THEN-THAT rules. A first, playful taste of coding.",
+    colors: ["#4fc3f7", "#8a7bff"],
+    chips: ["🧠 Coding", "👤 1 player", "🎯 Age 7+"]
+  },
+  {
+    title: "AFL Goal Kick",
+    folder: "afl-goal-kick",
+    emoji: "🏉",
+    blurb: "Aim the arrow, load the power bar, time your run-up and thread the big sticks. Wind, a man on the mark, and 3 difficulty levels.",
+    colors: ["#3ddc68", "#2f9d4d"],
+    chips: ["⚽ Sport", "👥 1–2 players", "💨 Wind"]
+  }
+];
+
+const grid = document.getElementById("grid");
+for (const g of GAMES) {
+  const a = document.createElement("a");
+  a.className = "card";
+  a.href = "./" + g.folder + "/";
+  a.innerHTML = `
+    <div class="thumb" style="background:linear-gradient(145deg, ${g.colors[0]}, ${g.colors[1]})">
+      <div class="blob" style="width:120px;height:120px;background:rgba(255,255,255,.35);top:-30px;left:-20px"></div>
+      <div class="blob" style="width:90px;height:90px;background:rgba(0,0,0,.10);bottom:-24px;right:-10px"></div>
+      <div class="emoji">${g.emoji}</div>
+    </div>
+    <div class="body">
+      <h2>${g.title}</h2>
+      <p>${g.blurb}</p>
+      <div class="chips">${g.chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>
+      <span class="play">▶ Play</span>
+    </div>`;
+  grid.appendChild(a);
+}
+
+// ---- PWA install prompt (Android/Chrome) ----
+let deferredPrompt = null;
+const installBtn = document.getElementById("installBtn");
+addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault(); deferredPrompt = e; installBtn.classList.add("show");
+});
+installBtn.addEventListener("click", async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null; installBtn.classList.remove("show");
+});
+addEventListener("appinstalled", () => installBtn.classList.remove("show"));
+
+if ("serviceWorker" in navigator) {
+  addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>

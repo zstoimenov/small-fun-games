@@ -1,0 +1,294 @@
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --blue: #4fc3f7;
+  --blue-dark: #2f88b7;
+  --yellow: #ffd54f;
+  --pink: #ff5d8f;
+  --green: #66bb6a;
+  --ink: #243b55;
+  --paper: #ffffff;
+  --bg: #eef6fb;
+  --radius: 18px;
+}
+
+html { font-size: 17px; }
+body {
+  font-family: "Comic Sans MS", "Chalkboard SE", "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  user-select: none;
+}
+
+header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 16px;
+  background: var(--blue);
+  color: #fff;
+  position: sticky; top: 0; z-index: 20;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+header h1 { font-size: 1.3rem; letter-spacing: .5px; text-shadow: 1px 2px 0 rgba(0,0,0,.15); }
+.header-left { display: flex; align-items: center; gap: 10px; }
+.back-link {
+  background: rgba(255,255,255,.25); color: #fff; text-decoration: none;
+  padding: 6px 12px; border-radius: 999px; font-weight: bold; font-size: .95rem;
+  white-space: nowrap;
+}
+.back-link:active { background: rgba(255,255,255,.4); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.stars {
+  background: rgba(255,255,255,.25); padding: 4px 12px; border-radius: 999px;
+  font-weight: bold; font-size: 1rem;
+}
+.icon-btn {
+  font-size: 1.2rem; background: rgba(255,255,255,.25); border: none;
+  border-radius: 999px; width: 40px; height: 40px; cursor: pointer;
+}
+
+main {
+  max-width: 1100px; margin: 0 auto; padding: 14px;
+  display: grid; gap: 14px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 860px) {
+  main {
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-areas:
+      "scene events"
+      "scene mission"
+      "builder brain"
+      "builder wardrobe";
+    align-items: start;
+  }
+  #scene { grid-area: scene; }
+  #eventsPanel { grid-area: events; }
+  #missionPanel { grid-area: mission; }
+  #builderPanel { grid-area: builder; }
+  #brainPanel { grid-area: brain; }
+  #wardrobePanel { grid-area: wardrobe; }
+}
+
+/* ============ SCENE ============ */
+#scene {
+  position: relative;
+  border-radius: var(--radius);
+  min-height: 380px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  transition: background 1s;
+}
+.sky-day   { background: linear-gradient(#7ed3f9 0%, #c9ecfb 70%); }
+.sky-rain  { background: linear-gradient(#6b7d95 0%, #a9bccd 70%); }
+.sky-sun   { background: linear-gradient(#ffd970 0%, #ffefc2 70%); }
+.sky-night { background: linear-gradient(#2b3a67 0%, #5c6f9c 70%); }
+
+#ground {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 64px;
+  background: linear-gradient(#8bd06d, #6db254);
+  border-radius: 50% 50% 0 0 / 30px 30px 0 0;
+}
+
+#weatherLayer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.raindrop {
+  position: absolute; top: -20px; width: 3px; height: 16px; border-radius: 3px;
+  background: #dbeeff; opacity: .8;
+  animation: fall linear infinite;
+}
+@keyframes fall { to { transform: translateY(420px); } }
+.sunburst {
+  position: absolute; top: 12px; right: 18px; font-size: 3.4rem;
+  animation: spinSlow 14s linear infinite;
+}
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+
+#banner {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  background: var(--paper); color: var(--ink);
+  padding: 8px 18px; border-radius: 999px; font-weight: bold; font-size: 1.05rem;
+  box-shadow: 0 3px 10px rgba(0,0,0,.2);
+  z-index: 6; white-space: nowrap;
+  animation: pop .3s ease-out;
+}
+
+#speech {
+  position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
+  background: #fff; border: 3px solid var(--ink); color: var(--ink);
+  padding: 8px 14px; border-radius: 16px; font-weight: bold;
+  z-index: 6; max-width: 82%; text-align: center;
+  animation: pop .3s ease-out;
+}
+#speech::after {
+  content: ""; position: absolute; bottom: -12px; left: 50%; margin-left: -8px;
+  border: 8px solid transparent; border-top-color: var(--ink);
+}
+
+/* ============ PET ============ */
+#petZone {
+  position: absolute; bottom: 40px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+}
+#pet {
+  width: 170px; position: relative;
+  animation: bob 2.4s ease-in-out infinite;
+  transition: transform .4s;
+}
+#petSvg { width: 100%; display: block; }
+#shadow {
+  width: 120px; height: 16px; margin: -6px auto 0;
+  background: rgba(0,0,0,.18); border-radius: 50%;
+}
+@keyframes bob { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-8px);} }
+
+#hatSlot  { position: absolute; top: -34px; left: 0; right: 0; text-align: center; font-size: 2.6rem; z-index: 5; pointer-events: none; }
+#faceSlot { position: absolute; top: 34px; left: 0; right: 0; text-align: center; font-size: 2.2rem; z-index: 5; pointer-events: none; }
+#neckSlot { position: absolute; top: 84px; left: 0; right: 0; text-align: center; font-size: 1.7rem; z-index: 5; pointer-events: none; }
+#propSlot { position: absolute; top: 30px; right: -54px; font-size: 3rem; z-index: 5; pointer-events: none; }
+
+/* pet moods / actions */
+#pet.confused { animation: tilt .5s ease-in-out infinite alternate; }
+@keyframes tilt { from { transform: rotate(-8deg);} to { transform: rotate(8deg);} }
+
+#pet.dance { animation: dance .35s ease-in-out infinite alternate; }
+@keyframes dance {
+  from { transform: rotate(-12deg) translateY(0) scale(1.02); }
+  to   { transform: rotate(12deg) translateY(-14px) scale(1.02); }
+}
+
+#pet.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#pet.jump { animation: jump .5s ease-in-out infinite; }
+@keyframes jump { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-26px);} }
+
+#pet.sleep { animation: sleepBob 3s ease-in-out infinite; }
+@keyframes sleepBob { 0%,100% { transform: translateY(4px) rotate(4deg);} 50% { transform: translateY(8px) rotate(4deg);} }
+
+#pet.chase { animation: chase 1.4s ease-in-out infinite alternate; }
+@keyframes chase { from { transform: translateX(-70px);} to { transform: translateX(70px);} }
+
+#pet.wiggle { animation: wiggle .3s ease-in-out 6; }
+@keyframes wiggle { 0%,100% { transform: rotate(0);} 25% { transform: rotate(-6deg);} 75% { transform: rotate(6deg);} }
+
+#pet.hidden-box #petSvg,
+#pet.hidden-box #hatSlot,
+#pet.hidden-box #neckSlot,
+#pet.hidden-box #faceSlot { visibility: hidden; }
+#pet.hidden-box #propSlot {
+  left: 0; right: 0; top: 50px; text-align: center; font-size: 6rem;
+}
+
+/* floating effect emojis */
+.float-emoji {
+  position: absolute; font-size: 2rem; pointer-events: none; z-index: 8;
+  animation: floatUp 1.6s ease-out forwards;
+}
+@keyframes floatUp {
+  from { transform: translateY(0) scale(.6); opacity: 1; }
+  to   { transform: translateY(-130px) scale(1.4); opacity: 0; }
+}
+.confetti-bit {
+  position: fixed; top: -30px; font-size: 1.6rem; z-index: 99; pointer-events: none;
+  animation: confettiFall 2.8s ease-in forwards;
+}
+@keyframes confettiFall {
+  to { transform: translateY(110vh) rotate(720deg); opacity: .9; }
+}
+
+/* ============ PANELS ============ */
+.panel {
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: 0 3px 10px rgba(0,0,0,.08);
+}
+.panel h2 { font-size: 1.05rem; margin-bottom: 10px; }
+.panel .sub { font-weight: normal; font-size: .85rem; color: #7a8ca3; }
+.tip { font-size: .9rem; color: #5d7089; margin-bottom: 10px; }
+
+.mission { background: #fff8e1; border: 3px dashed var(--yellow); }
+#missionText { font-size: 1rem; font-weight: bold; }
+#missionDone {
+  margin-top: 8px; font-weight: bold; color: var(--green);
+  animation: pop .4s ease-out;
+}
+
+/* ============ BUTTONS ============ */
+.btn-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.event-btn, .choice-btn, .wardrobe-btn {
+  border: 3px solid transparent;
+  border-radius: 14px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: .92rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 76px;
+  transition: transform .1s, border-color .15s;
+  color: var(--ink);
+}
+.event-btn { background: #fff3cd; border-color: #ffd54f; }
+.event-btn:active, .choice-btn:active { transform: scale(.93); }
+.event-btn .big, .choice-btn .big, .wardrobe-btn .big { font-size: 1.7rem; }
+
+.choice-btn { background: #f1f6fb; }
+.choice-btn.when { background: #e7f0ff; }
+.choice-btn.then { background: #ffe9f1; }
+.choice-btn.selected.when { border-color: #4d7cfe; background: #d3e2ff; }
+.choice-btn.selected.then { border-color: var(--pink); background: #ffd3e2; }
+
+.wardrobe-btn { background: #f3f0ff; border-color: #d3c8ff; }
+.wardrobe-btn.worn { border-color: #7c5cff; background: #e4dcff; }
+
+.builder-row {
+  display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;
+}
+.kw {
+  font-weight: 900; color: #fff; padding: 6px 10px; border-radius: 10px;
+  font-size: .9rem; margin-top: 4px; flex-shrink: 0;
+}
+.kw-when { background: #4d7cfe; }
+.kw-then { background: var(--pink); }
+.choice-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.builder-preview {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #f1f6fb; border-radius: 12px; padding: 10px 12px; flex-wrap: wrap;
+}
+#rulePreview { font-weight: bold; font-size: 1rem; }
+#teachBtn {
+  background: var(--green); color: #fff; border: none;
+  font-family: inherit; font-weight: 900; font-size: 1rem;
+  padding: 10px 18px; border-radius: 999px; cursor: pointer;
+  box-shadow: 0 3px 0 #3f8943;
+}
+#teachBtn:disabled { background: #b8c6d4; box-shadow: none; cursor: not-allowed; }
+#teachBtn:not(:disabled):active { transform: translateY(2px); box-shadow: none; }
+
+/* ============ RULE LIST ============ */
+#ruleList { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+#ruleList li {
+  display: flex; align-items: center; gap: 8px;
+  background: #f1f6fb; border-radius: 12px; padding: 8px 10px;
+  font-weight: bold; font-size: .98rem;
+  animation: pop .25s ease-out;
+}
+#ruleList .mini-kw { font-size: .7rem; color: #fff; padding: 2px 6px; border-radius: 6px; }
+#ruleList .mini-when { background: #4d7cfe; }
+#ruleList .mini-then { background: var(--pink); }
+.del-btn {
+  margin-left: auto; background: none; border: none; font-size: 1.1rem;
+  cursor: pointer; opacity: .55;
+}
+.del-btn:hover { opacity: 1; }
+
+.hidden { display: none !important; }
+
+@keyframes pop {
+  0% { transform: scale(.6); opacity: 0; }
+  80% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}

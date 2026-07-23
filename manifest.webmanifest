@@ -1,0 +1,16 @@
+{
+  "name": "Game Box — Small Fun Games",
+  "short_name": "Game Box",
+  "description": "A little box of fun games. Tap one to play!",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12132a",
+  "theme_color": "#6c4cf0",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "Robo Rules — Teach Chip!",
+  "short_name": "Robo Rules",
+  "description": "Teach Chip the robot pet with IF-THIS-THEN-THAT rules. A first taste of coding for kids!",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef6fb",
+  "theme_color": "#4fc3f7",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
