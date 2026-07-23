@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Times Table Blaster!</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#080820"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="TTBlaster"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;overflow:hidden;}
+  body{
+    background:linear-gradient(135deg,#080820 0%,#160430 50%,#0b1a3e 100%);
+    font-family:'Courier New',monospace;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;min-height:100vh;
+  }
+  #scanlines{position:fixed;inset:0;pointer-events:none;z-index:1;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);}
+  #edge-pulse{position:fixed;inset:0;pointer-events:none;z-index:50;opacity:0;transition:opacity 0.05s;}
+  #edge-pulse.correct{box-shadow:inset 0 0 60px 20px rgba(124,255,80,0.22);animation:edgePulse 0.35s ease-out forwards;}
+  #edge-pulse.wrong{box-shadow:inset 0 0 60px 20px rgba(255,68,68,0.25);animation:edgePulse 0.35s ease-out forwards;}
+  .particle{position:fixed;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:9999;animation:pop 0.9s ease-out forwards;}
+
+  /* Scrollable screens */
+  #app{position:relative;z-index:2;width:100%;max-width:560px;padding:0 16px;}
+  .screen{display:none;width:100%;max-height:100vh;overflow-y:auto;padding:20px 0;animation:bounceIn 0.4s ease;}
+  .screen.active{display:block;}
+  /* hide scrollbar */
+  .screen::-webkit-scrollbar{display:none;}
+  .screen{scrollbar-width:none;-ms-overflow-style:none;}
+
+  /* Keyframes */
+  @keyframes pop{0%{transform:scale(1.2) translate(0,0);opacity:1}100%{transform:scale(0) translate(var(--dx),var(--dy));opacity:0}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px)}40%{transform:translateX(14px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+  @keyframes bounceIn{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px #ff4da6,0 0 40px #ff4da6}50%{box-shadow:0 0 50px #ff4da6,0 0 90px #ff4da6}}
+  @keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  @keyframes orbGlow{0%,100%{box-shadow:0 0 20px currentColor}50%{box-shadow:0 0 40px currentColor}}
+  @keyframes starSpin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.3)}100%{transform:rotate(360deg) scale(1)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes correctReveal{0%{transform:scale(0.8);opacity:0}40%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+  @keyframes timerPulse{0%,100%{opacity:1}50%{opacity:0.25}}
+  @keyframes promotion{0%{transform:scale(0) rotate(-15deg);opacity:0}60%{transform:scale(1.15) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0deg)}}
+  @keyframes flashGreen{0%{background:rgba(124,255,80,0.4);border-color:#7cff50;color:#7cff50}100%{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.18);color:white}}
+  @keyframes flashRed{0%{background:rgba(255,68,68,0.4);border-color:#ff4444;color:#ff5555}100%{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.18);color:white}}
+  @keyframes edgePulse{0%{opacity:1}100%{opacity:0}}
+  @keyframes shake-anim{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px)}40%{transform:translateX(14px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
+
+  /* Buttons */
+  .cta-btn{border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;border-radius:50px;cursor:pointer;letter-spacing:3px;transition:transform 0.15s;}
+  .cta-btn:hover{transform:scale(1.06);}
+  .cta-btn:active{transform:scale(0.97);}
+  .choice-btn{font-family:'Courier New',monospace;font-weight:bold;padding:14px 0;border-radius:12px;cursor:pointer;border:2px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.05);color:white;transition:background 0.1s,border-color 0.1s,transform 0.1s;font-size:1.75rem;width:100%;}
+  .choice-btn:hover:not(:disabled){background:rgba(255,255,255,0.12);border-color:#ffe600;color:#ffe600;}
+  .choice-btn:active:not(:disabled){transform:scale(0.96);}
+  .choice-btn:disabled{cursor:default;}
+  .choice-btn.flash-correct{animation:flashGreen 0.32s ease forwards;}
+  .choice-btn.flash-wrong{animation:flashRed 0.32s ease forwards;}
+  .pill-btn{font-family:'Courier New',monospace;font-size:0.74rem;letter-spacing:2px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;border:2px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.42);}
+  .mode-tab{flex:1;padding:14px 10px;border-radius:12px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);cursor:pointer;transition:all 0.18s;text-align:center;}
+  .mode-tab:hover{border-color:rgba(255,255,255,0.3);transform:scale(1.02);}
+  .diff-card{flex:1;padding:9px 5px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);cursor:pointer;transition:all 0.15s;text-align:center;}
+  .name-input{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);color:white;font-family:'Courier New',monospace;font-size:1rem;letter-spacing:3px;padding:9px 14px;border-radius:10px;outline:none;width:140px;text-align:center;text-transform:uppercase;}
+  .name-input:focus{border-color:#00e5ff;box-shadow:0 0 10px rgba(0,229,255,0.3);}
+  .name-input::placeholder{color:rgba(255,255,255,0.2);}
+  .slabel{color:rgba(255,255,255,0.35);font-size:0.64rem;letter-spacing:3px;margin-bottom:7px;}
+
+  /* Belt strip */
+  .belt-strip-wrap{position:relative;margin-bottom:6px;}
+  .belt-strip-fade-l{position:absolute;left:0;top:0;bottom:0;width:24px;background:linear-gradient(90deg,#0d0d28,transparent);pointer-events:none;z-index:2;}
+  .belt-strip-fade-r{position:absolute;right:0;top:0;bottom:0;width:24px;background:linear-gradient(270deg,#0d0d28,transparent);pointer-events:none;z-index:2;}
+  .belt-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;padding-left:12px;padding-right:12px;scrollbar-width:none;-ms-overflow-style:none;}
+  .belt-strip::-webkit-scrollbar{display:none;}
+  .belt-item{flex-shrink:0;width:72px;padding:10px 0 8px;border-radius:12px;border:2px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.03);cursor:pointer;text-align:center;position:relative;transition:all 0.18s;}
+  .belt-item.locked{opacity:0.22;cursor:not-allowed;}
+  .belt-item .crown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:0.65rem;line-height:1;}
+
+  /* grid helpers */
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+  .flex-row{display:flex;gap:8px;}
+  .flex-center{display:flex;justify-content:center;align-items:center;}
+  .text-center{text-align:center;}
+  .shake{animation:shake-anim 0.5s ease;}
+
+  /* stat card */
+  .stat-block{text-align:center;}
+  .stat-val{font-size:1.05rem;font-weight:bold;}
+  .stat-lbl{color:rgba(255,255,255,0.26);font-size:0.56rem;letter-spacing:1px;margin-top:2px;}
+  .divider{width:1px;height:28px;background:rgba(255,255,255,0.1);}
+  .lb-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:7px;margin-bottom:3px;}
+</style>
+</head>
+<body>
+<div id="scanlines"></div>
+<div id="edge-pulse"></div>
+<div id="particles-container"></div>
+
+<a id="back-to-games" href="../" title="Back to games" style="position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));z-index:10000;background:rgba(8,8,32,0.72);color:#00e5ff;text-decoration:none;font-family:'Courier New',monospace;font-weight:bold;font-size:0.72rem;letter-spacing:2px;padding:8px 13px;border-radius:50px;border:1px solid rgba(0,229,255,0.35);box-shadow:0 0 12px rgba(0,229,255,0.15);">&lsaquo; GAMES</a>
+
+<div id="app">
+
+<!-- ══ HOME ══ -->
+<div id="screen-home" class="screen active">
+  <div class="text-center" style="margin-bottom:18px;">
+    <div style="font-size:2.6rem;display:inline-block;animation:starSpin 4s linear infinite;">⭐</div>
+    <h1 style="color:#ffe600;font-size:clamp(1.8rem,7vw,2.8rem);margin:4px 0 2px;letter-spacing:4px;text-shadow:0 0 20px #ffe600,0 0 40px #ffe60066;">TIMES TABLE</h1>
+    <h2 style="color:#ff4da6;font-size:clamp(1rem,4vw,1.5rem);margin:0 0 4px;letter-spacing:6px;text-shadow:0 0 15px #ff4da6;">BLASTER!</h2>
+    <span style="color:rgba(255,255,255,0.18);font-size:0.55rem;letter-spacing:3px;">V8</span>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="flex-row" style="margin-bottom:20px;">
+    <div class="mode-tab" id="tab-ninja" onclick="setGameMode('ninjabelt')">
+      <div style="font-size:1.8rem;">🥷</div>
+      <div style="color:rgba(255,255,255,0.6);font-weight:bold;font-size:0.8rem;letter-spacing:2px;margin-top:5px;">NINJA BELT</div>
+      <div style="color:rgba(255,255,255,0.28);font-size:0.57rem;margin-top:3px;">flash round · 60s · belt up</div>
+    </div>
+    <div class="mode-tab" id="tab-classic" onclick="setGameMode('classic')">
+      <div style="font-size:1.8rem;">🎮</div>
+      <div style="color:rgba(255,255,255,0.6);font-weight:bold;font-size:0.8rem;letter-spacing:2px;margin-top:5px;">CLASSIC</div>
+      <div style="color:rgba(255,255,255,0.28);font-size:0.57rem;margin-top:3px;">10 Qs · feedback · timer</div>
+    </div>
+  </div>
+
+  <!-- Ninja Belt Setup -->
+  <div id="ninja-setup">
+    <!-- Earned belt banner -->
+    <div id="earned-belt-banner" style="background:rgba(0,0,0,0.22);border-radius:14px;padding:13px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;"></div>
+
+    <!-- Q count -->
+    <div style="margin-bottom:14px;">
+      <div class="slabel">QUESTIONS PER ROUND</div>
+      <div class="flex-row" id="qcount-pills"></div>
+    </div>
+
+    <div class="slabel">SELECT BELT TO ATTEMPT</div>
+    <!-- Belt strip -->
+    <div class="belt-strip-wrap">
+      <div class="belt-strip-fade-l"></div>
+      <div class="belt-strip-fade-r"></div>
+      <div class="belt-strip" id="belt-strip"></div>
+    </div>
+
+    <!-- PB Card -->
+    <div style="margin-bottom:6px;">
+      <div class="slabel" id="pb-label" style="margin-bottom:5px;"></div>
+      <div id="pb-card"></div>
+    </div>
+
+    <!-- Rule reminder -->
+    <div id="rule-reminder" style="background:rgba(0,0,0,0.18);border-radius:8px;padding:8px 12px;margin-bottom:18px;margin-top:10px;">
+      <div style="color:rgba(255,255,255,0.22);font-size:0.58rem;letter-spacing:1px;line-height:1.7;"></div>
+    </div>
+  </div>
+
+  <!-- Classic Setup -->
+  <div id="classic-setup" style="display:none;">
+    <div style="margin-bottom:14px;">
+      <div class="slabel">DIFFICULTY</div>
+      <div class="flex-row" id="diff-cards"></div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div class="slabel">FOCUS TABLE</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;" id="focus-pills"></div>
+    </div>
+    <div style="margin-bottom:14px;">
+      <div class="slabel">TIMER (per question)</div>
+      <div class="flex-row flex-wrap" id="timer-pills"></div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div class="slabel">QUESTIONS</div>
+      <div class="flex-row" id="repeat-pills"></div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="text-center" style="margin-bottom:24px;">
+    <button class="cta-btn" id="home-cta" style="font-size:1.2rem;padding:15px 44px;"></button>
+  </div>
+
+  <!-- Leaderboard -->
+  <div id="home-lb" style="margin-bottom:20px;"></div>
+</div><!-- /home -->
+
+<!-- ══ NINJA BELT QUIZ ══ -->
+<div id="screen-ninjabelt-quiz" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div id="nb-orb-hdr"></div>
+      <div>
+        <div id="nb-belt-name" style="font-size:0.68rem;letter-spacing:2px;font-weight:bold;"></div>
+        <div id="nb-belt-table" style="color:rgba(255,255,255,0.28);font-size:0.54rem;"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <span id="nb-score-correct" style="color:#7cff50;font-size:0.82rem;"></span>
+      <span id="nb-score-wrong" style="color:#ff5555;font-size:0.82rem;display:none;"></span>
+      <span id="nb-qnum" style="color:rgba(255,255,255,0.25);font-size:0.72rem;"></span>
+    </div>
+  </div>
+
+  <!-- Timer bar -->
+  <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:7px;margin-bottom:6px;overflow:hidden;">
+    <div id="nb-timer-bar" style="height:100%;border-radius:4px;background:#00e5ff;transition:width 1s linear,background 0.5s;box-shadow:0 0 10px #00e5ff;width:100%;"></div>
+  </div>
+
+  <!-- Progress dots -->
+  <div id="nb-dots" style="display:flex;gap:3px;justify-content:center;margin-bottom:20px;flex-wrap:wrap;"></div>
+
+  <!-- Question -->
+  <div id="nb-question" class="text-center" style="margin-bottom:20px;">
+    <div id="nb-q-text" style="font-size:clamp(2.8rem,14vw,4.8rem);font-weight:bold;color:white;letter-spacing:4px;"></div>
+    <div style="font-size:1.6rem;color:rgba(255,255,255,0.2);letter-spacing:2px;margin-top:4px;">= ?</div>
+  </div>
+
+  <!-- Choices -->
+  <div class="grid-2" id="nb-choices"></div>
+
+  <div class="text-center" style="margin-top:10px;color:rgba(255,255,255,0.16);font-size:0.6rem;letter-spacing:2px;">
+    RESULTS SHOWN AT END · PERFECT SCORE = RANK UP
+  </div>
+</div><!-- /ninja quiz -->
+
+<!-- ══ NINJA BELT RESULT ══ -->
+<div id="screen-ninjabelt-result" class="screen">
+  <div id="nbr-top" class="text-center"></div>
+
+  <!-- Stats -->
+  <div style="display:flex;justify-content:center;gap:18px;margin:12px 0 6px;flex-wrap:wrap;" id="nbr-stats"></div>
+
+  <!-- Points -->
+  <div style="margin:8px 0 14px;" class="text-center">
+    <div id="nbr-points" style="font-size:2.4rem;font-weight:bold;color:#ffe600;text-shadow:0 0 24px #ffe600;letter-spacing:2px;"></div>
+    <div style="color:rgba(255,255,255,0.28);font-size:0.6rem;letter-spacing:3px;">POINTS</div>
+  </div>
+
+  <!-- Answer review -->
+  <div id="nbr-review" style="margin-bottom:14px;text-align:left;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.22);border-radius:10px;padding:10px 12px;display:none;"></div>
+
+  <!-- PB card -->
+  <div style="margin-bottom:14px;">
+    <div class="slabel" id="nbr-pb-label" style="margin-bottom:5px;"></div>
+    <div id="nbr-pb-card"></div>
+  </div>
+
+  <!-- Belt progress -->
+  <div style="background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px 14px;margin-bottom:14px;" class="text-center">
+    <div style="color:rgba(255,255,255,0.26);font-size:0.56rem;letter-spacing:2px;margin-bottom:7px;">BELT PROGRESS</div>
+    <div style="display:flex;gap:4px;justify-content:center;" id="nbr-belt-progress"></div>
+    <div id="nbr-belt-progress-label" style="font-size:0.6rem;letter-spacing:2px;margin-top:6px;font-weight:bold;"></div>
+  </div>
+
+  <!-- Save score -->
+  <div id="nbr-save" style="margin-bottom:14px;" class="text-center"></div>
+
+  <!-- Buttons -->
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;" id="nbr-btns"></div>
+</div><!-- /ninja result -->
+
+<!-- ══ CLASSIC QUIZ ══ -->
+<div id="screen-classic-quiz" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+    <div id="cl-qnum" style="color:#00e5ff;font-size:0.85rem;letter-spacing:2px;"></div>
+    <div id="cl-diff-badge"></div>
+    <div style="display:flex;gap:10px;">
+      <span id="cl-score" style="color:#ffe600;font-size:0.85rem;"></span>
+      <span id="cl-streak" style="color:#ff4da6;font-size:0.85rem;"></span>
+    </div>
+  </div>
+  <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:5px;margin-bottom:8px;">
+    <div id="cl-progress-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,#ff4da6,#ffe600);width:0%;transition:width 0.4s ease;"></div>
+  </div>
+  <div id="cl-timer-wrap" style="margin-bottom:16px;display:none;">
+    <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:7px;overflow:hidden;">
+      <div id="cl-timer-bar" style="height:100%;border-radius:4px;background:#7cff50;transition:width 1s linear,background 0.3s;box-shadow:0 0 8px #7cff50;width:100%;"></div>
+    </div>
+  </div>
+  <div id="cl-question" class="text-center" style="margin-bottom:16px;">
+    <div id="cl-q-text" style="font-size:clamp(2.6rem,13vw,4.4rem);font-weight:bold;color:white;letter-spacing:4px;text-shadow:0 0 30px rgba(255,255,255,0.3);"></div>
+    <div id="cl-q-answer" style="margin-top:6px;font-size:clamp(1.4rem,7vw,2.5rem);font-weight:bold;letter-spacing:3px;"></div>
+  </div>
+  <div id="cl-message" style="height:26px;text-align:center;margin-bottom:12px;font-size:1.05rem;font-weight:bold;letter-spacing:3px;"></div>
+  <div id="cl-choices" class="grid-2"></div>
+</div><!-- /classic quiz -->
+
+<!-- ══ CLASSIC RESULT ══ -->
+<div id="screen-classic-result" class="screen" style="text-align:center;">
+  <div style="font-size:0.88rem;letter-spacing:4px;color:#ff4da6;margin-bottom:4px;">🎮 CLASSIC</div>
+  <div id="clr-title" style="font-size:1.05rem;letter-spacing:5px;color:#ffe600;margin-bottom:10px;animation:float 2s ease-in-out infinite;"></div>
+  <div id="clr-stars" style="font-size:2.5rem;margin-bottom:4px;"></div>
+  <div id="clr-points" style="font-size:2.8rem;font-weight:bold;color:#ffe600;text-shadow:0 0 30px #ffe600;margin:6px 0 2px;letter-spacing:2px;"></div>
+  <div style="color:rgba(255,255,255,0.28);font-size:0.62rem;letter-spacing:3px;margin-bottom:10px;">POINTS</div>
+  <div id="clr-score-big" style="font-size:2.4rem;font-weight:bold;color:white;letter-spacing:2px;margin-bottom:12px;"></div>
+  <div style="display:flex;justify-content:center;gap:18px;margin-bottom:18px;flex-wrap:wrap;" id="clr-stats"></div>
+  <div id="clr-save" style="margin-bottom:16px;"></div>
+  <div id="clr-lb" style="margin-bottom:16px;text-align:left;"></div>
+  <div style="display:flex;gap:10px;justify-content:center;">
+    <button class="cta-btn" id="clr-again-btn" style="background:linear-gradient(135deg,#ff4da6,#ff6b35);animation:pulseGlow 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;" onclick="startClassic()">↺ AGAIN</button>
+    <button onclick="showScreen('home')" style="background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.4);font-family:'Courier New',monospace;font-size:0.86rem;padding:12px 16px;border-radius:50px;cursor:pointer;letter-spacing:2px;">← HOME</button>
+  </div>
+</div><!-- /classic result -->
+
+</div><!-- /app -->
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+const NINJA_TOTAL_SECS = 60;
+const Q_OPTIONS = [10, 20, 30];
+
+const BELTS = [
+  { level:1,  name:"WHITE",      color:"#F0F0F0", emoji:"🥋", table:1  },
+  { level:2,  name:"YELLOW",     color:"#FFE600", emoji:"🟡", table:2  },
+  { level:3,  name:"ORANGE",     color:"#FF8C00", emoji:"🟠", table:3  },
+  { level:4,  name:"GREEN",      color:"#7cff50", emoji:"🟢", table:4  },
+  { level:5,  name:"BLUE",       color:"#00e5ff", emoji:"🔵", table:5  },
+  { level:6,  name:"PURPLE",     color:"#bf5fff", emoji:"🟣", table:6  },
+  { level:7,  name:"RED",        color:"#ff4444", emoji:"🔴", table:7  },
+  { level:8,  name:"BROWN",      color:"#c47a3a", emoji:"🟤", table:8  },
+  { level:9,  name:"DARK BLUE",  color:"#3a6bff", emoji:"💙", table:9  },
+  { level:10, name:"DARK GREEN", color:"#22a83a", emoji:"💚", table:10 },
+  { level:11, name:"RED-BLACK",  color:"#dd2211", emoji:"🔺", table:11 },
+  { level:12, name:"BLACK",      color:"#cccccc", emoji:"🥷", table:12, blackBelt:true },
+];
+
+const DIFFICULTIES = {
+  easy:   { label:"EASY",   emoji:"🐢", desc:"Tables ×1–×6",       color:"#7cff50", maxTable:6,  choiceSpread:10, numChoices:4, ptsMult:1.0 },
+  medium: { label:"MEDIUM", emoji:"🦊", desc:"Tables ×1–×12",      color:"#ffe600", maxTable:12, choiceSpread:20, numChoices:4, ptsMult:1.5 },
+  hard:   { label:"HARD",   emoji:"🦈", desc:"×1–×12 · 6 choices", color:"#ff4da6", maxTable:12, choiceSpread:30, numChoices:6, ptsMult:2.0 },
+};
+
+const TIMER_OPTIONS = [{ label:"3s", value:3 }, { label:"5s", value:5 }, { label:"8s", value:8 }];
+
+// ── Storage ────────────────────────────────────────────────────────────────────
+const LB_KEY   = "ttb_lb_v8";
+const BELT_KEY = "ttb_belt_v8";
+const PB_KEY   = "ttb_pb_v8";
+
+function getLB()   { try { return JSON.parse(localStorage.getItem(LB_KEY)  || "[]"); } catch { return []; } }
+function saveLB(b) { try { localStorage.setItem(LB_KEY,  JSON.stringify(b)); } catch {} }
+function getBelt() { try { return Math.max(1, Math.min(12, parseInt(localStorage.getItem(BELT_KEY) || "1"))); } catch { return 1; } }
+function saveBeltLS(l) { try { localStorage.setItem(BELT_KEY, String(l)); } catch {} }
+function getPBs()  { try { return JSON.parse(localStorage.getItem(PB_KEY) || "{}"); } catch { return {}; } }
+function savePBs(d){ try { localStorage.setItem(PB_KEY, JSON.stringify(d)); } catch {} }
+
+// ── State ──────────────────────────────────────────────────────────────────────
+let gameMode     = "ninjabelt";
+let earnedBelt   = getBelt();
+let attemptBelt  = 1;
+let personalBests = getPBs();
+let ninjaQCount  = 10;
+let difficulty   = "medium";
+let focusTable   = null;
+let timerMode    = false;
+let timerSecs    = 8;
+let noRepeat     = false;
+let leaderboard  = getLB();
+let nameInput    = "";
+let savedScore   = null;
+
+// Shared quiz
+let question     = null;
+let choices      = [];
+let questionNum  = 1;
+let score        = 0;
+let streak       = 0;
+let bestStreak   = 0;
+let points       = 0;
+let beltMistakes = 0;
+let ninjaHistory = [];
+let promoted     = false;
+let timedOut     = false;
+let ninjaSecsLeft = NINJA_TOTAL_SECS;
+let ninjaRunning = false;
+let activeBelt   = null;
+let beltQs       = [];
+let beltQIdx     = 0;
+let processing   = false;
+let flashResult  = null;
+let qKey         = 0;
+let pool         = [];
+let poolIdx      = 0;
+let feedback     = null;
+let selChoice    = null;
+let classicMessage = "";
+let shaking      = false;
+let timeLeft     = 8;
+
+// Timers
+let classicTimerID = null;
+let ninjaTimerID   = null;
+let advanceID      = null;
+let flashTimerID   = null;
+let edgePulseTimerID = null;
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function buildBeltQuestions(tableNum, count) {
+  const base = Array.from({length:12},(_,i)=>({a:tableNum,b:i+1,answer:tableNum*(i+1)}));
+  const qs = [];
+  while(qs.length < count) qs.push(...[...base].sort(()=>Math.random()-0.5));
+  return qs.slice(0, count);
+}
+
+function randomQ(focTable, maxTable) {
+  const a = focTable || Math.floor(Math.random()*maxTable)+1;
+  const b = Math.floor(Math.random()*maxTable)+1;
+  return {a,b,answer:a*b};
+}
+
+function buildPool(focTable, maxTable) {
+  const p = [];
+  const aVals = focTable ? [focTable] : Array.from({length:maxTable},(_,i)=>i+1);
+  for(const a of aVals) for(let b=1;b<=maxTable;b++) p.push({a,b,answer:a*b});
+  for(let i=p.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[p[i],p[j]]=[p[j],p[i]];}
+  return p;
+}
+
+function generateChoices(correct, spread, numChoices) {
+  const s = new Set([correct]);
+  let att = 0;
+  while(s.size < numChoices && att < 300){
+    att++;
+    const w = correct + Math.floor(Math.random()*spread) - Math.floor(spread/2);
+    if(w>0 && w!==correct) s.add(w);
+  }
+  let f=1;
+  while(s.size < numChoices){if(f!==correct)s.add(f);f++;}
+  return [...s].sort(()=>Math.random()-0.5);
+}
+
+function calcClassicPts({correct,diff,timerMd,timerS,noRep,bStreak}){
+  const d = DIFFICULTIES[diff];
+  return Math.round(correct*100*d.ptsMult*(timerMd?(timerS<=3?2.0:timerS<=5?1.5:1.2):1.0)*(noRep?1.2:1.0)*(1+bStreak*0.05));
+}
+
+function calcNinjaBeltPts({correct,total,secsLeft,beltLevel,bStreak}){
+  const beltMult   = 1+(beltLevel-1)*0.15;
+  const countBonus = total===30?1.5:total===20?1.25:1.0;
+  const speedBonus = 1+(secsLeft/NINJA_TOTAL_SECS)*0.6;
+  const streakBonus= 1+bStreak*0.05;
+  return Math.round(correct*60*beltMult*countBonus*speedBonus*streakBonus);
+}
+
+function vibrate(p){ if(navigator.vibrate) navigator.vibrate(p); }
+
+function getDiff(){ return DIFFICULTIES[difficulty]; }
+
+// ── DOM helpers ────────────────────────────────────────────────────────────────
+function el(id){ return document.getElementById(id); }
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const s = el('screen-'+name);
+  if(s){ s.classList.add('active'); s.scrollTop=0; }
+  if(name === 'home') renderHome();
+}
+
+// ── Particles ──────────────────────────────────────────────────────────────────
+function spawnParticles(colors){
+  colors = colors || ["#ff4da6","#ffe600","#00e5ff","#7cff50","#ff6b35","#bf5fff"];
+  const container = el('particles-container');
+  const frags = [];
+  for(let i=0;i<20;i++){
+    const d = document.createElement('div');
+    d.className='particle';
+    const dx = (Math.random()-0.5)*140;
+    const dy = -(Math.random()*120+40);
+    const c  = colors[Math.floor(Math.random()*colors.length)];
+    d.style.cssText = `left:${window.innerWidth/2+(Math.random()-0.5)*340}px;top:${window.innerHeight/2+(Math.random()-0.5)*200}px;background:${c};--dx:${dx}px;--dy:${dy}px;`;
+    container.appendChild(d);
+    frags.push(d);
+  }
+  setTimeout(()=>frags.forEach(d=>d.remove()), 950);
+}
+
+// ── Edge pulse ─────────────────────────────────────────────────────────────────
+function triggerEdgePulse(type){
+  const ep = el('edge-pulse');
+  ep.className = type;
+  clearTimeout(edgePulseTimerID);
+  edgePulseTimerID = setTimeout(()=>ep.className='', 360);
+}
+
+// ── Personal best ──────────────────────────────────────────────────────────────
+function maybeUpdatePB(beltLevel, secsLeft, correct, total, qCount){
+  const accuracy = Math.round((correct/total)*100);
+  const existing = personalBests[beltLevel];
+  const isBetter = !existing || accuracy>existing.accuracy || (accuracy===existing.accuracy && secsLeft>existing.secsLeft);
+  if(isBetter){
+    personalBests = {...personalBests, [beltLevel]:{accuracy,secsLeft,qCount,date:new Date().toLocaleDateString()}};
+    savePBs(personalBests);
+    return true;
+  }
+  return false;
+}
+
+// ── Belt Orb HTML ──────────────────────────────────────────────────────────────
+function beltOrbHTML(belt, size=44, glow=false, dimmed=false, pulse=false){
+  const bg = belt.blackBelt
+    ? "radial-gradient(circle at 35% 35%,#2a2a2a,#050505)"
+    : `radial-gradient(circle at 35% 35%,${belt.color}ee,${belt.color}55)`;
+  const boxShadow = glow
+    ? `0 0 20px ${belt.color}99,0 0 40px ${belt.color}44`
+    : `0 0 6px ${belt.color}33`;
+  const border = belt.blackBelt ? "#555" : belt.color;
+  const anim = pulse?"orbPulse 2s ease-in-out infinite":glow?"orbGlow 2s ease-in-out infinite":"none";
+  return `<div style="width:${size}px;height:${size}px;border-radius:50%;flex-shrink:0;background:${bg};border:${size>55?3:2}px solid ${border};box-shadow:${boxShadow};display:flex;align-items:center;justify-content:center;opacity:${dimmed?0.35:1};animation:${anim};transition:all 0.3s;">
+    <span style="font-size:${size*0.38}px;line-height:1;">${belt.emoji}</span>
+  </div>`;
+}
+
+// ── PB Card HTML ───────────────────────────────────────────────────────────────
+function pbCardHTML(beltLevel){
+  const pb = personalBests[beltLevel];
+  const belt = BELTS[beltLevel-1];
+  if(!pb) return `<div style="background:rgba(0,0,0,0.18);border-radius:8px;padding:8px 12px;color:rgba(255,255,255,0.18);font-size:0.6rem;letter-spacing:2px;text-align:center;">NO PERSONAL BEST YET FOR THIS BELT</div>`;
+  return `<div style="background:rgba(0,0,0,0.22);border:1px solid ${belt.color}33;border-radius:8px;padding:8px 14px;display:flex;gap:16px;align-items:center;justify-content:center;">
+    <div class="stat-block"><div class="stat-val" style="color:${belt.color};">${pb.accuracy}%</div><div class="stat-lbl">ACCURACY</div></div>
+    <div class="divider"></div>
+    <div class="stat-block"><div class="stat-val" style="color:#00e5ff;">${pb.secsLeft}s</div><div class="stat-lbl">TIME LEFT</div></div>
+    <div class="divider"></div>
+    <div class="stat-block"><div class="stat-val" style="color:#ffe600;">${pb.qCount}Q</div><div class="stat-lbl">QUESTIONS</div></div>
+    <div class="divider"></div>
+    <div class="stat-block"><div style="color:rgba(255,255,255,0.5);font-size:0.72rem;">🏅</div><div class="stat-lbl">${pb.date}</div></div>
+  </div>`;
+}
+
+// ── Pill HTML ──────────────────────────────────────────────────────────────────
+function pillHTML(label, active, color, onclick, extraStyle=''){
+  const bg   = active ? `${color}18` : "rgba(255,255,255,0.05)";
+  const bdr  = active ? color : "rgba(255,255,255,0.14)";
+  const col  = active ? color : "rgba(255,255,255,0.42)";
+  const shad = active ? `0 0 10px ${color}44` : "none";
+  return `<button class="pill-btn" onclick="${onclick}" style="background:${bg};border-color:${bdr};color:${col};box-shadow:${shad};${extraStyle}">${label}</button>`;
+}
+
+// ── Leaderboard HTML ───────────────────────────────────────────────────────────
+function lbHTML(limit=7){
+  if(!leaderboard.length) return '';
+  return `<div style="color:#ff4da6;font-size:0.62rem;letter-spacing:4px;margin-bottom:8px;text-align:center;">🏆 LEADERBOARD</div>`
+    + leaderboard.slice(0,limit).map((e,i)=>`
+      <div class="lb-row" style="background:${i===0?"rgba(255,230,0,0.09)":"rgba(255,255,255,0.04)"};border:1px solid ${i===0?"rgba(255,230,0,0.24)":"rgba(255,255,255,0.07)"};">
+        <span style="color:${i===0?"#ffe600":"rgba(255,255,255,0.38)"};font-size:0.7rem;">${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`} ${e.name}</span>
+        <div><span style="color:#ffe600;font-size:0.76rem;font-weight:bold;">${e.points.toLocaleString()}</span><span style="color:rgba(255,255,255,0.26);font-size:0.6rem;margin-left:6px;">${e.mode}</span></div>
+      </div>`).join('');
+}
+
+// ── Render Home ────────────────────────────────────────────────────────────────
+function renderHome(){
+  // Mode tabs styling
+  const nt = el('tab-ninja'), ct = el('tab-classic');
+  if(gameMode==='ninjabelt'){
+    nt.style.borderColor='#00e5ff'; nt.style.background='rgba(0,229,255,0.08)'; nt.style.boxShadow='0 0 16px rgba(0,229,255,0.2)';
+    nt.querySelector('div:nth-child(2)').style.color='#00e5ff';
+    ct.style.borderColor='rgba(255,255,255,0.1)'; ct.style.background='rgba(255,255,255,0.04)'; ct.style.boxShadow='none';
+    ct.querySelector('div:nth-child(2)').style.color='rgba(255,255,255,0.6)';
+  } else {
+    ct.style.borderColor='#ff4da6'; ct.style.background='rgba(255,77,166,0.08)'; ct.style.boxShadow='0 0 16px rgba(255,77,166,0.2)';
+    ct.querySelector('div:nth-child(2)').style.color='#ff4da6';
+    nt.style.borderColor='rgba(255,255,255,0.1)'; nt.style.background='rgba(255,255,255,0.04)'; nt.style.boxShadow='none';
+    nt.querySelector('div:nth-child(2)').style.color='rgba(255,255,255,0.6)';
+  }
+
+  el('ninja-setup').style.display  = gameMode==='ninjabelt'?'':'none';
+  el('classic-setup').style.display= gameMode==='classic'?'':'none';
+
+  if(gameMode==='ninjabelt'){
+    renderNinjaSetup();
+  } else {
+    renderClassicSetup();
+  }
+
+  // CTA
+  const cta = el('home-cta');
+  if(gameMode==='ninjabelt'){
+    const pbd = BELTS[attemptBelt-1];
+    const nbd = BELTS[Math.min(11,earnedBelt)];
+    cta.style.background = `linear-gradient(135deg,${pbd.color},${nbd.color})`;
+    cta.style.animation  = 'orbPulse 2s ease-in-out infinite';
+    cta.style.color      = pbd.level===1?'#1a1a2e':'white';
+    cta.textContent      = `🥷 TEST ${pbd.name} BELT`;
+    cta.onclick = ()=>startNinjaBelt(attemptBelt, ninjaQCount);
+  } else {
+    cta.style.background = 'linear-gradient(135deg,#ff4da6,#ff6b35)';
+    cta.style.animation  = 'pulseGlow 2s ease-in-out infinite';
+    cta.style.color      = 'white';
+    cta.textContent      = '▶ PLAY NOW';
+    cta.onclick = startClassic;
+  }
+
+  el('home-lb').innerHTML = lbHTML();
+}
+
+function renderNinjaSetup(){
+  const belt = BELTS[earnedBelt-1];
+  const nextB = BELTS[Math.min(11,earnedBelt)];
+  // Earned belt banner
+  el('earned-belt-banner').innerHTML = `
+    ${beltOrbHTML(belt,56,true)}
+    <div style="flex:1;">
+      <div style="color:rgba(255,255,255,0.3);font-size:0.58rem;letter-spacing:2px;margin-bottom:2px;">YOUR RANK</div>
+      <div style="color:${belt.color};font-size:1.1rem;font-weight:bold;letter-spacing:3px;text-shadow:0 0 12px ${belt.color};">${belt.name} BELT</div>
+      <div style="color:rgba(255,255,255,0.28);font-size:0.58rem;margin-top:3px;">${earnedBelt<12?`×${belt.table} mastered · next: ${nextB.name} belt (×${nextB.table})`:"🏆 BLACK BELT MASTER — MAX RANK"}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:3px;">${BELTS.map(b=>`<div style="width:8px;height:8px;border-radius:50%;background:${b.level<=earnedBelt?b.color:"rgba(255,255,255,0.1)"};box-shadow:${b.level===earnedBelt?`0 0 6px ${b.color}`:"none"};"></div>`).join('')}</div>`;
+  el('earned-belt-banner').style.borderColor = `${belt.color}44`;
+
+  // Q count pills
+  el('qcount-pills').innerHTML = Q_OPTIONS.map(n=>pillHTML(`${n} Qs`,ninjaQCount===n,'#00e5ff',`setNinjaQ(${n})`)).join('');
+
+  // Belt strip
+  const strip = el('belt-strip');
+  strip.innerHTML = BELTS.map(b=>{
+    const locked = b.level > earnedBelt;
+    const sel    = attemptBelt === b.level;
+    const cur    = b.level === earnedBelt;
+    return `<div class="belt-item${locked?' locked':''}" data-belt="${b.level}" onclick="${!locked?`selectBelt(${b.level})`:''}" style="border-color:${sel?b.color:cur?`${b.color}66`:"rgba(255,255,255,0.09)"};background:${sel?`${b.color}18`:cur?`${b.color}08`:"rgba(255,255,255,0.03)"};box-shadow:${sel?`0 0 14px ${b.color}55`:"none"};">
+      ${cur&&!sel?'<div class="crown">👑</div>':''}
+      ${beltOrbHTML(b,36,sel)}
+      <div style="color:${sel?b.color:"rgba(255,255,255,0.45)"};font-size:0.5rem;letter-spacing:1px;margin-top:5px;font-weight:${sel?"bold":"normal"};line-height:1.2;">${b.name}</div>
+      <div style="color:rgba(255,255,255,0.22);font-size:0.46rem;margin-top:2px;">×${b.table}</div>
+      ${locked?'<div style="font-size:0.55rem;color:rgba(255,255,255,0.18);margin-top:2px;">🔒</div>':''}
+    </div>`;
+  }).join('');
+
+  // Scroll selected into view
+  const selEl = strip.querySelector(`[data-belt="${attemptBelt}"]`);
+  if(selEl) setTimeout(()=>selEl.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),50);
+
+  // PB
+  const playBelt = BELTS[attemptBelt-1];
+  el('pb-label').textContent = `PERSONAL BEST — ${playBelt.name} BELT`;
+  el('pb-card').innerHTML = pbCardHTML(attemptBelt);
+
+  // Rule reminder
+  el('rule-reminder').querySelector('div').innerHTML = `⚡ <b style="color:rgba(255,255,255,0.4);">Flash round</b> — answer ${ninjaQCount} questions on the ×${playBelt.table} table in 60 seconds. No answers shown until the end. <b style="color:${earnedBelt<12?nextB.color:"#ffe600"};">Perfect score required</b> to earn your next belt.`;
+}
+
+function renderClassicSetup(){
+  const d = getDiff();
+  // Difficulty cards
+  el('diff-cards').innerHTML = Object.entries(DIFFICULTIES).map(([key,dv])=>{
+    const act = difficulty===key;
+    return `<div class="diff-card" onclick="setDifficulty('${key}')" style="border-color:${act?dv.color:"rgba(255,255,255,0.1)"};background:${act?`${dv.color}18`:"rgba(255,255,255,0.04)"};box-shadow:${act?`0 0 12px ${dv.color}44`:"none"};">
+      <div style="font-size:1.2rem;">${dv.emoji}</div>
+      <div style="color:${act?dv.color:"rgba(255,255,255,0.48)"};font-size:0.68rem;font-weight:bold;letter-spacing:2px;margin-top:3px;">${dv.label}</div>
+      <div style="color:rgba(255,255,255,0.26);font-size:0.55rem;margin-top:1px;">${dv.desc}</div>
+    </div>`;
+  }).join('');
+
+  // Focus pills
+  let focusHTML = pillHTML('ALL',focusTable===null,'#00e5ff',"setFocus(null)");
+  for(let n=1;n<=d.maxTable;n++){
+    focusHTML += pillHTML(`×${n}`,focusTable===n,d.color,`setFocus(${n})`);
+  }
+  el('focus-pills').innerHTML = focusHTML;
+
+  // Timer pills
+  let timerHTML = pillHTML('OFF',!timerMode,"rgba(255,255,255,0.38)","setTimer(false,0)");
+  TIMER_OPTIONS.forEach(o=>{
+    timerHTML += pillHTML(`⏱ ${o.label}`,timerMode&&timerSecs===o.value,'#00e5ff',`setTimer(true,${o.value})`);
+  });
+  el('timer-pills').innerHTML = timerHTML;
+
+  // Repeat pills
+  el('repeat-pills').innerHTML =
+    pillHTML('🎲 RANDOM',!noRepeat,"rgba(255,255,255,0.38)","setNoRepeat(false)") +
+    pillHTML('✨ NO REPEATS',noRepeat,'#bf5fff',"setNoRepeat(true)");
+}
+
+// ── Settings setters ───────────────────────────────────────────────────────────
+function setGameMode(m){ gameMode=m; renderHome(); }
+function setNinjaQ(n){ ninjaQCount=n; renderHome(); }
+function selectBelt(l){ attemptBelt=l; renderHome(); }
+function setDifficulty(d){ difficulty=d; focusTable=null; renderHome(); }
+function setFocus(n){ focusTable=n; renderHome(); }
+function setTimer(on,secs){ timerMode=on; if(secs) timerSecs=secs; renderHome(); }
+function setNoRepeat(v){ noRepeat=v; renderHome(); }
+
+// ═══════════════════════════════════════════════════════════
+// NINJA BELT
+// ═══════════════════════════════════════════════════════════
+function startNinjaBelt(beltLevel, qCount){
+  clearInterval(ninjaTimerID);
+  clearTimeout(flashTimerID);
+  const belt = BELTS[beltLevel-1];
+  beltQs        = buildBeltQuestions(belt.table, qCount);
+  beltQIdx      = 0;
+  processing    = false;
+  score=0;streak=0;bestStreak=0;beltMistakes=0;points=0;
+  promoted=false;timedOut=false;
+  flashResult=null;qKey=0;
+  ninjaHistory  = [];
+  ninjaSecsLeft = NINJA_TOTAL_SECS;
+  activeBelt    = belt;
+  savedScore    = null;
+  nameInput     = "";
+
+  const q = beltQs[0];
+  question = q;
+  choices  = generateChoices(q.answer,20,4);
+  questionNum = 1;
+
+  renderNinjaQuiz();
+  showScreen('ninjabelt-quiz');
+  setTimeout(()=>{ ninjaRunning=true; startNinjaTimer(); }, 80);
+}
+
+function startNinjaTimer(){
+  clearInterval(ninjaTimerID);
+  ninjaTimerID = setInterval(()=>{
+    ninjaSecsLeft--;
+    updateNinjaTimerBar();
+    if(ninjaSecsLeft<=0){
+      clearInterval(ninjaTimerID);
+      ninjaRunning=false;
+      endNinjaBelt(true);
+    }
+  },1000);
+}
+
+function updateNinjaTimerBar(){
+  const bar = el('nb-timer-bar');
+  if(!bar) return;
+  const pct = (ninjaSecsLeft/NINJA_TOTAL_SECS)*100;
+  const color = ninjaSecsLeft>30?"#00e5ff":ninjaSecsLeft>15?"#ffe600":"#ff4444";
+  bar.style.width  = pct+'%';
+  bar.style.background = color;
+  bar.style.boxShadow  = `0 0 10px ${color}`;
+  bar.style.animation  = ninjaSecsLeft<=10?"timerPulse 0.5s ease-in-out infinite":"none";
+}
+
+function renderNinjaQuiz(){
+  const b = activeBelt;
+  el('nb-orb-hdr').innerHTML = beltOrbHTML(b,36,true);
+  el('nb-belt-name').style.color = b.color;
+  el('nb-belt-name').textContent = b.name+' BELT';
+  el('nb-belt-table').textContent = '×'+b.table+' table';
+  updateNinjaQuizUI();
+}
+
+function updateNinjaQuizUI(){
+  const b = activeBelt;
+  el('nb-score-correct').textContent = '✓ '+score;
+  const wrongEl = el('nb-score-wrong');
+  if(beltMistakes>0){ wrongEl.style.display=''; wrongEl.textContent='✗ '+beltMistakes; } else { wrongEl.style.display='none'; }
+  el('nb-qnum').textContent = questionNum+'/'+beltQs.length;
+
+  // Dots
+  el('nb-dots').innerHTML = beltQs.map((_,i)=>{
+    const h=ninjaHistory[i]; const done=i<ninjaHistory.length; const cur=i===questionNum-1;
+    return `<div style="width:10px;height:10px;border-radius:50%;background:${done?(h.correct?"#7cff50":"#ff4444"):cur?b.color:"rgba(255,255,255,0.12)"};box-shadow:${cur?`0 0 7px ${b.color}`:"none"};transition:background 0.15s;"></div>`;
+  }).join('');
+
+  // Question
+  el('nb-q-text').textContent = question.a+' × '+question.b;
+  el('nb-q-text').style.textShadow = `0 0 28px ${b.color}55`;
+
+  // Choices
+  renderNinjaChoices();
+}
+
+function renderNinjaChoices(){
+  el('nb-choices').innerHTML = choices.map(c=>`
+    <button class="choice-btn" onclick="handleNinjaChoice(${c})">${c}</button>
+  `).join('');
+}
+
+function handleNinjaChoice(choice){
+  if(!ninjaRunning || processing) return;
+  processing = true;
+
+  const correct = choice === question.answer;
+  ninjaHistory.push({q:question, selected:choice, correct});
+
+  if(correct){
+    const ns = streak+1; streak=ns;
+    if(ns>bestStreak) bestStreak=ns;
+    score++;
+    vibrate(25);
+  } else {
+    streak=0; beltMistakes++;
+    vibrate([60,30,80]);
+  }
+
+  triggerEdgePulse(correct?'correct':'wrong');
+
+  // Flash the chosen button
+  const btns = el('nb-choices').querySelectorAll('.choice-btn');
+  btns.forEach(btn=>{
+    if(parseInt(btn.textContent)===choice){
+      btn.classList.add(correct?'flash-correct':'flash-wrong');
+    }
+    btn.disabled=true;
+  });
+  updateNinjaQuizUI();
+
+  clearTimeout(flashTimerID);
+  flashTimerID = setTimeout(()=>{
+    const nextIdx = beltQIdx+1;
+    if(nextIdx >= beltQs.length){
+      processing=false;
+      ninjaRunning=false;
+      clearInterval(ninjaTimerID);
+      endNinjaBelt(false);
+      return;
+    }
+    beltQIdx=nextIdx; qKey=nextIdx;
+    const q = beltQs[nextIdx];
+    question = q;
+    choices  = generateChoices(q.answer,20,4);
+    questionNum = nextIdx+1;
+    processing=false;
+    updateNinjaQuizUI();
+  },220);
+}
+
+function endNinjaBelt(didTimeout){
+  clearInterval(ninjaTimerID);
+  clearTimeout(flashTimerID);
+  const sl    = ninjaSecsLeft;
+  const belt  = activeBelt;
+  const total = beltQs.length;
+  const perfect = beltMistakes===0 && score===total;
+
+  points = calcNinjaBeltPts({correct:score,total,secsLeft:sl,beltLevel:belt.level,bStreak:bestStreak});
+  timedOut = didTimeout;
+
+  if(!didTimeout) maybeUpdatePB(belt.level, sl, score, total, total);
+
+  if(perfect && !didTimeout && belt.level<12 && belt.level>=earnedBelt){
+    const newLevel = belt.level+1;
+    earnedBelt = newLevel;
+    saveBeltLS(newLevel);
+    promoted = true;
+    spawnParticles([belt.color, BELTS[belt.level].color, "#ffe600","#fff"]);
+  } else if(perfect && !didTimeout && belt.level===12){
+    promoted=true;
+    spawnParticles(["#ffe600","#fff","#ccc","#888"]);
+  } else {
+    promoted=false;
+  }
+
+  renderNinjaResult();
+  showScreen('ninjabelt-result');
+}
+
+function renderNinjaResult(){
+  const belt = activeBelt;
+  const beltBarColor = ninjaSecsLeft>30?"#00e5ff":ninjaSecsLeft>15?"#ffe600":"#ff4444";
+
+  // Top section
+  let topHTML='';
+  if(promoted){
+    const nextB = BELTS[Math.min(11,belt.level)];
+    topHTML=`<div style="font-size:0.78rem;letter-spacing:5px;color:#ffe600;margin-bottom:6px;animation:float 2s ease-in-out infinite;">🎉 BELT PROMOTION!</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px;">
+        <div style="text-align:center;opacity:0.38;">${beltOrbHTML(belt,56)}<div style="color:${belt.color};font-size:0.55rem;margin-top:5px;">${belt.name}</div></div>
+        <div style="font-size:2rem;color:#ffe600;animation:float 1s ease-in-out infinite;">→</div>
+        <div style="text-align:center;animation:promotion 0.7s ease forwards;">${beltOrbHTML(nextB,76,true)}<div style="color:${nextB.color};font-size:0.7rem;margin-top:7px;font-weight:bold;letter-spacing:2px;">${nextB.name} BELT</div></div>
+      </div>
+      ${earnedBelt>=12?'<div style="color:#ffe600;font-size:0.85rem;letter-spacing:3px;margin-bottom:10px;">🥷 BLACK BELT MASTER!</div>':''}`;
+  } else if(timedOut){
+    topHTML=`<div style="font-size:2rem;margin-bottom:6px;">⏰</div>
+      <div style="color:#ff5555;font-size:0.95rem;letter-spacing:4px;margin-bottom:4px;">TIME'S UP!</div>
+      <div style="color:rgba(255,255,255,0.35);font-size:0.68rem;letter-spacing:2px;margin-bottom:14px;">Finish all ${beltQs.length} questions within 60 seconds to rank up</div>
+      <div style="display:flex;justify-content:center;margin-bottom:14px;">${beltOrbHTML(belt,60)}</div>`;
+  } else {
+    topHTML=`<div style="font-size:2rem;margin-bottom:6px;">💪</div>
+      <div style="color:${belt.color};font-size:0.88rem;letter-spacing:4px;margin-bottom:4px;">${belt.name} BELT TEST</div>
+      <div style="color:#ff5555;font-size:0.72rem;letter-spacing:3px;margin-bottom:14px;">${beltMistakes} MISTAKE${beltMistakes!==1?"S":""} · NO PROMOTION</div>
+      <div style="display:flex;justify-content:center;margin-bottom:12px;">${beltOrbHTML(belt,60)}</div>
+      <div style="color:rgba(255,255,255,0.28);font-size:0.62rem;letter-spacing:1px;margin-bottom:8px;">Perfect score required. Keep training!</div>`;
+  }
+  el('nbr-top').innerHTML = topHTML;
+
+  // Stats
+  const statsData = [
+    {val:`${score}/${beltQs.length}`,label:"CORRECT",color:"#7cff50"},
+    {val:`${beltMistakes}`,label:"MISTAKES",color:beltMistakes===0?"#7cff50":"#ff5555"},
+    {val:`🔥 ${bestStreak}`,label:"STREAK",color:"#ff4da6"},
+    {val:`${ninjaSecsLeft}s`,label:"TIME LEFT",color:beltBarColor},
+  ];
+  el('nbr-stats').innerHTML = statsData.map(s=>`<div class="stat-block"><div class="stat-val" style="color:${s.color};">${s.val}</div><div class="stat-lbl">${s.label}</div></div>`).join('');
+
+  el('nbr-points').textContent = points.toLocaleString();
+
+  // Review
+  const rev = el('nbr-review');
+  if(ninjaHistory.length>0){
+    rev.style.display='';
+    rev.innerHTML=`<div style="color:${belt.color};font-size:0.6rem;letter-spacing:3px;margin-bottom:8px;text-align:center;">📋 ROUND REVIEW — ×${belt.table} TABLE</div>`
+      +ninjaHistory.map((h,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:6px;margin-bottom:3px;background:${h.correct?"rgba(124,255,80,0.07)":"rgba(255,68,68,0.07)"};border:1px solid ${h.correct?"rgba(124,255,80,0.18)":"rgba(255,68,68,0.18)"};">
+        <span style="color:rgba(255,255,255,0.52);font-size:0.7rem;">${h.q.a} × ${h.q.b} = <b style="color:rgba(255,255,255,0.75);">${h.q.answer}</b></span>
+        <span style="font-size:0.7rem;color:${h.correct?"#7cff50":"#ff5555"};">${h.correct?"✓":`✗ ${h.selected}`}</span>
+      </div>`).join('');
+  } else { rev.style.display='none'; }
+
+  // PB
+  el('nbr-pb-label').textContent = `PERSONAL BEST — ${belt.name} BELT`;
+  el('nbr-pb-card').innerHTML = pbCardHTML(belt.level);
+
+  // Belt progress
+  const curB = BELTS[earnedBelt-1];
+  el('nbr-belt-progress').innerHTML = BELTS.map(b=>`<div style="width:16px;height:16px;border-radius:50%;background:${b.level<earnedBelt?b.color:b.level===earnedBelt?`radial-gradient(circle,${b.color},${b.color}77)`:"rgba(255,255,255,0.08)"};border:2px solid ${b.level===earnedBelt?b.color:"transparent"};box-shadow:${b.level===earnedBelt?`0 0 7px ${b.color}`:"none"};"></div>`).join('');
+  el('nbr-belt-progress-label').style.color = curB.color;
+  el('nbr-belt-progress-label').textContent = `${curB.name} BELT · ${earnedBelt}/12`;
+
+  // Save
+  renderNbrSave();
+
+  // Buttons
+  const nextBelt = BELTS[earnedBelt-1];
+  const nextBeltAlt = BELTS[Math.min(11,earnedBelt)];
+  el('nbr-btns').innerHTML = `
+    <button class="cta-btn" onclick="startNinjaBelt(${belt.level},${beltQs.length})" style="background:linear-gradient(135deg,${belt.color},${BELTS[Math.min(11,belt.level)].color});animation:orbPulse 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;color:${belt.level===1?"#1a1a2e":"white"};">↺ RETRY</button>
+    ${promoted&&earnedBelt<=12?`<button class="cta-btn" onclick="startNinjaBelt(${earnedBelt},${beltQs.length})" style="background:linear-gradient(135deg,${nextBelt.color},${nextBeltAlt.color});animation:orbPulse 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;color:${earnedBelt===1?"#1a1a2e":"white"};">▶ NEXT BELT</button>`:''}
+    <button onclick="showScreen('home')" style="background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.42);font-family:'Courier New',monospace;font-size:0.86rem;padding:12px 16px;border-radius:50px;cursor:pointer;letter-spacing:2px;">← HOME</button>`;
+}
+
+function renderNbrSave(){
+  if(!savedScore){
+    el('nbr-save').innerHTML=`<div style="color:rgba(255,255,255,0.26);font-size:0.62rem;letter-spacing:2px;margin-bottom:7px;">SAVE SCORE</div>
+      <div style="display:flex;gap:8px;justify-content:center;align-items:center;">
+        <input class="name-input" id="nbr-name-input" placeholder="YOUR NAME" maxlength="12" oninput="nameInput=this.value" onkeydown="if(event.key==='Enter')saveToLBNinja()"/>
+        <button onclick="saveToLBNinja()" style="background:linear-gradient(135deg,#00e5ff,#bf5fff);border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;font-size:0.76rem;letter-spacing:2px;padding:11px 14px;border-radius:10px;cursor:pointer;">SAVE</button>
+      </div>`;
+  } else {
+    el('nbr-save').innerHTML=`<div style="color:#7cff50;font-size:0.76rem;letter-spacing:2px;">✓ SAVED AS ${savedScore.name}!</div>`;
+  }
+}
+
+function saveToLBNinja(){
+  const nm = (el('nbr-name-input')?.value||nameInput).trim();
+  if(!nm) return;
+  const tag = `🥋 ${activeBelt?.name||""} BELT · ${beltQs.length}Q`;
+  const entry = {name:nm.slice(0,12).toUpperCase(),points,score,mode:tag,date:new Date().toLocaleDateString()};
+  leaderboard = [entry,...leaderboard].sort((a,b)=>b.points-a.points).slice(0,10);
+  saveLB(leaderboard); savedScore=entry;
+  renderNbrSave();
+}
+
+// ═══════════════════════════════════════════════════════════
+// CLASSIC
+// ═══════════════════════════════════════════════════════════
+function startClassic(){
+  clearTimeout(advanceID); clearInterval(classicTimerID);
+  score=0;streak=0;bestStreak=0;points=0;
+  questionNum=1; savedScore=null; nameInput="";
+  const d = getDiff();
+  if(noRepeat){ pool=buildPool(focusTable,d.maxTable); poolIdx=0; question=pool[poolIdx++]; }
+  else { question=randomQ(focusTable,d.maxTable); }
+  choices=generateChoices(question.answer,d.choiceSpread,d.numChoices);
+  feedback=null; selChoice=null; timeLeft=timerSecs;
+  renderClassicQuiz();
+  showScreen('classic-quiz');
+}
+
+function renderClassicQuiz(){
+  const d = getDiff();
+  el('cl-qnum').textContent = 'Q '+questionNum+'/10';
+  el('cl-diff-badge').innerHTML = `<div style="background:${d.color}22;border:1px solid ${d.color}88;border-radius:20px;padding:3px 10px;color:${d.color};font-size:0.8rem;">${d.emoji} ${d.label}</div>`;
+  el('cl-score').textContent  = '⭐'+score;
+  el('cl-streak').textContent = '🔥'+streak;
+  el('cl-progress-bar').style.width = `${((questionNum-1)/10)*100}%`;
+
+  el('cl-timer-wrap').style.display = timerMode?'':'none';
+  if(timerMode) updateClassicTimerBar();
+
+  el('cl-q-text').textContent = question.a+' × '+question.b;
+  el('cl-q-answer').textContent='';
+  el('cl-q-answer').style.color='';
+  el('cl-message').textContent='';
+  el('cl-message').style.color='';
+
+  renderClassicChoices();
+  if(timerMode) startClassicTimer();
+}
+
+function updateClassicTimerBar(){
+  const bar = el('cl-timer-bar');
+  if(!bar) return;
+  const pct = (timeLeft/timerSecs)*100;
+  const color = timeLeft>timerSecs*0.5?"#7cff50":timeLeft>timerSecs*0.25?"#ffe600":"#ff4444";
+  bar.style.width = pct+'%';
+  bar.style.background = color;
+  bar.style.boxShadow = `0 0 8px ${color}`;
+  bar.style.animation = timeLeft<=Math.ceil(timerSecs*0.2)?"timerPulse 0.5s ease-in-out infinite":"none";
+}
+
+function startClassicTimer(){
+  clearInterval(classicTimerID);
+  timeLeft=timerSecs;
+  updateClassicTimerBar();
+  classicTimerID = setInterval(()=>{
+    timeLeft--;
+    updateClassicTimerBar();
+    if(timeLeft<=0){
+      clearInterval(classicTimerID);
+      classicTimeout();
+    }
+  },1000);
+}
+
+function classicTimeout(){
+  streak=0;
+  feedback='wrong'; classicMessage='TOO SLOW!';
+  triggerEdgePulse('wrong');
+  vibrate([80,40,80,40,120]);
+  // Shake
+  const qDiv = el('cl-question');
+  qDiv.classList.add('shake');
+  setTimeout(()=>qDiv.classList.remove('shake'),500);
+  showClassicFeedback();
+  classicAdvance(1300);
+}
+
+function renderClassicChoices(){
+  const d = getDiff();
+  el('cl-choices').className = d.numChoices===6?'grid-3':'grid-2';
+  el('cl-choices').innerHTML = choices.map(c=>`<button class="choice-btn" onclick="handleClassicChoice(${c})" style="font-size:${d.numChoices===6?"1.4rem":"1.75rem"};">${c}</button>`).join('');
+}
+
+function handleClassicChoice(choice){
+  if(feedback) return;
+  clearInterval(classicTimerID);
+  selChoice=choice;
+  const correct = choice===question.answer;
+  if(correct){
+    const ns=streak+1; streak=ns;
+    if(ns>bestStreak) bestStreak=ns;
+    score++;
+    feedback='correct';
+    classicMessage=["PERFECT!","GENIUS!","NAILED IT!","AMAZING!"][Math.floor(Math.random()*4)];
+    triggerEdgePulse('correct');
+    spawnParticles(); vibrate(50);
+    classicAdvance(2200);
+  } else {
+    streak=0;
+    feedback='wrong';
+    classicMessage=["Almost!","Keep going!","So close!"][Math.floor(Math.random()*3)];
+    triggerEdgePulse('wrong');
+    vibrate([100,50,100,50,150]);
+    const qDiv = el('cl-question');
+    qDiv.classList.add('shake');
+    setTimeout(()=>qDiv.classList.remove('shake'),500);
+    classicAdvance(1300);
+  }
+  showClassicFeedback();
+  el('cl-score').textContent  = '⭐'+score;
+  el('cl-streak').textContent = '🔥'+streak;
+}
+
+function showClassicFeedback(){
+  const d = getDiff();
+  const msg = el('cl-message');
+  if(feedback==='correct'){
+    msg.textContent=classicMessage; msg.style.color='#7cff50';
+    const ans=el('cl-q-answer'); ans.textContent=`= ${question.answer} ✓`; ans.style.color='#7cff50'; ans.style.textShadow='0 0 20px #7cff50'; ans.style.animation='correctReveal 0.4s ease';
+  } else {
+    msg.textContent=classicMessage; msg.style.color='#ff5555';
+    const ans=el('cl-q-answer'); ans.textContent=`= ${question.answer}`; ans.style.color='rgba(255,255,255,0.38)'; ans.style.animation='';
+  }
+  // Color choice buttons
+  el('cl-choices').querySelectorAll('.choice-btn').forEach(btn=>{
+    const c=parseInt(btn.textContent);
+    if(c===question.answer){ btn.style.borderColor='#7cff50';btn.style.background='rgba(124,255,80,0.15)';btn.style.color='#7cff50'; }
+    else if(c===selChoice){ btn.style.borderColor='#ff4444';btn.style.background='rgba(255,68,68,0.12)';btn.style.color='#ff5555'; }
+    btn.disabled=true;
+  });
+}
+
+function classicAdvance(delay){
+  clearTimeout(advanceID);
+  advanceID = setTimeout(()=>{
+    questionNum++;
+    if(questionNum>10){
+      const d=getDiff();
+      points=calcClassicPts({correct:score,diff:difficulty,timerMd:timerMode,timerS:timerSecs,noRep:noRepeat,bStreak:bestStreak});
+      renderClassicResult();
+      showScreen('classic-result');
+      return;
+    }
+    const d=getDiff();
+    if(noRepeat){
+      if(poolIdx>=pool.length){ pool=buildPool(focusTable,d.maxTable); poolIdx=0; }
+      question=pool[poolIdx++];
+    } else { question=randomQ(focusTable,d.maxTable); }
+    choices=generateChoices(question.answer,d.choiceSpread,d.numChoices);
+    feedback=null; selChoice=null; timeLeft=timerSecs;
+    renderClassicQuiz();
+  },delay);
+}
+
+function renderClassicResult(){
+  const d=getDiff();
+  const titles=score===10?"MASTER!":score>=7?"GREAT JOB!":score>=4?"GOOD TRY!":"KEEP GOING!";
+  el('clr-title').textContent=titles;
+  const stars=score===10?3:score>=7?2:score>=4?1:0;
+  el('clr-stars').innerHTML=[0,1,2].map(i=>`<span style="opacity:${i<stars?1:0.14};filter:${i<stars?"drop-shadow(0 0 10px #ffe600)":"none"};animation:${i<stars?`starSpin ${1.5+i*0.3}s linear infinite`:"none"};display:inline-block;margin:0 4px;">⭐</span>`).join('');
+  el('clr-points').textContent=points.toLocaleString();
+  el('clr-score-big').innerHTML=`${score}<span style="font-size:1.2rem;color:rgba(255,255,255,0.32);">/10</span>`;
+  const statsData=[
+    {val:`🔥 ${bestStreak}`,label:"STREAK",color:"#ff4da6"},
+    {val:`${Math.round(score/10*100)}%`,label:"ACCURACY",color:"#00e5ff"},
+    {val:d.emoji,label:d.label,color:d.color},
+    {val:timerMode?`⏱${timerSecs}s`:"FREE",label:"TIMER",color:"rgba(255,255,255,0.4)"},
+  ];
+  el('clr-stats').innerHTML=statsData.map(s=>`<div class="stat-block"><div class="stat-val" style="color:${s.color};">${s.val}</div><div class="stat-lbl">${s.label}</div></div>`).join('');
+  renderClrSave();
+  renderClrLB();
+}
+
+function renderClrSave(){
+  if(!savedScore){
+    el('clr-save').innerHTML=`<div style="color:rgba(255,255,255,0.26);font-size:0.62rem;letter-spacing:2px;margin-bottom:7px;">SAVE TO LEADERBOARD</div>
+      <div style="display:flex;gap:8px;justify-content:center;align-items:center;">
+        <input class="name-input" id="clr-name-input" placeholder="YOUR NAME" maxlength="12" oninput="nameInput=this.value" onkeydown="if(event.key==='Enter')saveToLBClassic()"/>
+        <button onclick="saveToLBClassic()" style="background:linear-gradient(135deg,#00e5ff,#bf5fff);border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;font-size:0.76rem;letter-spacing:2px;padding:11px 14px;border-radius:10px;cursor:pointer;">SAVE</button>
+      </div>`;
+  } else {
+    el('clr-save').innerHTML=`<div style="color:#7cff50;font-size:0.76rem;letter-spacing:2px;">✓ SAVED AS ${savedScore.name}!</div>`;
+  }
+}
+
+function renderClrLB(){
+  if(!leaderboard.length){ el('clr-lb').innerHTML=''; return; }
+  el('clr-lb').innerHTML=`<div style="color:#ff4da6;font-size:0.6rem;letter-spacing:4px;margin-bottom:7px;text-align:center;">🏆 TOP SCORES</div>`
+    +leaderboard.slice(0,5).map((e,i)=>`<div class="lb-row" style="background:${i===0?"rgba(255,230,0,0.09)":"rgba(255,255,255,0.04)"};border:1px solid ${i===0?"rgba(255,230,0,0.22)":"rgba(255,255,255,0.07)"};">
+      <span style="color:${i===0?"#ffe600":"rgba(255,255,255,0.38)"};font-size:0.7rem;">${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`} ${e.name}</span>
+      <div><span style="color:#ffe600;font-size:0.74rem;font-weight:bold;">${e.points.toLocaleString()}</span><span style="color:rgba(255,255,255,0.24);font-size:0.58rem;margin-left:6px;">${e.mode}</span></div>
+    </div>`).join('');
+}
+
+function saveToLBClassic(){
+  const nm=(el('clr-name-input')?.value||nameInput).trim();
+  if(!nm) return;
+  const d=getDiff();
+  const tag=[focusTable?`×${focusTable}`:"ALL",d.label,timerMode?`⏱${timerSecs}s`:"",noRepeat?"NR":""].filter(Boolean).join(" ");
+  const entry={name:nm.slice(0,12).toUpperCase(),points,score,mode:tag,date:new Date().toLocaleDateString()};
+  leaderboard=[entry,...leaderboard].sort((a,b)=>b.points-a.points).slice(0,10);
+  saveLB(leaderboard); savedScore=entry;
+  renderClrSave();
+  renderClrLB();
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+renderHome();
+
+// ── Service Worker Registration ────────────────────────────────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg=>console.log('SW registered:',reg.scope))
+      .catch(err=>console.log('SW failed:',err));
+  });
+}
+</script>
+</body>
+</html>
