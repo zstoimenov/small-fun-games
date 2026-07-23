@@ -1,0 +1,26 @@
+{
+  "name": "Times Table Blaster!",
+  "short_name": "TTBlaster",
+  "description": "Master your times tables with Ninja Belt progression and Classic mode quiz battles.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080820",
+  "theme_color": "#080820",
+  "categories": ["education", "games"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

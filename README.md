@@ -10,6 +10,7 @@ no dependencies — plain HTML/CSS/JS, and it works offline once loaded.
 | --- | --- | --- |
 | 🤖 **Robo Rules** | [`robo-rules/`](robo-rules/) | Teach Chip the robot pet with IF-THIS-THEN-THAT rules — a first taste of coding for kids (~age 7+). |
 | 🏉 **AFL Goal Kick** | [`afl-goal-kick/`](afl-goal-kick/) | Aim, load the power bar, time your run-up and kick goals. 1–2 players, wind, a man on the mark, and Easy/Medium/Hard. |
+| ⭐ **Times Table Blaster** | [`times-table-blaster/`](times-table-blaster/) | Practise your times tables. Ninja Belt mode ranks you up one table at a time; Classic mode adds timers, streaks and a leaderboard. |
 
 ## Run locally
 
@@ -53,3 +54,5 @@ catalogue and picks a game.
   its `CACHE` version whenever you change either of them.
 - Robo Rules ships its own service worker and caches itself on first visit; bump
   `robo-rules/sw.js`'s `CACHE` when you change that game.
+- Times Table Blaster also ships its own service worker and caches itself on first
+  visit; bump `times-table-blaster/sw.js`'s `CACHE_NAME` when you change that game.
