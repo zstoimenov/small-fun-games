@@ -462,8 +462,9 @@ renderAll();
 setSky("day");
 later(() => petSay("Hi! I'm Chip 🤖 My brain is empty — teach me rules!", 4200), 800);
 
+// Game Box uses a single service worker at the site root (../sw.js).
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker.register("../sw.js").catch(() => {});
   });
 }

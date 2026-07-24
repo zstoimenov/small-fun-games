@@ -45,14 +45,21 @@ catalogue and picks a game.
    **relative** paths so it works from a subpath.
 2. Add a **‹ Games** link back to the catalogue: `<a href="../">‹ Games</a>`.
 3. Add one entry to the `GAMES` array in the root [`index.html`](index.html).
-4. If you want it cached for offline, add its path to `ASSETS` in [`sw.js`](sw.js)
-   and bump the `CACHE` version string.
+4. Register the shared worker from the new game with
+   `navigator.serviceWorker.register('../sw.js')`.
+5. For offline use, add the game's files to the `ASSETS` list in [`sw.js`](sw.js).
 
 ## Offline / caching notes
 
-- The launcher and the AFL game are cached by the root service worker (`sw.js`). Bump
-  its `CACHE` version whenever you change either of them.
-- Robo Rules ships its own service worker and caches itself on first visit; bump
-  `robo-rules/sw.js`'s `CACHE` when you change that game.
-- Times Table Blaster also ships its own service worker and caches itself on first
-  visit; bump `times-table-blaster/sw.js`'s `CACHE_NAME` when you change that game.
+The whole app is served by **one** service worker at the site root
+([`sw.js`](sw.js)) — the launcher and every game register it (`./sw.js` from the
+root, `../sw.js` from a game folder). The two games that used to ship their own
+worker (`robo-rules/sw.js`, `times-table-blaster/sw.js`) are now retired stubs
+that unregister themselves on first visit.
+
+- **Updates show on the next refresh.** The worker is *network-first*: while
+  you're online it always tries the network, so a new deploy appears the next
+  time the page loads. The cache is only a fallback so the app still works
+  offline once it has been loaded.
+- Bump the `CACHE` version string in `sw.js` if you ever want to force every
+  cached copy to be discarded.
