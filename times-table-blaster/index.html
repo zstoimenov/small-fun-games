@@ -1154,9 +1154,10 @@ function saveToLBClassic(){
 renderHome();
 
 // ── Service Worker Registration ────────────────────────────────────────────────
+// Game Box uses a single service worker at the site root (../sw.js).
 if('serviceWorker' in navigator){
   window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('./sw.js')
+    navigator.serviceWorker.register('../sw.js')
       .then(reg=>console.log('SW registered:',reg.scope))
       .catch(err=>console.log('SW failed:',err));
   });
