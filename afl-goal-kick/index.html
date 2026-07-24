@@ -5,31 +5,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>AFL Goal Kick Challenge</title>
 <style>
+  *{box-sizing:border-box}
   html,body{margin:0;padding:0;background:#0d1520;color:#fff;font-family:system-ui,-apple-system,sans-serif;
     display:flex;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh;justify-content:center;
     touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
   canvas{max-width:100vw;max-height:100vh;display:block;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
-  #hint{font-size:13px;color:#7a8ba0;margin:8px 0}
+  #hint{font-size:13px;color:#7a8ba0;margin:8px 0;text-align:center;padding:0 10px}
   #back{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));
     z-index:20;background:rgba(10,16,26,.72);color:#cfe3f7;text-decoration:none;font-size:13px;font-weight:700;
     padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
   #back:active{background:rgba(10,16,26,.92)}
   #setup{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-    background:rgba(5,9,15,.78);z-index:10}
-  #panel{background:#121c2b;border:1px solid #2a3a52;border-radius:16px;padding:28px 34px;
-    box-shadow:0 12px 60px rgba(0,0,0,.7);text-align:center;max-width:560px}
-  #panel h1{margin:0 0 4px;font-size:26px;color:#ffdd33}
-  #panel .sub{color:#7a8ba0;font-size:13px;margin-bottom:20px}
+    background:rgba(5,9,15,.78);z-index:10;overflow:auto;padding:20px}
+  #panel{background:#121c2b;border:1px solid #2a3a52;border-radius:16px;
+    padding:clamp(20px,4vw,28px) clamp(18px,4vw,34px);
+    box-shadow:0 12px 60px rgba(0,0,0,.7);text-align:center;max-width:560px;width:100%;
+    max-height:100%;overflow:auto;margin:auto}
+  #panel h1{margin:0 0 4px;font-size:clamp(21px,5vw,26px);color:#ffdd33}
+  #panel .sub{color:#7a8ba0;font-size:13px;margin-bottom:20px;line-height:1.5}
+  /* step 1 — how many players */
+  .modes{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:6px}
+  .modeBtn{background:#0d1520;border:1px solid #24344c;border-radius:14px;padding:22px 18px;
+    width:210px;max-width:100%;cursor:pointer;color:#fff;text-align:center;
+    transition:border-color .15s,transform .1s}
+  .modeBtn:hover{border-color:#ffdd33}
+  .modeBtn:active{transform:scale(.97)}
+  .modeIcon{font-size:42px;line-height:1;margin-bottom:10px}
+  .modeName{font-size:19px;font-weight:800;margin-bottom:6px}
+  .modeDesc{font-size:12px;color:#7a8ba0;line-height:1.4}
+  /* step 2 — names & difficulty */
   #players{display:flex;gap:18px;justify-content:center;margin-bottom:22px;flex-wrap:wrap}
-  .pcard{background:#0d1520;border:1px solid #24344c;border-radius:12px;padding:16px;width:220px}
+  .pcard{background:#0d1520;border:1px solid #24344c;border-radius:12px;padding:16px;
+    width:220px;max-width:100%}
   .pcard label{display:block;font-size:11px;letter-spacing:1px;color:#7a8ba0;margin-bottom:8px}
-  .pcard input{width:100%;box-sizing:border-box;background:#1a2537;border:1px solid #2e405c;color:#fff;
+  .pcard input{width:100%;background:#1a2537;border:1px solid #2e405c;color:#fff;
     border-radius:8px;padding:9px 10px;font-size:15px;margin-bottom:12px;outline:none}
   .pcard input:focus{border-color:#ffdd33}
   .diffs{display:flex;gap:6px}
   .diffs button{flex:1;background:#1a2537;border:1px solid #2e405c;color:#9fb4cc;border-radius:8px;
-    padding:7px 0;font-size:13px;cursor:pointer}
+    padding:9px 0;font-size:13px;cursor:pointer}
   .diffs button.sel{background:#ffdd33;border-color:#ffdd33;color:#12203a;font-weight:700}
+  .setupBtns{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
+  #backToMode{background:#1a2537;border:1px solid #2e405c;color:#9fb4cc;border-radius:10px;
+    padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer}
+  #backToMode:hover{border-color:#7a8ba0}
   #start{background:#3ddc68;border:none;color:#082412;font-size:17px;font-weight:800;
     padding:12px 44px;border-radius:10px;cursor:pointer;letter-spacing:.5px}
   #start:hover{filter:brightness(1.1)}
@@ -42,24 +61,48 @@
 <div id="setup">
   <div id="panel">
     <h1>AFL Goal Kick Challenge</h1>
-    <div class="sub">Head-to-head &bull; 10 kicks each &bull; same spots, same wind, alternating kicks</div>
-    <div id="players">
-      <div class="pcard">
-        <label>PLAYER 1</label>
-        <input id="name0" maxlength="12" placeholder="Player 1" autocomplete="off">
-        <div class="diffs" id="diffs0">
-          <button data-d="easy">Easy</button><button data-d="medium" class="sel">Medium</button><button data-d="hard">Hard</button>
-        </div>
-      </div>
-      <div class="pcard">
-        <label>PLAYER 2</label>
-        <input id="name1" maxlength="12" placeholder="Player 2" autocomplete="off">
-        <div class="diffs" id="diffs1">
-          <button data-d="easy">Easy</button><button data-d="medium" class="sel">Medium</button><button data-d="hard">Hard</button>
-        </div>
+
+    <!-- Step 1: how many players? -->
+    <div id="modeStep">
+      <div class="sub">How do you want to play?<br>10 set shots &bull; wind &bull; a man on the mark &bull; 3 difficulty levels</div>
+      <div class="modes">
+        <button class="modeBtn" data-mode="1">
+          <div class="modeIcon">🎯</div>
+          <div class="modeName">1 Player</div>
+          <div class="modeDesc">Solo practice — chase your best score</div>
+        </button>
+        <button class="modeBtn" data-mode="2">
+          <div class="modeIcon">🤼</div>
+          <div class="modeName">2 Players</div>
+          <div class="modeDesc">Head-to-head, alternating kicks</div>
+        </button>
       </div>
     </div>
-    <button id="start">START MATCH</button>
+
+    <!-- Step 2: names & difficulty -->
+    <div id="nameStep" style="display:none">
+      <div class="sub" id="nameSub"></div>
+      <div id="players">
+        <div class="pcard" id="pcard0">
+          <label>PLAYER 1</label>
+          <input id="name0" maxlength="12" placeholder="Player 1" autocomplete="off">
+          <div class="diffs" id="diffs0">
+            <button data-d="easy">Easy</button><button data-d="medium" class="sel">Medium</button><button data-d="hard">Hard</button>
+          </div>
+        </div>
+        <div class="pcard" id="pcard1">
+          <label>PLAYER 2</label>
+          <input id="name1" maxlength="12" placeholder="Player 2" autocomplete="off">
+          <div class="diffs" id="diffs1">
+            <button data-d="easy">Easy</button><button data-d="medium" class="sel">Medium</button><button data-d="hard">Hard</button>
+          </div>
+        </div>
+      </div>
+      <div class="setupBtns">
+        <button id="backToMode">&lsaquo; Back</button>
+        <button id="start">START</button>
+      </div>
+    </div>
   </div>
 </div>
 <script>
@@ -121,8 +164,11 @@ function newGame(cfg) {
 }
 
 function nextKick() {
-  if (S.turn === 0) S.turn = 1;
-  else { S.turn = 0; S.round++; }
+  if (S.players.length === 2 && S.turn === 0) {
+    S.turn = 1;                                // hand over to player 2, same round/spot/wind
+  } else {
+    S.turn = 0; S.round++;                     // next round (solo: every kick; 2P: after both kicked)
+  }
   if (S.round > TOTAL_ROUNDS) { S.phase = 'gameover'; return; }
   setupKick();
 }
@@ -204,8 +250,36 @@ function advance() {
   }
 }
 const setupEl = document.getElementById('setup');
+const modeStep = document.getElementById('modeStep');
+const nameStep = document.getElementById('nameStep');
+const nameSub = document.getElementById('nameSub');
+const pcard1 = document.getElementById('pcard1');
+const startBtn = document.getElementById('start');
 const setupVisible = () => setupEl.style.display !== 'none';
-function showSetup() { setupEl.style.display = 'flex'; }
+let chosenMode = 2;                             // 1 or 2 players
+
+function showSetup() {                          // back to step 1 (mode select)
+  setupEl.style.display = 'flex';
+  modeStep.style.display = '';
+  nameStep.style.display = 'none';
+}
+function showNameStep(mode) {                   // step 2 (names + difficulty)
+  chosenMode = mode;
+  modeStep.style.display = 'none';
+  nameStep.style.display = '';
+  pcard1.style.display = mode === 2 ? '' : 'none';
+  nameSub.innerHTML = mode === 2
+    ? 'Head-to-head &bull; 10 kicks each &bull; same spots, same wind, alternating kicks'
+    : 'Solo &bull; 10 set shots &bull; aim, load the power, then time your run-up';
+  startBtn.textContent = mode === 2 ? 'START MATCH' : 'START';
+  document.getElementById('name0').focus();
+}
+
+for (const b of document.querySelectorAll('.modeBtn')) {
+  b.addEventListener('click', () => { ac(); showNameStep(+b.dataset.mode); });
+}
+document.getElementById('backToMode').addEventListener('click', showSetup);
+
 const diffSel = ['medium', 'medium'];
 for (const i of [0, 1]) {
   document.getElementById('diffs' + i).addEventListener('click', e => {
@@ -214,17 +288,18 @@ for (const i of [0, 1]) {
     for (const x of e.currentTarget.querySelectorAll('button')) x.classList.toggle('sel', x === b);
   });
 }
-document.getElementById('start').addEventListener('click', () => {
+startBtn.addEventListener('click', () => {
   ac();
-  newGame([
-    { name: (document.getElementById('name0').value.trim() || 'Player 1'), diff: diffSel[0] },
-    { name: (document.getElementById('name1').value.trim() || 'Player 2'), diff: diffSel[1] }
-  ]);
+  const cfg = [{ name: (document.getElementById('name0').value.trim() || 'Player 1'), diff: diffSel[0] }];
+  if (chosenMode === 2) {
+    cfg.push({ name: (document.getElementById('name1').value.trim() || 'Player 2'), diff: diffSel[1] });
+  }
+  newGame(cfg);
   setupEl.style.display = 'none';
 });
 addEventListener('keydown', e => {
   if (setupVisible()) {
-    if (e.key === 'Enter') document.getElementById('start').click();
+    if (e.key === 'Enter' && nameStep.style.display !== 'none') startBtn.click();
     return;                                   // let space type into the name fields
   }
   if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar' || e.keyCode === 32) {
@@ -633,20 +708,32 @@ function roundRect(x, y, w, h, r) {
 
 function drawHUD() {
   const k = S.kick, d = curD();
-  // scoreboard: both players, active one highlighted
+  const single = S.players.length === 1;
+  // scoreboard: adapts to 1 or 2 players, active one highlighted
   ctx.fillStyle = 'rgba(10,16,26,0.82)';
-  roundRect(W / 2 - 250, 10, 500, 44, 10); ctx.fill();
+  const boardW = single ? 360 : 500;
+  roundRect(W / 2 - boardW / 2, 10, boardW, 44, 10); ctx.fill();
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#9fb4cc'; ctx.font = '600 12px system-ui';
-  ctx.fillText(`ROUND ${Math.min(S.round, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`, W / 2, 32);
-  for (let i = 0; i < 2; i++) {
-    const p = S.players[i], active = i === S.turn && S.phase !== 'gameover';
-    const cx_ = i === 0 ? W / 2 - 155 : W / 2 + 155;
-    ctx.fillStyle = active ? '#ffdd33' : '#9fb4cc';
-    ctx.font = active ? '800 14px system-ui' : '600 14px system-ui';
-    ctx.fillText(`${active ? '▶ ' : ''}${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx_, 23);
+  if (single) {
+    const p = S.players[0];
+    ctx.fillStyle = '#9fb4cc'; ctx.font = '600 13px system-ui';
+    ctx.fillText(`ROUND ${Math.min(S.round, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`, W / 2 - 95, 32);
+    ctx.fillStyle = '#ffdd33'; ctx.font = '800 14px system-ui';
+    ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, W / 2 + 90, 23);
     ctx.fillStyle = '#fff'; ctx.font = '700 16px system-ui';
-    ctx.fillText(`${p.goals}.${p.behinds} (${p.goals * 6 + p.behinds})`, cx_, 42);
+    ctx.fillText(`${p.goals}.${p.behinds} (${p.goals * 6 + p.behinds})`, W / 2 + 90, 42);
+  } else {
+    ctx.fillStyle = '#9fb4cc'; ctx.font = '600 12px system-ui';
+    ctx.fillText(`ROUND ${Math.min(S.round, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`, W / 2, 32);
+    for (let i = 0; i < 2; i++) {
+      const p = S.players[i], active = i === S.turn && S.phase !== 'gameover';
+      const cx_ = i === 0 ? W / 2 - 155 : W / 2 + 155;
+      ctx.fillStyle = active ? '#ffdd33' : '#9fb4cc';
+      ctx.font = active ? '800 14px system-ui' : '600 14px system-ui';
+      ctx.fillText(`${active ? '▶ ' : ''}${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx_, 23);
+      ctx.fillStyle = '#fff'; ctx.font = '700 16px system-ui';
+      ctx.fillText(`${p.goals}.${p.behinds} (${p.goals * 6 + p.behinds})`, cx_, 42);
+    }
   }
   drawWind();
 
@@ -799,33 +886,53 @@ function drawMinimap() {
 function drawGameOver() {
   ctx.fillStyle = 'rgba(6,10,18,0.9)'; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const [a, b] = S.players;
-  const ta = a.goals * 6 + a.behinds, tb = b.goals * 6 + b.behinds;
   ctx.fillStyle = '#ffdd33'; ctx.font = '900 46px system-ui';
   ctx.fillText('FULL TIME', W / 2, 130);
-  for (let i = 0; i < 2; i++) {
-    const p = S.players[i], tot = p.goals * 6 + p.behinds;
-    const winner = tot === Math.max(ta, tb) && ta !== tb;
-    const cx_ = i === 0 ? W / 2 - 170 : W / 2 + 170;
-    ctx.fillStyle = winner ? '#ffdd33' : '#9fb4cc'; ctx.font = '800 24px system-ui';
-    ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx_, 210);
-    ctx.fillStyle = '#fff'; ctx.font = '800 52px system-ui';
-    ctx.fillText(`${p.goals}.${p.behinds} (${tot})`, cx_, 268);
-    ctx.fillStyle = '#7a8ba0'; ctx.font = '600 15px system-ui';
-    ctx.fillText(`${p.goals} goal${p.goals === 1 ? '' : 's'}, ${p.behinds} behind${p.behinds === 1 ? '' : 's'}`, cx_, 306);
+
+  if (S.players.length === 1) {
+    const p = S.players[0], tot = p.goals * 6 + p.behinds;
+    ctx.fillStyle = '#ffdd33'; ctx.font = '800 26px system-ui';
+    ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, W / 2, 220);
+    ctx.fillStyle = '#fff'; ctx.font = '900 60px system-ui';
+    ctx.fillText(`${p.goals}.${p.behinds} (${tot})`, W / 2, 292);
+    ctx.fillStyle = '#7a8ba0'; ctx.font = '600 16px system-ui';
+    ctx.fillText(`${p.goals} goal${p.goals === 1 ? '' : 's'}, ${p.behinds} behind${p.behinds === 1 ? '' : 's'} from ${TOTAL_ROUNDS} set shots`, W / 2, 336);
+    let verdict;
+    if (p.goals >= 8) verdict = 'Elite! A dead-eye set-shot sniper.';
+    else if (p.goals >= 6) verdict = 'Great kicking — a reliable spearhead.';
+    else if (p.goals >= 4) verdict = 'Solid effort. Keep drilling those set shots.';
+    else if (p.goals >= 2) verdict = 'Getting there — back to the training track!';
+    else verdict = 'Tough day at the office. Have another crack!';
+    ctx.fillStyle = '#3ddc68'; ctx.font = '700 24px system-ui';
+    ctx.fillText(verdict, W / 2, 400);
+  } else {
+    const [a, b] = S.players;
+    const ta = a.goals * 6 + a.behinds, tb = b.goals * 6 + b.behinds;
+    for (let i = 0; i < 2; i++) {
+      const p = S.players[i], tot = p.goals * 6 + p.behinds;
+      const winner = tot === Math.max(ta, tb) && ta !== tb;
+      const cx_ = i === 0 ? W / 2 - 170 : W / 2 + 170;
+      ctx.fillStyle = winner ? '#ffdd33' : '#9fb4cc'; ctx.font = '800 24px system-ui';
+      ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx_, 210);
+      ctx.fillStyle = '#fff'; ctx.font = '800 52px system-ui';
+      ctx.fillText(`${p.goals}.${p.behinds} (${tot})`, cx_, 268);
+      ctx.fillStyle = '#7a8ba0'; ctx.font = '600 15px system-ui';
+      ctx.fillText(`${p.goals} goal${p.goals === 1 ? '' : 's'}, ${p.behinds} behind${p.behinds === 1 ? '' : 's'}`, cx_, 306);
+    }
+    ctx.fillStyle = '#fff'; ctx.font = '800 30px system-ui';
+    ctx.fillText('—', W / 2, 262);
+    let verdict;
+    if (ta === tb) verdict = 'A DRAW! Extra practice for both.';
+    else {
+      const w = ta > tb ? a : b, margin = Math.abs(ta - tb);
+      verdict = margin >= 24 ? `${w.name} wins by ${margin} — a demolition!` :
+                margin >= 12 ? `${w.name} wins by ${margin} — comfortable.` :
+                `${w.name} wins by ${margin} — what a nail-biter!`;
+    }
+    ctx.fillStyle = '#3ddc68'; ctx.font = '700 26px system-ui';
+    ctx.fillText(verdict, W / 2, 375);
   }
-  ctx.fillStyle = '#fff'; ctx.font = '800 30px system-ui';
-  ctx.fillText('—', W / 2, 262);
-  let verdict;
-  if (ta === tb) verdict = 'A DRAW! Extra practice for both.';
-  else {
-    const w = ta > tb ? a : b, margin = Math.abs(ta - tb);
-    verdict = margin >= 24 ? `${w.name} wins by ${margin} — a demolition!` :
-              margin >= 12 ? `${w.name} wins by ${margin} — comfortable.` :
-              `${w.name} wins by ${margin} — what a nail-biter!`;
-  }
-  ctx.fillStyle = '#3ddc68'; ctx.font = '700 26px system-ui';
-  ctx.fillText(verdict, W / 2, 375);
+
   ctx.fillStyle = '#ffdd33'; ctx.font = '700 18px system-ui';
   if (Math.sin(S.time * 4) > -0.3) ctx.fillText('Press SPACE or tap for a new match', W / 2, 440);
 }
