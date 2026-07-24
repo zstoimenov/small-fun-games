@@ -1,7 +1,7 @@
 /* Game Box service worker — precache the launcher + the AFL game so they work offline. */
 /* Robo Rules ships its own service worker and caches itself on first visit.        */
 /* Bump this version whenever you change the launcher or AFL game.                   */
-const CACHE = "game-box-v1";
+const CACHE = "game-box-v2";
 const ASSETS = [
   "./",
   "./index.html",

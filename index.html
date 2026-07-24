@@ -79,10 +79,13 @@
     background:var(--chip);color:var(--chipink);
   }
   .play{
-    margin-top:14px;align-self:flex-start;font-weight:800;font-size:14px;
-    color:#fff;padding:9px 18px;border-radius:999px;
-    background:linear-gradient(145deg,#7b5cff,#4bc8ff);
-    box-shadow:0 6px 14px var(--shadow);
+    position:absolute;top:12px;right:12px;z-index:2;
+    font-weight:800;font-size:13px;color:#fff;
+    padding:8px 15px;border-radius:999px;
+    background:rgba(15,18,40,.42);
+    border:1px solid rgba(255,255,255,.45);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+    box-shadow:0 4px 12px rgba(0,0,0,.25);
   }
   footer{margin:30px 6px 0;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
   .install{display:none}
@@ -104,9 +107,6 @@
   <main class="grid" id="grid" aria-label="Game catalogue"></main>
 
   <footer>
-    Works offline once loaded. On a tablet, tap your browser menu and
-    <b>“Add to Home screen”</b> to play it like a real app.
-    <br>
     <button class="install" id="installBtn">⬇️ Install Game Box</button>
   </footer>
 </div>
@@ -146,6 +146,7 @@ for (const g of GAMES) {
   a.className = "card";
   a.href = "./" + g.folder + "/";
   a.innerHTML = `
+    <span class="play">▶ Play</span>
     <div class="thumb" style="background:linear-gradient(145deg, ${g.colors[0]}, ${g.colors[1]})">
       <div class="blob" style="width:120px;height:120px;background:rgba(255,255,255,.35);top:-30px;left:-20px"></div>
       <div class="blob" style="width:90px;height:90px;background:rgba(0,0,0,.10);bottom:-24px;right:-10px"></div>
@@ -155,7 +156,6 @@ for (const g of GAMES) {
       <h2>${g.title}</h2>
       <p>${g.blurb}</p>
       <div class="chips">${g.chips.map(c => `<span class="chip">${c}</span>`).join("")}</div>
-      <span class="play">▶ Play</span>
     </div>`;
   grid.appendChild(a);
 }
