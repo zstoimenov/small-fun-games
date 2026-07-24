@@ -6,11 +6,12 @@
 <title>AFL Goal Kick Challenge</title>
 <style>
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:#0d1520;color:#fff;font-family:system-ui,-apple-system,sans-serif;
-    display:flex;flex-direction:column;align-items:center;min-height:100vh;min-height:100dvh;justify-content:center;
+  html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0d1520;color:#fff;
+    font-family:system-ui,-apple-system,sans-serif;
     touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-  canvas{max-width:100vw;max-height:100vh;display:block;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
-  #hint{font-size:13px;color:#7a8ba0;margin:8px 0;text-align:center;padding:0 10px}
+  /* the canvas fills the entire viewport in any orientation; the game world and
+     HUD are laid out responsively inside it, so there are never letterbox bars */
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:#0d1520;touch-action:none}
   #back{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));
     z-index:20;background:rgba(10,16,26,.72);color:#cfe3f7;text-decoration:none;font-size:13px;font-weight:700;
     padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
@@ -57,7 +58,6 @@
 <body>
 <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
 <canvas id="c" width="960" height="600"></canvas>
-<div id="hint">SPACEBAR (or tap): lock aim &rarr; set power &rarr; time the kick during the run-up. Watch the wind!</div>
 <div id="setup">
   <div id="panel">
     <h1>AFL Goal Kick Challenge</h1>
@@ -108,9 +108,12 @@
 <script>
 'use strict';
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
-const W = 960, H = 600;
+let W = 960, H = 600, DPR = 1;                 // live canvas size (CSS px) + pixel ratio
+let US = 1, PORTRAIT = false, MARGIN = 10;     // UI scale, orientation, edge margin
+let L = {};                                    // responsive HUD layout rectangles
 const DEG = Math.PI / 180;
 const CAM = { dist: 9, F: 800, eyeH: 2.9, hor: 170 };
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const GRAV = 9.8, MAX_KICK = 68, TOTAL_ROUNDS = 10;
 const GOAL_HALF = 3.2, BEHIND_HALF = 9.6;     // metres, AFL post spacing
 const SWEEP_MAX = 24 * DEG;
@@ -447,21 +450,86 @@ function update(dt) {
   }
 }
 
-// ---------- crowd (pre-rendered) ----------
+// ---------- crowd (pre-rendered, rebuilt to the current width) ----------
 const crowd = document.createElement('canvas');
-crowd.width = W; crowd.height = 64;
-(function () {
+crowd.height = 64;
+function buildCrowd() {
+  crowd.width = Math.max(1, Math.round(W));
   const c = crowd.getContext('2d');
-  c.fillStyle = '#232c38'; c.fillRect(0, 0, W, 64);
+  c.fillStyle = '#232c38'; c.fillRect(0, 0, crowd.width, 64);
   const cols = ['#5a6a80', '#8a4a4a', '#4a6a52', '#7a7a4a', '#9a8a9a', '#3f5a76', '#6d5a7d'];
-  for (let i = 0; i < 3400; i++) {
+  const n = Math.round(crowd.width * 3.6);
+  for (let i = 0; i < n; i++) {
     c.fillStyle = cols[(Math.random() * cols.length) | 0];
     c.globalAlpha = 0.35 + Math.random() * 0.5;
-    const y = Math.random(); // denser toward bottom
-    c.fillRect(Math.random() * W, 8 + y * y * 54, 2.2, 2.2);
+    const y = Math.random();                     // denser toward bottom
+    c.fillRect(Math.random() * crowd.width, 8 + y * y * 54, 2.2, 2.2);
   }
   c.globalAlpha = 1;
-})();
+}
+
+// ---------- responsive sizing + HUD layout ----------
+function layout() {
+  PORTRAIT = H > W;
+  US = clamp(Math.min(W, H) / 600, 0.72, 1.3);
+  MARGIN = Math.round(8 * US) + 2;
+  CAM.hor = Math.round(H * (PORTRAIT ? 0.27 : 0.30));
+  // focal length fills the height in landscape; in portrait it's capped by width
+  // so the goals still fit across a narrow screen (no distortion, no black bars)
+  CAM.F = Math.min(H * 1.34, W * (PORTRAIT ? 1.4 : 2.6));
+
+  const windW = Math.round(118 * US), windH = Math.round(44 * US);
+  const mmW = Math.round(150 * US), mmH = Math.round(138 * US);
+  const boardH = Math.round(44 * US);
+  const powerW = Math.round(26 * US);
+  const barH = Math.round(26 * US);
+  const gap = Math.round(8 * US);
+  L = { windW, windH, mmW, mmH, boardH, powerW, barH, gap };
+
+  if (PORTRAIT) {
+    // vertical stack: board (row 1), then shot info + wind (row 2); minimap sits
+    // just above the bottom control zone; power bar hugs the right edge
+    const boardW = Math.min(Math.round(480 * US), W - 2 * MARGIN);
+    L.board = { x: (W - boardW) / 2, y: MARGIN, w: boardW, h: boardH };
+    const row2 = L.board.y + boardH + gap;
+    L.wind = { x: W - windW - MARGIN, y: row2, w: windW, h: windH };
+    const shotH = Math.round(24 * US);
+    L.shot = { x: MARGIN, y: row2 + (windH - shotH) / 2, w: W - windW - 3 * MARGIN, h: shotH };
+    const barZone = Math.round(70 * US);
+    L.minimap = { x: MARGIN, y: H - mmH - MARGIN - barZone, w: mmW, h: mmH };
+    L.power = { x: W - powerW - MARGIN - Math.round(6 * US), y: L.wind.y + windH + Math.round(16 * US), w: powerW, h: 0 };
+    L.power.h = (H - MARGIN - barZone) - L.power.y;
+    const barW = Math.min(Math.round(460 * US), W - 2 * (powerW + 2 * MARGIN));
+    L.bar = { cx: W / 2, w: barW, h: barH, y: H - barH - MARGIN - Math.round(4 * US) };
+    L.result = { cx: W / 2, cy: Math.round(H * 0.36) };
+  } else {
+    // classic: minimap top-left, board centred, wind top-right, power bar right
+    L.minimap = { x: MARGIN, y: MARGIN, w: mmW, h: mmH };
+    L.wind = { x: W - windW - MARGIN, y: MARGIN, w: windW, h: windH };
+    const halfAvail = Math.min(W / 2 - (L.minimap.x + mmW + gap), (L.wind.x - gap) - W / 2);
+    const boardW = clamp(Math.round(halfAvail * 2), Math.round(150 * US), Math.round(500 * US));
+    L.board = { x: (W - boardW) / 2, y: MARGIN, w: boardW, h: boardH };
+    const shotW = Math.min(Math.round(300 * US), W - 2 * MARGIN);
+    L.shot = { x: (W - shotW) / 2, y: L.board.y + boardH + Math.round(6 * US), w: shotW, h: Math.round(24 * US) };
+    L.power = { x: W - powerW - MARGIN - Math.round(6 * US), y: Math.round(H * 0.22), w: powerW, h: Math.round(H * 0.6) };
+    const barW = Math.min(Math.round(520 * US), Math.round(W * 0.72));
+    L.bar = { cx: W / 2, w: barW, h: barH, y: H - barH - MARGIN - Math.round(18 * US) };
+    L.result = { cx: W / 2, cy: Math.round(H * 0.42) };
+  }
+}
+
+function resize() {
+  W = Math.max(1, Math.floor(window.innerWidth));
+  H = Math.max(1, Math.floor(window.innerHeight));
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * DPR);
+  cv.height = Math.round(H * DPR);
+  cv.style.width = W + 'px';
+  cv.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);        // draw in CSS pixels
+  layout();
+  buildCrowd();
+}
 
 // ---------- rendering ----------
 function line3(x1, y1, z1, x2, y2, z2, style, width) {
@@ -706,122 +774,134 @@ function roundRect(x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
 }
 
+// fit a font so `text` at weight `wt` never exceeds `maxw`; returns the px size used
+function fitFont(text, wt, px, maxw) {
+  px = Math.round(px);
+  ctx.font = `${wt} ${px}px system-ui`;
+  const tw = ctx.measureText(text).width;
+  if (tw > maxw) { px = Math.max(8, Math.floor(px * maxw / tw)); ctx.font = `${wt} ${px}px system-ui`; }
+  return px;
+}
+
 function drawHUD() {
-  const k = S.kick, d = curD();
+  const k = S.kick, d = curD(), s = US;
   const single = S.players.length === 1;
-  // scoreboard: adapts to 1 or 2 players, active one highlighted
-  ctx.fillStyle = 'rgba(10,16,26,0.82)';
-  const boardW = single ? 360 : 500;
-  roundRect(W / 2 - boardW / 2, 10, boardW, 44, 10); ctx.fill();
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  if (single) {
-    const p = S.players[0];
-    ctx.fillStyle = '#9fb4cc'; ctx.font = '600 13px system-ui';
-    ctx.fillText(`ROUND ${Math.min(S.round, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`, W / 2 - 95, 32);
-    ctx.fillStyle = '#ffdd33'; ctx.font = '800 14px system-ui';
-    ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, W / 2 + 90, 23);
-    ctx.fillStyle = '#fff'; ctx.font = '700 16px system-ui';
-    ctx.fillText(`${p.goals}.${p.behinds} (${p.goals * 6 + p.behinds})`, W / 2 + 90, 42);
-  } else {
-    ctx.fillStyle = '#9fb4cc'; ctx.font = '600 12px system-ui';
-    ctx.fillText(`ROUND ${Math.min(S.round, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`, W / 2, 32);
-    for (let i = 0; i < 2; i++) {
-      const p = S.players[i], active = i === S.turn && S.phase !== 'gameover';
-      const cx_ = i === 0 ? W / 2 - 155 : W / 2 + 155;
-      ctx.fillStyle = active ? '#ffdd33' : '#9fb4cc';
-      ctx.font = active ? '800 14px system-ui' : '600 14px system-ui';
-      ctx.fillText(`${active ? '▶ ' : ''}${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx_, 23);
-      ctx.fillStyle = '#fff'; ctx.font = '700 16px system-ui';
-      ctx.fillText(`${p.goals}.${p.behinds} (${p.goals * 6 + p.behinds})`, cx_, 42);
-    }
-  }
+
+  drawMinimap();
   drawWind();
 
-  // shot info
-  const outside = k.dist > 50;
-  ctx.fillStyle = 'rgba(10,16,26,0.7)';
-  roundRect(W / 2 - 130, 58, 260, 24, 8); ctx.fill();
-  ctx.fillStyle = outside ? '#ffb347' : '#cfe3f7'; ctx.font = '600 13px system-ui';
-  const side = k.angle < -1.5 * DEG ? `${Math.round(Math.abs(k.angle) / DEG)}° left` :
-               k.angle > 1.5 * DEG ? `${Math.round(k.angle / DEG)}° right` : 'straight in front';
-  ctx.fillText(`Set shot • ${Math.round(k.dist)}m • ${side}${outside ? ' • OUTSIDE 50!' : ''}`, W / 2, 70);
+  // ---- scoreboard (top-centre) ----
+  const b = L.board;
+  ctx.fillStyle = 'rgba(10,16,26,0.82)';
+  roundRect(b.x, b.y, b.w, b.h, 10 * s); ctx.fill();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const bs = Math.min(s, b.w / (single ? 232 : 384));    // shrink text to a narrow board
+  const midY = b.y + b.h / 2;
+  if (single) {
+    const p = S.players[0];
+    ctx.fillStyle = '#ffdd33'; ctx.font = `800 ${Math.round(14 * bs)}px system-ui`;
+    ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, b.x + b.w / 2, midY - 9 * bs);
+    ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(16 * bs)}px system-ui`;
+    ctx.fillText(`${p.goals}.${p.behinds} (${p.goals * 6 + p.behinds})`, b.x + b.w / 2, midY + 9 * bs);
+  } else {
+    for (let i = 0; i < 2; i++) {
+      const p = S.players[i], active = i === S.turn && S.phase !== 'gameover';
+      const cx_ = b.x + b.w * (i === 0 ? 0.27 : 0.73);
+      ctx.fillStyle = active ? '#ffdd33' : '#9fb4cc';
+      ctx.font = `${active ? 800 : 600} ${Math.round(13 * bs)}px system-ui`;
+      ctx.fillText(`${active ? '▶ ' : ''}${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx_, midY - 9 * bs);
+      ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(15 * bs)}px system-ui`;
+      ctx.fillText(`${p.goals}.${p.behinds} (${p.goals * 6 + p.behinds})`, cx_, midY + 9 * bs);
+    }
+  }
 
-  // power bar (always visible)
-  const bx = W - 52, by = 130, bw = 26, bh = 380;
-  ctx.fillStyle = 'rgba(10,16,26,0.7)'; roundRect(bx - 6, by - 30, bw + 12, bh + 42, 8); ctx.fill();
-  ctx.fillStyle = '#9fb4cc'; ctx.font = '600 11px system-ui';
-  ctx.fillText('POWER', bx + bw / 2, by - 16);
+  // ---- shot info (includes the round count) ----
+  const sh = L.shot, outside = k.dist > 50;
+  ctx.fillStyle = 'rgba(10,16,26,0.7)';
+  roundRect(sh.x, sh.y, sh.w, sh.h, 8 * s); ctx.fill();
+  const side = k.angle < -1.5 * DEG ? `${Math.round(Math.abs(k.angle) / DEG)}° left` :
+               k.angle > 1.5 * DEG ? `${Math.round(k.angle / DEG)}° right` : 'straight';
+  const shotMsg = `R${Math.min(S.round, TOTAL_ROUNDS)}/${TOTAL_ROUNDS} • ${Math.round(k.dist)}m • ${side}${outside ? ' • OUT 50!' : ''}`;
+  ctx.fillStyle = outside ? '#ffb347' : '#cfe3f7';
+  fitFont(shotMsg, 600, 12.5 * s, sh.w - 12 * s);
+  ctx.fillText(shotMsg, sh.x + sh.w / 2, sh.y + sh.h / 2);
+
+  // ---- power bar (right edge) ----
+  const pw = L.power, bx = pw.x, by = pw.y, bw = pw.w, bh = pw.h;
+  ctx.fillStyle = 'rgba(10,16,26,0.7)'; roundRect(bx - 6 * s, by - 26 * s, bw + 12 * s, bh + 38 * s, 8 * s); ctx.fill();
+  ctx.fillStyle = '#9fb4cc'; ctx.font = `600 ${Math.round(11 * s)}px system-ui`;
+  ctx.fillText('POWER', bx + bw / 2, by - 14 * s);
   ctx.fillStyle = '#1a2433'; ctx.fillRect(bx, by, bw, bh);
-  // fill
   const ph = k.power / 100 * bh;
   const pg = ctx.createLinearGradient(0, by + bh, 0, by);
   pg.addColorStop(0, '#3ddc68'); pg.addColorStop(0.6, '#ffd23c'); pg.addColorStop(0.85, '#ff8a3c'); pg.addColorStop(1, '#ff4433');
   ctx.fillStyle = pg; ctx.fillRect(bx, by + bh - ph, bw, ph);
-  // red (wild) zone marker
   const rz = by + bh - RED_ZONE / 100 * bh;
-  ctx.strokeStyle = '#ff5544'; ctx.lineWidth = 2;
-  ctx.strokeRect(bx - 1, by, bw + 2, rz - by);
-  ctx.fillStyle = '#ff8a7a'; ctx.font = '600 9px system-ui';
-  ctx.fillText('WILD', bx + bw / 2, rz - 7);
-  // needed-distance tick
+  ctx.strokeStyle = '#ff5544'; ctx.lineWidth = 2; ctx.strokeRect(bx - 1, by, bw + 2, rz - by);
+  ctx.fillStyle = '#ff8a7a'; ctx.font = `600 ${Math.round(9 * s)}px system-ui`;
+  ctx.fillText('WILD', bx + bw / 2, rz - 6 * s);
   const needP = Math.min(100, (k.dist + 3) / MAX_KICK * 100);
   const ny = by + bh - needP / 100 * bh;
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(bx - 5, ny); ctx.lineTo(bx + bw + 5, ny); ctx.stroke();
-  ctx.fillStyle = '#fff'; ctx.font = '600 10px system-ui';
-  ctx.fillText(`${Math.round(k.dist)}m`, bx + bw / 2, ny - 8);
+  ctx.beginPath(); ctx.moveTo(bx - 5 * s, ny); ctx.lineTo(bx + bw + 5 * s, ny); ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = `600 ${Math.round(10 * s)}px system-ui`;
+  ctx.fillText(`${Math.round(k.dist)}m`, bx + bw / 2, ny - 8 * s);
   ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.5; ctx.strokeRect(bx, by, bw, bh);
 
-  // run-up timing bar
+  // ---- bottom control zone: run-up bar OR the phase prompt ----
+  const bar = L.bar;
   if (S.phase === 'runup') {
-    const rx_ = 240, ry = 540, rw = 480, rh = 26;
-    ctx.fillStyle = 'rgba(10,16,26,0.82)'; roundRect(rx_ - 10, ry - 30, rw + 20, rh + 40, 10); ctx.fill();
-    ctx.fillStyle = '#ffdd33'; ctx.font = '700 14px system-ui';
-    ctx.fillText('RUN-UP — press SPACE in the green zone to strike it clean!', rx_ + rw / 2, ry - 16);
+    const rw = bar.w, rh = bar.h, rx_ = bar.cx - rw / 2, ry = bar.y;
+    ctx.fillStyle = 'rgba(10,16,26,0.82)'; roundRect(rx_ - 10 * s, ry - 26 * s, rw + 20 * s, rh + 36 * s, 10 * s); ctx.fill();
+    ctx.fillStyle = '#ffdd33'; ctx.textAlign = 'center';
+    const runMsg = PORTRAIT ? 'RUN-UP — SPACE in the green!' : 'RUN-UP — press SPACE in the green zone to strike it clean!';
+    fitFont(runMsg, 700, 13 * s, rw + 16 * s);
+    ctx.fillText(runMsg, bar.cx, ry - 13 * s);
     ctx.fillStyle = '#1a2433'; ctx.fillRect(rx_, ry, rw, rh);
     ctx.fillStyle = 'rgba(255,80,60,0.45)'; ctx.fillRect(rx_, ry, d.lo / 100 * rw, rh);
-    ctx.fillStyle = 'rgba(61,220,104,0.85)';
-    ctx.fillRect(rx_ + d.lo / 100 * rw, ry, (d.hi - d.lo) / 100 * rw, rh);
+    ctx.fillStyle = 'rgba(61,220,104,0.85)'; ctx.fillRect(rx_ + d.lo / 100 * rw, ry, (d.hi - d.lo) / 100 * rw, rh);
     ctx.fillStyle = 'rgba(255,80,60,0.45)'; ctx.fillRect(rx_ + d.hi / 100 * rw, ry, (100 - d.hi) / 100 * rw, rh);
-    // cursor
     const cxr = rx_ + k.runT / 100 * rw;
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.moveTo(cxr, ry - 2); ctx.lineTo(cxr - 7, ry - 12); ctx.lineTo(cxr + 7, ry - 12); ctx.fill();
     ctx.fillRect(cxr - 1.5, ry, 3, rh);
     ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.strokeRect(rx_, ry, rw, rh);
-  }
-
-  // phase prompt
-  if (S.phase === 'aim' || S.phase === 'power') {
+  } else if (S.phase === 'aim' || S.phase === 'power') {
     const msg = S.phase === 'aim' ? 'SPACE — lock the arrow on the goal' :
-      'SPACE — set your power (into the red = long but WILD)';
-    ctx.fillStyle = 'rgba(10,16,26,0.82)';
+      'SPACE — set power (into the red = long but WILD)';
+    ctx.textAlign = 'center';
+    const fs = fitFont(msg, 700, 15 * s, W - 2 * MARGIN - 24 * s);
     const tw = ctx.measureText(msg).width;
-    roundRect(W / 2 - 230, 552, 460, 34, 10); ctx.fill();
-    ctx.fillStyle = '#ffdd33'; ctx.font = '700 15px system-ui';
-    ctx.fillText(msg, W / 2, 569);
+    const pw2 = tw + 24 * s, ph2 = fs + 18, cy = bar.y + bar.h / 2;
+    ctx.fillStyle = 'rgba(10,16,26,0.82)';
+    roundRect(bar.cx - pw2 / 2, cy - ph2 / 2, pw2, ph2, 10 * s); ctx.fill();
+    ctx.fillStyle = '#ffdd33'; ctx.textBaseline = 'middle';
+    ctx.fillText(msg, bar.cx, cy);
   }
 
-  drawMinimap();
-
-  // result banner
+  // ---- result banner ----
   if (S.phase === 'result') {
+    const R = L.result;
     const pop = Math.min(1, S.resultT * 5);
     const sc = 0.6 + 0.4 * (1 - Math.pow(1 - pop, 3));
+    const maxw = W - 4 * MARGIN;
     ctx.save();
-    ctx.translate(W / 2, 250); ctx.scale(sc, sc);
-    ctx.globalAlpha = pop;
-    ctx.font = '800 22px system-ui';
-    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
-    ctx.strokeText(curP().name.toUpperCase(), 0, -54);
-    ctx.fillStyle = '#cfe3f7'; ctx.fillText(curP().name.toUpperCase(), 0, -54);
-    ctx.font = '900 64px system-ui';
-    ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.translate(R.cx, R.cy); ctx.scale(sc, sc);
+    ctx.globalAlpha = pop; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const nameFs = fitFont(curP().name.toUpperCase(), 800, 22 * s, maxw);
+    ctx.lineWidth = 5 * s; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.strokeText(curP().name.toUpperCase(), 0, -46 * s);
+    ctx.fillStyle = '#cfe3f7'; ctx.fillText(curP().name.toUpperCase(), 0, -46 * s);
+    const bigFs = fitFont(S.resultText, 900, 60 * s, maxw);
+    ctx.lineWidth = 8 * s; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
     ctx.strokeText(S.resultText, 0, 0);
     ctx.fillStyle = S.resultColor; ctx.fillText(S.resultText, 0, 0);
-    ctx.font = '600 20px system-ui';
-    ctx.lineWidth = 5; ctx.strokeText(S.resultSub, 0, 44);
-    ctx.fillStyle = '#fff'; ctx.fillText(S.resultSub, 0, 44);
+    if (S.resultSub) {
+      fitFont(S.resultSub, 600, 19 * s, maxw);
+      ctx.lineWidth = 5 * s; ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.strokeText(S.resultSub, 0, 40 * s);
+      ctx.fillStyle = '#fff'; ctx.fillText(S.resultSub, 0, 40 * s);
+    }
     ctx.restore();
   }
 
@@ -829,38 +909,37 @@ function drawHUD() {
 }
 
 function drawWind() {
-  const k = S.kick;
+  const k = S.kick, r = L.wind, s = US;
   // wind in camera coords: +x = blowing right across screen, +z = tailwind (toward goal)
   const wxc = k.wvx * k.rx + k.wvz * k.rz;
   const wzc = k.wvx * k.fx + k.wvz * k.fz;
-  const bx = W - 178, by = 10, bw = 118, bh = 44;
   ctx.fillStyle = 'rgba(10,16,26,0.82)';
-  roundRect(bx, by, bw, bh, 10); ctx.fill();
+  roundRect(r.x, r.y, r.w, r.h, 10 * s); ctx.fill();
   ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#9fb4cc'; ctx.font = '600 10px system-ui';
-  ctx.fillText('WIND', bx + 44, by + 13);
-  ctx.fillStyle = k.windSpd > 20 ? '#ff9a6b' : '#fff'; ctx.font = '700 15px system-ui';
-  ctx.fillText(`${Math.round(k.windSpd)} km/h`, bx + 44, by + 30);
+  const tx = r.x + r.w * 0.4;
+  ctx.fillStyle = '#9fb4cc'; ctx.font = `600 ${Math.round(10 * s)}px system-ui`;
+  ctx.fillText('WIND', tx, r.y + r.h * 0.3);
+  ctx.fillStyle = k.windSpd > 20 ? '#ff9a6b' : '#fff'; ctx.font = `700 ${Math.round(15 * s)}px system-ui`;
+  ctx.fillText(`${Math.round(k.windSpd)} km/h`, tx, r.y + r.h * 0.68);
   // compass arrow (up = toward the goal)
-  const cx_ = bx + 24, cy_ = by + 22, ang = Math.atan2(-wzc, wxc);
-  const len = 8 + Math.min(1, k.windSpd / 30) * 6;
+  const cx_ = r.x + r.w * 0.2, cy_ = r.y + r.h / 2, ang = Math.atan2(-wzc, wxc);
+  const len = (8 + Math.min(1, k.windSpd / 30) * 6) * s;
   ctx.save();
   ctx.translate(cx_, cy_); ctx.rotate(ang);
-  ctx.strokeStyle = '#ffdd33'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(-len, 0); ctx.lineTo(len - 4, 0); ctx.stroke();
+  ctx.strokeStyle = '#ffdd33'; ctx.lineWidth = 3 * s; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-len, 0); ctx.lineTo(len - 4 * s, 0); ctx.stroke();
   ctx.fillStyle = '#ffdd33';
-  ctx.beginPath(); ctx.moveTo(len, 0); ctx.lineTo(len - 8, -5.5); ctx.lineTo(len - 8, 5.5); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(len, 0); ctx.lineTo(len - 8 * s, -5.5 * s); ctx.lineTo(len - 8 * s, 5.5 * s); ctx.fill();
   ctx.restore();
-  ctx.textAlign = 'center';
+  ctx.lineCap = 'butt'; ctx.textAlign = 'center';
 }
 
 function drawMinimap() {
-  const k = S.kick;
-  const mx = 14, my = 14, mw = 152, mh = 140;
+  const k = S.kick, r = L.minimap, s = US;
   ctx.fillStyle = 'rgba(10,26,16,0.85)';
-  roundRect(mx, my, mw, mh, 10); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; roundRect(mx, my, mw, mh, 10); ctx.stroke();
-  const ox = mx + mw / 2, oy = my + 18, sc = 1.9;
+  roundRect(r.x, r.y, r.w, r.h, 10 * s); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1; roundRect(r.x, r.y, r.w, r.h, 10 * s); ctx.stroke();
+  const ox = r.x + r.w / 2, oy = r.y + 18 * s, sc = 1.9 * (r.w / 152);
   const P = (fx, fz) => ({ x: ox + fx * sc, y: oy + fz * sc });
   // 50m arc
   ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5;
@@ -879,49 +958,54 @@ function drawMinimap() {
   let bp = P(k.bx, k.bz);
   if (k.ball) bp = P(k.ball.x, k.ball.z);
   ctx.fillStyle = '#ffdd33'; ctx.beginPath(); ctx.arc(bp.x, bp.y, 3.5, 0, 7); ctx.fill();
-  ctx.fillStyle = '#9fd4a8'; ctx.font = '600 10px system-ui'; ctx.textAlign = 'center';
-  ctx.fillText('FIELD POSITION', mx + mw / 2, my + mh - 8);
+  ctx.fillStyle = '#9fd4a8'; ctx.font = `600 ${Math.round(10 * s)}px system-ui`; ctx.textAlign = 'center';
+  ctx.fillText('FIELD POSITION', ox, r.y + r.h - 8 * s);
+}
+
+// one player's name / score / detail block, centred on (cx, cy)
+function drawScoreBlock(p, cx, cy, highlight, s) {
+  const tot = p.goals * 6 + p.behinds, maxw = (PORTRAIT ? W : W * 0.46) - 4 * MARGIN;
+  ctx.fillStyle = highlight ? '#ffdd33' : '#9fb4cc';
+  fitFont(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, 800, 24 * s, maxw);
+  ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx, cy);
+  ctx.fillStyle = '#fff'; fitFont(`${p.goals}.${p.behinds} (${tot})`, 800, 50 * s, maxw);
+  ctx.fillText(`${p.goals}.${p.behinds} (${tot})`, cx, cy + 40 * s);
+  ctx.fillStyle = '#7a8ba0'; fitFont('x', 600, 15 * s, maxw);
+  ctx.fillText(`${p.goals} goal${p.goals === 1 ? '' : 's'}, ${p.behinds} behind${p.behinds === 1 ? '' : 's'}`, cx, cy + 74 * s);
 }
 
 function drawGameOver() {
+  const s = US, cx = W / 2;
   ctx.fillStyle = 'rgba(6,10,18,0.9)'; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#ffdd33'; ctx.font = '900 46px system-ui';
-  ctx.fillText('FULL TIME', W / 2, 130);
+  ctx.fillStyle = '#ffdd33'; fitFont('FULL TIME', 900, 46 * s, W - 4 * MARGIN);
+  ctx.fillText('FULL TIME', cx, H * 0.14);
 
+  let verdict;
   if (S.players.length === 1) {
-    const p = S.players[0], tot = p.goals * 6 + p.behinds;
-    ctx.fillStyle = '#ffdd33'; ctx.font = '800 26px system-ui';
-    ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, W / 2, 220);
-    ctx.fillStyle = '#fff'; ctx.font = '900 60px system-ui';
-    ctx.fillText(`${p.goals}.${p.behinds} (${tot})`, W / 2, 292);
-    ctx.fillStyle = '#7a8ba0'; ctx.font = '600 16px system-ui';
-    ctx.fillText(`${p.goals} goal${p.goals === 1 ? '' : 's'}, ${p.behinds} behind${p.behinds === 1 ? '' : 's'} from ${TOTAL_ROUNDS} set shots`, W / 2, 336);
-    let verdict;
+    const p = S.players[0];
+    drawScoreBlock(p, cx, H * 0.36, true, s);
+    ctx.fillStyle = '#7a8ba0'; fitFont('x', 600, 14 * s, W - 4 * MARGIN);
+    ctx.fillText(`from ${TOTAL_ROUNDS} set shots`, cx, H * 0.36 + 98 * s);
     if (p.goals >= 8) verdict = 'Elite! A dead-eye set-shot sniper.';
     else if (p.goals >= 6) verdict = 'Great kicking — a reliable spearhead.';
     else if (p.goals >= 4) verdict = 'Solid effort. Keep drilling those set shots.';
     else if (p.goals >= 2) verdict = 'Getting there — back to the training track!';
     else verdict = 'Tough day at the office. Have another crack!';
-    ctx.fillStyle = '#3ddc68'; ctx.font = '700 24px system-ui';
-    ctx.fillText(verdict, W / 2, 400);
   } else {
     const [a, b] = S.players;
     const ta = a.goals * 6 + a.behinds, tb = b.goals * 6 + b.behinds;
-    for (let i = 0; i < 2; i++) {
-      const p = S.players[i], tot = p.goals * 6 + p.behinds;
-      const winner = tot === Math.max(ta, tb) && ta !== tb;
-      const cx_ = i === 0 ? W / 2 - 170 : W / 2 + 170;
-      ctx.fillStyle = winner ? '#ffdd33' : '#9fb4cc'; ctx.font = '800 24px system-ui';
-      ctx.fillText(`${p.name.toUpperCase()} · ${DIFFS[p.diff].label}`, cx_, 210);
-      ctx.fillStyle = '#fff'; ctx.font = '800 52px system-ui';
-      ctx.fillText(`${p.goals}.${p.behinds} (${tot})`, cx_, 268);
-      ctx.fillStyle = '#7a8ba0'; ctx.font = '600 15px system-ui';
-      ctx.fillText(`${p.goals} goal${p.goals === 1 ? '' : 's'}, ${p.behinds} behind${p.behinds === 1 ? '' : 's'}`, cx_, 306);
+    const win = (p, t) => t === Math.max(ta, tb) && ta !== tb;
+    if (PORTRAIT) {
+      drawScoreBlock(a, cx, H * 0.30, win(a, ta), s);
+      drawScoreBlock(b, cx, H * 0.52, win(b, tb), s);
+    } else {
+      const off = Math.min(W * 0.26, 200 * s);
+      drawScoreBlock(a, cx - off, H * 0.38, win(a, ta), s);
+      drawScoreBlock(b, cx + off, H * 0.38, win(b, tb), s);
+      ctx.fillStyle = '#fff'; ctx.font = `800 ${Math.round(30 * s)}px system-ui`;
+      ctx.fillText('—', cx, H * 0.38 + 32 * s);
     }
-    ctx.fillStyle = '#fff'; ctx.font = '800 30px system-ui';
-    ctx.fillText('—', W / 2, 262);
-    let verdict;
     if (ta === tb) verdict = 'A DRAW! Extra practice for both.';
     else {
       const w = ta > tb ? a : b, margin = Math.abs(ta - tb);
@@ -929,15 +1013,16 @@ function drawGameOver() {
                 margin >= 12 ? `${w.name} wins by ${margin} — comfortable.` :
                 `${w.name} wins by ${margin} — what a nail-biter!`;
     }
-    ctx.fillStyle = '#3ddc68'; ctx.font = '700 26px system-ui';
-    ctx.fillText(verdict, W / 2, 375);
   }
+  ctx.fillStyle = '#3ddc68'; fitFont(verdict, 700, 25 * s, W - 3 * MARGIN);
+  ctx.fillText(verdict, cx, H * (PORTRAIT ? 0.72 : 0.66));
 
-  ctx.fillStyle = '#ffdd33'; ctx.font = '700 18px system-ui';
-  if (Math.sin(S.time * 4) > -0.3) ctx.fillText('Press SPACE or tap for a new match', W / 2, 440);
+  ctx.fillStyle = '#ffdd33'; fitFont('Press SPACE or tap for a new match', 700, 18 * s, W - 3 * MARGIN);
+  if (Math.sin(S.time * 4) > -0.3) ctx.fillText('Press SPACE or tap for a new match', cx, H * 0.86);
 }
 
 function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);   // keep drawing in CSS pixels at any DPR
   drawField();
   drawPosts();
   drawDefender();
@@ -954,6 +1039,12 @@ function frame(ts) {
   render();
   requestAnimationFrame(frame);
 }
+
+// keep the canvas matched to the viewport in any size / orientation
+resize();
+addEventListener('resize', resize);
+addEventListener('orientationchange', resize);
+if (window.visualViewport) visualViewport.addEventListener('resize', resize);
 
 newGame([{ name: 'Player 1', diff: 'medium' }, { name: 'Player 2', diff: 'medium' }]);
 requestAnimationFrame(frame);
