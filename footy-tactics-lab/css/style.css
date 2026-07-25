@@ -1,0 +1,312 @@
+/* Footy Tactics Lab — landscape 60/40 split on a tablet, stacked in portrait.
+   Every tappable thing is at least 56px, because 8-year-old fingers. */
+
+:root {
+  --turf:      #0a2818;
+  --turf-2:    #0e3b23;
+  --panel:     #12432a;
+  --panel-2:   #175534;
+  --line:      rgba(255, 255, 255, .14);
+  --ink:       #eef7f0;
+  --muted:     #9dc4ac;
+  --gold:      #ffe14d;
+  --run:       #3ddc68;
+  --danger:    #ff5f52;
+  --radius:    14px;
+  --tap:       56px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  width: 100%; height: 100%;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background: radial-gradient(900px 600px at 50% -10%, var(--turf-2), var(--turf));
+  -webkit-user-select: none; user-select: none;
+  overflow: auto;
+}
+
+/* ── Back to the catalogue ─────────────────────────────────────────────── */
+#back {
+  position: fixed; z-index: 60;
+  top: calc(8px + env(safe-area-inset-top));
+  left: calc(8px + env(safe-area-inset-left));
+  background: rgba(6, 20, 12, .78); color: #cfe9d8;
+  text-decoration: none; font-size: 13px; font-weight: 700;
+  padding: 8px 13px; border-radius: 999px;
+  border: 1px solid var(--line);
+}
+#back:active { background: rgba(6, 20, 12, .95); }
+
+/* ── Overlays (level select, result) ───────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 14, 9, .86);
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  overflow: auto;
+}
+.overlay[hidden] { display: none; }
+.sheet {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 22px; padding: clamp(18px, 4vw, 28px);
+  width: 100%; max-width: 760px; margin: auto;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .55);
+  text-align: center;
+}
+.sheet-sm { max-width: 420px; }
+.sheet h1 { font-size: clamp(22px, 5vw, 30px); margin-bottom: 6px; }
+.sheet h2 { font-size: clamp(20px, 4.5vw, 26px); }
+.sub { color: var(--muted); font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+
+.level-grid {
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+.level-card {
+  display: grid; gap: 2px; justify-items: center;
+  min-height: 96px; padding: 10px 8px;
+  background: var(--panel-2); color: inherit;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  font: inherit; cursor: pointer;
+}
+.level-card:active { transform: scale(.97); }
+.level-card.locked { opacity: .38; cursor: default; }
+.level-no { font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
+.level-t  { font-size: 14px; font-weight: 700; line-height: 1.2; }
+.level-c  { font-size: 11px; color: var(--muted); }
+.level-s  { font-size: 15px; color: var(--gold); letter-spacing: 2px; }
+
+.sheet-foot {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; flex-wrap: wrap; margin-top: 18px;
+}
+.sheet-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 18px; flex-wrap: wrap; }
+.result-icon { font-size: 54px; line-height: 1; }
+.big-stars { font-size: 34px; color: var(--gold); letter-spacing: 6px; margin: 6px 0 10px; }
+
+.pill {
+  background: rgba(255, 255, 255, .12); border-radius: 999px;
+  padding: 6px 14px; font-size: 14px; font-weight: 700; white-space: nowrap;
+}
+.ghost-btn {
+  background: none; border: 1px solid var(--line); color: var(--muted);
+  border-radius: 999px; padding: 9px 16px; font: inherit; font-size: 13px; cursor: pointer;
+}
+
+/* ── Game shell ────────────────────────────────────────────────────────────
+   The base layout is the portrait one: everything stacks and the page
+   scrolls. The landscape media query at the bottom turns it into the fixed
+   60/40 split. */
+#game {
+  min-height: 100%;
+  display: grid; gap: 10px;
+  grid-template-columns: minmax(0, 1fr);   /* never widen past the viewport */
+  align-content: start;                    /* panels keep their natural height */
+  padding: calc(6px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right))
+           calc(8px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
+}
+#game[hidden] { display: none; }
+
+.field-col, .code-col {
+  display: grid; gap: 8px; min-height: 0; min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding-left: 92px;   /* clears the fixed ‹ Games pill */
+}
+.level-name { flex: 1; min-width: 0; line-height: 1.2; }
+.level-name strong { display: block; font-size: 15px; }
+.level-name span { font-size: 11px; color: var(--muted); }
+#levelStars { color: var(--gold); letter-spacing: 2px; }
+.icon-btn {
+  flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px;
+  background: rgba(255, 255, 255, .1); border: 1px solid var(--line);
+  color: inherit; font-size: 18px; cursor: pointer;
+}
+.icon-btn:active { background: rgba(255, 255, 255, .2); }
+
+/* ── The oval ──────────────────────────────────────────────────────────── */
+.canvas-wrap { position: relative; min-height: 0; aspect-ratio: 4 / 3; }
+#oval { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.toast {
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+  max-width: 94%; z-index: 5;
+  background: rgba(6, 20, 12, .93); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 14px;
+  font-size: 14px; font-weight: 600; line-height: 1.35; text-align: center;
+}
+.toast[hidden] { display: none; }
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.field-buttons { display: flex; gap: 8px; }
+.code-buttons  { display: flex; gap: 8px; }
+.btn {
+  min-height: var(--tap); border: none; border-radius: var(--radius);
+  font: inherit; font-size: 15px; font-weight: 800; letter-spacing: .4px;
+  cursor: pointer; padding: 0 16px;
+}
+.btn:active { transform: scale(.97); }
+.btn-run    { flex: 1; background: var(--run); color: #04240f; font-size: 17px; }
+.btn-reset  { flex: 0 0 auto; background: rgba(255, 255, 255, .12); color: var(--ink); }
+.btn-hint   { flex: 0 0 auto; background: rgba(255, 225, 77, .17); color: var(--gold); font-size: 20px; padding: 0 14px; }
+.btn-clear  { flex: 1; background: rgba(255, 255, 255, .1); color: var(--muted); font-size: 14px; }
+
+/* ── Code panels ───────────────────────────────────────────────────────── */
+.panel {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 8px 10px 10px;
+  min-height: 0; display: flex; flex-direction: column;
+}
+.panel h2 {
+  font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.count { font-size: 12px; letter-spacing: 0; color: var(--muted); }
+.count.full { color: var(--gold); }
+.count.shake { animation: shake .35s; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.palette { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.workspace { position: relative; flex: 1; min-height: 0; touch-action: pan-y; }
+.empty { color: var(--muted); font-size: 13px; text-align: center; padding: 12px 6px 4px; }
+.empty[hidden] { display: none; }
+
+/* ── Blocks ────────────────────────────────────────────────────────────── */
+.block {
+  --tint: #4a7f5f;
+  border: none; border-radius: 12px;
+  background: var(--tint); color: #08210f;
+  font: inherit; font-weight: 800;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .22);
+}
+.block-move     { --tint: #46d07a; }
+.block-turn     { --tint: #58b6f5; }
+.block-repeat   { --tint: #ffa53d; }
+.block-handball { --tint: #c58cff; }
+.block-kick     { --tint: #ffe14d; }
+
+.palette-block {
+  min-height: var(--tap);
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 6px 8px; cursor: pointer; text-align: center; line-height: 1.15;
+}
+.palette-block:active { transform: scale(.96); }
+.block-icon  { font-size: 19px; }
+.block-label { font-size: 13px; }
+
+.ws-block { margin-bottom: 6px; }
+.block-head {
+  min-height: var(--tap);
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 4px;
+}
+.grip {
+  flex: 0 0 auto; width: 26px; min-height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; opacity: .5; cursor: grab; touch-action: none;
+}
+.ws-block .block-label { flex: 1; text-align: left; font-size: 14px; }
+
+.stepper {
+  display: flex; align-items: center; gap: 2px;
+  background: rgba(0, 0, 0, .16); border-radius: 999px; padding: 2px;
+}
+.step-btn {
+  width: 34px; height: 34px; border: none; border-radius: 50%;
+  background: rgba(255, 255, 255, .55); color: #08210f;
+  font: inherit; font-size: 19px; font-weight: 900; line-height: 1; cursor: pointer;
+}
+.step-n { min-width: 28px; text-align: center; font-size: 14px; }
+
+.del-btn {
+  flex: 0 0 auto; width: 34px; height: 34px; border: none; border-radius: 50%;
+  background: rgba(0, 0, 0, .2); color: #08210f;
+  font: inherit; font-size: 14px; font-weight: 900; cursor: pointer;
+}
+.del-btn:active { background: rgba(0, 0, 0, .38); }
+
+/* the inside of a Repeat, and the workspace root */
+.block-body {
+  border-radius: 10px; margin: 0 6px 6px 22px; padding: 6px;
+  background: rgba(0, 0, 0, .17);
+  border: 2px dashed transparent;
+}
+.root-body { margin: 0; padding: 4px; background: none; min-height: 60px; }
+.block-body.targeted { border-color: var(--gold); }
+.body-hint { display: block; padding: 8px 6px; font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, .72); }
+.target-chip {
+  display: block; text-align: center;
+  padding: 5px 8px; margin: 2px 0 0;
+  font-size: 11px; font-weight: 800; letter-spacing: .4px;
+  color: var(--gold); background: rgba(255, 225, 77, .12);
+  border-radius: 8px;
+}
+
+/* ── Run states ────────────────────────────────────────────────────────── */
+.ws-block.running > .block-head {
+  outline: 3px solid var(--gold); outline-offset: -3px;
+  border-radius: 12px; animation: pulse .5s ease-in-out infinite alternate;
+}
+@keyframes pulse { from { filter: brightness(1); } to { filter: brightness(1.35); } }
+.ws-block.failed > .block-head {
+  outline: 3px solid var(--danger); outline-offset: -3px; border-radius: 12px;
+  background: rgba(255, 95, 82, .5);
+}
+.workspace.locked .grip,
+.workspace.locked .del-btn,
+.workspace.locked .step-btn { opacity: .35; pointer-events: none; }
+
+/* ── Dragging ──────────────────────────────────────────────────────────── */
+/* while dragging, the placeholder stands in for the block — leaving the
+   original in the flow as well would offset every drop calculation */
+.ws-block.dragging { display: none; }
+.block.floating {
+  position: fixed; z-index: 80; pointer-events: none;
+  opacity: .95; transform: rotate(-1.5deg) scale(1.03);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .5);
+}
+/* an insertion line, positioned absolutely so it never reflows the list */
+.placeholder {
+  position: absolute; height: 5px; border-radius: 3px;
+  background: var(--gold); box-shadow: 0 0 10px rgba(255, 225, 77, .8);
+  pointer-events: none; z-index: 6;
+}
+
+/* ── Landscape: the 60/40 split from the spec, locked to the viewport ──── */
+@media (min-width: 720px) and (orientation: landscape) {
+  body { overflow: hidden; }
+  #game {
+    height: 100%;
+    grid-template-columns: minmax(0, 60fr) minmax(0, 40fr);
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
+    overflow: hidden;
+  }
+  .field-col, .code-col { grid-template-rows: auto minmax(0, 1fr) auto; }
+  .canvas-wrap { aspect-ratio: auto; }
+  .workspace { overflow-y: auto; overflow-x: hidden; }
+  .palette { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Very short landscape windows (a phone on its side): shrink the chrome. */
+@media (orientation: landscape) and (max-height: 460px) {
+  .topbar { padding-left: 84px; }
+  .level-name strong { font-size: 13px; }
+  .btn { min-height: 48px; font-size: 14px; }
+  .palette-block, .block-head { min-height: 48px; }
+}

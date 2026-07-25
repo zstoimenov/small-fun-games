@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Footy Tactics Lab</title>
+<meta name="description" content="Learn to code with footy! Build a play out of blocks, run it one step at a time and slot the goal.">
+<meta name="theme-color" content="#0e6b3a">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Footy Tactics">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+<!-- ══ LEVEL SELECT ══════════════════════════════════════════════════════ -->
+<div id="levelSelect" class="overlay">
+  <div class="sheet">
+    <h1>🥅 Footy Tactics Lab</h1>
+    <p class="sub">Write a play with code blocks. Run it one step at a time and slot the big one!</p>
+    <div id="levelGrid" class="level-grid"></div>
+    <div class="sheet-foot">
+      <span id="totalStars" class="pill">⭐ 0 / 30</span>
+      <button id="resetProgress" class="ghost-btn">Start again</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
+<main id="game" hidden>
+
+  <!-- LEFT: the oval -->
+  <section class="field-col">
+    <div class="topbar">
+      <button id="menuBtn" class="icon-btn" title="Choose a level">☰</button>
+      <div class="level-name">
+        <strong id="levelTitle">Level 1: First Kick</strong>
+        <span id="levelConcept">Sequencing</span>
+      </div>
+      <span id="levelStars" class="pill">☆☆☆</span>
+      <button id="muteBtn" class="icon-btn" title="Sound on/off">🔊</button>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="oval"></canvas>
+      <div id="toast" class="toast" hidden></div>
+    </div>
+
+    <div class="field-buttons">
+      <button id="resetBtn" class="btn btn-reset">↺ RESET</button>
+      <button id="hintBtn" class="btn btn-hint" title="Give me a hint">💡</button>
+      <button id="runBtn" class="btn btn-run">RUN LOGIC ▶</button>
+    </div>
+  </section>
+
+  <!-- RIGHT: the code -->
+  <section class="code-col">
+    <div class="panel palette-panel">
+      <h2>Blocks</h2>
+      <div id="palette" class="palette"></div>
+    </div>
+
+    <div class="panel workspace-panel">
+      <h2>Your play <span id="blockCount" class="count">0 / 6</span></h2>
+      <div id="workspace" class="workspace"></div>
+      <p id="workspaceEmpty" class="empty">Tap a block above to add it here 👆</p>
+    </div>
+
+    <div class="code-buttons">
+      <button id="clearBtn" class="btn btn-clear">🗑️ Clear all</button>
+    </div>
+  </section>
+</main>
+
+<!-- ══ WIN / RESULT ═════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <div id="resultIcon" class="result-icon">🏉</div>
+    <h2 id="resultTitle">GOAL!</h2>
+    <div id="resultStars" class="big-stars">★★★</div>
+    <p id="resultText" class="sub"></p>
+    <div class="sheet-buttons">
+      <button id="againBtn" class="btn btn-clear">↺ Try again</button>
+      <button id="nextBtn" class="btn btn-run">Next level ▶</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/levels.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/game.js"></script>
+<script src="./js/engine.js"></script>
+<script src="./js/blocks.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
