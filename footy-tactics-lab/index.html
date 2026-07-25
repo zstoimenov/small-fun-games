@@ -49,6 +49,13 @@
 
     <div class="canvas-wrap">
       <canvas id="oval"></canvas>
+      <!-- shows the block being executed right now, on the field, so the run
+           can be followed without ever looking away from the player -->
+      <div id="nowPlaying" class="now-playing" hidden>
+        <span id="npIcon" class="np-icon"></span>
+        <span id="npLabel" class="np-label"></span>
+        <span id="npMeta" class="np-meta"></span>
+      </div>
       <div id="toast" class="toast" hidden></div>
     </div>
 

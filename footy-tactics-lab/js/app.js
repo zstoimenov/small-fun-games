@@ -15,6 +15,27 @@ window.FTL = window.FTL || {};
 
   const stars = (n) => "★★★".slice(0, n) + "☆☆☆".slice(0, 3 - n);
 
+  /* The on-field readout. The workspace can be scrolled away, off to the side
+     or below the fold, so the block that is executing right now is mirrored
+     onto the oval itself — the field and the player never leave the screen. */
+  function showNowPlaying(type, meta, failed) {
+    const def = Blocks.describe(type);
+    const el = $("nowPlaying");
+    if (!def) { el.hidden = true; return; }
+    el.className = "now-playing block block-" + def.kind + (failed ? " failed" : "");
+    $("npIcon").textContent = def.icon;
+    $("npLabel").textContent = def.label;
+    $("npMeta").textContent = meta || "";
+    $("npMeta").hidden = !meta;
+    el.hidden = false;
+    // restart the pop animation on every step, so repeats visibly tick over
+    el.classList.remove("tick");
+    void el.offsetWidth;
+    el.classList.add("tick");
+  }
+
+  function hideNowPlaying() { $("nowPlaying").hidden = true; }
+
   function toast(text, ms) {
     const el = $("toast");
     el.textContent = text;
@@ -79,6 +100,7 @@ window.FTL = window.FTL || {};
     running = false;
     Blocks.setLocked(false);
     Blocks.clearHighlights();
+    hideNowPlaying();
     Game.reset();
     $("runBtn").textContent = "RUN LOGIC ▶";
     $("runBtn").disabled = false;
@@ -95,10 +117,21 @@ window.FTL = window.FTL || {};
     Game.reset();
     $("runBtn").textContent = "■ STOP";
 
+    // in the stacked portrait layout the oval can be scrolled off the top —
+    // put it back before the first block runs
+    const doc = document.scrollingElement;
+    if (doc && doc.scrollTop > 0) window.scrollTo({ top: 0, behavior: "smooth" });
+
     const blockCount = Engine.countBlocks(tree);
 
     Engine.run(tree, level, {
-      onStep: function (blockId) { Blocks.highlight(blockId, "running"); },
+      onStep: function (blockId, type, info) {
+        Blocks.highlight(blockId, "running");
+        const loop = info.loops[info.loops.length - 1];
+        let meta = (info.index + 1) + " of " + info.total;
+        if (loop) meta += "  🔁 " + loop.pass + "/" + loop.of;
+        showNowPlaying(type, meta, false);
+      },
 
       onApply: function (from, to, effect) {
         if (effect === "move") Audio.step();
@@ -115,7 +148,13 @@ window.FTL = window.FTL || {};
       onFail: function (blockId, reason, at) {
         running = false;
         Blocks.setLocked(false);
-        if (blockId) Blocks.highlight(blockId, "failed");
+        if (blockId) {
+          Blocks.highlight(blockId, "failed");
+          const el = document.querySelector('[data-id="' + blockId + '"]');
+          if (el) showNowPlaying(el.dataset.type, "", true);
+        } else {
+          hideNowPlaying();
+        }
         if (at) Game.flashTile(at[0], at[1], "bad");
         Audio.whistle();
         toast("📣 " + Engine.message(reason), 5200);
@@ -129,6 +168,7 @@ window.FTL = window.FTL || {};
         setTimeout(() => {
           Audio.goal();
           Game.celebrate();
+          hideNowPlaying();
           const earned = Levels.recordWin(level.id, blockCount);
           $("levelStars").textContent = stars(Levels.starsFor(level.id));
           showResult(earned, blockCount);

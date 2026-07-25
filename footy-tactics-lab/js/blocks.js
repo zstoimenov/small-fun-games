@@ -220,7 +220,22 @@ FTL.Blocks = (function () {
     const el = workspaceEl.querySelector('[data-id="' + id + '"]');
     if (!el) return;
     el.classList.add(kind);
-    if (el.scrollIntoView) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    revealWithin(el);
+  }
+
+  // Nudge the workspace's own scrollbar, never the page's. scrollIntoView()
+  // walks up every scrollable ancestor, which in the stacked portrait layout
+  // scrolls the document and takes the oval off screen mid-run — exactly when
+  // the player is the thing you need to be watching.
+  function revealWithin(el) {
+    const room = workspaceEl.scrollHeight - workspaceEl.clientHeight;
+    if (room <= 1) return;
+    const host = workspaceEl.getBoundingClientRect();
+    const box = el.getBoundingClientRect();
+    let delta = 0;
+    if (box.top < host.top + 4) delta = box.top - host.top - 8;
+    else if (box.bottom > host.bottom - 4) delta = box.bottom - host.bottom + 8;
+    if (delta) workspaceEl.scrollTop = Math.max(0, Math.min(room, workspaceEl.scrollTop + delta));
   }
   function clearHighlights() {
     workspaceEl.querySelectorAll(".running,.failed").forEach((el) => {
@@ -416,6 +431,7 @@ FTL.Blocks = (function () {
     mount: mount, setLevel: setLevel,
     getTree: function () { return tree; },
     setTree: function (t) { tree = t; target = null; render(); },
+    describe: function (type) { return DEFS[type]; },
     count: count,
     clear: clear,
     highlight: highlight, clearHighlights: clearHighlights,
