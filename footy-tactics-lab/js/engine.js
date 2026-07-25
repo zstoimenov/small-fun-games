@@ -27,12 +27,14 @@ FTL.Engine = (function () {
   /* ── Flattening the block tree ────────────────────────────────────────── */
 
   // Every emitted step keeps its blockId, so a block inside a Repeat lights up
-  // again on each pass — which is what makes the loop visible.
+  // again on each pass — which is what makes the loop visible. Each step also
+  // carries the Repeats it sits inside and which pass they are on, so the
+  // on-field readout can say "Repeat 2 of 3".
   function compile(tree, level) {
     const steps = [];
     let overflow = false;
 
-    (function walk(nodes) {
+    (function walk(nodes, loops) {
       for (const node of nodes) {
         if (overflow) return;
         if (steps.length >= MAX_STEPS) { overflow = true; return; }
@@ -40,13 +42,13 @@ FTL.Engine = (function () {
           const n = Math.max(1, Math.min(10, node.n || 2));
           for (let i = 0; i < n; i++) {
             if (overflow) return;
-            walk(node.body || []);
+            walk(node.body || [], loops.concat([{ id: node.id, pass: i + 1, of: n }]));
           }
         } else {
-          steps.push({ blockId: node.id, type: node.type });
+          steps.push({ blockId: node.id, type: node.type, loops: loops });
         }
       }
-    })(tree);
+    })(tree, []);
 
     return { steps: steps, overflow: overflow };
   }
@@ -153,8 +155,9 @@ FTL.Engine = (function () {
     if (timer) { clearTimeout(timer); timer = null; }
   }
 
-  /* cb: { onStep(blockId, type, state), onApply(from, to, effect),
-           onFail(blockId, reason, at), onWin(state), onDone() }          */
+  /* cb: { onStep(blockId, type, info), onApply(from, to, effect),
+           onFail(blockId, reason, at), onWin(state) }
+     info: { index, total, loops:[{id,pass,of}], state }                   */
   function run(tree, level, cb) {
     stop();
     const mine = ++token;
@@ -175,7 +178,9 @@ FTL.Engine = (function () {
         return;
       }
       const step = compiled.steps[i];
-      cb.onStep(step.blockId, step.type, state);
+      cb.onStep(step.blockId, step.type, {
+        index: i, total: compiled.steps.length, loops: step.loops, state: state
+      });
 
       const res = applyStep(level, state, step.type);
       if (!res.ok) {
