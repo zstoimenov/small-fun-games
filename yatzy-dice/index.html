@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Yatzy Dice</title>
+<meta name="description" content="Roll five dice, chase full houses and straights. 1-3 players, a computer opponent, or use it as a scorecard for your real dice.">
+<meta name="theme-color" content="#f45b69">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yatzy Dice">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet">
+    <h1>🎲 Yatzy Dice</h1>
+    <p class="sub">Five dice, three rolls, and a card full of boxes to fill.</p>
+
+    <div class="field">
+      <span class="field-label">Which rules?</span>
+      <div class="chooser" id="rulesetChooser">
+        <button class="opt" type="button" data-value="yahtzee">
+          <strong>Yahtzee rules</strong><span>13 boxes · bonus 35</span>
+        </button>
+        <button class="opt" type="button" data-value="yatzy">
+          <strong>Yatzy rules</strong><span>15 boxes · pairs · bonus 50</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">How are you playing?</span>
+      <div class="chooser" id="modeChooser">
+        <button class="opt" type="button" data-value="play">
+          <strong>🎲 App dice</strong><span>Roll on screen</span>
+        </button>
+        <button class="opt" type="button" data-value="card">
+          <strong>📝 Scorecard only</strong><span>Use your real dice</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">How many players?</span>
+      <div class="chooser tight" id="countChooser">
+        <button class="opt" type="button" data-value="1">1</button>
+        <button class="opt" type="button" data-value="2">2</button>
+        <button class="opt" type="button" data-value="3">3</button>
+      </div>
+    </div>
+
+    <div class="field" id="cpuRow" hidden>
+      <span class="field-label">Computer opponents</span>
+      <div class="chooser tight" id="cpuChooser">
+        <button class="opt" type="button" data-value="1">1</button>
+        <button class="opt" type="button" data-value="2">2</button>
+      </div>
+    </div>
+
+    <div class="field" id="diffRow" hidden>
+      <span class="field-label">How good are they?</span>
+      <div class="chooser tight" id="diffChooser">
+        <button class="opt" type="button" data-value="easy">Easy</button>
+        <button class="opt" type="button" data-value="medium">Medium</button>
+        <button class="opt" type="button" data-value="hard">Hard</button>
+      </div>
+    </div>
+
+    <p class="note" id="soloNote" hidden>
+      Playing solo with your own dice — the app just keeps score. A computer opponent
+      needs the app's dice, so switch to <b>App dice</b> if you'd like someone to play against.
+    </p>
+
+    <div class="field">
+      <span class="field-label">Names</span>
+      <div id="namesWrap"></div>
+    </div>
+
+    <div class="sheet-buttons">
+      <button id="howtoBtn" class="btn btn-clear" type="button">❓ How to play</button>
+      <button id="startBtn" class="btn btn-go" type="button">Start game ▶</button>
+    </div>
+    <button id="resumeBtn" class="ghost-btn wide" type="button" hidden>↩︎ Carry on with the saved game</button>
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
+<main id="game" hidden>
+  <div class="topbar">
+    <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
+    <div class="turn-info">
+      <strong id="turnName">Player 1</strong>
+      <span id="turnMeta">Round 1 of 13</span>
+    </div>
+    <button id="helpBtn" class="icon-btn" type="button" title="How to play">?</button>
+    <button id="muteBtn" class="icon-btn" type="button" title="Sound on/off">🔊</button>
+  </div>
+
+  <div id="coach" class="coach" hidden></div>
+
+  <!-- Playing with the app's dice -->
+  <section id="diceArea" class="dice-area">
+    <div id="diceRow" class="dice-row"></div>
+    <p id="diceHint" class="dice-hint">Three rolls a turn. Off you go!</p>
+    <button id="rollBtn" class="btn btn-roll" type="button">
+      <span id="rollLabel">ROLL THE DICE</span>
+      <span id="rollsLeft" class="rolls-left">3 left</span>
+    </button>
+  </section>
+
+  <!-- Playing with real dice: the app is only the score sheet -->
+  <section id="entryArea" class="entry-area" hidden>
+    <p id="entryTitle" class="entry-title">Tap in the five dice you rolled</p>
+    <div id="entryDice" class="dice-row"></div>
+    <div id="keypad" class="keypad"></div>
+    <div class="entry-buttons">
+      <button id="entryClear" class="ghost-btn" type="button">Clear</button>
+      <button id="entryToggle" class="ghost-btn" type="button">✏️ Type scores instead</button>
+    </div>
+  </section>
+
+  <div class="card-wrap">
+    <table id="scorecard" class="scorecard"></table>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+</main>
+
+<!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
+<div id="menu" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>Menu</h2>
+    <button id="menuSound" class="ghost-btn wide" type="button">🔊 Sound is on</button>
+    <button id="menuHowto" class="ghost-btn wide" type="button">❓ How to play</button>
+    <button id="menuNew" class="ghost-btn wide" type="button">🔄 New game</button>
+
+    <div class="dice-check">
+      <h3>Are the dice really random?</h3>
+      <p class="muted">
+        Every die comes from your device's cryptographic random number generator — no
+        seed, no pattern, and the number is decided before the dice finish tumbling.
+        Roll sixty thousand of them and see for yourself.
+      </p>
+      <button id="diceCheckBtn" class="ghost-btn wide" type="button">🎲 Run the dice check</button>
+      <div id="diceCheckOut"></div>
+    </div>
+
+    <div class="sheet-buttons">
+      <button id="menuClose" class="btn btn-go" type="button">Back to the game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet sheet-sm howto-sheet">
+    <div class="howto-top">
+      <span id="howtoStep" class="pill">1 / 7</span>
+      <button id="howtoSkip" class="ghost-btn" type="button">Skip</button>
+    </div>
+    <div id="howtoBody" class="howto-body"></div>
+    <div id="howtoDots" class="dots"></div>
+    <div class="sheet-buttons">
+      <button id="howtoPrev" class="btn btn-clear" type="button">‹ Back</button>
+      <button id="howtoNext" class="btn btn-go" type="button">Next ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BOX HELP ═════════════════════════════════════════════════════════ -->
+<div id="help" class="overlay" hidden>
+  <div class="sheet sheet-xs">
+    <h2 id="helpTitle">Full House</h2>
+    <p id="helpText" class="sub"></p>
+    <div id="helpDice"></div>
+    <p id="helpScore" class="note"></p>
+    <div class="sheet-buttons">
+      <button id="helpClose" class="btn btn-go" type="button">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TYPE A SCORE ═════════════════════════════════════════════════════ -->
+<div id="typeSheet" class="overlay" hidden>
+  <div class="sheet sheet-xs">
+    <h2 id="typeTitle">Full House</h2>
+    <p id="typeHint" class="sub"></p>
+    <input id="typeInput" type="number" inputmode="numeric" min="0" max="999" placeholder="0">
+    <div class="sheet-buttons">
+      <button id="typeCancel" class="btn btn-clear" type="button">Cancel</button>
+      <button id="typeOk" class="btn btn-go" type="button">Write it in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <div id="resultIcon" class="result-icon">🏆</div>
+    <h2 id="resultTitle">Player 1 wins!</h2>
+    <div id="resultTable" class="result-table"></div>
+    <div class="sheet-buttons">
+      <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
+      <button id="againBtn" class="btn btn-go" type="button">Play again ▶</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/rng.js"></script>
+<script src="./js/rules.js"></script>
+<script src="./js/ai.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/tutorial.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>

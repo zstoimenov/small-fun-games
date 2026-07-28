@@ -6,12 +6,15 @@ no dependencies — plain HTML/CSS/JS, and it works offline once loaded.
 
 ## Games
 
+Newest first — that's the order they appear in on the launcher too.
+
 | Game | Folder | What it is |
 | --- | --- | --- |
+| 🎲 **Yatzy Dice** | [`yatzy-dice/`](yatzy-dice/) | Five dice, three rolls a turn, a card full of boxes. 1–3 players, an Easy/Medium/Hard computer opponent for solo games, Yahtzee **and** Yatzy rules, and a scorecard-only mode for when you'd rather roll real dice. Dice come from `crypto.getRandomValues`, and there's a built-in fairness check to prove it. |
+| 🥅 **Footy Tactics Lab** | [`footy-tactics-lab/`](footy-tactics-lab/) | Learn to code with footy. Build a play from move/turn/repeat/handball blocks, run it one step at a time and debug your way to a goal. 10 levels, sequencing through nested loops (~age 8+). |
+| ⭐ **Times Table Blaster** | [`times-table-blaster/`](times-table-blaster/) | Practise your times tables. Ninja Belt mode ranks you up one table at a time; Classic mode adds timers, streaks and a leaderboard. |
 | 🤖 **Robo Rules** | [`robo-rules/`](robo-rules/) | Teach Chip the robot pet with IF-THIS-THEN-THAT rules — a first taste of coding for kids (~age 7+). |
 | 🏉 **AFL Goal Kick** | [`afl-goal-kick/`](afl-goal-kick/) | Aim, load the power bar, time your run-up and kick goals. 1–2 players, wind, a man on the mark, and Easy/Medium/Hard. |
-| ⭐ **Times Table Blaster** | [`times-table-blaster/`](times-table-blaster/) | Practise your times tables. Ninja Belt mode ranks you up one table at a time; Classic mode adds timers, streaks and a leaderboard. |
-| 🥅 **Footy Tactics Lab** | [`footy-tactics-lab/`](footy-tactics-lab/) | Learn to code with footy. Build a play from move/turn/repeat/handball blocks, run it one step at a time and debug your way to a goal. 10 levels, sequencing through nested loops (~age 8+). |
 
 ## Run locally
 
@@ -45,7 +48,9 @@ catalogue and picks a game.
 1. Drop the game in its own folder (e.g. `my-game/`) with an `index.html`, using
    **relative** paths so it works from a subpath.
 2. Add a **‹ Games** link back to the catalogue: `<a href="../">‹ Games</a>`.
-3. Add one entry to the `GAMES` array in the root [`index.html`](index.html).
+3. Add one entry to the `GAMES` array in the root [`index.html`](index.html), including
+   an `added` date (`YYYY-MM-DD`). The launcher sorts by it, newest first, so the
+   entry can go anywhere in the array and the new game still lands at the top.
 4. Register the shared worker from the new game with
    `navigator.serviceWorker.register('../sw.js')`.
 5. For offline use, add the game's files to the `ASSETS` list in [`sw.js`](sw.js).

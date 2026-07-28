@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v4";
+const CACHE = "game-box-v5";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -29,6 +29,14 @@ const ASSETS = [
   "./footy-tactics-lab/js/blocks.js", "./footy-tactics-lab/js/app.js",
   "./footy-tactics-lab/icons/icon-192.png", "./footy-tactics-lab/icons/icon-512.png",
   "./footy-tactics-lab/icons/apple-touch-icon.png",
+
+  "./yatzy-dice/", "./yatzy-dice/index.html", "./yatzy-dice/manifest.webmanifest",
+  "./yatzy-dice/css/style.css",
+  "./yatzy-dice/js/rng.js", "./yatzy-dice/js/rules.js", "./yatzy-dice/js/ai.js",
+  "./yatzy-dice/js/audio.js", "./yatzy-dice/js/ui.js", "./yatzy-dice/js/tutorial.js",
+  "./yatzy-dice/js/app.js",
+  "./yatzy-dice/icons/icon-192.png", "./yatzy-dice/icons/icon-512.png",
+  "./yatzy-dice/icons/apple-touch-icon.png",
 ];
 
 // Precache fresh copies — cache:"reload" bypasses the HTTP cache so the offline
