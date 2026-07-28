@@ -113,11 +113,41 @@
 
 <script>
 // ---- The catalogue. Add a new game = add one entry here. ----
+// "added" is the date the game was published. The list is sorted by it below,
+// newest first, so a new entry lands at the top wherever you paste it.
 const GAMES = [
+  {
+    title: "Yatzy Dice",
+    folder: "yatzy-dice",
+    emoji: "🎲",
+    added: "2026-07-28",
+    blurb: "Roll five dice, chase full houses and straights. Play 1–3 players, take on the computer, or use it as a scorecard for your real dice.",
+    colors: ["#f45b69", "#6c4cf0"],
+    chips: ["🎲 Dice", "👥 1–3 players", "📝 Scorecard mode"]
+  },
+  {
+    title: "Footy Tactics Lab",
+    folder: "footy-tactics-lab",
+    emoji: "🥅",
+    added: "2026-07-25",
+    blurb: "Learn to code with footy. Snap together move, turn and repeat blocks, then watch your play run one step at a time — and debug it when it goes wrong.",
+    colors: ["#ffc23d", "#0e6b3a"],
+    chips: ["🧠 Coding", "👤 1 player", "🔁 Loops"]
+  },
+  {
+    title: "Times Table Blaster",
+    folder: "times-table-blaster",
+    emoji: "⭐",
+    added: "2026-07-23",
+    blurb: "Blast through your times tables! Earn ninja belts one table at a time, or take on Classic mode with timers and streaks.",
+    colors: ["#ff4da6", "#ffe600"],
+    chips: ["🧮 Maths", "👤 1 player", "🥷 Belts"]
+  },
   {
     title: "Robo Rules",
     folder: "robo-rules",
     emoji: "🤖",
+    added: "2026-07-23",
     blurb: "Teach Chip the robot pet using IF-THIS-THEN-THAT rules. A first, playful taste of coding.",
     colors: ["#4fc3f7", "#8a7bff"],
     chips: ["🧠 Coding", "👤 1 player", "🎯 Age 7+"]
@@ -126,30 +156,19 @@ const GAMES = [
     title: "AFL Goal Kick",
     folder: "afl-goal-kick",
     emoji: "🏉",
+    added: "2026-07-23",
     blurb: "Aim the arrow, load the power bar, time your run-up and thread the big sticks. Wind, a man on the mark, and 3 difficulty levels.",
     colors: ["#3ddc68", "#2f9d4d"],
     chips: ["⚽ Sport", "👥 1–2 players", "💨 Wind"]
-  },
-  {
-    title: "Times Table Blaster",
-    folder: "times-table-blaster",
-    emoji: "⭐",
-    blurb: "Blast through your times tables! Earn ninja belts one table at a time, or take on Classic mode with timers and streaks.",
-    colors: ["#ff4da6", "#ffe600"],
-    chips: ["🧮 Maths", "👤 1 player", "🥷 Belts"]
-  },
-  {
-    title: "Footy Tactics Lab",
-    folder: "footy-tactics-lab",
-    emoji: "🥅",
-    blurb: "Learn to code with footy. Snap together move, turn and repeat blocks, then watch your play run one step at a time — and debug it when it goes wrong.",
-    colors: ["#ffc23d", "#0e6b3a"],
-    chips: ["🧠 Coding", "👤 1 player", "🔁 Loops"]
   }
 ];
 
+// Newest first. Sort is stable, so games published the same day keep the order
+// they're written in above.
+const shelf = GAMES.slice().sort((a, b) => (b.added || "").localeCompare(a.added || ""));
+
 const grid = document.getElementById("grid");
-for (const g of GAMES) {
+for (const g of shelf) {
   const a = document.createElement("a");
   a.className = "card";
   a.href = "./" + g.folder + "/";
