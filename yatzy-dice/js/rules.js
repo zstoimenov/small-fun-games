@@ -4,8 +4,8 @@
 /* which is what lets one scorecard renderer, one computer opponent and one      */
 /* tutorial serve both rule sets without a second copy of anything.              */
 /*                                                                              */
-/*   "yahtzee" — the US/Hasbro game: 13 boxes, 35-point bonus at 63, joker rules.*/
-/*   "yatzy"   — the Scandinavian game: 15 boxes, 50-point bonus at 63, pairs.   */
+/*   "us" — Yatzy US: 13 boxes, 35-point bonus at 63, joker rules.             */
+/*   "eu" — Yatzy EU: 15 boxes with pairs, 50-point bonus at 63.                */
 /*                                                                              */
 /* A scorecard is { scores: { catId: number|null }, jokers: n, manual: {id:true} }*/
 "use strict";
@@ -84,16 +84,16 @@ YZ.Rules = (function () {
     score: (dice) => sum(dice)
   };
 
-  /* ── Yahtzee (US rules) ────────────────────────────────────────────────── */
+  /* ── Yatzy US (the North American game) ────────────────────────────────── */
 
-  const YAHTZEE = {
-    id: "yahtzee",
-    name: "Yahtzee rules",
+  const US = {
+    id: "us",
+    name: "Yatzy US",
     blurb: "The classic 13-box game. Bonus 35 if your top half reaches 63.",
-    topName: "Yahtzee",
+    topName: "Yatzy",
     upperBonus: { threshold: 63, points: 35 },
     // Rolling another five-of-a-kind after the top box is already filled with 50.
-    extraBonus: { points: 100, label: "Extra Yahtzee" },
+    extraBonus: { points: 100, label: "Extra Yatzy" },
     joker: true,
     categories: upperCategories().concat([
       {
@@ -145,8 +145,8 @@ YZ.Rules = (function () {
         score: (dice) => (runLength(dice) >= 5 ? 40 : 0)
       },
       {
-        id: "yahtzee",
-        label: "Yahtzee",
+        id: "yatzy",
+        label: "Yatzy",
         section: "lower",
         points: 50,
         big: true,
@@ -158,11 +158,11 @@ YZ.Rules = (function () {
     ])
   };
 
-  /* ── Yatzy (Scandinavian rules) ────────────────────────────────────────── */
+  /* ── Yatzy EU (the Scandinavian game) ──────────────────────────────────── */
 
-  const YATZY = {
-    id: "yatzy",
-    name: "Yatzy rules",
+  const EU = {
+    id: "eu",
+    name: "Yatzy EU",
     blurb: "The Nordic 15-box game, with pairs. Bonus 50 if your top half reaches 63.",
     topName: "Yatzy",
     upperBonus: { threshold: 63, points: 50 },
@@ -249,14 +249,16 @@ YZ.Rules = (function () {
     ])
   };
 
-  const RULESETS = { yahtzee: YAHTZEE, yatzy: YATZY };
+  const RULESETS = { eu: EU, us: US };
 
-  // The id of each rule set's five-of-a-kind box, needed by the joker rules.
-  YAHTZEE.topId = "yahtzee";
-  YATZY.topId = "yatzy";
+  // Both rule sets call five of a kind the same thing; the joker rules need to
+  // know which box that is.
+  US.topId = "yatzy";
+  EU.topId = "yatzy";
 
+  // EU is the default, so an unknown id lands there rather than nowhere.
   function get(id) {
-    return RULESETS[id] || YAHTZEE;
+    return RULESETS[id] || EU;
   }
 
   function categoryById(ruleset, id) {
@@ -283,7 +285,7 @@ YZ.Rules = (function () {
     return openCategories(ruleset, card).length === 0;
   }
 
-  /* ── Joker rules (Yahtzee only) ────────────────────────────────────────── */
+  /* ── Joker rules (Yatzy US only) ───────────────────────────────────────── */
 
   // A second five-of-a-kind is worth 100 on top, but only once the top box has
   // actually been filled with 50. A zeroed top box earns no bonus.
@@ -376,19 +378,19 @@ YZ.Rules = (function () {
   // Known hands with hand-checked answers. Runs at boot so a typo in a scoring
   // function shows up immediately instead of halfway through a family game.
   const FIXTURES = [
-    ["yahtzee", [1, 1, 1, 4, 5], { ones: 3, threeKind: 12, fourKind: 0, fullHouse: 0, chance: 12 }],
-    ["yahtzee", [3, 3, 3, 6, 6], { fullHouse: 25, threeKind: 21, threes: 9, sixes: 12 }],
-    ["yahtzee", [2, 3, 4, 5, 5], { smallStraight: 30, largeStraight: 0, chance: 19 }],
-    ["yahtzee", [2, 3, 4, 5, 6], { smallStraight: 30, largeStraight: 40 }],
-    ["yahtzee", [6, 6, 6, 6, 6], { yahtzee: 50, fourKind: 30, threeKind: 30, sixes: 30, fullHouse: 0 }],
-    ["yahtzee", [1, 2, 3, 5, 6], { smallStraight: 0, largeStraight: 0, threeKind: 0, chance: 17 }],
-    ["yatzy", [6, 6, 3, 2, 1], { onePair: 12, twoPairs: 0, sixes: 12 }],
-    ["yatzy", [5, 5, 2, 2, 6], { onePair: 10, twoPairs: 14, fullHouse: 0 }],
-    ["yatzy", [4, 4, 4, 2, 2], { threeKind: 12, fullHouse: 16, twoPairs: 12, onePair: 8 }],
-    ["yatzy", [1, 2, 3, 4, 5], { smallStraight: 15, largeStraight: 0 }],
-    ["yatzy", [2, 3, 4, 5, 6], { smallStraight: 0, largeStraight: 20 }],
-    ["yatzy", [5, 5, 5, 5, 3], { fourKind: 20, threeKind: 15, onePair: 10, yatzy: 0 }],
-    ["yatzy", [4, 4, 4, 4, 4], { yatzy: 50, fourKind: 16, fullHouse: 0 }]
+    ["us", [1, 1, 1, 4, 5], { ones: 3, threeKind: 12, fourKind: 0, fullHouse: 0, chance: 12 }],
+    ["us", [3, 3, 3, 6, 6], { fullHouse: 25, threeKind: 21, threes: 9, sixes: 12 }],
+    ["us", [2, 3, 4, 5, 5], { smallStraight: 30, largeStraight: 0, chance: 19 }],
+    ["us", [2, 3, 4, 5, 6], { smallStraight: 30, largeStraight: 40 }],
+    ["us", [6, 6, 6, 6, 6], { yatzy: 50, fourKind: 30, threeKind: 30, sixes: 30, fullHouse: 0 }],
+    ["us", [1, 2, 3, 5, 6], { smallStraight: 0, largeStraight: 0, threeKind: 0, chance: 17 }],
+    ["eu", [6, 6, 3, 2, 1], { onePair: 12, twoPairs: 0, sixes: 12 }],
+    ["eu", [5, 5, 2, 2, 6], { onePair: 10, twoPairs: 14, fullHouse: 0 }],
+    ["eu", [4, 4, 4, 2, 2], { threeKind: 12, fullHouse: 16, twoPairs: 12, onePair: 8 }],
+    ["eu", [1, 2, 3, 4, 5], { smallStraight: 15, largeStraight: 0 }],
+    ["eu", [2, 3, 4, 5, 6], { smallStraight: 0, largeStraight: 20 }],
+    ["eu", [5, 5, 5, 5, 3], { fourKind: 20, threeKind: 15, onePair: 10, yatzy: 0 }],
+    ["eu", [4, 4, 4, 4, 4], { yatzy: 50, fourKind: 16, fullHouse: 0 }]
   ];
 
   function selfTest() {
@@ -404,7 +406,7 @@ YZ.Rules = (function () {
     }
     // Every category must produce a number for every possible hand, or a NaN
     // would quietly poison a total much later.
-    for (const rsId of ["yahtzee", "yatzy"]) {
+    for (const rsId of ["us", "eu"]) {
       const rs = get(rsId);
       for (let a = 1; a <= 6; a++) {
         const dice = [a, ((a + 1) % 6) + 1, a, 6, 1];

@@ -53,13 +53,13 @@ body{
   padding:max(12px,env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));
 }
 
+/* In the sheet's own flow, so it can never sit on top of the title. */
 #back{
-  position:fixed;top:max(10px,env(safe-area-inset-top));left:12px;z-index:60;
-  font-size:14px;font-weight:700;text-decoration:none;color:var(--chipink);
-  background:var(--chip);padding:9px 14px;border-radius:999px;
+  display:inline-block;margin-bottom:10px;
+  font-size:13px;font-weight:700;text-decoration:none;color:var(--chipink);
+  background:var(--chip);padding:8px 13px;border-radius:999px;
   border:1px solid var(--line);
 }
-body.in-game #back{display:none}
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 
@@ -116,27 +116,54 @@ body.in-game #back{display:none}
 }
 .sheet-buttons{display:flex;gap:10px;margin-top:16px}
 .sheet-buttons .btn{flex:1}
+/* Sized to its text so it can't wrap onto two lines and out-grow Start game. */
+#howtoBtn{flex:0 1 auto;white-space:nowrap;font-size:14px;padding:12px 15px}
 
 /* ── Setup ──────────────────────────────────────────────────────────────── */
 
-.field{margin:14px 0}
-.field-label{display:block;font-size:13px;font-weight:800;color:var(--muted);margin-bottom:7px}
-.chooser{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.chooser.tight{grid-template-columns:repeat(auto-fit,minmax(70px,1fr))}
-.opt{
-  font:inherit;cursor:pointer;text-align:left;
-  display:flex;flex-direction:column;gap:3px;
-  min-height:var(--tap);padding:11px 13px;border-radius:16px;
-  border:2px solid var(--line);background:var(--card);color:var(--ink);
-  font-weight:700;
+/* One line per decision: label on the left, a segmented control on the right.
+   Far less to take in than a screen of option cards, and it stays that way as
+   more options appear. */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 0;border-top:1px solid var(--line);
 }
-.chooser.tight .opt{align-items:center;justify-content:center;text-align:center}
-.opt span{font-size:12px;font-weight:600;color:var(--muted)}
-.opt.on{
-  border-color:var(--accent);background:var(--chip);color:var(--chipink);
-  box-shadow:0 4px 14px var(--shadow);
+.row:first-of-type{border-top:none}
+.row-label{font-size:14px;font-weight:700;flex:0 0 auto}
+.row-note{
+  margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted);
 }
-.opt.on span{color:var(--chipink);opacity:.8}
+.seg{
+  display:flex;gap:3px;padding:3px;border-radius:13px;
+  background:var(--bg2);border:1px solid var(--line);flex:0 1 auto;
+}
+.seg .opt{
+  font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;
+  border:none;background:none;color:var(--muted);
+  padding:9px 13px;border-radius:10px;min-height:40px;
+}
+.seg .opt.on{background:var(--card);color:var(--accent);box-shadow:0 2px 6px var(--shadow)}
+
+/* Switch, for the plain yes/no options. */
+.switch{
+  position:relative;flex:0 0 auto;width:52px;height:31px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg2);padding:0;transition:background .18s;
+}
+.switch .knob{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:var(--card);box-shadow:0 2px 5px var(--shadow);transition:transform .18s;
+}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"] .knob{transform:translateX(21px)}
+
+.more{margin:10px 0 2px;border-top:1px solid var(--line);padding-top:8px}
+.more summary{
+  cursor:pointer;font-size:14px;font-weight:700;padding:7px 2px;
+  list-style:none;display:flex;align-items:center;gap:7px;
+}
+.more summary::-webkit-details-marker{display:none}
+.more summary::before{content:"▸";color:var(--muted);transition:transform .15s;display:inline-block}
+.more[open] summary::before{transform:rotate(90deg)}
 .name-row{display:flex;align-items:center;gap:10px;margin:7px 0}
 .name-row span{font-size:13px;font-weight:700;color:var(--muted);width:74px;flex:0 0 auto}
 .name-row input,#typeInput{
@@ -148,7 +175,22 @@ body.in-game #back{display:none}
 
 /* ── Game screen ────────────────────────────────────────────────────────── */
 
-#game{max-width:760px;margin:0 auto}
+/* The page itself never scrolls during a game: the top block is pinned and the
+   scorecard scrolls inside it, so the dice stay in view while you pick a box. */
+body.in-game{height:100dvh;overflow:hidden;padding-bottom:0}
+#game{
+  max-width:760px;margin:0 auto;height:100%;
+  display:flex;flex-direction:column;min-height:0;
+  transition:transform .45s ease;
+}
+.game-top{flex:0 0 auto}
+
+/* Two players sharing one device, sitting opposite each other: the whole screen
+   turns around when it's the other person's turn. */
+body.flipped #game{transform:rotate(180deg)}
+body.flipped .overlay .sheet{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){ #game{transition:none} }
+
 .topbar{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
 .turn-info strong{display:block;font-size:19px}
@@ -217,10 +259,22 @@ body.in-game #back{display:none}
 
 /* ── Scorecard ──────────────────────────────────────────────────────────── */
 
+.card-tools{display:flex;justify-content:flex-end;margin:0 2px 7px}
+.chip-btn{
+  font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+  padding:8px 13px;border-radius:999px;min-height:38px;
+  border:1px solid var(--line);background:var(--card);color:var(--muted);
+}
+.chip-btn[aria-pressed="true"]{background:var(--chip);color:var(--chipink);border-color:var(--accent)}
+
 .card-wrap{
   background:var(--card);border:1px solid var(--line);border-radius:20px;
-  padding:6px;box-shadow:0 8px 22px var(--shadow);overflow-x:auto;
+  padding:6px;box-shadow:0 8px 22px var(--shadow);
+  overflow:auto;flex:1 1 auto;min-height:0;
+  -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
 }
+/* Player names stay put while the boxes scroll under them. */
+.scorecard thead th{position:sticky;top:0;z-index:2;background:var(--card)}
 .scorecard{width:100%;border-collapse:collapse;font-size:14px}
 .scorecard th,.scorecard td{padding:6px 7px;text-align:center}
 .scorecard thead th{
@@ -375,10 +429,9 @@ body.in-game #back{display:none}
 
 /* Wide enough for the dice and the card to sit side by side. */
 @media (min-width:820px) and (orientation:landscape){
-  #game{max-width:1000px;display:grid;grid-template-columns:minmax(300px,1fr) 1.15fr;
-    grid-template-areas:"top top" "coach coach" "dice card";gap:0 20px;align-items:start}
-  .topbar{grid-area:top}
-  .coach{grid-area:coach}
-  .dice-area,.entry-area{grid-area:dice;position:sticky;top:8px}
-  .card-wrap{grid-area:card}
+  #game{max-width:1060px;flex-direction:row;gap:20px;align-items:stretch}
+  .game-top{flex:0 0 46%;display:flex;flex-direction:column;justify-content:center;overflow:auto}
+  .card-tools{margin-bottom:0}
+  .card-wrap{flex:1 1 auto}
+  .card-tools{margin-top:6px}
 }

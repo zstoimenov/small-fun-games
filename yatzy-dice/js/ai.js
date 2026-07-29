@@ -1,8 +1,8 @@
 /* Yatzy Dice — the computer opponent.                                          */
 /*                                                                              */
 /* Knows nothing about the DOM, and nothing about either rule set: it only ever  */
-/* asks Rules what a hand would score. That is why one opponent plays Yahtzee    */
-/* and Yatzy equally well, and why a new category would need no changes here.    */
+/* asks Rules what a hand would score. That is why one opponent plays Yatzy EU   */
+/* and Yatzy US equally well, and why a new category would need no changes here. */
 /*                                                                              */
 /* How it thinks (Medium and Hard): try all 32 ways of keeping some of the five  */
 /* dice, roll the rest a few hundred times in its head, and keep the set whose   */
@@ -43,15 +43,15 @@ YZ.Ai = (function () {
   const TYPICAL = {
     ones: 2, twos: 4, threes: 6, fours: 8, fives: 10, sixes: 12,
     threeKind: 20, fourKind: 12, fullHouse: 15, smallStraight: 18,
-    largeStraight: 12, yahtzee: 8, chance: 22,
-    onePair: 9, twoPairs: 14, yatzy: 6
+    largeStraight: 12, chance: 22, yatzy: 8,
+    onePair: 9, twoPairs: 14
   };
 
   function typicalFor(ruleset, cat) {
-    // Yatzy's kind/straight boxes score differently from Yahtzee's, so fall back
-    // to the box's own fixed value rather than a shared guess.
-    if (ruleset.id === "yatzy") {
-      const y = { threeKind: 12, fourKind: 10, smallStraight: 8, largeStraight: 9, fullHouse: 14 };
+    // EU's kind/straight boxes score differently from US's, so fall back to the
+    // box's own fixed value rather than a shared guess.
+    if (ruleset.id === "eu") {
+      const y = { threeKind: 12, fourKind: 10, smallStraight: 8, largeStraight: 9, fullHouse: 14, yatzy: 6 };
       if (y[cat.id] !== undefined) return y[cat.id];
     }
     return TYPICAL[cat.id] !== undefined ? TYPICAL[cat.id] : 10;
@@ -267,7 +267,7 @@ YZ.Ai = (function () {
   function benchmark(games, rulesetId, difficulty) {
     let total = 0, best = 0, worst = Infinity;
     for (let i = 0; i < games; i++) {
-      const t = simulateGame(rulesetId || "yahtzee", difficulty || "hard");
+      const t = simulateGame(rulesetId || "eu", difficulty || "hard");
       total += t;
       if (t > best) best = t;
       if (t < worst) worst = t;
