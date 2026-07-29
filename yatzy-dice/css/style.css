@@ -83,6 +83,11 @@ body{
   width:46px;height:46px;flex:0 0 auto;border-radius:14px;cursor:pointer;
   border:1px solid var(--line);background:var(--card);color:var(--ink);
 }
+/* An icon button that is currently switched on. */
+.icon-btn[aria-pressed="true"]{
+  background:var(--chip);border-color:var(--accent);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
 
 /* ── Overlays and sheets ────────────────────────────────────────────────── */
 
@@ -259,18 +264,11 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 
 /* ── Scorecard ──────────────────────────────────────────────────────────── */
 
-.card-tools{display:flex;justify-content:flex-end;margin:0 2px 7px}
-.chip-btn{
-  font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
-  padding:8px 13px;border-radius:999px;min-height:38px;
-  border:1px solid var(--line);background:var(--card);color:var(--muted);
-}
-.chip-btn[aria-pressed="true"]{background:var(--chip);color:var(--chipink);border-color:var(--accent)}
-
 .card-wrap{
   background:var(--card);border:1px solid var(--line);border-radius:20px;
   padding:6px;box-shadow:0 8px 22px var(--shadow);
   overflow:auto;flex:1 1 auto;min-height:0;
+  position:relative; /* so row offsetTop is measured against the card */
   -webkit-overflow-scrolling:touch;overscroll-behavior:contain;
 }
 /* Player names stay put while the boxes scroll under them. */
@@ -431,7 +429,5 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 @media (min-width:820px) and (orientation:landscape){
   #game{max-width:1060px;flex-direction:row;gap:20px;align-items:stretch}
   .game-top{flex:0 0 46%;display:flex;flex-direction:column;justify-content:center;overflow:auto}
-  .card-tools{margin-bottom:0}
   .card-wrap{flex:1 1 auto}
-  .card-tools{margin-top:6px}
 }

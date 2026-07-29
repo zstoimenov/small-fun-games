@@ -377,6 +377,27 @@ YZ.Ui = (function () {
     if (w) w.scrollTop = 0;
   }
 
+  // After a roll, bring the suggested box into the middle of the card so the
+  // good option is already on screen. Scrolling is done in the container's own
+  // coordinates rather than with scrollIntoView, because the whole screen may be
+  // rotated for the player opposite and scrollIntoView would fight that.
+  function scrollToBest() {
+    const wrap = document.querySelector(".card-wrap");
+    if (!wrap) return;
+    const best = wrap.querySelector(".pick.best");
+    if (!best) return;
+    const row = best.closest("tr");
+    if (!row) return;
+    const head = wrap.querySelector("thead");
+    const headH = head ? head.getBoundingClientRect().height : 0;
+    // Middle of the space left under the sticky player-name header.
+    const target = row.offsetTop - headH - (wrap.clientHeight - headH - row.offsetHeight) / 2;
+    const top = Math.max(0, Math.min(target, wrap.scrollHeight - wrap.clientHeight));
+    const still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (wrap.scrollTo) wrap.scrollTo({ top: top, behavior: still ? "auto" : "smooth" });
+    else wrap.scrollTop = top;
+  }
+
   function showScreen(name) {
     el.setup.hidden = name !== "setup";
     el.game.hidden = name !== "game";
@@ -506,6 +527,7 @@ YZ.Ui = (function () {
   return {
     init, el, dieEl, diceStrip, setDie,
     renderDice, animateRoll, renderScorecard, renderTurn, renderEntry,
-    showScreen, toast, clearToast, coach, confetti, showResult, showHelp, resetCardScroll
+    showScreen, toast, clearToast, coach, confetti, showResult, showHelp,
+    resetCardScroll, scrollToBest
   };
 })();
