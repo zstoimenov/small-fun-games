@@ -6,15 +6,65 @@ no dependencies — plain HTML/CSS/JS, and it works offline once loaded.
 
 ## Games
 
-Newest first — that's the order they appear in on the launcher too.
+Every game belongs to exactly one **category**, and declares how many players it
+takes. The launcher filters on both, with two rows of pills at the top:
+
+- **Category** — All, Board & Strategy, Coding, Puzzles, Maths, Sport.
+- **Players** — Any, On my own, With a friend, 3 or more.
+
+The two combine, so you can ask for coding games you can play on your own. A
+player pick matches against the game's **range**, not a single number: Yatzy Dice
+is a 1–3 player game, so it turns up under *on my own*, *with a friend* and
+*3 or more* alike.
+
+Each pill shows how many games it would leave you, counting the other row's pick
+too — and a pill that would empty the grid is dimmed instead of removed, so you
+can't tap your way into a dead end.
+
+Inside any shelf, games are ordered newest first, and the two most recent wear a
+**NEW** ribbon for a month.
+
+The picks are remembered between visits and mirrored in the URL, so
+`…/small-fun-games/#cat=board&players=duo` opens straight onto board games you
+can play with someone else. (The older short form, `#coding`, still works.)
+
+### ♟️ Board & Strategy
 
 | Game | Folder | What it is |
 | --- | --- | --- |
 | 🎲 **Yatzy Dice** | [`yatzy-dice/`](yatzy-dice/) | Five dice, three rolls a turn, a card full of boxes. 1–3 players, an Easy/Medium/Hard computer opponent for solo games, a flip-the-screen mode so two people can sit opposite one device, **Yatzy EU and Yatzy US** rules, and a scorecard-only mode for when you'd rather roll real dice. Dice come from `crypto.getRandomValues`, and there's a built-in fairness check to prove it. |
+
+### 🧠 Coding
+
+| Game | Folder | What it is |
+| --- | --- | --- |
 | 🥅 **Footy Tactics Lab** | [`footy-tactics-lab/`](footy-tactics-lab/) | Learn to code with footy. Build a play from move/turn/repeat/handball blocks, run it one step at a time and debug your way to a goal. 10 levels, sequencing through nested loops (~age 8+). |
-| ⭐ **Times Table Blaster** | [`times-table-blaster/`](times-table-blaster/) | Practise your times tables. Ninja Belt mode ranks you up one table at a time; Classic mode adds timers, streaks and a leaderboard. |
 | 🤖 **Robo Rules** | [`robo-rules/`](robo-rules/) | Teach Chip the robot pet with IF-THIS-THEN-THAT rules — a first taste of coding for kids (~age 7+). |
+
+### 🔢 Maths
+
+| Game | Folder | What it is |
+| --- | --- | --- |
+| ⭐ **Times Table Blaster** | [`times-table-blaster/`](times-table-blaster/) | Practise your times tables. Ninja Belt mode ranks you up one table at a time; Classic mode adds timers, streaks and a leaderboard. |
+
+### ⚽ Sport
+
+| Game | Folder | What it is |
+| --- | --- | --- |
 | 🏉 **AFL Goal Kick** | [`afl-goal-kick/`](afl-goal-kick/) | Aim, load the power bar, time your run-up and kick goals. 1–2 players, wind, a man on the mark, and Easy/Medium/Hard. |
+
+### Planned
+
+These aren't built yet, so they have no catalogue entry — the shelves they'll
+land on are already set up. `🧩 Puzzles` has no pill on the launcher until
+Mastermind arrives.
+
+| Game | Category | `players` |
+| --- | --- | --- |
+| Nine Men's Morris (Дама) | ♟️ Board & Strategy | `[1, 2]` with an AI, `[2, 2]` pass-and-play only |
+| Battleship (Морски бой) | ♟️ Board & Strategy | `[1, 2]` with the probability AI, `[2, 2]` without |
+| Connect Four | ♟️ Board & Strategy | `[1, 2]` with the minimax solver |
+| Mastermind | 🧩 Puzzles | `[1, 1]` — you against the code |
 
 ## Run locally
 
@@ -48,9 +98,36 @@ catalogue and picks a game.
 1. Drop the game in its own folder (e.g. `my-game/`) with an `index.html`, using
    **relative** paths so it works from a subpath.
 2. Add a **‹ Games** link back to the catalogue: `<a href="../">‹ Games</a>`.
-3. Add one entry to the `GAMES` array in the root [`index.html`](index.html), including
-   an `added` date (`YYYY-MM-DD`). The launcher sorts by it, newest first, so the
-   entry can go anywhere in the array and the new game still lands at the top.
+3. Add one entry to the `GAMES` array in the root [`index.html`](index.html). The
+   entry can go anywhere in the array — the launcher sorts by `added`, newest
+   first. The fields:
+
+   ```js
+   {
+     title: "My Game",
+     folder: "my-game",
+     emoji: "🕹️",
+     added: "2026-08-01",     // YYYY-MM-DD, drives the sort and the NEW ribbon
+     category: "coding",      // exactly one id from the CATEGORIES list above
+     players: [1, 2],         // [min, max] — the whole range the game supports
+     age: 8,                  // optional, renders as "Age 8+"
+     blurb: "One or two sentences a kid would understand.",
+     colors: ["#4fc3f7", "#8a7bff"],   // the thumbnail gradient
+     highlights: ["🔁 Loops"]          // optional extra chips, 0–2 is plenty
+   }
+   ```
+
+   The chips on the card are **generated** from `category`, `players`, `age` and
+   `highlights` — don't hand-write them, or they drift from the real game.
+
+   Get `players` right: it drives the second filter row, so `[2, 2]` for a game
+   that *needs* two people is a different claim from `[1, 2]` for one with a
+   computer opponent. `[1, 1]` renders as "1 player", any wider range as "1–2
+   players".
+
+   Needs a category that doesn't exist yet? Add it to the `CATEGORIES` array in
+   the same file (`{ id, label, emoji }`). The filter bar picks it up on its own,
+   and only shows a pill once at least one game uses it.
 4. Register the shared worker from the new game with
    `navigator.serviceWorker.register('../sw.js')`.
 5. For offline use, add the game's files to the `ASSETS` list in [`sw.js`](sw.js).
