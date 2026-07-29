@@ -59,6 +59,9 @@ These aren't built yet, so they have no catalogue entry — the shelves they'll
 land on are already set up. `🧩 Puzzles` has no pill on the launcher until
 Mastermind arrives.
 
+Briefs, build order and cost estimates are in
+[`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md).
+
 Every one of these is `[1, 2]`: two people face to face on one device, **and** one
 person against the computer. Same as AFL Goal Kick, and the same
 pass-the-device pattern Yatzy uses for its flip-the-screen mode.
