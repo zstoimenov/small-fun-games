@@ -292,6 +292,9 @@
     if (p.kind !== "human") return;
     doRoll(() => {
       render();
+      // Put the suggested box on screen straight away, so a good option is
+      // there to tap without scrolling the card first.
+      Ui.scrollToBest();
     });
   }
 
@@ -435,8 +438,10 @@
     if (state.dice.length >= 5) return;
     state.dice = state.dice.concat([v]);
     Audio.tap();
-    if (state.dice.length === 5) Audio.land();
+    const complete = state.dice.length === 5;
+    if (complete) Audio.land();
     render();
+    if (complete) Ui.scrollToBest(); // same courtesy as a roll, for real dice
   }
 
   function unsetEntry(i) {
@@ -529,10 +534,13 @@
 
   /* ── Menu, sound, dice check ───────────────────────────────────────────── */
 
+  // Lives in the top bar as a single icon, because a labelled button here would
+  // cost a whole row of the scorecard it exists to make room for.
   function renderHideFilled() {
     const b = $("hideFilledBtn");
     b.setAttribute("aria-pressed", state.hideFilled ? "true" : "false");
-    b.textContent = state.hideFilled ? "👀 Show every box" : "🙈 Hide filled boxes";
+    b.textContent = state.hideFilled ? "👀" : "🙈";
+    b.title = state.hideFilled ? "Show every box again" : "Hide boxes everyone has filled";
   }
 
   function toggleHideFilled() {
@@ -627,7 +635,6 @@
     });
 
     $("muteBtn").addEventListener("click", () => setMuted(!state.muted));
-    $("helpBtn").addEventListener("click", openHowTo);
     $("hideFilledBtn").addEventListener("click", toggleHideFilled);
     $("flipToggle").addEventListener("click", () => {
       state.flip = !state.flip;
