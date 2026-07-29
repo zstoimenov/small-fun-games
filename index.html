@@ -152,10 +152,11 @@
 // Add a category here and the filter bar picks it up automatically; it only
 // shows up once at least one game uses it.
 const CATEGORIES = [
-  { id: "sport",  label: "Sport",       emoji: "⚽" },
-  { id: "coding", label: "Coding",      emoji: "🧠" },
-  { id: "maths",  label: "Maths",       emoji: "🔢" },
-  { id: "dice",   label: "Dice & Board", emoji: "🎲" }
+  { id: "board",  label: "Board & Strategy", emoji: "♟️" },
+  { id: "coding", label: "Coding",           emoji: "🧠" },
+  { id: "puzzle", label: "Puzzles",          emoji: "🧩" },
+  { id: "maths",  label: "Maths",            emoji: "🔢" },
+  { id: "sport",  label: "Sport",            emoji: "⚽" }
 ];
 
 // ---- The catalogue. Add a new game = add one entry here. ----
@@ -169,11 +170,11 @@ const GAMES = [
     folder: "yatzy-dice",
     emoji: "🎲",
     added: "2026-07-28",
-    category: "dice",
+    category: "board",
     players: "1–3",
     blurb: "Roll five dice, chase full houses and straights. Play 1–3 players, take on the computer, or use it as a scorecard for your real dice.",
     colors: ["#f45b69", "#6c4cf0"],
-    highlights: ["📝 Scorecard mode", "🤖 Computer opponent"]
+    highlights: ["🎲 Dice", "📝 Scorecard mode"]
   },
   {
     title: "Footy Tactics Lab",

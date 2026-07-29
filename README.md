@@ -14,18 +14,18 @@ recent ones wear a **NEW** ribbon for a month.
 The pick is remembered between visits and mirrored in the URL, so
 `…/small-fun-games/#coding` opens straight onto the coding shelf.
 
+### ♟️ Board & Strategy
+
+| Game | Folder | What it is |
+| --- | --- | --- |
+| 🎲 **Yatzy Dice** | [`yatzy-dice/`](yatzy-dice/) | Five dice, three rolls a turn, a card full of boxes. 1–3 players, an Easy/Medium/Hard computer opponent for solo games, a flip-the-screen mode so two people can sit opposite one device, **Yatzy EU and Yatzy US** rules, and a scorecard-only mode for when you'd rather roll real dice. Dice come from `crypto.getRandomValues`, and there's a built-in fairness check to prove it. |
+
 ### 🧠 Coding
 
 | Game | Folder | What it is |
 | --- | --- | --- |
 | 🥅 **Footy Tactics Lab** | [`footy-tactics-lab/`](footy-tactics-lab/) | Learn to code with footy. Build a play from move/turn/repeat/handball blocks, run it one step at a time and debug your way to a goal. 10 levels, sequencing through nested loops (~age 8+). |
 | 🤖 **Robo Rules** | [`robo-rules/`](robo-rules/) | Teach Chip the robot pet with IF-THIS-THEN-THAT rules — a first taste of coding for kids (~age 7+). |
-
-### 🎲 Dice & Board
-
-| Game | Folder | What it is |
-| --- | --- | --- |
-| 🎲 **Yatzy Dice** | [`yatzy-dice/`](yatzy-dice/) | Five dice, three rolls a turn, a card full of boxes. 1–3 players, an Easy/Medium/Hard computer opponent for solo games, a flip-the-screen mode so two people can sit opposite one device, **Yatzy EU and Yatzy US** rules, and a scorecard-only mode for when you'd rather roll real dice. Dice come from `crypto.getRandomValues`, and there's a built-in fairness check to prove it. |
 
 ### 🔢 Maths
 
@@ -38,6 +38,19 @@ The pick is remembered between visits and mirrored in the URL, so
 | Game | Folder | What it is |
 | --- | --- | --- |
 | 🏉 **AFL Goal Kick** | [`afl-goal-kick/`](afl-goal-kick/) | Aim, load the power bar, time your run-up and kick goals. 1–2 players, wind, a man on the mark, and Easy/Medium/Hard. |
+
+### Planned
+
+These aren't built yet, so they have no catalogue entry — the shelves they'll
+land on are already set up. `🧩 Puzzles` has no pill on the launcher until
+Mastermind arrives.
+
+| Game | Category |
+| --- | --- |
+| Nine Men's Morris (Дама) | ♟️ Board & Strategy |
+| Battleship (Морски бой) | ♟️ Board & Strategy |
+| Connect Four | ♟️ Board & Strategy |
+| Mastermind | 🧩 Puzzles |
 
 ## Run locally
 
