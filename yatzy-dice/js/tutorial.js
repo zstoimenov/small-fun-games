@@ -142,8 +142,11 @@ YZ.Tutorial = (function () {
         f.appendChild(node("p", null,
           "<b>On your own?</b> The computer plays against you. Pick Easy, Medium or Hard when you start."));
         f.appendChild(node("p", null,
-          "<b>Got real dice?</b> Choose <b>Scorecard only</b> and the app just keeps score — " +
-          "roll your own dice, tap in what you got, and it works out every box for you."));
+          "<b>Got real dice?</b> Set <b>Dice</b> to <b>📝 My own</b> and the app just keeps " +
+          "score — roll your own dice, tap in what you got, and it works out every box for you."));
+        f.appendChild(node("p", null,
+          "<b>Two players?</b> Turn on <b>Sit opposite</b> and the screen spins around on the " +
+          "other player's turn, so you can leave the device on the table between you."));
         f.appendChild(node("p", "howto-note",
           "The dice in this app come from your device's proper random number generator, so they're " +
           "as fair as the ones on your table. There's a <b>Dice check</b> in the menu if you'd like to see the proof."));

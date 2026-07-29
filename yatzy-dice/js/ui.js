@@ -133,17 +133,27 @@ YZ.Ui = (function () {
     table.appendChild(head);
 
     const body = document.createElement("tbody");
-    const upper = ruleset.categories.filter((c) => c.section === "upper");
-    const lower = ruleset.categories.filter((c) => c.section === "lower");
 
-    body.appendChild(sectionRow("Top half", state.players.length));
-    for (const cat of upper) body.appendChild(categoryRow(cat, state, ruleset, preview));
+    // With "hide filled" on, a box only disappears once *everybody* has scored
+    // it — hiding it while an opponent's cell is still empty would lose
+    // information rather than save space.
+    const stillOpen = (c) => !state.hideFilled ||
+      state.players.some((p) => p.card.scores[c.id] === null || p.card.scores[c.id] === undefined);
+    const upper = ruleset.categories.filter((c) => c.section === "upper" && stillOpen(c));
+    const lower = ruleset.categories.filter((c) => c.section === "lower" && stillOpen(c));
+
+    if (upper.length) {
+      body.appendChild(sectionRow("Top half", state.players.length));
+      for (const cat of upper) body.appendChild(categoryRow(cat, state, ruleset, preview));
+    }
 
     body.appendChild(totalRow("Top total", state, (t) => t.upper, "sub"));
     body.appendChild(bonusRow(state, ruleset));
 
-    body.appendChild(sectionRow("Bottom half", state.players.length));
-    for (const cat of lower) body.appendChild(categoryRow(cat, state, ruleset, preview));
+    if (lower.length) {
+      body.appendChild(sectionRow("Bottom half", state.players.length));
+      for (const cat of lower) body.appendChild(categoryRow(cat, state, ruleset, preview));
+    }
 
     if (ruleset.extraBonus) body.appendChild(extraRow(state, ruleset));
 
@@ -360,6 +370,13 @@ YZ.Ui = (function () {
 
   /* ── Overlays, toasts, celebration ─────────────────────────────────────── */
 
+  // Each turn starts at the top of the card, so nobody inherits the last
+  // player's scroll position — especially when the screen has just turned round.
+  function resetCardScroll() {
+    const w = document.querySelector(".card-wrap");
+    if (w) w.scrollTop = 0;
+  }
+
   function showScreen(name) {
     el.setup.hidden = name !== "setup";
     el.game.hidden = name !== "game";
@@ -367,6 +384,12 @@ YZ.Ui = (function () {
   }
 
   let toastTimer = null;
+  function clearToast() {
+    clearTimeout(toastTimer);
+    el.toast.classList.remove("show");
+    el.toast.hidden = true;
+  }
+
   function toast(msg, ms) {
     el.toast.innerHTML = msg;
     el.toast.hidden = false;
@@ -483,6 +506,6 @@ YZ.Ui = (function () {
   return {
     init, el, dieEl, diceStrip, setDie,
     renderDice, animateRoll, renderScorecard, renderTurn, renderEntry,
-    showScreen, toast, coach, confetti, showResult, showHelp
+    showScreen, toast, clearToast, coach, confetti, showResult, showHelp, resetCardScroll
   };
 })();

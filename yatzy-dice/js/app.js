@@ -9,12 +9,12 @@
   const { Rules, Rng, Ai, Ui, Audio, Tutorial } = window.YZ;
   const $ = (id) => document.getElementById(id);
 
-  const SAVE_KEY = "yatzyDiceSave_v1";
+  const SAVE_KEY = "yatzyDiceSave_v2";
 
   /* ── State ─────────────────────────────────────────────────────────────── */
 
   const state = {
-    rulesetId: "yahtzee",
+    rulesetId: "eu",     // Yatzy EU is the default; "us" is the 13-box game
     mode: "play",        // "play" = app dice, "card" = scorecard only
     entryMode: "dice",   // scorecard-only: tap in dice, or type the score
     difficulty: "medium",
@@ -34,7 +34,9 @@
     preview: null,
     muted: false,
     seenHowTo: false,
-    playing: false
+    playing: false,
+    flip: false,         // turn the screen around between two human players
+    hideFilled: false    // drop boxes everyone has already scored
   };
 
   function ruleset() { return Rules.get(state.rulesetId); }
@@ -50,6 +52,7 @@
         rulesetId: state.rulesetId, mode: state.mode, entryMode: state.entryMode,
         difficulty: state.difficulty, playerCount: state.playerCount, cpuCount: state.cpuCount,
         names: state.names, muted: state.muted, seenHowTo: state.seenHowTo,
+        flip: state.flip, hideFilled: state.hideFilled,
         game: state.playing && !state.guided ? {
           players: state.players.map((p) => ({
             name: p.name, kind: p.kind, difficulty: p.difficulty, card: p.card
@@ -68,7 +71,8 @@
       if (!raw) return;
       const s = JSON.parse(raw);
       saved = s.game || null;
-      for (const k of ["rulesetId", "mode", "entryMode", "difficulty", "playerCount", "cpuCount", "muted", "seenHowTo"]) {
+      for (const k of ["rulesetId", "mode", "entryMode", "difficulty", "playerCount",
+                       "cpuCount", "muted", "seenHowTo", "flip", "hideFilled"]) {
         if (s[k] !== undefined) state[k] = s[k];
       }
       if (Array.isArray(s.names)) state.names = s.names;
@@ -102,9 +106,17 @@
     }
   }
 
+  function setSwitch(id, on) {
+    $(id).setAttribute("aria-checked", on ? "true" : "false");
+  }
+
+  // Only the rows that matter right now are on screen. Everything else is either
+  // hidden or tucked into the Names fold, which is what keeps a growing list of
+  // options from turning into a wall.
   function renderSetup() {
     const solo = state.playerCount === 1;
     const play = state.mode === "play";
+    const rs = ruleset();
 
     // A computer can't pick up your real dice, so solo scorecard mode is just
     // score-keeping. Say so instead of quietly hiding the option.
@@ -112,23 +124,42 @@
     $("diffRow").hidden = !(solo && play);
     $("soloNote").hidden = !(solo && !play);
 
+    // Turning the screen around only makes sense with exactly two people at it.
+    $("flipRow").hidden = state.playerCount !== 2;
+    $("flipNote").hidden = !(state.playerCount === 2 && state.flip);
+    setSwitch("flipToggle", state.flip);
+
+    $("rulesNote").textContent = rs.blurb;
+
     const names = $("namesWrap");
     names.innerHTML = "";
+    const shown = [];
     for (let i = 0; i < state.playerCount; i++) {
+      const label = state.names[i] || "Player " + (i + 1);
+      shown.push(label);
       const row = document.createElement("label");
       row.className = "name-row";
       row.innerHTML = "<span>Player " + (i + 1) + "</span>";
       const input = document.createElement("input");
       input.type = "text";
       input.maxLength = 12;
-      input.value = state.names[i] || "Player " + (i + 1);
-      input.addEventListener("input", () => { state.names[i] = input.value; save(); });
+      input.value = label;
+      input.addEventListener("input", () => {
+        state.names[i] = input.value;
+        $("namesSummary").textContent = summaryOf();
+        save();
+      });
       row.appendChild(input);
       names.appendChild(row);
     }
+    $("namesSummary").textContent = summaryOf();
 
     $("resumeBtn").hidden = !resumable();
     $("startBtn").textContent = resumable() ? "Start a new game" : "Start game ▶";
+
+    function summaryOf() {
+      return "Names: " + shown.map((n, i) => state.names[i] || n).join(", ");
+    }
   }
 
   /* ── Starting a game ───────────────────────────────────────────────────── */
@@ -163,8 +194,9 @@
     state.turn = 0;
     state.guided = false;
     state.playing = true;
+    Ui.clearToast();
     newTurn();
-    Ui.showScreen("game");
+    showScreen("game");
     render();
     save();
     maybeCpu();
@@ -183,7 +215,7 @@
     state.guided = false;
     state.playing = true;
     updateDerived();
-    Ui.showScreen("game");
+    showScreen("game");
     render();
     maybeCpu();
   }
@@ -194,6 +226,7 @@
     state.rollsLeft = 3;
     state.rolled = false;
     state.busy = false;
+    Ui.resetCardScroll();
     updateDerived();
   }
 
@@ -225,11 +258,30 @@
     }
   }
 
+  // Two people sitting opposite each other share one device: on the second
+  // player's turn the whole screen turns around so it faces them.
+  function flipWanted() {
+    return state.flip && state.playing && !state.guided &&
+      state.players.length === 2 &&
+      state.players.every((p) => p.kind === "human") &&
+      state.turn === 1;
+  }
+
+  function applyFlip() {
+    document.body.classList.toggle("flipped", flipWanted());
+  }
+
+  function showScreen(name) {
+    Ui.showScreen(name);
+    if (name !== "game") document.body.classList.remove("flipped");
+  }
+
   function render() {
     updateDerived();
     Ui.renderTurn(state);
     Ui.renderScorecard(state);
     Ui.coach(state.guided ? coachLine() : null);
+    applyFlip();
   }
 
   /* ── Rolling ───────────────────────────────────────────────────────────── */
@@ -447,7 +499,7 @@
     state.playing = true;
     state.mode = "play";
     newTurn();
-    Ui.showScreen("game");
+    showScreen("game");
     render();
   }
 
@@ -455,7 +507,7 @@
     state.guided = false;
     state.playing = false;
     Ui.coach(null);
-    Ui.showScreen("setup");
+    showScreen("setup");
     renderSetup();
     Ui.toast("Ready when you are — pick your players and start a game.");
   }
@@ -476,6 +528,20 @@
   }
 
   /* ── Menu, sound, dice check ───────────────────────────────────────────── */
+
+  function renderHideFilled() {
+    const b = $("hideFilledBtn");
+    b.setAttribute("aria-pressed", state.hideFilled ? "true" : "false");
+    b.textContent = state.hideFilled ? "👀 Show every box" : "🙈 Hide filled boxes";
+  }
+
+  function toggleHideFilled() {
+    state.hideFilled = !state.hideFilled;
+    Audio.tap();
+    renderHideFilled();
+    save();
+    render();
+  }
 
   function setMuted(v) {
     state.muted = v;
@@ -556,12 +622,19 @@
       $("menu").hidden = true;
       state.playing = false;
       save();
-      Ui.showScreen("setup");
+      showScreen("setup");
       renderSetup();
     });
 
     $("muteBtn").addEventListener("click", () => setMuted(!state.muted));
     $("helpBtn").addEventListener("click", openHowTo);
+    $("hideFilledBtn").addEventListener("click", toggleHideFilled);
+    $("flipToggle").addEventListener("click", () => {
+      state.flip = !state.flip;
+      Audio.tap();
+      save();
+      renderSetup();
+    });
 
     $("helpClose").addEventListener("click", () => { $("help").hidden = true; });
     $("typeCancel").addEventListener("click", () => { $("typeSheet").hidden = true; typingCat = null; });
@@ -571,7 +644,7 @@
     $("againBtn").addEventListener("click", () => { $("result").hidden = true; startGame(); });
     $("resultMenu").addEventListener("click", () => {
       $("result").hidden = true;
-      Ui.showScreen("setup");
+      showScreen("setup");
       renderSetup();
     });
 
@@ -600,7 +673,7 @@
   // wrong, this says so in the console immediately rather than three rounds in.
   function selfTest() {
     const problems = Rules.selfTest();
-    for (const rsId of ["yahtzee", "yatzy"]) {
+    for (const rsId of ["us", "eu"]) {
       const rs = Rules.get(rsId);
       const card = Rules.emptyCard(rs);
       const dice = Rng.roll(5);
@@ -622,8 +695,9 @@
   setChooser("countChooser", state.playerCount);
   setChooser("cpuChooser", state.cpuCount);
   setChooser("diffChooser", state.difficulty);
+  renderHideFilled();
   renderSetup();
-  Ui.showScreen("setup");
+  showScreen("setup");
   selfTest();
 
   if (!state.seenHowTo) {
@@ -646,7 +720,7 @@
       return r;
     },
     aiTest: (games, rs, diff) => {
-      const r = Ai.benchmark(games || 20, rs || "yahtzee", diff || "hard");
+      const r = Ai.benchmark(games || 20, rs || "eu", diff || "hard");
       console.log(r.games + " games, average " + r.avg.toFixed(1) + ", best " + r.best + ", worst " + r.worst);
       return r;
     },
