@@ -6,13 +6,27 @@ no dependencies — plain HTML/CSS/JS, and it works offline once loaded.
 
 ## Games
 
-Every game belongs to exactly one **category**, and the launcher has a row of
-category pills at the top to filter by it. Inside a category — and inside the
-unfiltered **All** shelf — games are ordered newest first, and the two most
-recent ones wear a **NEW** ribbon for a month.
+Every game belongs to exactly one **category**, and declares how many players it
+takes. The launcher filters on both, with two rows of pills at the top:
 
-The pick is remembered between visits and mirrored in the URL, so
-`…/small-fun-games/#coding` opens straight onto the coding shelf.
+- **Category** — All, Board & Strategy, Coding, Puzzles, Maths, Sport.
+- **Players** — Any, On my own, With a friend, 3 or more.
+
+The two combine, so you can ask for coding games you can play on your own. A
+player pick matches against the game's **range**, not a single number: Yatzy Dice
+is a 1–3 player game, so it turns up under *on my own*, *with a friend* and
+*3 or more* alike.
+
+Each pill shows how many games it would leave you, counting the other row's pick
+too — and a pill that would empty the grid is dimmed instead of removed, so you
+can't tap your way into a dead end.
+
+Inside any shelf, games are ordered newest first, and the two most recent wear a
+**NEW** ribbon for a month.
+
+The picks are remembered between visits and mirrored in the URL, so
+`…/small-fun-games/#cat=board&players=duo` opens straight onto board games you
+can play with someone else. (The older short form, `#coding`, still works.)
 
 ### ♟️ Board & Strategy
 
@@ -45,12 +59,12 @@ These aren't built yet, so they have no catalogue entry — the shelves they'll
 land on are already set up. `🧩 Puzzles` has no pill on the launcher until
 Mastermind arrives.
 
-| Game | Category |
-| --- | --- |
-| Nine Men's Morris (Дама) | ♟️ Board & Strategy |
-| Battleship (Морски бой) | ♟️ Board & Strategy |
-| Connect Four | ♟️ Board & Strategy |
-| Mastermind | 🧩 Puzzles |
+| Game | Category | `players` |
+| --- | --- | --- |
+| Nine Men's Morris (Дама) | ♟️ Board & Strategy | `[1, 2]` with an AI, `[2, 2]` pass-and-play only |
+| Battleship (Морски бой) | ♟️ Board & Strategy | `[1, 2]` with the probability AI, `[2, 2]` without |
+| Connect Four | ♟️ Board & Strategy | `[1, 2]` with the minimax solver |
+| Mastermind | 🧩 Puzzles | `[1, 1]` — you against the code |
 
 ## Run locally
 
@@ -95,7 +109,7 @@ catalogue and picks a game.
      emoji: "🕹️",
      added: "2026-08-01",     // YYYY-MM-DD, drives the sort and the NEW ribbon
      category: "coding",      // exactly one id from the CATEGORIES list above
-     players: "1–2",          // "1" renders as "1 player", anything else as "N players"
+     players: [1, 2],         // [min, max] — the whole range the game supports
      age: 8,                  // optional, renders as "Age 8+"
      blurb: "One or two sentences a kid would understand.",
      colors: ["#4fc3f7", "#8a7bff"],   // the thumbnail gradient
@@ -105,6 +119,11 @@ catalogue and picks a game.
 
    The chips on the card are **generated** from `category`, `players`, `age` and
    `highlights` — don't hand-write them, or they drift from the real game.
+
+   Get `players` right: it drives the second filter row, so `[2, 2]` for a game
+   that *needs* two people is a different claim from `[1, 2]` for one with a
+   computer opponent. `[1, 1]` renders as "1 player", any wider range as "1–2
+   players".
 
    Needs a category that doesn't exist yet? Add it to the `CATEGORIES` array in
    the same file (`{ id, label, emoji }`). The filter bar picks it up on its own,

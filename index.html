@@ -43,30 +43,40 @@
   }
   .wrap{max-width:940px;margin:0 auto}
   header{display:flex;align-items:center;gap:14px;margin:10px 4px 6px}
-  /* Filter bar: sticks to the top and bleeds to the screen edges so the pills
-     can scroll sideways on a phone without a ragged cut-off. */
-  .filters{
+  /* Filter bar: sticks to the top and bleeds to the screen edges so each row of
+     pills can scroll sideways on a phone without a ragged cut-off. */
+  .filterbar{
     position:sticky;top:max(0px,env(safe-area-inset-top));z-index:5;
-    margin:16px -18px 0;padding:12px 18px;
-    display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;
-    -webkit-overflow-scrolling:touch;
+    margin:16px -18px 0;padding:11px 0;
     background:color-mix(in srgb, var(--bg1) 82%, transparent);
     -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   }
+  .filters{
+    display:flex;gap:9px;padding:2px 18px;
+    overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  }
   .filters::-webkit-scrollbar{display:none}
+  .filters + .filters{margin-top:8px}
   .filter{
     flex:0 0 auto;font:inherit;font-size:14px;font-weight:700;
     padding:10px 16px;border-radius:999px;cursor:pointer;
     background:var(--card);color:var(--muted);
     border:1px solid var(--cardline);
     -webkit-tap-highlight-color:transparent;
-    transition:transform .12s ease;
+    transition:transform .12s ease, opacity .12s ease;
   }
   .filter:active{transform:scale(.94)}
   .filter[aria-pressed="true"]{
     background:var(--chip);color:var(--chipink);border-color:var(--chipink);
   }
+  /* A pick that would empty the grid is dimmed rather than removed, so the row
+     keeps its shape as you tap around. */
+  .filter:disabled{opacity:.35;cursor:default}
+  .filter:disabled:active{transform:none}
   .filter .count{opacity:.6;font-weight:600;margin-left:5px}
+  /* Second row (players) reads as a refinement of the first, not a rival to it. */
+  .filters.secondary .filter{font-size:13px;padding:8px 14px;border-style:dashed}
+  .filters.secondary .filter[aria-pressed="true"]{border-style:solid}
   .logo{
     width:60px;height:60px;flex:0 0 auto;border-radius:18px;
     display:grid;place-items:center;font-size:34px;
@@ -137,10 +147,10 @@
     </div>
   </header>
 
-  <div class="filters" id="filters" role="group" aria-label="Filter games by category"></div>
+  <div class="filterbar" id="filterbar"></div>
 
   <main class="grid" id="grid" aria-label="Game catalogue"></main>
-  <p class="empty" id="empty" hidden>Nothing here yet — try another category.</p>
+  <p class="empty" id="empty" hidden>No games match both picks — try another.</p>
 
   <footer>
     <button class="install" id="installBtn">⬇️ Install Game Box</button>
@@ -171,7 +181,7 @@ const GAMES = [
     emoji: "🎲",
     added: "2026-07-28",
     category: "board",
-    players: "1–3",
+    players: [1, 3],
     blurb: "Roll five dice, chase full houses and straights. Play 1–3 players, take on the computer, or use it as a scorecard for your real dice.",
     colors: ["#f45b69", "#6c4cf0"],
     highlights: ["🎲 Dice", "📝 Scorecard mode"]
@@ -182,7 +192,7 @@ const GAMES = [
     emoji: "🥅",
     added: "2026-07-25",
     category: "coding",
-    players: "1",
+    players: [1, 1],
     age: 8,
     blurb: "Learn to code with footy. Snap together move, turn and repeat blocks, then watch your play run one step at a time — and debug it when it goes wrong.",
     colors: ["#ffc23d", "#0e6b3a"],
@@ -194,7 +204,7 @@ const GAMES = [
     emoji: "⭐",
     added: "2026-07-23",
     category: "maths",
-    players: "1",
+    players: [1, 1],
     blurb: "Blast through your times tables! Earn ninja belts one table at a time, or take on Classic mode with timers and streaks.",
     colors: ["#ff4da6", "#ffe600"],
     highlights: ["🥷 Belts", "⏱️ Timed mode"]
@@ -205,7 +215,7 @@ const GAMES = [
     emoji: "🤖",
     added: "2026-07-23",
     category: "coding",
-    players: "1",
+    players: [1, 1],
     age: 7,
     blurb: "Teach Chip the robot pet using IF-THIS-THEN-THAT rules. A first, playful taste of coding.",
     colors: ["#4fc3f7", "#8a7bff"],
@@ -217,7 +227,7 @@ const GAMES = [
     emoji: "🏉",
     added: "2026-07-23",
     category: "sport",
-    players: "1–2",
+    players: [1, 2],
     blurb: "Aim the arrow, load the power bar, time your run-up and thread the big sticks. Wind, a man on the mark, and 3 difficulty levels.",
     colors: ["#3ddc68", "#2f9d4d"],
     highlights: ["💨 Wind", "🎚️ 3 levels"]
@@ -236,11 +246,16 @@ const catById = new Map(CATEGORIES.map(c => [c.id, c]));
 // they're written in above.
 const shelf = GAMES.slice().sort((a, b) => (b.added || "").localeCompare(a.added || ""));
 
+function playersLabel([lo, hi]) {
+  if (lo === hi) return lo === 1 ? "👤 1 player" : `👥 ${lo} players`;
+  return `👥 ${lo}–${hi} players`;
+}
+
 function chipsFor(g) {
   const cat = catById.get(g.category);
   const chips = [];
   if (cat) chips.push(`${cat.emoji} ${cat.label}`);
-  if (g.players) chips.push(g.players === "1" ? "👤 1 player" : `👥 ${g.players} players`);
+  if (g.players) chips.push(playersLabel(g.players));
   if (g.age) chips.push(`🎯 Age ${g.age}+`);
   return chips.concat(g.highlights || []);
 }
@@ -281,56 +296,138 @@ const cards = shelf.map(g => {
 });
 
 // ---- Filter bar ----
-// Only categories that actually have games get a pill, so the bar can't fill up
-// with empty shelves.
-const shelves = [{ id: "all", label: "All", emoji: "🎮", count: shelf.length }]
-  .concat(CATEGORIES
-    .map(c => Object.assign({}, c, { count: shelf.filter(g => g.category === c.id).length }))
-    .filter(c => c.count > 0));
+// Two rows of pills, each row one "group". A game has to match the pick in
+// *every* group to show, so you can ask for coding games you can play with a
+// friend. Each group's first option is the reset, and always matches.
+//
+// Player picks test against the [min, max] range, not a fixed number — Yatzy is
+// a 1–3 player game, so it belongs under "on my own" and "with a friend" alike.
+const FILTER_GROUPS = [
+  {
+    id: "cat",
+    label: "Filter games by category",
+    options: [{ id: "all", label: "All", emoji: "🎮", match: () => true }].concat(
+      CATEGORIES.map(c => Object.assign({}, c, { match: g => g.category === c.id }))
+    )
+  },
+  {
+    id: "players",
+    label: "Filter games by number of players",
+    secondary: true,
+    options: [
+      { id: "any",   label: "Any players",   emoji: "🙋", match: () => true },
+      { id: "solo",  label: "On my own",     emoji: "👤", match: g => g.players[0] <= 1 },
+      { id: "duo",   label: "With a friend", emoji: "👥", match: g => g.players[0] <= 2 && g.players[1] >= 2 },
+      { id: "party", label: "3 or more",     emoji: "👨‍👩‍👦", match: g => g.players[1] >= 3 }
+    ]
+  }
+];
 
-const validId = id => shelves.some(s => s.id === id);
-const STORE_KEY = "gamebox:filter";
-
-function readInitialFilter() {
-  const fromHash = decodeURIComponent(location.hash.replace("#", ""));
-  if (validId(fromHash)) return fromHash;
-  try {
-    const saved = localStorage.getItem(STORE_KEY);
-    if (validId(saved)) return saved;
-  } catch (e) { /* private mode — just fall back to All */ }
-  return "all";
+// Drop options nothing in the catalogue can ever satisfy, so the bar doesn't
+// fill up with empty shelves. The reset option always survives.
+for (const group of FILTER_GROUPS) {
+  group.options = group.options.filter((o, i) => i === 0 || shelf.some(o.match));
 }
 
-const filters = document.getElementById("filters");
-const buttons = shelves.map(s => {
-  const b = document.createElement("button");
-  b.className = "filter";
-  b.type = "button";
-  b.dataset.id = s.id;
-  b.innerHTML = `${s.emoji} ${s.label}<span class="count">${s.count}</span>`;
-  b.addEventListener("click", () => apply(s.id));
-  filters.appendChild(b);
-  return b;
-});
+const state = {};
+for (const group of FILTER_GROUPS) state[group.id] = group.options[0].id;
 
-function apply(id, remember = true) {
-  for (const b of buttons) b.setAttribute("aria-pressed", String(b.dataset.id === id));
+const optionIn = (group, id) =>
+  group.options.find(o => o.id === id) || group.options[0];
+
+// A game passes when every group agrees. `except` leaves one group out, which
+// is how each pill works out the count it would leave behind.
+function passes(game, except) {
+  return FILTER_GROUPS.every(gr =>
+    gr.id === except || optionIn(gr, state[gr.id]).match(game));
+}
+
+// ---- Reading and writing the picks ----
+// The hash carries both groups (#cat=coding&players=duo). A bare "#coding" is
+// still understood, so links made before the players row existed keep working.
+const STORE_KEY = "gamebox:filters";
+
+function readPicks() {
+  const raw = location.hash.replace("#", "");
+  let source = null;
+  if (raw && !raw.includes("=")) {
+    source = new URLSearchParams("cat=" + raw);
+  } else if (raw) {
+    source = new URLSearchParams(raw);
+  } else {
+    try { source = new URLSearchParams(localStorage.getItem(STORE_KEY) || ""); }
+    catch (e) { /* private mode — fall through to the defaults */ }
+  }
+  for (const group of FILTER_GROUPS) {
+    const wanted = source && source.get(group.id);
+    // optionIn falls back to the reset, so a stale or hand-typed id can never
+    // strand you on an empty grid.
+    state[group.id] = optionIn(group, wanted).id;
+  }
+}
+
+function serialise() {
+  const params = new URLSearchParams();
+  for (const group of FILTER_GROUPS) {
+    if (state[group.id] !== group.options[0].id) params.set(group.id, state[group.id]);
+  }
+  return params.toString();
+}
+
+// ---- Build the rows ----
+const filterbar = document.getElementById("filterbar");
+const pills = [];
+for (const group of FILTER_GROUPS) {
+  const row = document.createElement("div");
+  row.className = "filters" + (group.secondary ? " secondary" : "");
+  row.setAttribute("role", "group");
+  row.setAttribute("aria-label", group.label);
+  for (const opt of group.options) {
+    const b = document.createElement("button");
+    b.className = "filter";
+    b.type = "button";
+    b.innerHTML = `${opt.emoji} ${opt.label}<span class="count"></span>`;
+    b.addEventListener("click", () => {
+      state[group.id] = opt.id;
+      apply();
+    });
+    row.appendChild(b);
+    pills.push({ button: b, group, opt });
+  }
+  filterbar.appendChild(row);
+}
+
+function apply(remember = true) {
   let shown = 0;
   cards.forEach((card, i) => {
-    const match = id === "all" || shelf[i].category === id;
+    const match = passes(shelf[i]);
     card.hidden = !match;
     if (match) shown++;
   });
   emptyNote.hidden = shown > 0;
+
+  for (const { button, group, opt } of pills) {
+    const selected = state[group.id] === opt.id;
+    // Counts are live: each pill shows what you'd get if you tapped it *now*,
+    // with the other row's pick still applied. A pill that would empty the grid
+    // is disabled rather than hidden, so the row doesn't jump around.
+    const count = shelf.filter(g => opt.match(g) && passes(g, group.id)).length;
+    button.setAttribute("aria-pressed", String(selected));
+    button.querySelector(".count").textContent = count;
+    button.disabled = count === 0 && !selected;
+  }
+
   if (!remember) return;
-  try { localStorage.setItem(STORE_KEY, id); } catch (e) { /* ignore */ }
-  // replaceState keeps the pick bookmarkable without pushing history entries or
-  // jumping the page to a #target.
-  history.replaceState(null, "", id === "all" ? location.pathname : "#" + id);
+  const query = serialise();
+  try { localStorage.setItem(STORE_KEY, query); } catch (e) { /* ignore */ }
+  // replaceState keeps the picks bookmarkable without pushing history entries
+  // or jumping the page to a #target.
+  history.replaceState(null, "", query ? "#" + query : location.pathname);
 }
 
-apply(readInitialFilter(), false);
-addEventListener("hashchange", () => apply(readInitialFilter(), false));
+readPicks();
+apply(false);
+addEventListener("hashchange", () => { readPicks(); apply(false); });
 
 // ---- PWA install prompt (Android/Chrome) ----
 let deferredPrompt = null;
