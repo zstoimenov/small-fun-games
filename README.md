@@ -59,12 +59,16 @@ These aren't built yet, so they have no catalogue entry — the shelves they'll
 land on are already set up. `🧩 Puzzles` has no pill on the launcher until
 Mastermind arrives.
 
+Every one of these is `[1, 2]`: two people face to face on one device, **and** one
+person against the computer. Same as AFL Goal Kick, and the same
+pass-the-device pattern Yatzy uses for its flip-the-screen mode.
+
 | Game | Category | `players` |
 | --- | --- | --- |
-| Nine Men's Morris (Дама) | ♟️ Board & Strategy | `[1, 2]` with an AI, `[2, 2]` pass-and-play only |
-| Battleship (Морски бой) | ♟️ Board & Strategy | `[1, 2]` with the probability AI, `[2, 2]` without |
-| Connect Four | ♟️ Board & Strategy | `[1, 2]` with the minimax solver |
-| Mastermind | 🧩 Puzzles | `[1, 1]` — you against the code |
+| Connect Four | ♟️ Board & Strategy | `[1, 2]` |
+| Mastermind | 🧩 Puzzles | `[1, 2]` — set a code for someone, or crack the computer's |
+| Nine Men's Morris (Дама) | ♟️ Board & Strategy | `[1, 2]` |
+| Battleship (Морски бой) | ♟️ Board & Strategy | `[1, 2]` |
 
 ## Run locally
 
