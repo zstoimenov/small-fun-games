@@ -27,7 +27,7 @@ game needs.
 
 | # | Game | Folder | Est. lines | Est. tokens |
 | --- | --- | --- | --- | --- |
-| 1 | Connect Four | `connect-four/` | 500–700 | 120k–200k |
+| 1 | ✅ Connect Four | `connect-four/` | 500–700 → **2,202 actual** | 120k–200k |
 | 2 | Mastermind | `mastermind/` | 700–900 | 180k–280k |
 | 3 | Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 | 300k–450k |
 | 4 | Battleship | `battleship/` | 1,800–2,600 | 550k–850k |
@@ -36,6 +36,13 @@ Total ≈ **1.2M–1.8M tokens**. Battleship alone is about 45% of it.
 
 For scale, the existing games measure: Yatzy 3,098 lines, Footy Tactics Lab
 2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+
+**The line estimates are low — Connect Four came in at 3× its brief.** Not
+because the game grew, but because "in this repo's style" is expensive: the
+board and the search together are only ~370 lines, and the other ~1,800 are the
+setup sheet, the how-to-play lesson, sound, the result screen, saving and the
+responsive board sizing. Scale the remaining three from the *actual* figure, not
+the estimate — the fixed cost of the house furniture lands on every game.
 
 ### What actually drives the cost
 
@@ -77,24 +84,37 @@ Three of the four need the same furniture:
 - an alternating **turn loop** that does not care which seat is human
 - a **pass-the-device handover** for two humans sharing one screen
 
-None of it exists yet. `yatzy-dice/js/ai.js` has an opponent but no game-tree
-search — **there is no minimax anywhere in this repo**. The handover *does*
-exist: Yatzy's flip-the-screen mode (`yatzy-dice/js/app.js`, the `flip` state).
-Reuse that pattern rather than reinventing it; it is the single biggest saving
-available on Battleship.
+**All four now exist, in `connect-four/`.** Copy from there rather than from
+this description:
 
-**Open decision:** whether to extract the above into a shared `versus/` module or
-keep every game self-contained as they are today. Self-contained is the current
-convention and the safer default; a shared module would cut games 2–4 but changes
-the repo's architecture and adds entries to the `sw.js` `ASSETS` list. Worth
-revisiting after Connect Four, when there is one real implementation to look at.
+- Start screen and difficulty picker: `connect-four/index.html` (the `#setup`
+  sheet) plus `renderSetup()` in `js/app.js`. One row per decision, label left
+  and a segmented control right, and rows that don't apply are hidden rather
+  than disabled — `chooser()` / `setChooser()` are generic and copy over as-is.
+- Turn loop: `dropIn()` → `afterTurn()` in the same file. Seats are colours, and
+  `players[seat].kind` is the only thing that says whether a seat is human, so
+  the loop never branches on "am I in one-player mode".
+- Handover: Yatzy's flip-the-screen mode, reused (`state.flip`, `body.flipped`).
+
+`connect-four/js/ai.js` is now the repo's **minimax reference** — negamax,
+alpha-beta, centre-first ordering, iterative deepening on a time budget. Nine
+Men's Morris should take the search from it and supply its own move generator,
+exactly as planned.
+
+**Open decision, now answerable:** the shared `versus/` module is still not worth
+it. Of Connect Four's 2,202 lines the genuinely reusable furniture is perhaps
+150 — the chooser controls and the turn loop — and both are short enough to copy
+in a minute and adapt in five. What is *not* reusable is everything that made the
+file long: the board geometry, the lesson, the sounds. Extracting 150 lines would
+buy a shared module, a new `sw.js` entry and a coupling between four games, to
+save less than a session's cold start. **Keep games self-contained.**
 
 ---
 
-## 1. Connect Four — `connect-four/`
+## 1. Connect Four — `connect-four/` ✅ built
 
-Cheapest of the four and the pattern-setter: whatever the vs-computer/vs-friend
-start screen looks like here, the other three copy it.
+The pattern-setter: whatever the vs-computer/vs-friend start screen looks like
+here, the other three copy it.
 
 - 7×6 grid, pieces drop to the lowest empty cell in a column.
 - Win = four in a row horizontally, vertically or on either diagonal. Draw when
@@ -107,6 +127,32 @@ start screen looks like here, the other three copy it.
 
 Watch for: the classic off-by-one in diagonal win detection near the edges. Test
 wins in all four directions and in every corner.
+
+### What shipped, and where it differs
+
+- **Depths are 2 / 7 / time-budgeted**, not 4 / 6 / 8. Hard runs iterative
+  deepening against a ~950ms clock and reaches depth 10–11 from the opening,
+  which beats a fixed 8 and stays responsive on a slow tablet. Easy went *down*
+  to 2: at depth 4 it still blocks every threat it sees, and the 35% blunder rate
+  alone was not enough to make it losable by a young child. Easy always takes a
+  win it can see — an opponent that walks past four in a row reads as broken
+  rather than easy.
+- **Two-player mode does offer the flip.** Off by default, since the brief is
+  right that nothing is hidden — but two people sitting opposite each other still
+  want the board the right way up, and reusing Yatzy's `flip` cost almost nothing.
+- **Extras not in the brief**: undo (steps back over the opponent's reply), a
+  hint button that names a column *and* the reason, threat warnings for younger
+  players, a running score across games, and a menu panel reporting the depth and
+  node count of the opponent's last move.
+- The diagonal off-by-one was **specifically tested** — all four directions from
+  every legal starting cell, both colours, each of the four discs checked as the
+  one completing the line (552 cases), plus every corner. No failures.
+
+One bug worth knowing about for games 2–4: the root search originally collected
+equal-scoring moves from alpha-beta results and broke ties at random. Fail-low
+values are only *upper bounds*, so two that happen to match are not a tie — in
+one test position it picked a move worth +108 to the opponent. The root now
+searches on a full window. **If you copy the search, copy that comment with it.**
 
 ## 2. Mastermind — `mastermind/`
 

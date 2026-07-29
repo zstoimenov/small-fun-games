@@ -32,6 +32,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 | Game | Folder | What it is |
 | --- | --- | --- |
+| 🔴 **Connect Four** | [`connect-four/`](connect-four/) | Drop discs down a 7×6 grid and line up four. 1–2 players, pass-and-play with a flip-the-screen mode, and an Easy/Medium/Hard opponent that searches the game tree rather than guessing — Hard looks about ten moves ahead. Undo, a hint button that explains itself, and a menu panel showing how far the computer actually thought on its last go. |
 | 🎲 **Yatzy Dice** | [`yatzy-dice/`](yatzy-dice/) | Five dice, three rolls a turn, a card full of boxes. 1–3 players, an Easy/Medium/Hard computer opponent for solo games, a flip-the-screen mode so two people can sit opposite one device, **Yatzy EU and Yatzy US** rules, and a scorecard-only mode for when you'd rather roll real dice. Dice come from `crypto.getRandomValues`, and there's a built-in fairness check to prove it. |
 
 ### 🧠 Coding
@@ -68,7 +69,6 @@ pass-the-device pattern Yatzy uses for its flip-the-screen mode.
 
 | Game | Category | `players` |
 | --- | --- | --- |
-| Connect Four | ♟️ Board & Strategy | `[1, 2]` |
 | Mastermind | 🧩 Puzzles | `[1, 2]` — set a code for someone, or crack the computer's |
 | Nine Men's Morris (Дама) | ♟️ Board & Strategy | `[1, 2]` |
 | Battleship (Морски бой) | ♟️ Board & Strategy | `[1, 2]` |
