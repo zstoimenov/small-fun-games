@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Mastermind</title>
+<meta name="description" content="Crack the secret row of colours from black and white pegs. 1-2 players, a computer that sets codes or breaks them, hints, and undo.">
+<meta name="theme-color" content="#7b4bd8">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mastermind">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet setup-sheet">
+
+    <!-- The back link sits in the sheet's own flow so it can never sit on
+         top of the title, however short the screen is. -->
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+    <h1>🎯 Mastermind</h1>
+    <p class="sub">Somebody hides a row of colours. You work it out from the pegs — black for right colour in the right place, white for right colour in the wrong place.</p>
+
+    <div class="row">
+      <span class="row-label">Players</span>
+      <div class="seg" id="countChooser">
+        <button class="opt" type="button" data-value="1">1</button>
+        <button class="opt" type="button" data-value="2">2</button>
+      </div>
+    </div>
+
+    <div class="row" id="roleRow">
+      <span class="row-label">Your job</span>
+      <div class="seg" id="roleChooser">
+        <button class="opt" type="button" data-value="break">🔍 Crack it</button>
+        <button class="opt" type="button" data-value="set">🤫 Set it</button>
+      </div>
+    </div>
+    <p class="row-note" id="roleNote"></p>
+
+    <div class="row" id="diffRow" hidden>
+      <span class="row-label">How good?</span>
+      <div class="seg" id="diffChooser">
+        <button class="opt" type="button" data-value="easy">Easy</button>
+        <button class="opt" type="button" data-value="medium">Medium</button>
+        <button class="opt" type="button" data-value="hard">Hard</button>
+      </div>
+    </div>
+    <p class="row-note" id="diffNote" hidden></p>
+
+    <div class="row">
+      <span class="row-label">Puzzle</span>
+      <div class="seg" id="presetChooser">
+        <button class="opt" type="button" data-value="easy">Easy</button>
+        <button class="opt" type="button" data-value="classic">Classic</button>
+        <button class="opt" type="button" data-value="tricky">Tricky</button>
+      </div>
+    </div>
+    <p class="row-note" id="presetNote"></p>
+
+    <div class="row" id="flipRow" hidden>
+      <span class="row-label">Sit opposite</span>
+      <button id="flipToggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note" id="flipNote" hidden>
+      The screen turns around for whoever is guessing, so you can put the device
+      between you and both read it the right way up.
+    </p>
+
+    <div class="row">
+      <span class="row-label">Help me</span>
+      <button id="hintToggle" class="switch" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">
+      Counts how many codes still fit, says when your row is one you've already
+      ruled out, and puts a <b>💡 Hint</b> button on the board.
+    </p>
+
+    <div class="row">
+      <span class="row-label">Shapes on pegs</span>
+      <button id="shapeToggle" class="switch" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">
+      Gives every colour its own shape too, so you can tell them apart without
+      relying on the colour.
+    </p>
+
+    <details class="more" id="namesBox" hidden>
+      <summary><span id="namesSummary">Names</span></summary>
+      <div id="namesWrap"></div>
+    </details>
+
+    <div class="sheet-buttons">
+      <button id="howtoBtn" class="btn btn-clear" type="button">❓ How to play</button>
+      <button id="startBtn" class="btn btn-go" type="button">Start game ▶</button>
+    </div>
+    <button id="resumeBtn" class="ghost-btn wide" type="button" hidden>↩︎ Carry on with the saved game</button>
+  </div>
+</div>
+
+<!-- ══ SETTING A CODE ═══════════════════════════════════════════════════ -->
+<!-- Two steps in one sheet: pick the colours, then hand the device over. The
+     handover step is skipped when the computer is doing the guessing. -->
+<div id="setcode" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+
+    <div id="pickStep">
+      <h2 id="pickTitle">Your secret code</h2>
+      <p id="pickSub" class="sub">Tap the colours to build a row. Nobody sees it but you.</p>
+      <div id="pickRow" class="pick-row"></div>
+      <div id="pickPalette" class="palette"></div>
+      <p id="pickWarn" class="row-note" hidden></p>
+      <div class="sheet-buttons">
+        <button id="pickRandom" class="btn btn-clear" type="button">🎲 Pick for me</button>
+        <button id="pickDone" class="btn btn-go" type="button" disabled>Hide it ▶</button>
+      </div>
+      <button id="pickBack" class="ghost-btn wide" type="button">‹ Change the settings</button>
+    </div>
+
+    <div id="handStep" hidden>
+      <div class="result-icon">🤝</div>
+      <h2 id="handTitle">Pass the tablet over</h2>
+      <p id="handSub" class="sub"></p>
+      <div class="sheet-buttons">
+        <button id="handBack" class="btn btn-clear" type="button">‹ Change it</button>
+        <button id="handGo" class="btn btn-go" type="button">I'm ready ▶</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
+<!-- The page itself never scrolls: the bar and the buttons are fixed height
+     and the rows take whatever is left over, sized to fit by ui.js. -->
+<main id="game" hidden>
+  <div class="topbar">
+    <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
+    <div class="turn-info">
+      <strong><span id="turnName">Crack the code</span></strong>
+      <span id="turnMeta">10 goes left</span>
+    </div>
+    <button id="muteBtn" class="icon-btn" type="button" aria-pressed="true" title="Sound on/off">🔊</button>
+  </div>
+
+  <div id="coach" class="coach" hidden></div>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board" id="board" role="group" aria-label="Guesses so far"></div>
+  </div>
+
+  <div id="palette" class="palette" role="group" aria-label="Colours"></div>
+
+  <div class="board-buttons">
+    <button id="undoBtn" class="ghost-btn" type="button">↶ Undo</button>
+    <button id="hintBtn" class="ghost-btn" type="button">💡 Hint</button>
+    <button id="checkBtn" class="btn btn-go" type="button" disabled>Check ▶</button>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+</main>
+
+<!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
+<div id="menu" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>Menu</h2>
+    <button id="menuSound" class="ghost-btn wide" type="button">🔊 Sound is on</button>
+    <button id="menuHints" class="ghost-btn wide" type="button">💡 Hints: on</button>
+    <button id="menuShapes" class="ghost-btn wide" type="button">🔷 Shapes on pegs: on</button>
+    <button id="menuUndo" class="ghost-btn wide" type="button">↶ Take a guess back</button>
+    <button id="menuHowto" class="ghost-btn wide" type="button">❓ How to play</button>
+    <button id="menuNew" class="ghost-btn wide" type="button">🔄 New game</button>
+    <a class="ghost-btn wide" href="../">🎮 Back to Game Box</a>
+
+    <div class="brain">
+      <h3>What was Robo thinking?</h3>
+      <p class="muted">
+        It keeps a list of every code that still fits all the pegs so far, and picks the
+        guess that splits that list into the smallest piles — so however the pegs come
+        back, it has thrown most of the list away. Here's where it had got to.
+      </p>
+      <div id="brainOut"></div>
+    </div>
+
+    <div class="sheet-buttons">
+      <button id="menuClose" class="btn btn-go" type="button">Back to the game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet sheet-sm howto-sheet">
+    <div class="howto-top">
+      <span id="howtoStep" class="pill">1 / 7</span>
+      <button id="howtoSkip" class="ghost-btn" type="button">Skip</button>
+    </div>
+    <div id="howtoBody" class="howto-body"></div>
+    <div id="howtoDots" class="dots"></div>
+    <div class="sheet-buttons">
+      <button id="howtoPrev" class="btn btn-clear" type="button">‹ Back</button>
+      <button id="howtoNext" class="btn btn-go" type="button">Next ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <div id="resultIcon" class="result-icon">🏆</div>
+    <h2 id="resultTitle">Cracked it!</h2>
+    <p id="resultText" class="sub"></p>
+    <div id="resultCode" class="reveal"></div>
+    <div id="resultTally" class="tally" hidden></div>
+    <div class="sheet-buttons">
+      <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
+      <button id="againBtn" class="btn btn-go" type="button">Play again ▶</button>
+    </div>
+    <button id="resultUndo" class="ghost-btn wide" type="button">↶ Take that last guess back</button>
+  </div>
+</div>
+
+<script src="./js/rules.js"></script>
+<script src="./js/ai.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/tutorial.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>

@@ -28,19 +28,25 @@ game needs.
 | # | Game | Folder | Est. lines | Est. tokens |
 | --- | --- | --- | --- | --- |
 | 1 | ✅ Connect Four | `connect-four/` | 500–700 → **2,202 actual** | 120k–200k |
-| 2 | Mastermind | `mastermind/` | 700–900 → **~1,600 expected** | 180k–280k → **250k–400k** |
+| 2 | ✅ Mastermind | `mastermind/` | 700–900 → **2,817 actual** | 180k–280k → **~330k actual** |
 | 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
 | 4 | Battleship | `battleship/` | 1,800–2,600 → **~4,000 expected** | 550k–850k → **700k–1.1M** |
 
 Total ≈ **1.5M–2M tokens**. Battleship alone is still about 45% of it.
 
 For scale, the existing games measure: Yatzy 3,098 lines, Nine Men's Morris
-2,928, Connect Four 2,202, Footy Tactics Lab 2,048, Times Table Blaster 1,186,
-AFL Goal Kick 1,058, Robo Rules 913.
+2,928, Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048, Times
+Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
 
-**Two games in, the line estimates are consistently ~2.2× low and the token
-estimates ~1.3× low.** Scale the two remaining briefs by those factors rather
-than trusting the original numbers — the figures in the table already are.
+**Three games in, the line estimates are consistently ~2.5× low and the token
+estimates roughly right at the top of their range.** Scale Battleship's brief by
+those factors rather than trusting the original numbers — the figures in the
+table already are.
+
+Mastermind is the data point that says the floor matters more than the game:
+its rules and solver together are 536 lines, and the other 2,280 are the house
+furniture. **Every game in this repo costs about 2,000 lines before it does
+anything.** That is the number to plan Battleship around.
 
 **The line estimates are low — Connect Four came in at 3× its brief.** Not
 because the game grew, but because "in this repo's style" is expensive: the
@@ -177,7 +183,7 @@ values are only *upper bounds*, so two that happen to match are not a tie — in
 one test position it picked a move worth +108 to the opponent. The root now
 searches on a full window. **If you copy the search, copy that comment with it.**
 
-## 2. Mastermind — `mastermind/`
+## 2. Mastermind — `mastermind/` ✅ built
 
 - 4 slots, 6 colours, 10 guesses. Feedback pegs: black = right colour right
   place, white = right colour wrong place.
@@ -193,6 +199,73 @@ searches on a full window. **If you copy the search, copy that comment with it.*
 Watch for: white-peg counting with duplicate colours. It is the single most
 common Mastermind bug. Count exact matches first, remove them, then match the
 remainder by colour multiset.
+
+### What shipped, and where it differs
+
+2,817 lines, ~330k tokens, one session. The brief was right about everything it
+covered; five things are worth carrying into Battleship.
+
+- **The brief's own warning was the cheapest bug to avoid and the most valuable
+  thing to test.** Scoring is written once in `rules.js` the way the brief says,
+  and a second time in `ai.js` by the other route — whole-code colour overlap
+  minus the exact matches — because the solver needs it as one packed integer.
+  Checking those two against each other over all 1,296² pairs costs nothing and
+  pins the function down completely. **Do the same in Battleship**: any rule
+  worth getting right is worth computing twice.
+- **Knuth's published numbers are an acceptance test, and they should be used as
+  one.** Hard plays all 1,296 secrets in about 40 seconds of node and comes back
+  max 5, mean 4.4761 — the known figure to four decimal places. Nothing else in
+  this repo has been verifiable to that standard. The distribution is
+  `{1:1, 2:6, 3:62, 4:533, 5:694}`. If a future change moves any of those, it
+  broke something.
+- **The difficulty ladder came out of measurement, not taste, and the first
+  attempt was wrong.** Easy was written as a forgetful solver that only checked
+  the last row of pegs; played out over 432 secrets it *failed to crack the code
+  78% of the time*, which reads as faulty rather than easy. What shipped is
+  **Easy ignores the white pegs** — it never contradicts anything it has been
+  told, it just misses everything the whites were saying. Measured: cracks it
+  99.6% of the time in about 7 goes, against Medium's 4.65 and Hard's 4.476. It
+  is also the only one of the variants that can be explained to a child in one
+  sentence, which is why the setup sheet now says exactly that.
+- **A saved game was being wiped on every visit, and the same bug is live in
+  Connect Four.** `save()` derived the stored game from `state` — and boot calls
+  `setMuted()`, which calls `save()`, before any game exists, so `game: null`
+  went straight over the top of it. It survived one reload only because the
+  snapshot had already been read into memory. Fixed here by making `savedGame`
+  the record and having `save()` refresh it rather than re-derive it. **Worth
+  fixing in `connect-four/js/app.js` and checking in `nine-mens-morris/`.** The
+  browser check that catches it is reloading three times, not once.
+- **Two bugs were invisible in a screenshot and obvious from measurement, which
+  is the Morris lesson again.** A white peg on a white card was pixel-identical
+  to an empty socket in the light theme — two thirds of the feedback silently
+  missing — and `fit()` only ever shrank the board, so a tablet showed a phone-
+  sized one in a sea of empty space. Also worth knowing: **`offsetParent` is null
+  for every `position:fixed` element**, so the obvious way to count what is
+  visible reports every overlay in the app as hidden. Use `getClientRects()`.
+
+Extras beyond the brief, mostly lifted from Connect Four: undo, a hint that
+fills the row in *and* names its reason, a running two-player match score, the
+flip-the-screen mode, the seven-page lesson, and the depth/nodes panel — here
+reporting how many codes still fit, which is far more legible to a child than a
+node count. New here: three puzzle sizes (3/4/5 slots, the 3-slot one with no
+repeats for a five-year-old), a shape on every peg for colour blindness, a live
+"N codes still fit" counter, and a warning when the row you are about to play is
+one your own pegs have already ruled out.
+
+Two decisions worth recording:
+
+- **The difficulty row is hidden in the commonest mode, and that is correct.**
+  Setting a code takes no skill, so the computer only has a difficulty when it
+  is the one *guessing*. In "crack the computer's code" the puzzle size is the
+  difficulty. Rows hidden rather than disabled, as everywhere else.
+- **Two-player is round-based with the roles swapping**, scored on goes used —
+  a single round leaves the setter with nothing to do for ten turns. A round
+  that runs out of goes scores `guesses + 2`, or never cracking a code would
+  look better than taking every go and getting there.
+
+Not solved, and the same question Battleship has to answer: the secret sits in
+`localStorage` and in memory, so two-player secrecy holds against a sibling
+looking over your shoulder, not against one who opens devtools.
 
 ## 3. Nine Men's Morris (Дама) — `nine-mens-morris/` ✅ built
 
