@@ -1,0 +1,455 @@
+/* Nine Men's Morris — one stylesheet, no framework.                             */
+/* Tablet-first: big tap targets, a square board that fills whatever space is    */
+/* left over, and a palette that follows the device's light or dark setting.      */
+/*                                                                              */
+/* The board is an SVG, so nearly everything about it is styled here rather than  */
+/* drawn in ui.js: the grain of the lines, the two piece gradients, and every     */
+/* state a point can be in — pickable, selected, part of a mill, about to be      */
+/* taken. ui.js only ever adds and removes classes.                              */
+
+:root{
+  --bg1:#eef7f4; --bg2:#f4f1ff; --ink:#152423; --muted:#5b6f6c;
+  --card:#ffffff; --line:#dde8e5; --shadow:rgba(20,70,60,.16);
+  --accent:#0f8a7e; --accent2:#3a6ee8; --good:#1f9d55; --gold:#e8a300;
+  --chip:#e2f4f0; --chipink:#0b6a60;
+  --wood:#e0b878; --wood2:#c08f4a; --grain:rgba(70,40,10,.55); --socket:rgba(70,40,10,.3);
+  --pw1:#fffdf5; --pw2:#d3c3a0; --pwline:#a8916a;
+  --pb1:#55637d; --pb2:#131b2c; --pbline:#0a0f1a;
+  --tap:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg1:#0d1a1e; --bg2:#141230; --ink:#e9f5f2; --muted:#93aaa6;
+    --card:#16262a; --line:#28403f; --shadow:rgba(0,0,0,.55);
+    --accent:#22b3a1; --accent2:#6f8dff; --good:#4ad48a; --gold:#ffc23d;
+    --chip:#1d3a38; --chipink:#8fe3d6;
+    --wood:#8c6234; --wood2:#5c3f1e; --grain:rgba(255,238,205,.5); --socket:rgba(20,10,0,.42);
+    --pw1:#fffefa; --pw2:#c9b894; --pwline:#8e7a52;
+    --pb1:#46536b; --pb2:#0b1120; --pbline:#05080f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg1:#0d1a1e; --bg2:#141230; --ink:#e9f5f2; --muted:#93aaa6;
+  --card:#16262a; --line:#28403f; --shadow:rgba(0,0,0,.55);
+  --accent:#22b3a1; --accent2:#6f8dff; --good:#4ad48a; --gold:#ffc23d;
+  --chip:#1d3a38; --chipink:#8fe3d6;
+  --wood:#8c6234; --wood2:#5c3f1e; --grain:rgba(255,238,205,.5); --socket:rgba(20,10,0,.42);
+  --pw1:#fffefa; --pw2:#c9b894; --pwline:#8e7a52;
+  --pb1:#46536b; --pb2:#0b1120; --pbline:#05080f;
+}
+:root[data-theme="light"]{
+  --bg1:#eef7f4; --bg2:#f4f1ff; --ink:#152423; --muted:#5b6f6c;
+  --card:#ffffff; --line:#dde8e5; --shadow:rgba(20,70,60,.16);
+  --accent:#0f8a7e; --accent2:#3a6ee8; --good:#1f9d55; --gold:#e8a300;
+  --chip:#e2f4f0; --chipink:#0b6a60;
+  --wood:#e0b878; --wood2:#c08f4a; --grain:rgba(70,40,10,.55); --socket:rgba(70,40,10,.3);
+  --pw1:#fffdf5; --pw2:#d3c3a0; --pwline:#a8916a;
+  --pb1:#55637d; --pb2:#131b2c; --pbline:#0a0f1a;
+}
+
+*{box-sizing:border-box}
+/* Class rules like .overlay{display:grid} outrank the browser's own
+   [hidden]{display:none}, which would leave dismissed sheets invisible but
+   still swallowing taps. This puts the attribute back in charge. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;min-height:100dvh;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 500px at 12% -8%, var(--bg2), transparent 62%),
+    linear-gradient(165deg, var(--bg1), var(--bg2));
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  padding:max(12px,env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+}
+
+/* In the sheet's own flow, so it can never sit on top of the title. */
+#back{
+  display:inline-block;margin-bottom:10px;
+  font-size:13px;font-weight:700;text-decoration:none;color:var(--chipink);
+  background:var(--chip);padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn{
+  font:inherit;font-weight:800;border:none;border-radius:16px;cursor:pointer;
+  min-height:var(--tap);padding:12px 20px;color:#fff;
+  background:var(--accent2);box-shadow:0 6px 16px var(--shadow);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-go{background:linear-gradient(145deg,var(--accent),var(--accent2))}
+.btn-clear{background:var(--chip);color:var(--chipink)}
+.ghost-btn{
+  font:inherit;font-weight:700;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);color:var(--ink);padding:11px 16px;min-height:46px;cursor:pointer;
+}
+.ghost-btn:disabled{opacity:.42;cursor:default}
+.ghost-btn.wide{display:block;width:100%;margin:8px 0;text-align:left}
+.icon-btn{
+  font:inherit;font-size:19px;font-weight:800;line-height:1;
+  width:46px;height:46px;flex:0 0 auto;border-radius:14px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+}
+
+/* ── Overlays and sheets ────────────────────────────────────────────────── */
+
+.overlay{
+  position:fixed;inset:0;z-index:50;
+  display:grid;place-items:center;
+  padding:max(14px,env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+  background:rgba(8,26,24,.55);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  overflow:auto;
+}
+.sheet{
+  width:100%;max-width:520px;background:var(--card);border:1px solid var(--line);
+  border-radius:24px;padding:20px;box-shadow:0 18px 50px var(--shadow);
+  max-height:100%;overflow:auto;
+}
+.sheet-sm{max-width:440px}
+.sheet h1{margin:0 0 4px;font-size:clamp(22px,5.4vw,29px)}
+.sheet h2{margin:0 0 6px;font-size:22px}
+.sheet h3{margin:14px 0 6px;font-size:16px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.muted{color:var(--muted);font-weight:500}
+.pill{
+  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+  background:var(--chip);color:var(--chipink);
+}
+.sheet-buttons{display:flex;gap:10px;margin-top:16px}
+.sheet-buttons .btn{flex:1}
+/* Sized to its text so it can't wrap onto two lines and out-grow Start game. */
+#howtoBtn{flex:0 1 auto;white-space:nowrap;font-size:14px;padding:12px 15px}
+
+/* ── Setup ──────────────────────────────────────────────────────────────── */
+
+/* One line per decision: label on the left, a segmented control on the right. */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 0;border-top:1px solid var(--line);
+}
+.row:first-of-type{border-top:none}
+.row-label{font-size:14px;font-weight:700;flex:0 0 auto}
+.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.seg{
+  display:flex;gap:3px;padding:3px;border-radius:13px;
+  background:var(--bg2);border:1px solid var(--line);flex:0 1 auto;
+}
+.seg .opt{
+  font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;
+  border:none;background:none;color:var(--muted);
+  padding:9px 13px;border-radius:10px;min-height:40px;
+}
+.seg .opt.on{background:var(--card);color:var(--accent);box-shadow:0 2px 6px var(--shadow)}
+
+.switch{
+  position:relative;flex:0 0 auto;width:52px;height:31px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg2);padding:0;transition:background .18s;
+}
+.switch .knob{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:var(--card);box-shadow:0 2px 5px var(--shadow);transition:transform .18s;
+}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"] .knob{transform:translateX(21px)}
+
+.more{margin:10px 0 2px;border-top:1px solid var(--line);padding-top:8px}
+.more summary{
+  cursor:pointer;font-size:14px;font-weight:700;padding:7px 2px;
+  list-style:none;display:flex;align-items:center;gap:7px;
+}
+.more summary::-webkit-details-marker{display:none}
+.more summary::before{content:"▸";color:var(--muted);transition:transform .15s;display:inline-block}
+.more[open] summary::before{transform:rotate(90deg)}
+.name-row{display:flex;align-items:center;gap:10px;margin:7px 0}
+.name-row span{font-size:13px;font-weight:700;color:var(--muted);width:78px;flex:0 0 auto}
+.name-row input{
+  font:inherit;flex:1;width:100%;min-height:46px;padding:10px 13px;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--ink);
+}
+
+/* ── Game screen ────────────────────────────────────────────────────────── */
+
+/* The page itself never scrolls during a game — the board is sized to the space
+   that is left rather than pushing anything off the bottom. */
+body.in-game{
+  height:100dvh;overflow:hidden;
+  padding-left:6px;padding-right:6px;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+#game{
+  max-width:760px;margin:0 auto;height:100%;
+  display:flex;flex-direction:column;min-height:0;gap:8px;
+  transition:transform .45s ease;
+}
+
+/* Two people sharing one device, sitting opposite each other. */
+body.flipped #game{transform:rotate(180deg)}
+body.flipped .overlay .sheet{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){ #game{transition:none} }
+
+.topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
+.turn-info strong{display:flex;align-items:center;justify-content:center;gap:7px;font-size:19px}
+.turn-info span{display:block;font-size:12px;color:var(--muted)}
+#turnName{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#turnName.cpu{color:var(--accent2)}
+.turn-dot{
+  width:15px;height:15px;flex:0 0 auto;border-radius:50%;
+  border:1px solid var(--line);
+}
+.turn-dot.white{background:radial-gradient(circle at 35% 30%, var(--pw1), var(--pw2));border-color:var(--pwline)}
+.turn-dot.black{background:radial-gradient(circle at 35% 30%, var(--pb1), var(--pb2));border-color:var(--pbline)}
+.turn-dot.none{background:var(--line)}
+
+/* ── Pieces in hand ─────────────────────────────────────────────────────── */
+
+/* Two rows of little counters: what is left to place, then what has been lost.
+   A child can see at a glance who is winning without counting the board. */
+.hands{display:flex;gap:8px;flex:0 0 auto}
+.hand-row{
+  flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:6px 10px;
+}
+.hand-name{
+  font-size:12px;font-weight:800;color:var(--muted);
+  flex:0 0 auto;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.hand-pips{display:flex;flex-wrap:wrap;gap:3px;align-items:center;min-height:14px}
+/* The outline is --muted rather than each piece's own edge colour, because these
+   sit on a card, not on the wood: a cream pip vanishes into a white card, and a
+   black one vanishes into a dark one. One mid-tone ring works on both. */
+.hand-pips .pip{
+  width:11px;height:11px;border-radius:50%;display:block;
+  border:1px solid var(--muted);
+}
+.hand-pips .pip.w{background:radial-gradient(circle at 35% 30%, var(--pw1), var(--pw2))}
+.hand-pips .pip.b{background:radial-gradient(circle at 35% 30%, var(--pb1), var(--pb2))}
+/* A piece that has been taken off: an empty outline, so the row's length still
+   adds up to nine and the gap is the story. */
+.hand-pips .pip.gone{background:none;border:1px dashed var(--line);opacity:.75}
+
+.coach{
+  display:flex;gap:9px;align-items:flex-start;flex:0 0 auto;
+  background:linear-gradient(145deg,var(--accent),var(--accent2));color:#fff;
+  padding:11px 13px;border-radius:16px;
+  font-size:14px;font-weight:600;line-height:1.4;
+  box-shadow:0 8px 20px var(--shadow);
+}
+.coach.warn{background:linear-gradient(145deg,#f0803a,#d8453b)}
+.coach.take{background:linear-gradient(145deg,#8b5cf6,var(--accent2))}
+/* The everyday "whose go is it" line. It's on screen the whole game, so it has
+   to sit down and be quiet — the coloured versions are for the ones that
+   actually want reading. */
+.coach.calm{
+  background:var(--card);color:var(--muted);font-weight:600;
+  border:1px solid var(--line);box-shadow:none;
+}
+.coach-face{font-size:20px;line-height:1.1}
+
+.board-buttons{display:flex;gap:9px;justify-content:center;flex:0 0 auto}
+.board-buttons .ghost-btn{flex:0 1 200px}
+
+/* ── The board ──────────────────────────────────────────────────────────── */
+
+.board-wrap{
+  flex:1 1 auto;min-height:0;
+  display:flex;align-items:center;justify-content:center;
+}
+/* Square, and sized in pixels by ui.js — see fit() there for why. */
+.board{
+  padding:2.5%;border-radius:min(4vw,22px);
+  background:
+    repeating-linear-gradient(102deg, rgba(255,255,255,.05) 0 3px, rgba(0,0,0,.03) 3px 7px),
+    linear-gradient(160deg,var(--wood),var(--wood2));
+  box-shadow:0 12px 30px var(--shadow), 0 2px 0 rgba(255,255,255,.28) inset;
+}
+.board-svg{display:block;width:100%;height:100%;overflow:visible}
+
+/* The three squares and the four spokes. Rounded ends so the joins look drawn
+   rather than assembled. */
+.frame{fill:none;stroke:var(--grain);stroke-width:1.05;stroke-linecap:round}
+.line-box{fill:none}
+
+/* The piece gradients. ui.js writes the <defs> and the stop *classes*; the
+   colours have to come from here, or both stops default to black and every
+   piece on the board comes out the same colour. */
+.stop-w-1{stop-color:var(--pw1)}
+.stop-w-2{stop-color:var(--pw2)}
+.stop-b-1{stop-color:var(--pb1)}
+.stop-b-2{stop-color:var(--pb2)}
+
+/* Every point: a socket dot showing where a piece can go, the two piece
+   colours stacked and hidden, and the tap target on top of the lot. */
+.pt .socket{fill:var(--socket)}
+.pt .piece{opacity:0;transition:opacity .12s}
+.pt.has-w .piece.w,.pt.has-b .piece.b{opacity:1;filter:drop-shadow(0 .7px .7px rgba(0,0,0,.45))}
+.pt .piece.w{stroke:var(--pwline);stroke-width:.45}
+.pt .piece.b{stroke:var(--pbline);stroke-width:.45}
+.pt .hit{fill:transparent;cursor:pointer}
+.board-svg.locked .hit{cursor:default;pointer-events:none}
+/* Chromium draws its own square outline around a focused SVG shape, which lands
+   on the board as a white box after every tap. Killing it means keyboard focus
+   has to be shown some other way, hence the wash of colour. */
+.pt .hit:focus{outline:none}
+.pt .hit:focus-visible{fill:rgba(255,255,255,.3);stroke:#fff;stroke-width:.8}
+
+/* Where you can go. A ring on an empty point rather than a filled dot, so it
+   reads as "space" and not "piece". */
+.pt.legal .socket{fill:var(--accent);r:3.4}
+.pt.legal .hit{fill:rgba(255,255,255,.14)}
+@media (hover:hover){
+  .pt.legal:hover .hit,.pt.takeable:hover .hit{fill:rgba(255,255,255,.3)}
+}
+/* The piece you picked up. */
+.pt.sel .piece{transform:scale(1.14);filter:drop-shadow(0 1.4px 1.6px rgba(0,0,0,.5))}
+.pt.sel .hit{fill:rgba(255,255,255,.24)}
+.pt{transform-box:fill-box;transform-origin:center}
+.pt .piece{transform-box:fill-box;transform-origin:center;transition:opacity .12s,transform .16s}
+
+/* Three in a line, and the enemy pieces you may take because of it. */
+.pt.mill .piece{stroke:var(--gold);stroke-width:1.1}
+.pt.takeable .piece{animation:takeable 1.1s ease-in-out infinite}
+.pt.takeable .hit{fill:rgba(216,69,59,.28);cursor:pointer}
+@keyframes takeable{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.12)}
+}
+.pt.last .socket{fill:var(--accent)}
+.pt.hint .hit{animation:hint 1.2s ease-in-out 2}
+@keyframes hint{
+  0%,100%{fill:rgba(255,255,255,0)}
+  40%{fill:rgba(255,255,255,.55)}
+}
+
+/* Putting a piece down, and having one taken away. */
+.pt.pop .piece{animation:pop .26s cubic-bezier(.2,1.5,.5,1)}
+@keyframes pop{
+  from{transform:scale(.3);opacity:.4}
+  to{transform:scale(1);opacity:1}
+}
+.pt.going .piece{animation:going .34s ease-out forwards}
+@keyframes going{
+  0%{transform:scale(1)}
+  35%{transform:scale(1.25)}
+  to{transform:scale(0);opacity:0}
+}
+/* The stand-in piece that flies across on a slide. */
+.ghost{transition:transform .3s cubic-bezier(.35,.1,.35,1);filter:drop-shadow(0 1.4px 1.8px rgba(0,0,0,.5))}
+/* Dashed pointer for the lesson's "move from here to there" pages. */
+.arrow{stroke:var(--gold);stroke-width:1.6;stroke-dasharray:3 2.5;stroke-linecap:round}
+
+@media (prefers-reduced-motion:reduce){
+  .pt.pop .piece,.pt.going .piece,.pt.takeable .piece{animation:none}
+  .ghost{transition:none}
+  .pt.hint .hit{animation:none;fill:rgba(255,255,255,.45)}
+  .pt.takeable .piece{stroke:#d8453b;stroke-width:1.2}
+}
+
+/* ── Toast, confetti ────────────────────────────────────────────────────── */
+
+.toast{
+  position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
+  transform:translate(-50%,14px);z-index:45;
+  background:var(--ink);color:var(--card);
+  padding:11px 17px;border-radius:999px;font-size:14px;font-weight:600;
+  box-shadow:0 10px 26px var(--shadow);opacity:0;transition:opacity .22s,transform .22s;
+  max-width:calc(100% - 28px);text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+.confetti i{
+  position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;
+  animation:fall-bit 2.2s linear forwards;
+}
+@keyframes fall-bit{to{transform:translateY(105vh) rotate(600deg);opacity:.2}}
+
+/* ── Result ─────────────────────────────────────────────────────────────── */
+
+.result-icon{font-size:52px;text-align:center}
+#result h2{text-align:center}
+#result .sub{text-align:center}
+#resultUndo{text-align:center;margin-top:10px}
+.tally{margin-top:4px}
+.tally-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 13px;border-radius:14px;background:var(--bg2);margin-bottom:7px;
+}
+.tally-row .tname{flex:1;font-weight:700;font-size:14px}
+.tally-row .tnum{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ── How to play ────────────────────────────────────────────────────────── */
+
+.howto-sheet{display:flex;flex-direction:column;max-height:100%}
+.howto-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.howto-body{overflow:auto;flex:1;min-height:0}
+.howto-icon{font-size:40px;text-align:center;line-height:1}
+.howto-title{margin:4px 0 10px;font-size:21px;text-align:center}
+.howto-body p{margin:0 0 11px;font-size:14.5px;line-height:1.55}
+.howto-note{
+  background:var(--chip);color:var(--chipink);
+  padding:11px 13px;border-radius:14px;font-size:13.5px;
+}
+.howto-example{margin:12px 0;text-align:center}
+.howto-caption{margin:7px 0 0 !important;font-size:12.5px !important;color:var(--muted)}
+.dots{display:flex;justify-content:center;gap:7px;margin-top:12px}
+.dots .dot{
+  width:9px;height:9px;border-radius:50%;background:var(--line);cursor:pointer;
+  transition:background .15s,transform .15s;
+}
+.dots .dot.on{background:var(--accent);transform:scale(1.25)}
+
+/* The little board in the lesson: the real board's own geometry, smaller and
+   with nothing to tap. */
+.board-svg.mini{
+  width:min(210px,62vw);height:min(210px,62vw);
+  padding:5px;border-radius:14px;
+  background:linear-gradient(160deg,var(--wood),var(--wood2));
+}
+.board-svg.mini .pt.takeable .piece{animation:none;stroke:#d8453b;stroke-width:1.1}
+/* The lesson's boards have no tap targets, so "look here" has to land on the
+   socket instead of on the hit circle the real board pulses. */
+.board-svg.mini .pt.hint .socket{fill:var(--gold);r:3.6}
+
+/* ── What the computer was thinking ─────────────────────────────────────── */
+
+.brain{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.brain .muted{font-size:12.5px;line-height:1.5;margin:0 0 10px}
+.brain-grid{display:flex;gap:8px;text-align:center}
+.brain-grid div{flex:1;background:var(--bg2);border-radius:14px;padding:11px 6px}
+.brain-grid b{display:block;font-size:19px;font-variant-numeric:tabular-nums}
+.brain-grid span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── Small screens ──────────────────────────────────────────────────────── */
+
+@media (max-width:420px){
+  .sheet{padding:16px;border-radius:20px}
+  .turn-info strong{font-size:17px}
+  .board-buttons .ghost-btn{padding:10px 12px;min-height:44px}
+  .hand-name{font-size:11px;max-width:66px}
+  .hand-pips .pip{width:10px;height:10px}
+}
+
+/* Short and wide — a phone on its side. The board is already sized to whatever
+   is left, so the job here is just to stop the chrome eating the screen. */
+@media (max-height:520px){
+  body.in-game{padding-top:max(6px,env(safe-area-inset-top))}
+  #game{gap:6px}
+  .icon-btn{width:40px;height:40px;font-size:17px}
+  .turn-info strong{font-size:16px}
+  .turn-info span{font-size:11px}
+  .coach{padding:8px 11px;font-size:13px;border-radius:13px}
+  .board-buttons .ghost-btn{min-height:40px;padding:8px 14px;font-size:14px}
+  .hands{gap:6px}
+  .hand-row{padding:4px 8px}
+}

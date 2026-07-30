@@ -28,14 +28,19 @@ game needs.
 | # | Game | Folder | Est. lines | Est. tokens |
 | --- | --- | --- | --- | --- |
 | 1 | ✅ Connect Four | `connect-four/` | 500–700 → **2,202 actual** | 120k–200k |
-| 2 | Mastermind | `mastermind/` | 700–900 | 180k–280k |
-| 3 | Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 | 300k–450k |
-| 4 | Battleship | `battleship/` | 1,800–2,600 | 550k–850k |
+| 2 | Mastermind | `mastermind/` | 700–900 → **~1,600 expected** | 180k–280k → **250k–400k** |
+| 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
+| 4 | Battleship | `battleship/` | 1,800–2,600 → **~4,000 expected** | 550k–850k → **700k–1.1M** |
 
-Total ≈ **1.2M–1.8M tokens**. Battleship alone is about 45% of it.
+Total ≈ **1.5M–2M tokens**. Battleship alone is still about 45% of it.
 
-For scale, the existing games measure: Yatzy 3,098 lines, Footy Tactics Lab
-2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+For scale, the existing games measure: Yatzy 3,098 lines, Nine Men's Morris
+2,928, Connect Four 2,202, Footy Tactics Lab 2,048, Times Table Blaster 1,186,
+AFL Goal Kick 1,058, Robo Rules 913.
+
+**Two games in, the line estimates are consistently ~2.2× low and the token
+estimates ~1.3× low.** Scale the two remaining briefs by those factors rather
+than trusting the original numbers — the figures in the table already are.
 
 **The line estimates are low — Connect Four came in at 3× its brief.** Not
 because the game grew, but because "in this repo's style" is expensive: the
@@ -50,6 +55,19 @@ The algorithms are the cheap part. Alpha-beta is ~60 lines and is *verifiable* �
 it either plays a known position correctly or it does not. The money goes on
 **hidden-information UI** and **board geometry**, which are matters of taste and
 need looking at.
+
+**Morris confirmed the shape of that, with one correction worth having.** The
+board was indeed the expensive part to get *right*, but the expensive part to
+*debug* was the evaluation function, and it was cheap to debug because a node
+harness could play positions out and print numbers. The rule that fell out:
+
+- **Anything checkable, check in node.** `rules.js` and `ai.js` load into plain
+  node with `global.window = global` and a `new Function(...)` — no build step,
+  no browser. 900-odd assertions cost almost nothing and caught every rules bug.
+- **Only look in a browser at things that are actually visual.** Screenshots are
+  the single most expensive thing in the session. Morris needed about a dozen.
+- **Then verify the visual state by measuring it, not by looking.** Two bugs
+  here were invisible in a screenshot and obvious in `getComputedStyle`.
 
 That is why Battleship costs four times Connect Four despite both being "a grid
 and a search". Rank by how much of the game a second human being can see, not by
@@ -98,8 +116,13 @@ this description:
 
 `connect-four/js/ai.js` is now the repo's **minimax reference** — negamax,
 alpha-beta, centre-first ordering, iterative deepening on a time budget. Nine
-Men's Morris should take the search from it and supply its own move generator,
-exactly as planned.
+Men's Morris took the search from it and supplied its own move generator, and
+that worked exactly as planned: the search copied over almost line for line, and
+all of the thinking went into the generator, the ordering and the evaluation.
+Two things had to be added for a game with a worse branching factor — ordering
+mill-closing moves ahead of blocking moves ahead of everything else, and capping
+how many capture choices a mill-closing move expands into. Battleship should
+expect the same split: cheap search, expensive everything-around-it.
 
 **Open decision, now answerable:** the shared `versus/` module is still not worth
 it. Of Connect Four's 2,202 lines the genuinely reusable furniture is perhaps
@@ -171,7 +194,7 @@ Watch for: white-peg counting with duplicate colours. It is the single most
 common Mastermind bug. Count exact matches first, remove them, then match the
 remainder by colour multiset.
 
-## 3. Nine Men's Morris (Дама) — `nine-mens-morris/`
+## 3. Nine Men's Morris (Дама) — `nine-mens-morris/` ✅ built
 
 - 24 points, 3 phases: **placing** 9 pieces each, **moving** along lines,
   **flying** anywhere once a player is down to 3 pieces.
@@ -187,6 +210,49 @@ Watch for: **the board is the expensive part, not the AI.** Three concentric
 squares with connecting spokes, responsive, with tap targets big enough for a
 child. Model it as a 24-node adjacency list and render as SVG; do not try to
 express the geometry in CSS grid.
+
+### What shipped, and where it differs
+
+2,928 lines, ~500k tokens, one session. The brief above was right about the
+board and wrong about nothing, but four things are worth carrying forward.
+
+- **The advice about SVG was right, and cheaper than expected.** The whole board
+  — three squares, four spokes, 24 points, sockets, pieces — is generated from
+  the rules' own `XY` coordinate table and `ADJ` list in about 60 lines of
+  `ui.js`. Nothing about the geometry is written down twice, so the picture
+  cannot disagree with which points are joined. `fit()` is Connect Four's, minus
+  the two-pass measurement, because a square board only needs one number.
+- **A turn can take three taps, and that is the real structural difference.**
+  Pick a piece up, put it down, and if that closed a mill, choose which enemy
+  piece to take. The middle of that is a genuine state, not a modal:
+  `state.awaiting` says a capture is owed and `state.mover` says who owes it,
+  because `rules.js` has already flipped the turn by then. `play()` accepts
+  `remove: -1` and `takePiece()` finishes the job later, so one `undo()` still
+  reverses a whole go, and a save taken mid-capture just stops one move short.
+- **The evaluation function needed two corrections, both found by playing
+  positions out in node, not by reading the code.** First, material has to
+  outrank a standing mill: a captured piece never comes back, and with a mill
+  priced above a piece the search declines free captures. Second — and this is
+  the one to copy into Battleship's endgame — **a fixed-depth search with no
+  repetition awareness draws three games in four.** Both sides shuffle a piece
+  back and forth for ever. Scoring an already-twice-seen position as 0 near the
+  root fixes it in six lines, because a draw is worth nothing to whoever is
+  ahead. Measured before and after; the draw rate is the number that moved.
+- **"Always take a win it can see" does not generalise to "always take a
+  mill."** Two test positions were written asserting it and both were wrong: from
+  an open board, building a double threat beats cashing one mill, and in a
+  cramped position a mill can freeze three of your four pieces — played out, the
+  greedy line loses a piece back and the patient one wins. Easy still follows the
+  rule of thumb, because an opponent that walks past a capture reads as broken;
+  Medium and Hard are left to search. Only a capture that *ends the game* is
+  worth asserting as forced.
+
+Extras beyond the brief, all lifted from Connect Four: undo (over the computer's
+reply, and un-counting a finished game), a hint that names a spot and its reason,
+threat warnings, a seven-page lesson drawn with the real board's own code, a
+running score, the flip-the-screen mode, and the depth/nodes/ms panel. New here:
+a row of counters per player showing what is still in hand and what has been
+lost, so nobody has to count the board.
 
 ## 4. Battleship (Морски бой) — `battleship/`
 

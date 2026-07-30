@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v6";
+const CACHE = "game-box-v7";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -44,6 +44,14 @@ const ASSETS = [
   "./connect-four/js/ui.js", "./connect-four/js/tutorial.js", "./connect-four/js/app.js",
   "./connect-four/icons/icon-192.png", "./connect-four/icons/icon-512.png",
   "./connect-four/icons/apple-touch-icon.png",
+
+  "./nine-mens-morris/", "./nine-mens-morris/index.html", "./nine-mens-morris/manifest.webmanifest",
+  "./nine-mens-morris/css/style.css",
+  "./nine-mens-morris/js/rules.js", "./nine-mens-morris/js/ai.js",
+  "./nine-mens-morris/js/audio.js", "./nine-mens-morris/js/ui.js",
+  "./nine-mens-morris/js/tutorial.js", "./nine-mens-morris/js/app.js",
+  "./nine-mens-morris/icons/icon-192.png", "./nine-mens-morris/icons/icon-512.png",
+  "./nine-mens-morris/icons/apple-touch-icon.png",
 ];
 
 // Precache fresh copies — cache:"reload" bypasses the HTTP cache so the offline
