@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Nine Men's Morris</title>
+<meta name="description" content="Place nine pieces, make lines of three and take your opponent's pieces. 1-2 players, a computer opponent that thinks ahead, undo and hints.">
+<meta name="theme-color" content="#0f8a7e">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Morris">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet setup-sheet">
+
+    <!-- The back link sits in the sheet's own flow so it can never sit on
+         top of the title, however short the screen is. -->
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+    <h1>⚫ Nine Men's Morris</h1>
+    <p class="sub">Also called Дама. Get three in a line and take one of theirs — the last player with three pieces loses.</p>
+
+    <div class="row">
+      <span class="row-label">Players</span>
+      <div class="seg" id="countChooser">
+        <button class="opt" type="button" data-value="1">1</button>
+        <button class="opt" type="button" data-value="2">2</button>
+      </div>
+    </div>
+
+    <div class="row" id="diffRow" hidden>
+      <span class="row-label">How good?</span>
+      <div class="seg" id="diffChooser">
+        <button class="opt" type="button" data-value="easy">Easy</button>
+        <button class="opt" type="button" data-value="medium">Medium</button>
+        <button class="opt" type="button" data-value="hard">Hard</button>
+      </div>
+    </div>
+
+    <div class="row" id="colourRow" hidden>
+      <span class="row-label">You play</span>
+      <div class="seg" id="colourChooser">
+        <button class="opt" type="button" data-value="1">⚪ White</button>
+        <button class="opt" type="button" data-value="2">⚫ Black</button>
+      </div>
+    </div>
+    <p class="row-note" id="colourNote" hidden></p>
+
+    <div class="row" id="flipRow" hidden>
+      <span class="row-label">Sit opposite</span>
+      <button id="flipToggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note" id="flipNote" hidden>
+      The whole screen turns around on the other player's turn, so you can put the device
+      between you and both read it the right way up. No passing it back and forth.
+    </p>
+
+    <div class="row">
+      <span class="row-label">Help me</span>
+      <button id="hintToggle" class="switch" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">
+      Warns you when someone is one piece away from a line of three, and puts a
+      <b>💡 Hint</b> button on the board. Turn it off for a proper game.
+    </p>
+
+    <details class="more" id="namesBox" hidden>
+      <summary><span id="namesSummary">Names</span></summary>
+      <div id="namesWrap"></div>
+    </details>
+
+    <div class="sheet-buttons">
+      <button id="howtoBtn" class="btn btn-clear" type="button">❓ How to play</button>
+      <button id="startBtn" class="btn btn-go" type="button">Start game ▶</button>
+    </div>
+    <button id="resumeBtn" class="ghost-btn wide" type="button" hidden>↩︎ Carry on with the saved game</button>
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
+<!-- The page itself never scrolls: the bar, the hands and the buttons are
+     fixed height and the board takes whatever is left, sized by ui.js. -->
+<main id="game" hidden>
+  <div class="topbar">
+    <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
+    <div class="turn-info">
+      <!-- The dot is a sibling, not a child: app.js writes turnName's text
+           content, which would swallow anything nested inside it. -->
+      <strong><span id="turnDot" class="turn-dot white"></span><span id="turnName">White's go</span></strong>
+      <span id="turnMeta">Placing • 9 to go</span>
+    </div>
+    <button id="muteBtn" class="icon-btn" type="button" aria-pressed="true" title="Sound on/off">🔊</button>
+  </div>
+
+  <!-- Pieces still to place, then pieces lost — a look rather than a sum. -->
+  <div class="hands">
+    <div class="hand-row">
+      <span class="hand-name" id="handNameW">White</span>
+      <span class="hand-pips" id="handW"></span>
+    </div>
+    <div class="hand-row">
+      <span class="hand-name" id="handNameB">Black</span>
+      <span class="hand-pips" id="handB"></span>
+    </div>
+  </div>
+
+  <div id="coach" class="coach" hidden></div>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="board-buttons">
+    <button id="undoBtn" class="ghost-btn" type="button">↶ Undo</button>
+    <button id="hintBtn" class="ghost-btn" type="button">💡 Hint</button>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+</main>
+
+<!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
+<div id="menu" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>Menu</h2>
+    <button id="menuSound" class="ghost-btn wide" type="button">🔊 Sound is on</button>
+    <button id="menuHints" class="ghost-btn wide" type="button">💡 Hints and warnings: on</button>
+    <button id="menuUndo" class="ghost-btn wide" type="button">↶ Take a move back</button>
+    <button id="menuHowto" class="ghost-btn wide" type="button">❓ How to play</button>
+    <button id="menuNew" class="ghost-btn wide" type="button">🔄 New game</button>
+    <a class="ghost-btn wide" href="../">🎮 Back to Game Box</a>
+
+    <div class="brain">
+      <h3>What was Robo thinking?</h3>
+      <p class="muted">
+        It plays the game out in its head — your best reply, its best answer to that, and
+        so on — and keeps the move that still looks good at the end of every line. Here's
+        what its last go actually cost it.
+      </p>
+      <div id="brainOut"></div>
+    </div>
+
+    <div class="sheet-buttons">
+      <button id="menuClose" class="btn btn-go" type="button">Back to the game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet sheet-sm howto-sheet">
+    <div class="howto-top">
+      <span id="howtoStep" class="pill">1 / 7</span>
+      <button id="howtoSkip" class="ghost-btn" type="button">Skip</button>
+    </div>
+    <div id="howtoBody" class="howto-body"></div>
+    <div id="howtoDots" class="dots"></div>
+    <div class="sheet-buttons">
+      <button id="howtoPrev" class="btn btn-clear" type="button">‹ Back</button>
+      <button id="howtoNext" class="btn btn-go" type="button">Next ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <div id="resultIcon" class="result-icon">🏆</div>
+    <h2 id="resultTitle">You win!</h2>
+    <p id="resultText" class="sub"></p>
+    <div id="resultTally" class="tally" hidden></div>
+    <div class="sheet-buttons">
+      <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
+      <button id="againBtn" class="btn btn-go" type="button">Play again ▶</button>
+    </div>
+    <button id="resultUndo" class="ghost-btn wide" type="button">↶ Take that last move back</button>
+  </div>
+</div>
+
+<script src="./js/rules.js"></script>
+<script src="./js/ai.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/tutorial.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
