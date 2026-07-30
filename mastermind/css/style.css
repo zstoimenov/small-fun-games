@@ -1,0 +1,486 @@
+/* Mastermind — one stylesheet, no framework.                                    */
+/* Tablet-first: big tap targets, rows that fill whatever space is left over,    */
+/* and a palette that follows the device's light or dark setting.                */
+/*                                                                              */
+/* Everything on the board is drawn from a single --peg length, set in pixels by */
+/* ui.js. That is the only way the same markup can hold ten rows of four pegs on */
+/* a phone and twelve rows of three on a tablet without the page scrolling.      */
+
+:root{
+  --bg1:#f3eeff; --bg2:#fdf0f8; --ink:#1e1832; --muted:#665c85;
+  --card:#ffffff; --line:#e6dff6; --shadow:rgba(70,40,130,.16);
+  --accent:#7b4bd8; --accent2:#c04bb0; --good:#1f9d55; --gold:#e8a300;
+  --chip:#f0e9ff; --chipink:#5a2fa8;
+  --socket:#e6e0f5; --board:#ffffff;
+  --markb:#231a38; --markw:#ffffff; --markline:#8578ac;
+  /* The six. As far apart as six hues can be, and each carries a shape too. */
+  --p0:#e8483f; --p0d:#b02a26;  --p1:#ffc93c; --p1d:#d99b00;
+  --p2:#35c46a; --p2d:#1d8b47;  --p3:#3d8bff; --p3d:#1a5bd0;
+  --p4:#a06cf0; --p4d:#6b3bc0;  --p5:#ff6fb5; --p5d:#cc3b84;
+  --tap:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg1:#150f2b; --bg2:#1c1030; --ink:#f1ecff; --muted:#a99ecb;
+    --card:#221a3e; --line:#372c5c; --shadow:rgba(0,0,0,.55);
+    --accent:#a279f5; --accent2:#e06ec8; --good:#4ad48a; --gold:#ffc23d;
+    --chip:#2f2455; --chipink:#d3c2ff;
+    --socket:#15102a; --board:#221a3e;
+    --markb:#0b0716; --markw:#f4efff; --markline:#9a8dc4;
+    --p0:#f2564c; --p0d:#a82521;  --p1:#ffd45c; --p1d:#c48c00;
+    --p2:#48d67e; --p2d:#1a7d40;  --p3:#5b9dff; --p3d:#1750bd;
+    --p4:#b98cff; --p4d:#6f3fc9;  --p5:#ff8ac6; --p5d:#c33b7f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg1:#150f2b; --bg2:#1c1030; --ink:#f1ecff; --muted:#a99ecb;
+  --card:#221a3e; --line:#372c5c; --shadow:rgba(0,0,0,.55);
+  --accent:#a279f5; --accent2:#e06ec8; --good:#4ad48a; --gold:#ffc23d;
+  --chip:#2f2455; --chipink:#d3c2ff;
+  --socket:#15102a; --board:#221a3e;
+  --markb:#0b0716; --markw:#f4efff; --markline:#9a8dc4;
+  --p0:#f2564c; --p0d:#a82521;  --p1:#ffd45c; --p1d:#c48c00;
+  --p2:#48d67e; --p2d:#1a7d40;  --p3:#5b9dff; --p3d:#1750bd;
+  --p4:#b98cff; --p4d:#6f3fc9;  --p5:#ff8ac6; --p5d:#c33b7f;
+}
+:root[data-theme="light"]{
+  --bg1:#f3eeff; --bg2:#fdf0f8; --ink:#1e1832; --muted:#665c85;
+  --card:#ffffff; --line:#e6dff6; --shadow:rgba(70,40,130,.16);
+  --accent:#7b4bd8; --accent2:#c04bb0; --good:#1f9d55; --gold:#e8a300;
+  --chip:#f0e9ff; --chipink:#5a2fa8;
+  --socket:#e6e0f5; --board:#ffffff;
+  --markb:#231a38; --markw:#ffffff; --markline:#8578ac;
+  --p0:#e8483f; --p0d:#b02a26;  --p1:#ffc93c; --p1d:#d99b00;
+  --p2:#35c46a; --p2d:#1d8b47;  --p3:#3d8bff; --p3d:#1a5bd0;
+  --p4:#a06cf0; --p4d:#6b3bc0;  --p5:#ff6fb5; --p5d:#cc3b84;
+}
+
+*{box-sizing:border-box}
+/* Class rules like .overlay{display:grid} outrank the browser's own
+   [hidden]{display:none}, which would leave dismissed sheets invisible but
+   still swallowing taps. This puts the attribute back in charge. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;min-height:100dvh;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 500px at 12% -8%, var(--bg2), transparent 62%),
+    linear-gradient(165deg, var(--bg1), var(--bg2));
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  padding:max(12px,env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+}
+
+/* In the sheet's own flow, so it can never sit on top of the title. */
+#back{
+  display:inline-block;margin-bottom:10px;
+  font-size:13px;font-weight:700;text-decoration:none;color:var(--chipink);
+  background:var(--chip);padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn{
+  font:inherit;font-weight:800;border:none;border-radius:16px;cursor:pointer;
+  min-height:var(--tap);padding:12px 20px;color:#fff;
+  background:var(--accent2);box-shadow:0 6px 16px var(--shadow);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-go{background:linear-gradient(145deg,var(--accent),var(--accent2))}
+.btn-clear{background:var(--chip);color:var(--chipink)}
+.ghost-btn{
+  font:inherit;font-weight:700;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);color:var(--ink);padding:11px 16px;min-height:46px;cursor:pointer;
+}
+.ghost-btn:disabled{opacity:.42;cursor:default}
+.ghost-btn.wide{display:block;width:100%;margin:8px 0;text-align:left}
+.icon-btn{
+  font:inherit;font-size:19px;font-weight:800;line-height:1;
+  width:46px;height:46px;flex:0 0 auto;border-radius:14px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+}
+
+/* ── Overlays and sheets ────────────────────────────────────────────────── */
+
+.overlay{
+  position:fixed;inset:0;z-index:50;
+  display:grid;place-items:center;
+  padding:max(14px,env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+  background:rgba(14,8,32,.58);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  overflow:auto;
+}
+.sheet{
+  width:100%;max-width:520px;background:var(--card);border:1px solid var(--line);
+  border-radius:24px;padding:20px;box-shadow:0 18px 50px var(--shadow);
+  max-height:100%;overflow:auto;
+}
+.sheet-sm{max-width:440px}
+.sheet h1{margin:0 0 4px;font-size:clamp(24px,6vw,30px)}
+.sheet h2{margin:0 0 6px;font-size:22px}
+.sheet h3{margin:14px 0 6px;font-size:16px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.muted{color:var(--muted);font-weight:500}
+.pill{
+  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+  background:var(--chip);color:var(--chipink);
+}
+.sheet-buttons{display:flex;gap:10px;margin-top:16px}
+.sheet-buttons .btn{flex:1}
+/* Sized to its text so it can't wrap onto two lines and out-grow Start game. */
+#howtoBtn{flex:0 1 auto;white-space:nowrap;font-size:14px;padding:12px 15px}
+
+/* ── Setup ──────────────────────────────────────────────────────────────── */
+
+/* One line per decision: label on the left, a segmented control on the right.
+   Far less to take in than a screen of option cards, and it stays that way as
+   more options appear. */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 0;border-top:1px solid var(--line);
+}
+.row:first-of-type{border-top:none}
+.row-label{font-size:14px;font-weight:700;flex:0 0 auto}
+.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.seg{
+  display:flex;gap:3px;padding:3px;border-radius:13px;
+  background:var(--bg2);border:1px solid var(--line);flex:0 1 auto;
+}
+.seg .opt{
+  font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;
+  border:none;background:none;color:var(--muted);
+  padding:9px 13px;border-radius:10px;min-height:40px;
+}
+.seg .opt.on{background:var(--card);color:var(--accent);box-shadow:0 2px 6px var(--shadow)}
+
+/* Switch, for the plain yes/no options. */
+.switch{
+  position:relative;flex:0 0 auto;width:52px;height:31px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg2);padding:0;transition:background .18s;
+}
+.switch .knob{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:var(--card);box-shadow:0 2px 5px var(--shadow);transition:transform .18s;
+}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"] .knob{transform:translateX(21px)}
+
+.more{margin:10px 0 2px;border-top:1px solid var(--line);padding-top:8px}
+.more summary{
+  cursor:pointer;font-size:14px;font-weight:700;padding:7px 2px;
+  list-style:none;display:flex;align-items:center;gap:7px;
+}
+.more summary::-webkit-details-marker{display:none}
+.more summary::before{content:"▸";color:var(--muted);transition:transform .15s;display:inline-block}
+.more[open] summary::before{transform:rotate(90deg)}
+.name-row{display:flex;align-items:center;gap:10px;margin:7px 0}
+.name-row span{font-size:13px;font-weight:700;color:var(--muted);width:74px;flex:0 0 auto}
+.name-row input{
+  font:inherit;flex:1;width:100%;min-height:46px;padding:10px 13px;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--bg2);color:var(--ink);
+}
+
+/* ── Game screen ────────────────────────────────────────────────────────── */
+
+/* The page itself never scrolls during a game — the rows are sized to the space
+   that is left rather than pushing anything off the bottom. */
+body.in-game{
+  height:100dvh;overflow:hidden;
+  padding-left:6px;padding-right:6px;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+#game{
+  max-width:620px;margin:0 auto;height:100%;
+  display:flex;flex-direction:column;min-height:0;gap:8px;
+  transition:transform .45s ease;
+}
+
+/* Two people sharing one device, sitting opposite each other: the screen turns
+   around for whoever is guessing. */
+body.flipped #game{transform:rotate(180deg)}
+body.flipped .overlay .sheet{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){ #game{transition:none} }
+
+.topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
+.turn-info strong{display:block;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.turn-info span{display:block;font-size:12px;color:var(--muted)}
+#turnName.cpu{color:var(--accent2)}
+
+.coach{
+  display:flex;gap:9px;align-items:flex-start;flex:0 0 auto;
+  background:linear-gradient(145deg,var(--accent),var(--accent2));color:#fff;
+  padding:11px 13px;border-radius:16px;
+  font-size:14px;font-weight:600;line-height:1.4;
+  box-shadow:0 8px 20px var(--shadow);
+}
+.coach.warn{background:linear-gradient(145deg,#f0803a,#e8483f)}
+/* The everyday "how many goes left" line. It's on screen the whole game, so it
+   has to sit down and be quiet — the coloured versions are for the ones that
+   actually want reading. */
+.coach.calm{
+  background:var(--card);color:var(--muted);font-weight:600;
+  border:1px solid var(--line);box-shadow:none;
+}
+.coach-face{font-size:20px;line-height:1.1}
+
+.board-buttons{display:flex;gap:8px;justify-content:center;flex:0 0 auto}
+.board-buttons .ghost-btn{flex:0 1 130px}
+.board-buttons .btn{flex:0 1 180px;min-height:50px;padding:12px 16px}
+
+/* ── The board ──────────────────────────────────────────────────────────── */
+
+/* Takes all the height that's going, which is what lets ui.js work out how big
+   a peg can be. It can still scroll, for the one case fit() can't solve: a
+   twelve-row puzzle on a phone lying on its side. */
+.board-wrap{
+  flex:1 1 auto;min-height:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow-y:auto;overflow-x:hidden;
+}
+.board{
+  display:flex;flex-direction:column;gap:calc(var(--peg,44px) * .1);
+  padding:calc(var(--peg,44px) * .16);
+  border-radius:min(4vw,20px);
+  background:var(--board);border:1px solid var(--line);
+  box-shadow:0 12px 30px var(--shadow);
+}
+
+.guess-row{
+  display:flex;align-items:center;
+  gap:calc(var(--peg) * .16);
+  padding:calc(var(--peg) * .07) calc(var(--peg) * .14);
+  border-radius:calc(var(--peg) * .32);
+  border:2px solid transparent;
+}
+/* Rows nobody has reached yet step back, so the eye lands on the live one. */
+.guess-row:not(.done):not(.current){opacity:.45}
+.guess-row.current{background:var(--chip);border-color:var(--accent)}
+.board.settled .guess-row:not(.win){opacity:.5}
+.guess-row.win{background:var(--chip);border-color:var(--gold)}
+
+.rownum{
+  width:calc(var(--peg) * .7);flex:0 0 auto;text-align:right;
+  font-size:calc(var(--peg) * .34);font-weight:800;color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+.pegs{display:flex;gap:calc(var(--peg) * .13)}
+.slot{
+  width:var(--peg);height:var(--peg);flex:0 0 auto;
+  padding:0;margin:0;border:none;background:none;font:inherit;
+  border-radius:50%;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.slot:disabled{cursor:default}
+.slot.sel{box-shadow:0 0 0 3px var(--accent)}
+.slot:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* One element per peg, empty or not, so there is nothing to keep in sync. */
+.peg{
+  display:grid;place-items:center;
+  width:100%;height:100%;border-radius:50%;
+  background:var(--socket);
+  box-shadow:0 2px 5px rgba(0,0,0,.22) inset;
+}
+.peg i{
+  font-style:normal;font-size:calc(var(--peg) * .44);line-height:1;
+  color:rgba(255,255,255,.9);text-shadow:0 1px 1px rgba(0,0,0,.28);
+}
+/* Shapes can be turned off for anyone who finds them busy — the colours are
+   still there, and this is the only thing the switch changes. */
+body.no-shapes .peg i{display:none}
+
+.peg.c0{background:radial-gradient(circle at 34% 30%, var(--p0), var(--p0d))}
+.peg.c1{background:radial-gradient(circle at 34% 30%, var(--p1), var(--p1d))}
+.peg.c2{background:radial-gradient(circle at 34% 30%, var(--p2), var(--p2d))}
+.peg.c3{background:radial-gradient(circle at 34% 30%, var(--p3), var(--p3d))}
+.peg.c4{background:radial-gradient(circle at 34% 30%, var(--p4), var(--p4d))}
+.peg.c5{background:radial-gradient(circle at 34% 30%, var(--p5), var(--p5d))}
+.peg.c0,.peg.c1,.peg.c2,.peg.c3,.peg.c4,.peg.c5{
+  box-shadow:0 3px 6px rgba(0,0,0,.3) inset, 0 -2px 5px rgba(0,0,0,.16) inset;
+}
+/* Yellow and pink are too light to carry a white glyph. */
+.peg.c1 i,.peg.c5 i{color:rgba(0,0,0,.6);text-shadow:none}
+
+/* Feedback pegs, in two short rows beside the guess — three columns when there
+   are five of them. */
+.marks{
+  display:grid;grid-template-columns:repeat(var(--markcols,2),auto);
+  gap:calc(var(--peg) * .07);
+  justify-content:center;align-content:center;
+  width:calc(var(--peg) * 1.15);flex:0 0 auto;
+}
+/* An empty pip is deliberately smaller and fainter than a real one. A white peg
+   on a white card is otherwise all but identical to an empty hole — which
+   silently hid two thirds of the feedback in the light theme. */
+.mark{
+  width:calc(var(--peg) * .28);height:calc(var(--peg) * .28);
+  border-radius:50%;background:transparent;
+  border:1px solid var(--line);transform:scale(.5);
+}
+.mark.black,.mark.white{
+  transform:scale(1);
+  border:max(1.5px, calc(var(--peg) * .035)) solid var(--markline);
+  box-shadow:0 1px 2px var(--shadow);
+}
+.mark.black{background:var(--markb)}
+.mark.white{background:var(--markw)}
+
+/* Pegs arriving on the row you've just played. */
+.guess-row.landed .mark.black,.guess-row.landed .mark.white{animation:pop .34s ease-out backwards}
+.guess-row.landed .mark:nth-child(2){animation-delay:.07s}
+.guess-row.landed .mark:nth-child(3){animation-delay:.14s}
+.guess-row.landed .mark:nth-child(4){animation-delay:.21s}
+.guess-row.landed .mark:nth-child(5){animation-delay:.28s}
+@keyframes pop{from{transform:scale(0);opacity:0} 70%{transform:scale(1.25)} to{transform:scale(1)}}
+
+.guess-row.nudge{animation:nudge 1.6s ease-in-out}
+@keyframes nudge{
+  0%,100%{background:var(--chip)}
+  20%,60%{background:var(--accent);border-color:var(--accent)}
+  40%,80%{background:var(--chip)}
+}
+.guess-row.win .peg{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)} 50%{transform:scale(1.09)}}
+
+@media (prefers-reduced-motion:reduce){
+  .guess-row.landed .mark{animation:none}
+  .guess-row.win .peg{animation:none}
+  .guess-row.nudge{animation:none;background:var(--accent)}
+}
+
+/* ── The palette ────────────────────────────────────────────────────────── */
+
+.palette{display:flex;justify-content:center;gap:8px;flex:0 0 auto;flex-wrap:wrap}
+.swatch{
+  width:clamp(40px,13vw,58px);aspect-ratio:1;flex:0 0 auto;
+  padding:5px;border-radius:18px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);
+  --peg:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+.swatch:active{transform:translateY(1px)}
+.swatch:disabled{opacity:.3;cursor:default}
+.swatch:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* The glyph inside a swatch can't key off --peg, which is a percentage here. */
+.swatch .peg i{font-size:clamp(15px,5vw,23px)}
+
+/* ── Setting a code ─────────────────────────────────────────────────────── */
+
+.pick-row{
+  display:flex;justify-content:center;gap:10px;margin:6px 0 18px;
+  --peg:clamp(44px,14vw,60px);
+}
+.pick-row .slot{width:var(--peg);height:var(--peg)}
+.pick-row .peg i{font-size:calc(var(--peg) * .44)}
+#pickPalette{margin-bottom:6px}
+#handSub{text-align:center}
+
+/* ── Toast, confetti ────────────────────────────────────────────────────── */
+
+.toast{
+  position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
+  transform:translate(-50%,14px);z-index:45;
+  background:var(--ink);color:var(--card);
+  padding:11px 17px;border-radius:999px;font-size:14px;font-weight:600;
+  box-shadow:0 10px 26px var(--shadow);opacity:0;transition:opacity .22s,transform .22s;
+  max-width:calc(100% - 28px);text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+.confetti i{
+  position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;
+  animation:fall-bit 2.2s linear forwards;
+}
+@keyframes fall-bit{to{transform:translateY(105vh) rotate(600deg);opacity:.2}}
+
+/* ── Result ─────────────────────────────────────────────────────────────── */
+
+.result-icon{font-size:52px;text-align:center}
+#result h2{text-align:center}
+#result .sub{text-align:center}
+#resultUndo{text-align:center;margin-top:10px}
+.reveal{display:flex;justify-content:center;margin:2px 0 16px}
+.tally{margin-top:4px}
+.tally-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 13px;border-radius:14px;background:var(--bg2);margin-bottom:7px;
+}
+.tally-row .tname{flex:1;font-weight:700;font-size:14px}
+.tally-row .tnum{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ── Rows outside the board ─────────────────────────────────────────────── */
+
+/* Same pegs and pips as the real board, just at a fixed size and with nothing
+   to tap — so the lesson and the reveal can't drift from the game. */
+.mini-row{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:7px 10px;border-radius:16px;
+  background:var(--bg2);border:1px solid var(--line);
+  --peg:34px;
+}
+.mini-row .peg{width:var(--peg);height:var(--peg)}
+.mini-row .pegs{gap:6px}
+
+/* ── How to play ────────────────────────────────────────────────────────── */
+
+.howto-sheet{display:flex;flex-direction:column;max-height:100%}
+.howto-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.howto-body{overflow:auto;flex:1;min-height:0}
+.howto-icon{font-size:40px;text-align:center;line-height:1}
+.howto-title{margin:4px 0 10px;font-size:21px;text-align:center}
+.howto-body p{margin:0 0 11px;font-size:14.5px;line-height:1.55}
+.howto-note{
+  background:var(--chip);color:var(--chipink);
+  padding:11px 13px;border-radius:14px;font-size:13.5px;
+}
+.howto-example{margin:12px 0;text-align:center}
+.howto-caption{margin:7px 0 0 !important;font-size:12.5px !important;color:var(--muted)}
+.dots{display:flex;justify-content:center;gap:7px;margin-top:12px}
+.dots .dot{
+  width:9px;height:9px;border-radius:50%;background:var(--line);cursor:pointer;
+  transition:background .15s,transform .15s;
+}
+.dots .dot.on{background:var(--accent);transform:scale(1.25)}
+
+/* ── What the computer was thinking ─────────────────────────────────────── */
+
+.brain{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.brain .muted{font-size:12.5px;line-height:1.5;margin:0 0 10px}
+.brain-grid{display:flex;gap:8px;text-align:center}
+.brain-grid div{flex:1;background:var(--bg2);border-radius:14px;padding:11px 6px}
+.brain-grid b{display:block;font-size:19px;font-variant-numeric:tabular-nums}
+.brain-grid span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── Small screens ──────────────────────────────────────────────────────── */
+
+@media (max-width:420px){
+  .sheet{padding:16px;border-radius:20px}
+  .turn-info strong{font-size:17px}
+  .board-buttons .ghost-btn{padding:10px 10px;min-height:44px;font-size:13.5px}
+  .board-buttons .btn{min-height:46px;font-size:15px}
+  .palette{gap:6px}
+  .mini-row{--peg:28px}
+}
+
+/* Short and wide — a phone on its side. The rows are already sized to whatever
+   is left, so the job here is just to stop the chrome eating the screen. */
+@media (max-height:520px){
+  body.in-game{padding-top:max(6px,env(safe-area-inset-top))}
+  #game{gap:6px}
+  .icon-btn{width:40px;height:40px;font-size:17px}
+  .turn-info strong{font-size:16px}
+  .turn-info span{font-size:11px}
+  .coach{padding:8px 11px;font-size:13px;border-radius:13px}
+  .board-buttons .ghost-btn{min-height:40px;padding:8px 12px;font-size:13.5px}
+  .board-buttons .btn{min-height:42px;padding:9px 14px}
+  .swatch{width:clamp(36px,9vw,46px);border-radius:14px}
+}
