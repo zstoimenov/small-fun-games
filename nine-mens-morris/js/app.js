@@ -207,7 +207,7 @@
     state.mover = 0;
     state.takeable = [];
 
-    $("result").hidden = true;
+    closeResult();
     Ui.clearToast();
     showScreen("game");
     Ui.paint(board);
@@ -650,7 +650,31 @@
       }
     }
 
+    openResult();
+  }
+
+  /* ── The end card ──────────────────────────────────────────────────────── */
+
+  // It sits on top of the board, and the finished board is usually the thing
+  // worth looking at — so it can be put aside, and the pill brings it back.
+  function openResult() {
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
     $("result").hidden = false;
+  }
+
+  function closeResult() {
+    $("result").hidden = true;
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+  }
+
+  function peekBoard() {
+    $("result").hidden = true;
+    $("peekPill").hidden = false;
+    // The game is over, so the row of board buttons has nothing left to offer —
+    // standing it down is what makes room for the pill at the bottom.
+    document.body.classList.add("peeking");
   }
 
   /* ── Undo and hint ─────────────────────────────────────────────────────── */
@@ -670,7 +694,7 @@
     state.over = false;
     state.winner = 0;
     state.reason = "";
-    $("result").hidden = true;
+    closeResult();
 
     // Mid-capture, one step back is the move that earned it — which is what a
     // person means by undo here, so nothing special is needed beyond dropping
@@ -770,7 +794,7 @@
     state.busy = false;
     savedGame = null;
     save();
-    $("result").hidden = true;
+    closeResult();
     showScreen("setup");
     renderSetup();
   }
@@ -779,6 +803,8 @@
 
   function wire() {
     Ui.build(onTap);
+    $("peekBtn").addEventListener("click", peekBoard);
+    $("peekPill").addEventListener("click", openResult);
     Tutorial.wire();
 
     chooser("countChooser", state.playerCount, (v) => {

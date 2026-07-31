@@ -648,9 +648,16 @@
     $("typeOk").addEventListener("click", confirmType);
     $("typeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") confirmType(); });
 
-    $("againBtn").addEventListener("click", () => { $("result").hidden = true; startGame(); });
+    $("peekBtn").addEventListener("click", Ui.peekScores);
+    $("peekPill").addEventListener("click", () => {
+      $("peekPill").hidden = true;
+      document.body.classList.remove("peeking");
+      $("result").hidden = false;
+    });
+
+    $("againBtn").addEventListener("click", () => { Ui.closeResult(); startGame(); });
     $("resultMenu").addEventListener("click", () => {
-      $("result").hidden = true;
+      Ui.closeResult();
       showScreen("setup");
       renderSetup();
     });

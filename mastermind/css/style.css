@@ -12,7 +12,8 @@
   --accent:#7b4bd8; --accent2:#c04bb0; --good:#1f9d55; --gold:#e8a300;
   --chip:#f0e9ff; --chipink:#5a2fa8;
   --socket:#e6e0f5; --board:#ffffff;
-  --markb:#231a38; --markw:#ffffff; --markline:#8578ac;
+  --markb:#17102c; --markw:#ffffff; --markplate:#a99ecb;
+  --markring:#332a52; --markhole:rgba(38,24,78,.26);
   /* The six. As far apart as six hues can be, and each carries a shape too. */
   --p0:#e8483f; --p0d:#b02a26;  --p1:#ffc93c; --p1d:#d99b00;
   --p2:#35c46a; --p2d:#1d8b47;  --p3:#3d8bff; --p3d:#1a5bd0;
@@ -26,7 +27,8 @@
     --accent:#a279f5; --accent2:#e06ec8; --good:#4ad48a; --gold:#ffc23d;
     --chip:#2f2455; --chipink:#d3c2ff;
     --socket:#15102a; --board:#221a3e;
-    --markb:#0b0716; --markw:#f4efff; --markline:#9a8dc4;
+    --markb:#0c0720; --markw:#f9f6ff; --markplate:#6b5f9b;
+    --markring:#0f0a22; --markhole:rgba(0,0,0,.34);
     --p0:#f2564c; --p0d:#a82521;  --p1:#ffd45c; --p1d:#c48c00;
     --p2:#48d67e; --p2d:#1a7d40;  --p3:#5b9dff; --p3d:#1750bd;
     --p4:#b98cff; --p4d:#6f3fc9;  --p5:#ff8ac6; --p5d:#c33b7f;
@@ -38,7 +40,8 @@
   --accent:#a279f5; --accent2:#e06ec8; --good:#4ad48a; --gold:#ffc23d;
   --chip:#2f2455; --chipink:#d3c2ff;
   --socket:#15102a; --board:#221a3e;
-  --markb:#0b0716; --markw:#f4efff; --markline:#9a8dc4;
+  --markb:#0c0720; --markw:#f9f6ff; --markplate:#6b5f9b;
+  --markring:#0f0a22; --markhole:rgba(0,0,0,.34);
   --p0:#f2564c; --p0d:#a82521;  --p1:#ffd45c; --p1d:#c48c00;
   --p2:#48d67e; --p2d:#1a7d40;  --p3:#5b9dff; --p3d:#1750bd;
   --p4:#b98cff; --p4d:#6f3fc9;  --p5:#ff8ac6; --p5d:#c33b7f;
@@ -49,7 +52,8 @@
   --accent:#7b4bd8; --accent2:#c04bb0; --good:#1f9d55; --gold:#e8a300;
   --chip:#f0e9ff; --chipink:#5a2fa8;
   --socket:#e6e0f5; --board:#ffffff;
-  --markb:#231a38; --markw:#ffffff; --markline:#8578ac;
+  --markb:#17102c; --markw:#ffffff; --markplate:#a99ecb;
+  --markring:#332a52; --markhole:rgba(38,24,78,.26);
   --p0:#e8483f; --p0d:#b02a26;  --p1:#ffc93c; --p1d:#d99b00;
   --p2:#35c46a; --p2d:#1d8b47;  --p3:#3d8bff; --p3d:#1a5bd0;
   --p4:#a06cf0; --p4d:#6b3bc0;  --p5:#ff6fb5; --p5d:#cc3b84;
@@ -233,6 +237,9 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 
 .board-buttons{display:flex;gap:8px;justify-content:center;flex:0 0 auto}
 .board-buttons .ghost-btn{flex:0 1 130px}
+/* Robo's pair has the row to itself — undo and hint don't apply on its go — so
+   it takes the width it needs rather than wrapping onto two lines. */
+#runBtn{flex:0 1 auto;white-space:nowrap}
 .board-buttons .btn{flex:0 1 180px;min-height:50px;padding:12px 16px}
 
 /* ── The board ──────────────────────────────────────────────────────────── */
@@ -310,25 +317,33 @@ body.no-shapes .peg i{display:none}
 .peg.c1 i,.peg.c5 i{color:rgba(0,0,0,.6);text-shadow:none}
 
 /* Feedback pegs, in two short rows beside the guess — three columns when there
-   are five of them. */
+   are five of them.
+
+   They sit on a plate of their own, the way they do on a real board, and the
+   plate is mid-toned in both themes. That is the only way a black pip and a
+   white one can both stand out at this size: against the white card the black
+   ones read as smudges, and against the dark card they disappeared outright. */
 .marks{
   display:grid;grid-template-columns:repeat(var(--markcols,2),auto);
-  gap:calc(var(--peg) * .07);
+  gap:calc(var(--peg) * .09);
   justify-content:center;align-content:center;
-  width:calc(var(--peg) * 1.15);flex:0 0 auto;
+  width:calc(var(--peg) * (var(--markcols,2) * .41 + .2));flex:0 0 auto;
+  padding:calc(var(--peg) * .1);
+  border-radius:calc(var(--peg) * .24);
+  background:var(--markplate);
 }
-/* An empty pip is deliberately smaller and fainter than a real one. A white peg
-   on a white card is otherwise all but identical to an empty hole — which
-   silently hid two thirds of the feedback in the light theme. */
+/* An empty pip is a dimple in the plate — deliberately smaller and duller than
+   a real one, so it can't be mistaken for a white peg. */
 .mark{
-  width:calc(var(--peg) * .28);height:calc(var(--peg) * .28);
-  border-radius:50%;background:transparent;
-  border:1px solid var(--line);transform:scale(.5);
+  width:calc(var(--peg) * .34);height:calc(var(--peg) * .34);
+  border-radius:50%;background:var(--markhole);
+  box-shadow:0 1px 2px rgba(0,0,0,.22) inset;
+  transform:scale(.62);
 }
 .mark.black,.mark.white{
   transform:scale(1);
-  border:max(1.5px, calc(var(--peg) * .035)) solid var(--markline);
-  box-shadow:0 1px 2px var(--shadow);
+  border:max(1.5px, calc(var(--peg) * .035)) solid var(--markring);
+  box-shadow:0 1px 3px rgba(0,0,0,.35);
 }
 .mark.black{background:var(--markb)}
 .mark.white{background:var(--markw)}
@@ -484,3 +499,21 @@ body.no-shapes .peg i{display:none}
   .board-buttons .btn{min-height:42px;padding:9px 14px}
   .swatch{width:clamp(36px,9vw,46px);border-radius:14px}
 }
+
+/* ── Putting the end card aside ─────────────────────────────────────────── */
+
+/* The result sheet covers the board, and the finished board is usually the
+   thing worth looking at. Peek hides the sheet and leaves this pill behind to
+   bring it back, so nothing is ever a dead end. */
+.peek-pill{
+  position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:60;
+  font:inherit;font-weight:800;font-size:14px;cursor:pointer;white-space:nowrap;
+  border:1px solid var(--line);border-radius:999px;
+  background:var(--card);color:var(--ink);padding:12px 20px;min-height:46px;
+  box-shadow:0 10px 26px var(--shadow);
+}
+.peek-pill:active{transform:translate(-50%,1px)}
+/* The round is over while the card is put aside, so the board buttons have
+   nothing to do — standing them down is what leaves room for the pill. */
+body.peeking .board-buttons{visibility:hidden}

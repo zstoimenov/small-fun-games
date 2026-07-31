@@ -183,7 +183,7 @@
     state.lastThink = null;
     if (fresh) state.tally = { red: 0, yellow: 0, draw: 0 };
 
-    $("result").hidden = true;
+    closeResult();
     Ui.clearToast();
     showScreen("game");
     Ui.paint(state.board);
@@ -203,7 +203,7 @@
     state.winner = 0;
     state.busy = false;
 
-    $("result").hidden = true;
+    closeResult();
     Ui.clearToast();
     showScreen("game");
     Ui.paint(b);
@@ -434,7 +434,31 @@
       }
     }
 
+    openResult();
+  }
+
+  /* ── The end card ──────────────────────────────────────────────────────── */
+
+  // It sits on top of the board, and the finished board is usually the thing
+  // worth looking at — so it can be put aside, and the pill brings it back.
+  function openResult() {
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
     $("result").hidden = false;
+  }
+
+  function closeResult() {
+    $("result").hidden = true;
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+  }
+
+  function peekBoard() {
+    $("result").hidden = true;
+    $("peekPill").hidden = false;
+    // The game is over, so the row of board buttons has nothing left to offer —
+    // standing it down is what makes room for the pill at the bottom.
+    document.body.classList.add("peeking");
   }
 
   /* ── Undo and hint ─────────────────────────────────────────────────────── */
@@ -453,7 +477,7 @@
     }
     state.over = false;
     state.winner = 0;
-    $("result").hidden = true;
+    closeResult();
 
     Board.undo(b);
     // Against the computer, taking one move back would just hand the turn
@@ -540,6 +564,8 @@
         Ui.preview(state.board, col, state.board.turn);
       }
     );
+    $("peekBtn").addEventListener("click", peekBoard);
+    $("peekPill").addEventListener("click", openResult);
     Tutorial.wire();
 
     chooser("countChooser", state.playerCount, (v) => {
@@ -606,7 +632,7 @@
       state.playing = false;
       savedGame = null;
       save();
-      $("result").hidden = true;
+      closeResult();
       showScreen("setup");
       renderSetup();
     });

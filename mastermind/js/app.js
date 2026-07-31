@@ -42,6 +42,7 @@
     slot: 0,
     playing: false,
     busy: false,         // pegs are landing, or the opponent is thinking
+    auto: false,         // Robo plays itself out instead of waiting to be tapped
     over: false,
     lastThink: null,     // what the solver did on its last go, for the menu
     setterSeat: 0,       // two players: which of the two set this round's code
@@ -151,7 +152,8 @@
     $("roleNote").hidden = !isSolo;
     $("roleNote").textContent = state.role === "break"
       ? BOT_NAME + " hides a code and you work it out."
-      : "You hide a code and " + BOT_NAME + " works it out. See how long you can hold it off.";
+      : "You hide a code and " + BOT_NAME + " works it out — one go at a time, so you " +
+        "can see how it crosses codes off. See how long you can hold it off.";
 
     // The computer only has a difficulty when it is the one guessing — hiding a
     // code takes no skill, so the row would be a lie in the other direction.
@@ -309,7 +311,7 @@
     const players = makePlayers();
     state.setter = players.setter;
     state.breaker = players.breaker;
-    $("result").hidden = true;
+    closeResult();
 
     if (state.setter.kind === "human") openPick();
     else begin(Rules.randomCode(spec()));
@@ -323,6 +325,9 @@
     state.slot = 0;
     state.playing = true;
     state.busy = false;
+    // "Play it out" is a decision about this round, not a setting — every game
+    // starts back at one go per tap.
+    state.auto = false;
     state.over = false;
     state.lastThink = null;
 
@@ -350,6 +355,9 @@
     state.slot = 0;
     state.playing = true;
     state.busy = false;
+    // "Play it out" is a decision about this round, not a setting — every game
+    // starts back at one go per tap.
+    state.auto = false;
     state.over = false;
     state.lastThink = null;
 
@@ -365,24 +373,43 @@
   function refresh() {
     const g = state.game;
     if (!g) return;
+    const cpu = cpuBreaks();
     const mine = !state.busy && !state.over && state.breaker.kind === "human";
 
-    $("turnName").textContent = cpuBreaks()
-      ? BOT_NAME + " is guessing"
+    $("turnName").textContent = cpu
+      ? (state.over ? (g.cracked ? BOT_NAME + " cracked it" : BOT_NAME + " gave up")
+        : BOT_NAME + " is guessing")
       : solo() ? "Crack the code" : state.breaker.name + "'s go";
-    $("turnName").classList.toggle("cpu", cpuBreaks());
+    $("turnName").classList.toggle("cpu", cpu);
 
     const left = Rules.goesLeft(g);
     let meta = left + (left === 1 ? " go left" : " goes left");
-    if (state.hints && g.rows.length) meta += " • " + state.solver.aliveLen + " codes still fit";
+    // How much is left to rule out is the whole story when Robo is guessing, so
+    // it is on screen whether or not the player asked for hints.
+    if (cpu || (state.hints && g.rows.length)) {
+      const fit = state.solver.aliveLen;
+      meta += " • " + fit.toLocaleString() + (fit === 1 ? " code still fits" : " codes still fit");
+    }
     $("turnMeta").textContent = meta;
 
     Ui.paint(g, state.draft, state.slot, mine);
     Ui.setPalette(mine, blocked());
+
+    // Robo's go is driven by the player, so its two buttons take the place of
+    // the ones only a human guesser can use.
+    $("checkBtn").hidden = cpu;
+    $("undoBtn").hidden = cpu;
+    $("hintBtn").hidden = cpu || !state.hints;
+    $("stepBtn").hidden = !cpu;
+    $("runBtn").hidden = !cpu;
+
     $("checkBtn").disabled = !mine || state.draft.includes(-1);
-    $("undoBtn").disabled = state.busy || !g.rows.length || cpuBreaks();
-    $("hintBtn").hidden = !state.hints;
+    $("undoBtn").disabled = state.busy || !g.rows.length;
     $("hintBtn").disabled = !mine;
+    $("stepBtn").disabled = state.busy || state.over || state.auto;
+    $("stepBtn").textContent = g.rows.length ? "▶ Next go" : "▶ " + BOT_NAME + "'s go";
+    $("runBtn").disabled = state.over;
+    $("runBtn").textContent = state.auto ? "⏸ One at a time" : "⏩ Play it out";
 
     document.body.classList.toggle("no-shapes", !state.shapes);
     // Two people sitting opposite each other: the board faces whoever is
@@ -447,9 +474,11 @@
       : "Tap a colour to fill the row. " + left + (left === 1 ? " go left." : " goes left."), "calm");
   }
 
-  function joinWords(list) {
+  // "red or blue" for a choice, "red and blue" for a pair of facts — the wrong
+  // one of those reads as a guess about which colour is missing.
+  function joinWords(list, joiner) {
     if (list.length === 1) return list[0];
-    return list.slice(0, -1).join(", ") + " or " + list[list.length - 1];
+    return list.slice(0, -1).join(", ") + " " + (joiner || "or") + " " + list[list.length - 1];
   }
 
   function say(face, text, kind) {
@@ -513,8 +542,10 @@
     save();
 
     // Long enough for the pegs to land and be read, and longer when there are
-    // more of them to watch.
-    const wait = 480 + (row.black + row.white) * 90;
+    // more of them to watch. When Robo is being stepped through, this is also
+    // the window in which its reason for the guess is on screen, so it gets
+    // long enough to actually read.
+    const wait = (cpuBreaks() && !state.auto ? 1500 : 480) + (row.black + row.white) * 90;
     setTimeout(() => {
       if (gen !== state.gen) return;
       state.busy = false;
@@ -525,9 +556,108 @@
   }
 
   function afterTurn() {
-    if (cpuBreaks()) { cpuGuess(); return; }
+    if (cpuBreaks()) { readyForCpu(); return; }
     Audio.turn();
     showStatus();
+  }
+
+  /* ── Robo's go ─────────────────────────────────────────────────────────── */
+
+  // Watching the computer break a code is the entire point of this mode, and it
+  // used to play itself out in a couple of seconds with nothing to read but a
+  // number. Now every go waits for a tap and the line above the board says what
+  // the pegs just ruled out — the deduction is the interesting part, so it is
+  // the part that gets the screen time. "Play it out" is there for anyone who
+  // would rather just see the ending.
+
+  function readyForCpu() {
+    if (state.auto) { cpuGuess(); return; }
+    state.busy = false;
+    refresh();
+    sayLesson();
+  }
+
+  function stepCpu() {
+    // A finished round is a dead key, not a mistake — no buzz for it.
+    if (state.over) return;
+    if (state.busy || !cpuBreaks()) { Audio.nope(); return; }
+    Audio.tap();
+    cpuGuess();
+  }
+
+  function toggleAuto() {
+    if (!cpuBreaks() || state.over) { Audio.nope(); return; }
+    state.auto = !state.auto;
+    Audio.tap();
+    refresh();
+    if (state.auto && !state.busy) cpuGuess();
+  }
+
+  // What the last row of pegs told it, in words a player could have used
+  // themselves. Shown while it waits to be tapped on, which is when there is
+  // time to read it.
+  function sayLesson() {
+    const g = state.game;
+    const now = state.solver.aliveLen;
+
+    if (!g.rows.length) {
+      say("🤖", "All " + Rules.space(g.spec).count.toLocaleString() + " codes still fit — " +
+        BOT_NAME + " knows nothing yet. Tap the button and watch it start crossing them off.");
+      return;
+    }
+
+    const last = g.rows[g.rows.length - 1];
+    let text = pegWords(last.black, last.white) + " back. ";
+    // lastThink is empty on a resumed game, where there is no "before" to
+    // compare against — the count on its own still says something.
+    text += state.lastThink
+      ? "That takes " + state.lastThink.left.toLocaleString() + " codes down to " +
+        now.toLocaleString() + "."
+      : now.toLocaleString() + " codes still fit.";
+
+    const f = Ai.facts(state.solver);
+    if (now === 1) {
+      text += " Only one is left, so its next go has to be the answer.";
+    } else if (f.absent.length) {
+      const words = f.absent.map((c) => Rules.COLOUR_NAMES[c].toLowerCase());
+      text += " It has ruled out " + joinWords(words, "and") + " altogether.";
+    } else if (f.known.length) {
+      const k = f.known[0];
+      text += " Every code left has " + Rules.COLOUR_NAMES[k.colour].toLowerCase() +
+        " in slot " + (k.slot + 1) + ".";
+    }
+    say("🔎", text);
+  }
+
+  function pegWords(black, white) {
+    if (!black && !white) return "Not one peg";
+    // Each colour is counted on its own, so "1 black peg and 2 white pegs" comes
+    // out right — one plural for the pair reads wrong as soon as they differ.
+    const some = (n, kind) => n + " " + kind + (n === 1 ? " peg" : " pegs");
+    const bits = [];
+    if (black) bits.push(some(black, "black"));
+    if (white) bits.push(some(white, "white"));
+    return bits.join(" and ");
+  }
+
+  // Why that row. Each difficulty is a different way of thinking, and saying
+  // which one is running is half of what there is to learn here.
+  function guessWhy(move) {
+    const n = move.left.toLocaleString();
+    if (move.guessNo === 1) {
+      return "Nothing to go on yet, so it opens with a spread of colours — the row " +
+        "that tells it the most whatever comes back.";
+    }
+    if (state.difficulty === "easy") {
+      return "It only counts the black pegs, so it's picking from the rows that match " +
+        "those and throwing away what the white ones said.";
+    }
+    if (state.difficulty === "medium") {
+      return "It picked one of the " + n + " rows that still fit. No cleverness about " +
+        "which one — it just never guesses something it has already ruled out.";
+    }
+    return "Out of " + n + " rows that still fit, this is the one that splits them into " +
+      "the smallest piles — so whatever the pegs say, most of them are gone.";
   }
 
   function cpuGuess() {
@@ -550,9 +680,7 @@
       const wait = Math.max(0, 560 - (Date.now() - started));
       setTimeout(() => {
         if (gen !== state.gen) return;
-        say("🤖", move.left > 1
-          ? BOT_NAME + " had " + move.left.toLocaleString() + " codes to choose from."
-          : BOT_NAME + " has worked it out.");
+        say("🤖", move.left > 1 ? guessWhy(move) : BOT_NAME + " has worked it out.");
         state.busy = false;
         submit(move.code);
       }, wait);
@@ -589,9 +717,45 @@
       state.tally.rounds[state.breaker.seat]++;
     }
 
+    // Left behind the end card on purpose: peek at the board and the line above
+    // it still says how the last round went.
+    if (cpuBreaks()) {
+      say(g.cracked ? "🤖" : "🏆", g.cracked
+        ? BOT_NAME + " got there in " + g.rows.length +
+          (g.rows.length === 1 ? " go" : " goes") + ", from " +
+          Rules.space(g.spec).count.toLocaleString() + " possible codes down to one."
+        : BOT_NAME + " ran out of goes with " + state.solver.aliveLen.toLocaleString() +
+          " codes still on its list. Your code held out.");
+    }
+
     refresh();
     save();
     setTimeout(() => showResult(), g.cracked ? 1100 : 700);
+  }
+
+  /* ── The end card ──────────────────────────────────────────────────────── */
+
+  // It sits on top of the board, and the finished board is usually the thing
+  // worth looking at — so it can be put aside, and the pill brings it back.
+  function closeResult() {
+    $("result").hidden = true;
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+  }
+
+  function peekBoard() {
+    $("result").hidden = true;
+    $("peekPill").hidden = false;
+    // The round is over, so the row of board buttons has nothing left to offer —
+    // standing it down is what makes room for the pill at the bottom.
+    document.body.classList.add("peeking");
+    Audio.tap();
+  }
+
+  function openResult() {
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+    $("result").hidden = false;
   }
 
   function showResult() {
@@ -649,7 +813,10 @@
 
     renderTally();
     $("againBtn").textContent = solo() ? "Play again ▶" : "Swap over ▶";
-    $("result").hidden = false;
+    // Taking a guess back is the human guesser's move; there is nothing to undo
+    // on a round Robo played.
+    $("resultUndo").hidden = cpuBreaks() || !g.rows.length;
+    openResult();
   }
 
   // The running score only means something once there is more than one round in
@@ -698,6 +865,7 @@
     state.over = false;
     savedGame = null;
     save();
+    closeResult();
     showScreen("setup");
     renderSetup();
   }
@@ -717,7 +885,7 @@
       state.tally.rounds[state.breaker.seat]--;
     }
     state.over = false;
-    $("result").hidden = true;
+    closeResult();
 
     Rules.undo(g);
     state.solver = Ai.replay(g.spec, g.rows);
@@ -847,18 +1015,30 @@
       abandon();
     });
 
-    $("againBtn").addEventListener("click", () => { $("result").hidden = true; nextRound(); });
+    $("againBtn").addEventListener("click", () => { closeResult(); nextRound(); });
     $("resultMenu").addEventListener("click", () => {
-      $("result").hidden = true;
+      closeResult();
       abandon();
     });
     $("resultUndo").addEventListener("click", undo);
+    $("peekBtn").addEventListener("click", peekBoard);
+    $("peekPill").addEventListener("click", openResult);
+
+    $("stepBtn").addEventListener("click", stepCpu);
+    $("runBtn").addEventListener("click", toggleAuto);
 
     Tutorial.wire();
 
     addEventListener("keydown", (e) => {
       if ($("game").hidden) return;
       if (!$("menu").hidden || !$("howto").hidden || !$("result").hidden) return;
+      // A focused button already turns Enter and Space into a click of its own,
+      // so stepping here as well would play two of Robo's goes for one press.
+      if (cpuBreaks()) {
+        if (e.target && e.target.tagName === "BUTTON") return;
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); stepCpu(); }
+        return;
+      }
       if (e.key >= "1" && e.key <= String(Rules.COLOURS)) pickColour(Number(e.key) - 1);
       else if (e.key === "Enter") checkRow();
       else if (e.key === "Backspace") { e.preventDefault(); pickSlot(state.slot); }

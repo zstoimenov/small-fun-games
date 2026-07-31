@@ -72,7 +72,7 @@ window.FTL = window.FTL || {};
     renderLevelSelect();
     $("levelSelect").hidden = false;
     $("game").hidden = true;
-    $("result").hidden = true;
+    closeResult();
   }
 
   /* ── Playing a level ──────────────────────────────────────────────────── */
@@ -82,7 +82,7 @@ window.FTL = window.FTL || {};
     if (!level) return;
 
     $("levelSelect").hidden = true;
-    $("result").hidden = true;
+    closeResult();
     $("game").hidden = false;
 
     $("levelTitle").textContent = "Level " + level.id + ": " + level.title;
@@ -186,7 +186,25 @@ window.FTL = window.FTL || {};
       ? "Slotted it in " + blockCount + " blocks — that's the best there is."
       : "Slotted it in " + blockCount + " blocks. Do it in " + level.par + " for three stars!";
     $("nextBtn").textContent = last ? "🎉 Finish" : "Next level ▶";
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
     $("result").hidden = false;
+  }
+
+  // The card lands on top of the pitch, and the run that just happened is
+  // what there is to learn from. Peek puts it aside; the pill brings it back.
+  function closeResult() {
+    $("result").hidden = true;
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+  }
+
+  function peekPitch() {
+    $("result").hidden = true;
+    $("peekPill").hidden = false;
+    // The run is finished, so the block buttons have nothing to do — standing
+    // them down is what leaves room for the pill at the bottom.
+    document.body.classList.add("peeking");
   }
 
   /* ── Boot-time check that every level is still winnable ───────────────── */
@@ -228,12 +246,18 @@ window.FTL = window.FTL || {};
   });
   $("hintBtn").addEventListener("click", function () { toast("💡 " + level.hint, 5200); });
   $("menuBtn").addEventListener("click", showMenu);
+  $("peekBtn").addEventListener("click", peekPitch);
+  $("peekPill").addEventListener("click", function () {
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+    $("result").hidden = false;
+  });
   $("againBtn").addEventListener("click", function () {
-    $("result").hidden = true;
+    closeResult();
     resetRun();
   });
   $("nextBtn").addEventListener("click", function () {
-    $("result").hidden = true;
+    closeResult();
     const next = Levels.byId(level.id + 1);
     if (next) { Audio.unlock(); startLevel(next.id); } else showMenu();
   });

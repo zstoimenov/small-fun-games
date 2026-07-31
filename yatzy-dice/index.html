@@ -219,6 +219,7 @@
   <div class="sheet sheet-sm">
     <div id="resultIcon" class="result-icon">🏆</div>
     <h2 id="resultTitle">Player 1 wins!</h2>
+    <button id="peekBtn" class="ghost-btn wide" type="button">👀 Look at the scoresheet</button>
     <div id="resultTable" class="result-table"></div>
     <div class="sheet-buttons">
       <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
@@ -227,6 +228,9 @@
   </div>
 </div>
 
+
+<!-- Brings the end card back after it has been put aside. -->
+<button id="peekPill" class="peek-pill" type="button" hidden>🏆 Show the result</button>
 <script src="./js/rng.js"></script>
 <script src="./js/rules.js"></script>
 <script src="./js/ai.js"></script>
