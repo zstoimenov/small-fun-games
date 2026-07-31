@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v8";
+const CACHE = "game-box-v9";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -60,6 +60,14 @@ const ASSETS = [
   "./mastermind/js/tutorial.js", "./mastermind/js/app.js",
   "./mastermind/icons/icon-192.png", "./mastermind/icons/icon-512.png",
   "./mastermind/icons/apple-touch-icon.png",
+
+  "./battleship/", "./battleship/index.html", "./battleship/manifest.webmanifest",
+  "./battleship/css/style.css",
+  "./battleship/js/rules.js", "./battleship/js/ai.js",
+  "./battleship/js/audio.js", "./battleship/js/ui.js",
+  "./battleship/js/tutorial.js", "./battleship/js/app.js",
+  "./battleship/icons/icon-192.png", "./battleship/icons/icon-512.png",
+  "./battleship/icons/apple-touch-icon.png",
 ];
 
 // Precache fresh copies — cache:"reload" bypasses the HTTP cache so the offline

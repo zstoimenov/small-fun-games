@@ -1,8 +1,11 @@
 # Game roadmap
 
-Four games planned. This file is the handover between sessions: it holds the
-briefs, the cost estimates and the decisions already made, so a fresh session can
-start building without re-deriving any of it.
+Four games planned, **all four now built**. This file is the handover between
+sessions: it holds the briefs, the cost estimates and the decisions already made,
+so a fresh session can start building without re-deriving any of it. Nothing here
+is outstanding work any more — what it is now is the record of what each game
+cost against what it was estimated at, and of the handful of things that turned
+out to be worth knowing in advance.
 
 Build conventions are in [`../CLAUDE.md`](../CLAUDE.md). Catalogue fields are in
 [`../README.md`](../README.md#add-a-new-game).
@@ -30,18 +33,23 @@ game needs.
 | 1 | ✅ Connect Four | `connect-four/` | 500–700 → **2,202 actual** | 120k–200k |
 | 2 | ✅ Mastermind | `mastermind/` | 700–900 → **2,817 actual** | 180k–280k → **~330k actual** |
 | 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
-| 4 | Battleship | `battleship/` | 1,800–2,600 → **~4,000 expected** | 550k–850k → **700k–1.1M** |
+| 4 | ✅ Battleship | `battleship/` | 1,800–2,600 → **3,072 actual** | 550k–850k → 700k–1.1M → **inside it** |
 
-Total ≈ **1.5M–2M tokens**. Battleship alone is still about 45% of it.
+For scale, the games measure: Yatzy 3,098 lines, Battleship 3,072, Nine Men's
+Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048,
+Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
 
-For scale, the existing games measure: Yatzy 3,098 lines, Nine Men's Morris
-2,928, Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048, Times
-Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+**Three games in, the line estimates looked consistently ~2.5× low. Battleship
+was the first to come in under its adjusted figure, and the reason is the useful
+part.** The correction was being applied as a multiplier, and the thing being
+corrected for is not a multiplier — it is the fixed ~2,000 lines of house
+furniture that every game pays whatever it is. Battleship's own game logic
+(`rules.js` 320 + `ai.js` 271) is *smaller* than Morris's, and its two full
+screens cost less than feared because they share one grid builder. The rule that
+actually holds across four games:
 
-**Three games in, the line estimates are consistently ~2.5× low and the token
-estimates roughly right at the top of their range.** Scale Battleship's brief by
-those factors rather than trusting the original numbers — the figures in the
-table already are.
+> **lines ≈ 2,000 + the game's own logic.** Estimate the second term only, and
+> do not scale the first one by anything.
 
 Mastermind is the data point that says the floor matters more than the game:
 its rules and solver together are 536 lines, and the other 2,280 are the house
@@ -78,6 +86,12 @@ harness could play positions out and print numbers. The rule that fell out:
 That is why Battleship costs four times Connect Four despite both being "a grid
 and a search". Rank by how much of the game a second human being can see, not by
 how clever the AI is.
+
+**Battleship came in at 1.4× Connect Four, not 4×, and the ranking rule is still
+right — it was the arithmetic on top of it that was wrong.** Hidden information
+and two full screens genuinely were where the work went; they just landed on top
+of a fixed floor rather than multiplying it. Rank games by how much a second
+person can see, then add, don't multiply.
 
 ## One session per game
 
@@ -327,7 +341,7 @@ running score, the flip-the-screen mode, and the depth/nodes/ms panel. New here:
 a row of counters per player showing what is still in hand and what has been
 lost, so nobody has to count the board.
 
-## 4. Battleship (Морски бой) — `battleship/`
+## 4. Battleship (Морски бой) — `battleship/` ✅ built
 
 The big one. Effectively two games: a placement game and a guessing game, each
 needing its own full UI, times two players.
@@ -350,3 +364,78 @@ needing its own full UI, times two players.
 Watch for: secrecy is a real requirement, not decoration. The whole two-player
 mode is worthless if a player can see the opponent's ships by scrolling, resizing
 or reloading mid-game. Decide early what happens on refresh.
+
+### What shipped, and where it differs
+
+3,072 lines, one session, inside the token estimate. The brief was right about
+the shape of the game and about the AI; five things are worth carrying forward.
+
+- **Secrecy came out structural, and it cost almost nothing.** `Rules.publicView`
+  turns a board into the shots fired at it plus the squares of ships already
+  sunk — everything the shooter has been told out loud, and nothing else. The
+  computer, the hint button and the grid you shoot at all take a *view*, never a
+  board, so there is one function to check rather than a dozen call sites, and
+  the opponent's fleet is not in the page at all. The handover screen then
+  *hides* both game screens rather than covering them. Both were verified by
+  counting in the browser, not by reading the code: `0` elements matching `.sq`
+  anywhere on the page during a handover, and `0` matching `#enemyGrid .ship` at
+  any point in a game. **Do the same next time a game has hidden state** — it is
+  cheaper than auditing, and it is checkable.
+- **What is *not* solved is the same thing Mastermind left open**, and it is
+  worth being honest about: a resumable game has to write both fleets to
+  `localStorage`, so two-player secrecy holds against a sibling looking over your
+  shoulder, not against one who opens devtools. Placement is *not* saved (it
+  takes twenty seconds to redo), and a resumed two-player game comes back
+  through the handover screen, because whoever picks the device up is not
+  necessarily whoever put it down.
+- **The difficulty ladder was measured, and the brief's Easy was wrong.** 400
+  full games each on the classic sea (17 ship squares in 100): pure random
+  **95.8** shots, Easy **63.3**, Medium **50.4**, Hard **44.6**. The brief said
+  "pure random at Easy" — at 96 shots out of 100 squares that is not an easy
+  opponent, it is a broken one, and the game never ends. Easy is instead
+  "shoots anywhere, and pokes next door when it hits something, but never
+  notices that two hits in a row point somewhere". Same shape as Mastermind's
+  Easy: it never contradicts what it has been told, it just misses one idea, and
+  it can be explained to a child in a sentence. Hard's 44.6 is the published
+  figure for probability density, which makes it an acceptance test.
+- **Density needs no separate hunt/target mode, and that is worth copying.**
+  Count every way each surviving ship could still be lying and add one to each
+  square it covers. When a hit has no sinking to explain it, count *only* the
+  placements covering that hit, weighted by how many they cover. Following the
+  line falls out of the arithmetic — there is no second code path to keep in
+  step with the first. The whole thing is 40 lines.
+- **Compute anything worth getting right twice, again.** `density` is written
+  flat and fast; the node harness recomputes it the slow obvious way from the
+  placement rules and compares every square. Ship damage is kept as a running
+  count while firing and recomputed from the shot marks afterwards. Undo does
+  not unwind the board at all — it truncates the shot log and calls
+  `Rules.restore`, which is the path already tested hardest, so there is no
+  second way of reversing a shot to get wrong. 1,300 assertions, all in node.
+
+Two layout notes, both of which cost more than the AI did:
+
+- **Two boards on one screen is a sizing loop waiting to happen.** The little
+  grid was first sized from the box it sits in — which grows to fit it. It
+  settled at a different size depending on which screen you arrived from. The
+  fix is that only *one* of the two boards may be measured from its parent: the
+  big one is, and the little one is told a size worked out from the viewport.
+  Where the two boards sit relative to each other is a media query, so `ui.js`
+  reads `flexDirection` off the side column rather than writing the breakpoints
+  out a second time.
+- **A phone on its side is the case that breaks.** A flex column inside a flex
+  row needs `min-height:0` or it spills off both ends of the screen instead of
+  shrinking — which it did, over the top bar and under the buttons. Seven
+  viewports are now checked by measuring `scrollHeight > clientHeight` on every
+  box on both game screens, which found it; the screenshot did not, because the
+  overflow was drawn outside the area anyone was looking at.
+
+Extras beyond the brief, mostly lifted from the other three: undo (steps back
+over the computer's reply), a hint that names a square *and* the reason, a
+running score, the flip-the-screen mode, the seven-page lesson — every picture in
+it drawn by firing real shots at a real board through `Rules.fire` — and the
+menu's what-was-it-thinking panel. New here: three sea sizes (6×6, 8×8, 10×10),
+an optional extra-go-after-a-hit rule, two-tap firing so a mis-tap never costs a
+turn, ships that slide back onto the board rather than being refused when you tap
+near the edge, and a heat map in the menu showing where the computer thinks
+*your* ships are — which is the most useful thing in the game for teaching a
+child not to hide them all in one corner.

@@ -1,0 +1,519 @@
+/* Battleship — one stylesheet, no framework.                                    */
+/* Tablet-first: big tap targets, and a sea that follows the device's light or   */
+/* dark setting.                                                                 */
+/*                                                                              */
+/* Every grid on the page — the one you shoot at, the little one showing your    */
+/* own sea, the reveal at the end, the heat map in the menu — is the same markup */
+/* drawn from a single --cell length. ui.js sets that one number in pixels after */
+/* measuring the space, which is the only way the same board can be ten squares  */
+/* across on a phone and ten across on a tablet without the page scrolling.      */
+/*                                                                              */
+/* Marks are shapes as well as colours: a splash is a dot, a hit is a cross, a   */
+/* wreck is a ringed cross. Nothing in the game is told by colour alone.         */
+
+:root{
+  --bg1:#e7f2fc; --bg2:#f5fbff; --ink:#0e2233; --muted:#5a7288;
+  --card:#ffffff; --line:#d5e6f4; --shadow:rgba(20,60,100,.18);
+  --accent:#1f7ae0; --accent2:#12a3bd; --good:#1f9d55; --gold:#e8a300;
+  --chip:#e4f1fd; --chipink:#15598f;
+  --sea:#b7d9f2; --sea-deep:#9cc8e8;
+  --ship:#6b8298; --ship-d:#48607a;
+  --miss:#5f809c; --hit:#e0483f; --wreck:#7d2621;
+  --tap:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg1:#061423; --bg2:#0b2033; --ink:#e6f2ff; --muted:#8ba5bc;
+    --card:#0f2a41; --line:#1e405d; --shadow:rgba(0,0,0,.55);
+    --accent:#4f9df0; --accent2:#2ec6d8; --good:#4ad48a; --gold:#ffc23d;
+    --chip:#153855; --chipink:#a9d4ff;
+    --sea:#123d5e; --sea-deep:#0d3350;
+    --ship:#7e9ab2; --ship-d:#5b7690;
+    --miss:#7ea0bb; --hit:#f2564c; --wreck:#8d2b26;
+  }
+}
+:root[data-theme="dark"]{
+  --bg1:#061423; --bg2:#0b2033; --ink:#e6f2ff; --muted:#8ba5bc;
+  --card:#0f2a41; --line:#1e405d; --shadow:rgba(0,0,0,.55);
+  --accent:#4f9df0; --accent2:#2ec6d8; --good:#4ad48a; --gold:#ffc23d;
+  --chip:#153855; --chipink:#a9d4ff;
+  --sea:#123d5e; --sea-deep:#0d3350;
+  --ship:#7e9ab2; --ship-d:#5b7690;
+  --miss:#7ea0bb; --hit:#f2564c; --wreck:#8d2b26;
+}
+:root[data-theme="light"]{
+  --bg1:#e7f2fc; --bg2:#f5fbff; --ink:#0e2233; --muted:#5a7288;
+  --card:#ffffff; --line:#d5e6f4; --shadow:rgba(20,60,100,.18);
+  --accent:#1f7ae0; --accent2:#12a3bd; --good:#1f9d55; --gold:#e8a300;
+  --chip:#e4f1fd; --chipink:#15598f;
+  --sea:#b7d9f2; --sea-deep:#9cc8e8;
+  --ship:#6b8298; --ship-d:#48607a;
+  --miss:#5f809c; --hit:#e0483f; --wreck:#7d2621;
+}
+
+*{box-sizing:border-box}
+/* Class rules like .overlay{display:grid} outrank the browser's own
+   [hidden]{display:none}, which would leave dismissed sheets invisible but
+   still swallowing taps. This puts the attribute back in charge. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;min-height:100dvh;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 500px at 88% -10%, var(--bg2), transparent 60%),
+    linear-gradient(170deg, var(--bg1), var(--bg2));
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  padding:max(12px,env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+}
+
+/* In the sheet's own flow, so it can never sit on top of the title. */
+#back{
+  display:inline-block;margin-bottom:10px;
+  font-size:13px;font-weight:700;text-decoration:none;color:var(--chipink);
+  background:var(--chip);padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn{
+  font:inherit;font-weight:800;border:none;border-radius:16px;cursor:pointer;
+  min-height:var(--tap);padding:12px 20px;color:#fff;
+  background:var(--accent2);box-shadow:0 6px 16px var(--shadow);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-go{background:linear-gradient(145deg,var(--accent),var(--accent2))}
+.btn-clear{background:var(--chip);color:var(--chipink)}
+.ghost-btn{
+  font:inherit;font-weight:700;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);color:var(--ink);padding:11px 16px;min-height:46px;cursor:pointer;
+}
+.ghost-btn:disabled{opacity:.42;cursor:default}
+.ghost-btn.wide{display:block;width:100%;margin:8px 0;text-align:left}
+.icon-btn{
+  font:inherit;font-size:19px;font-weight:800;line-height:1;
+  width:46px;height:46px;flex:0 0 auto;border-radius:14px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+}
+
+/* ── Overlays and sheets ────────────────────────────────────────────────── */
+
+.overlay{
+  position:fixed;inset:0;z-index:50;
+  display:grid;place-items:center;
+  padding:max(14px,env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+  background:rgba(6,20,35,.62);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  overflow:auto;
+}
+.sheet{
+  width:100%;max-width:520px;background:var(--card);border:1px solid var(--line);
+  border-radius:24px;padding:20px;box-shadow:0 18px 50px var(--shadow);
+  max-height:100%;overflow:auto;
+}
+.sheet-sm{max-width:440px}
+.sheet h1{margin:0 0 4px;font-size:clamp(24px,6vw,30px)}
+.sheet h2{margin:0 0 6px;font-size:22px}
+.sheet h3{margin:14px 0 6px;font-size:16px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.muted{color:var(--muted);font-weight:500}
+.pill{
+  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+  background:var(--chip);color:var(--chipink);
+}
+.sheet-buttons{display:flex;gap:10px;margin-top:16px}
+.sheet-buttons .btn{flex:1}
+/* Sized to its text so it can't wrap onto two lines and out-grow Start game. */
+#howtoBtn{flex:0 1 auto;white-space:nowrap;font-size:14px;padding:12px 15px}
+
+/* ── Setup ──────────────────────────────────────────────────────────────── */
+
+/* One line per decision: label on the left, a segmented control on the right.
+   Far less to take in than a screen of option cards, and it stays that way as
+   more options appear. */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 0;border-top:1px solid var(--line);
+}
+.row:first-of-type{border-top:none}
+.row-label{font-size:14px;font-weight:700;flex:0 1 auto}
+.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.seg{
+  display:flex;gap:3px;padding:3px;border-radius:13px;
+  background:var(--bg1);border:1px solid var(--line);flex:0 0 auto;
+}
+.seg .opt{
+  font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;
+  border:none;background:none;color:var(--muted);
+  padding:9px 13px;border-radius:10px;min-height:40px;
+}
+.seg .opt.on{background:var(--card);color:var(--accent);box-shadow:0 2px 6px var(--shadow)}
+
+/* Switch, for the plain yes/no options. */
+.switch{
+  position:relative;flex:0 0 auto;width:52px;height:31px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg1);padding:0;transition:background .18s;
+}
+.switch .knob{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:var(--card);box-shadow:0 2px 5px var(--shadow);transition:transform .18s;
+}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"] .knob{transform:translateX(21px)}
+
+.more{margin:10px 0 2px;border-top:1px solid var(--line);padding-top:8px}
+.more summary{
+  cursor:pointer;font-size:14px;font-weight:700;padding:7px 2px;
+  list-style:none;display:flex;align-items:center;gap:7px;
+}
+.more summary::-webkit-details-marker{display:none}
+.more summary::before{content:"▸";color:var(--muted);transition:transform .15s;display:inline-block}
+.more[open] summary::before{transform:rotate(90deg)}
+.name-row{display:flex;align-items:center;gap:10px;margin:7px 0}
+.name-row span{font-size:13px;font-weight:700;color:var(--muted);width:74px;flex:0 0 auto}
+.name-row input{
+  font:inherit;flex:1;width:100%;min-height:46px;padding:10px 13px;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--bg1);color:var(--ink);
+}
+
+/* ── The two game screens ───────────────────────────────────────────────── */
+
+/* The page itself never scrolls in a game — the board is sized to the space
+   that's left rather than pushing anything off the bottom. */
+body.in-game{
+  height:100dvh;overflow:hidden;
+  padding-left:6px;padding-right:6px;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+#game,#place{
+  max-width:900px;margin:0 auto;height:100%;
+  display:flex;flex-direction:column;min-height:0;gap:8px;
+  transition:transform .45s ease;
+}
+
+/* Two people sharing one device, sitting opposite each other: the screen turns
+   around for the second player. */
+body.flipped #game,body.flipped #place{transform:rotate(180deg)}
+body.flipped .overlay .sheet{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){ #game,#place{transition:none} }
+
+.topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
+.turn-info strong{display:block;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.turn-info span{display:block;font-size:12px;color:var(--muted)}
+#turnName.cpu{color:var(--accent2)}
+
+.coach{
+  display:flex;gap:9px;align-items:flex-start;flex:0 0 auto;
+  background:linear-gradient(145deg,var(--accent),var(--accent2));color:#fff;
+  padding:11px 13px;border-radius:16px;
+  font-size:14px;font-weight:600;line-height:1.4;
+  box-shadow:0 8px 20px var(--shadow);
+}
+.coach.warn{background:linear-gradient(145deg,#f0803a,#e0483f)}
+.coach.good{background:linear-gradient(145deg,#199e63,#12a3bd)}
+/* The everyday "whose go is it" line. It's on screen the whole game, so it has
+   to sit down and be quiet — the coloured versions are for the ones that
+   actually want reading. */
+.coach.calm{
+  background:var(--card);color:var(--muted);font-weight:600;
+  border:1px solid var(--line);box-shadow:none;
+}
+.coach-face{font-size:20px;line-height:1.1}
+
+.board-buttons{display:flex;gap:8px;justify-content:center;flex:0 0 auto}
+.board-buttons .ghost-btn{flex:0 1 130px}
+.board-buttons .btn{flex:0 1 180px;min-height:50px;padding:12px 16px}
+
+/* ── The arena ──────────────────────────────────────────────────────────── */
+
+/* Portrait: the sea you're shooting at on top, your own sea and the two fleet
+   lists in a row underneath. Landscape: the same two blocks side by side. */
+.arena{display:flex;flex-direction:column;gap:8px;flex:1 1 auto;min-height:0}
+/* Scrolls only as a last resort: ui.js sizes the board to fit, but it won't go
+   below a square you can still hit with a finger, and a phone lying on its side
+   genuinely hasn't the height for ten rows of those. */
+.board-wrap{
+  flex:1 1 auto;min-height:0;min-width:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow:auto;
+}
+/* Portrait: your own sea and the two fleet lists in one row under the board.
+   Landscape: the same three things stacked down the side. The little grid is
+   never sized from this box — ui.js works it out from the viewport instead, so
+   the two boards can't chase each other round a resize. */
+.side{
+  display:flex;gap:8px;flex:0 0 auto;align-items:center;justify-content:center;
+}
+@media (orientation:landscape){
+  .arena{flex-direction:row;align-items:stretch}
+  .side{
+    flex-direction:column;flex:0 0 auto;justify-content:center;
+    width:clamp(120px,27vw,240px);
+    /* min-height:0 so a tall column shrinks inside the arena instead of
+       spilling over the top bar and off the bottom of a landscape phone. */
+    min-height:0;overflow:auto;
+  }
+  .fleet-boxes{min-height:0}
+}
+
+.grid-card{
+  background:var(--card);border:1px solid var(--line);
+  border-radius:min(4vw,20px);padding:10px;
+  box-shadow:0 12px 30px var(--shadow);
+}
+.grid-head{
+  font-size:12px;font-weight:800;color:var(--muted);
+  text-align:center;margin-bottom:6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mini-card{padding:8px;align-self:center}
+.mini-card .grid-head{font-size:11px;margin-bottom:5px}
+
+/* ── The grid ───────────────────────────────────────────────────────────── */
+
+/* One --cell drives everything: the squares, the gaps, the letters down the
+   side and the size of the marks in them. --n is how many squares across. */
+.grid{
+  display:grid;
+  --gap:max(1px, calc(var(--cell) * .06));
+  --lbl:calc(var(--cell) * .72);
+  grid-template-columns:var(--lbl) repeat(var(--n), var(--cell));
+  grid-template-rows:var(--lbl) repeat(var(--n), var(--cell));
+  gap:var(--gap);
+}
+.grid.mini{
+  grid-template-columns:repeat(var(--n), var(--cell));
+  grid-template-rows:repeat(var(--n), var(--cell));
+}
+
+.lbl{
+  display:grid;place-items:center;
+  font-size:calc(var(--cell) * .44);font-weight:800;color:var(--muted);
+  font-variant-numeric:tabular-nums;line-height:1;
+}
+
+.sq{
+  font:inherit;padding:0;margin:0;border:none;
+  display:grid;place-items:center;position:relative;
+  background:var(--sea);
+  border-radius:calc(var(--cell) * .2);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.sq:disabled{cursor:default}
+.sq:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+.grid.mini .sq,.grid.flat .sq{cursor:default}
+
+/* A splash is a dot, a hit is a cross, a wreck is a cross with a ring round it.
+   The colours say the same thing again for anyone who reads them faster. */
+.sq::after{
+  content:"";display:block;
+  width:30%;height:30%;border-radius:50%;
+  background:transparent;
+}
+.sq.miss::after{background:var(--miss)}
+.sq.hit,.sq.sunk{background:var(--hit)}
+.sq.sunk{background:var(--wreck);box-shadow:inset 0 0 0 max(1.5px,calc(var(--cell) * .1)) var(--card)}
+.sq.hit::after,.sq.sunk::after{
+  content:"✕";width:auto;height:auto;background:none;
+  font-size:calc(var(--cell) * .72);font-weight:900;line-height:1;
+  color:#fff;
+}
+
+/* Your own ships, on your own sea. Ends are rounded and middles are square, so
+   a four-square ship reads as one ship and not as four blocks. */
+.sq.ship{background:var(--ship)}
+.sq.ship.hit,.sq.ship.sunk{background:var(--hit)}
+.sq.ship.sunk{background:var(--wreck)}
+.sq.mid{border-radius:calc(var(--cell) * .06)}
+.sq.h-start{border-radius:calc(var(--cell) * .45) calc(var(--cell) * .06) calc(var(--cell) * .06) calc(var(--cell) * .45)}
+.sq.h-end{border-radius:calc(var(--cell) * .06) calc(var(--cell) * .45) calc(var(--cell) * .45) calc(var(--cell) * .06)}
+.sq.v-start{border-radius:calc(var(--cell) * .45) calc(var(--cell) * .45) calc(var(--cell) * .06) calc(var(--cell) * .06)}
+.sq.v-end{border-radius:calc(var(--cell) * .06) calc(var(--cell) * .06) calc(var(--cell) * .45) calc(var(--cell) * .45)}
+
+/* Taking aim. Two taps to fire, so a fat finger never costs a turn. */
+.sq.aim{background:var(--sea-deep);box-shadow:0 0 0 max(2px,calc(var(--cell) * .1)) var(--accent)}
+.sq.aim::after{
+  content:"";width:44%;height:44%;border-radius:50%;background:none;
+  border:max(2px,calc(var(--cell) * .09)) solid var(--accent);
+}
+.sq.live{background:var(--sea-deep)}
+.sq.sel{box-shadow:0 0 0 max(2px,calc(var(--cell) * .1)) var(--accent)}
+.sq.bad{background:var(--hit)}
+
+.sq.splash{animation:splash .5s ease-out}
+@keyframes splash{0%{transform:scale(.5);opacity:.4} 60%{transform:scale(1.12)} 100%{transform:scale(1)}}
+.sq.boom{animation:boom .55s ease-out}
+@keyframes boom{
+  0%{transform:scale(.4)} 45%{transform:scale(1.3)}
+  70%{transform:scale(.95)} 100%{transform:scale(1)}
+}
+@media (prefers-reduced-motion:reduce){
+  .sq.splash,.sq.boom{animation:none}
+}
+
+/* ── Fleet lists ────────────────────────────────────────────────────────── */
+
+.fleet-boxes{display:flex;flex-direction:row;gap:8px;justify-content:center;min-width:0;flex:0 1 auto}
+@media (orientation:landscape){ .fleet-boxes{flex-direction:column;flex:0 0 auto} }
+.fleet-box{
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:8px 10px;min-width:0;flex:0 1 auto;
+}
+.fleet-box h4{margin:0 0 5px;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.fleet-list{display:flex;flex-direction:column;gap:3px}
+.fleet-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;line-height:1.2}
+.fleet-item .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fleet-item .pips{display:flex;gap:2px;flex:0 0 auto}
+.fleet-item .pips i{width:7px;height:7px;border-radius:2px;background:var(--ship);display:block}
+.fleet-item .pips i.on{background:var(--hit)}
+.fleet-item.gone{color:var(--muted);text-decoration:line-through}
+.fleet-item.gone .pips i{background:var(--wreck)}
+
+/* ── Putting the ships out ──────────────────────────────────────────────── */
+
+.tray{
+  display:flex;gap:7px;flex-wrap:wrap;justify-content:center;flex:0 0 auto;
+  max-height:32vh;overflow:auto;
+}
+.ship-chip{
+  font:inherit;display:flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:14px;padding:8px 11px;min-height:46px;
+  -webkit-tap-highlight-color:transparent;
+}
+.ship-chip .cname{font-size:13px;font-weight:700}
+.ship-chip .pips{display:flex;gap:2px}
+.ship-chip .pips i{width:8px;height:8px;border-radius:2px;background:var(--ship);display:block}
+.ship-chip.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset;color:var(--accent)}
+.ship-chip.done{opacity:.55}
+.ship-chip.done .pips i{background:var(--good)}
+
+/* ── Toast, confetti ────────────────────────────────────────────────────── */
+
+.toast{
+  position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
+  transform:translate(-50%,14px);z-index:45;
+  background:var(--ink);color:var(--card);
+  padding:11px 17px;border-radius:999px;font-size:14px;font-weight:600;
+  box-shadow:0 10px 26px var(--shadow);opacity:0;transition:opacity .22s,transform .22s;
+  max-width:calc(100% - 28px);text-align:center;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+.confetti i{
+  position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;
+  animation:fall-bit 2.2s linear forwards;
+}
+@keyframes fall-bit{to{transform:translateY(105vh) rotate(600deg);opacity:.2}}
+
+/* ── Handover and result ────────────────────────────────────────────────── */
+
+.result-icon{font-size:52px;text-align:center}
+#handover h2,#result h2{text-align:center}
+#handover .sub,#result .sub{text-align:center}
+.hand-note{
+  background:var(--chip);color:var(--chipink);
+  padding:11px 13px;border-radius:14px;font-size:13.5px;line-height:1.45;
+}
+#resultUndo{text-align:center;margin-top:10px}
+
+/* The reveal at the end: both seas, side by side, with nothing hidden. */
+.reveal{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:2px 0 14px}
+.reveal .grid-card{box-shadow:none;padding:8px}
+.reveal .grid-head{font-size:11px}
+
+.tally{margin-top:4px}
+.tally-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 13px;border-radius:14px;background:var(--bg1);margin-bottom:7px;
+}
+.tally-row .tname{flex:1;font-weight:700;font-size:14px}
+.tally-row .tnum{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ── How to play ────────────────────────────────────────────────────────── */
+
+.howto-sheet{display:flex;flex-direction:column;max-height:100%}
+.howto-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.howto-body{overflow:auto;flex:1;min-height:0}
+.howto-icon{font-size:40px;text-align:center;line-height:1}
+.howto-title{margin:4px 0 10px;font-size:21px;text-align:center}
+.howto-body p{margin:0 0 11px;font-size:14.5px;line-height:1.55}
+.howto-note{
+  background:var(--chip);color:var(--chipink);
+  padding:11px 13px;border-radius:14px;font-size:13.5px;
+}
+.howto-example{margin:12px 0;display:flex;flex-direction:column;align-items:center}
+.howto-caption{margin:7px 0 0 !important;font-size:12.5px !important;color:var(--muted);text-align:center}
+.dots{display:flex;justify-content:center;gap:7px;margin-top:12px}
+.dots .dot{
+  width:9px;height:9px;border-radius:50%;background:var(--line);cursor:pointer;
+  transition:background .15s,transform .15s;
+}
+.dots .dot.on{background:var(--accent);transform:scale(1.25)}
+
+/* ── What the computer was thinking ─────────────────────────────────────── */
+
+.brain{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.brain .muted{font-size:12.5px;line-height:1.5;margin:0 0 10px}
+.brain-grid{display:flex;gap:8px;text-align:center;margin-bottom:10px}
+.brain-grid div{flex:1;background:var(--bg1);border-radius:14px;padding:11px 6px}
+.brain-grid b{display:block;font-size:19px;font-variant-numeric:tabular-nums}
+.brain-grid span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.heat-wrap{display:flex;justify-content:center}
+.heat-wrap .grid-card{box-shadow:none;padding:8px}
+
+/* ── Small screens ──────────────────────────────────────────────────────── */
+
+@media (max-width:420px){
+  .sheet{padding:16px;border-radius:20px}
+  .turn-info strong{font-size:17px}
+  .board-buttons .ghost-btn{padding:10px 8px;min-height:44px;font-size:13px;flex:1 1 0}
+  .board-buttons .btn{min-height:46px;font-size:15px;flex:1 1 0}
+  .grid-card{padding:7px}
+  .fleet-box{padding:6px 7px}
+  .fleet-item{font-size:10.5px;gap:4px}
+  .fleet-item .pips i{width:6px;height:6px}
+  .fleet-box h4{font-size:10px}
+  .ship-chip{padding:7px 9px;min-height:42px}
+  .ship-chip .cname{font-size:12px}
+}
+
+/* Short and wide — a phone on its side. The board is already sized to whatever
+   is left, so the job here is just to stop the chrome eating the screen. */
+@media (max-height:520px){
+  body.in-game{padding-top:max(6px,env(safe-area-inset-top))}
+  #game,#place{gap:6px}
+  .icon-btn{width:40px;height:40px;font-size:17px}
+  .turn-info strong{font-size:16px}
+  .turn-info span{font-size:11px}
+  .coach{padding:8px 11px;font-size:13px;border-radius:13px}
+  .board-buttons .ghost-btn{min-height:40px;padding:8px 10px;font-size:13px}
+  .board-buttons .btn{min-height:42px;padding:9px 14px}
+  /* One row of ships that scrolls sideways, rather than two or three rows
+     stacked — every line saved here goes back to the board. */
+  .tray{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;max-height:none}
+  .ship-chip{min-height:38px;padding:6px 9px;flex:0 0 auto}
+}
+
+/* A phone on its side is the tightest thing this game has to fit into: the
+   board wants the height, and a side column stacked three deep hasn't got it.
+   Two columns instead — the little sea beside the fleet lists — and the same
+   three boxes are a third shorter. */
+@media (orientation:landscape) and (max-height:560px){
+  .side{flex-direction:row;width:clamp(160px,38vw,320px)}
+  .fleet-boxes{flex-direction:column;flex:1 1 auto}
+  .fleet-list{gap:2px}
+  .fleet-item{font-size:10px;gap:4px;line-height:1.15}
+  .fleet-item .pips i{width:5px;height:5px}
+  .fleet-box{padding:5px 7px}
+  .fleet-box h4{font-size:9px;margin-bottom:3px}
+}
