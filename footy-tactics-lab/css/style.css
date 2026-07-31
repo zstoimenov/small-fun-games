@@ -340,3 +340,24 @@ body {
   .btn { min-height: 48px; font-size: 14px; }
   .palette-block, .block-head { min-height: 48px; }
 }
+
+/* ── Putting the end card aside ─────────────────────────────────────────── */
+
+/* The result sheet covers the pitch, and the run that just happened is the
+   thing worth looking at. Peek hides the sheet and leaves this pill behind to
+   bring it back, so nothing is ever a dead end. */
+.peek-pill {
+  position: fixed; left: 50%; z-index: 60;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  font: inherit; font-weight: 800; font-size: 14px; cursor: pointer; white-space: nowrap;
+  background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 12px 20px; min-height: 46px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .5);
+}
+.peek-pill:active { transform: translate(-50%, 1px); }
+/* The run is finished while the card is put aside, so the block buttons have
+   nothing to do — standing them down leaves room for the pill. */
+body.peeking .code-buttons,
+body.peeking .field-buttons { visibility: hidden; }

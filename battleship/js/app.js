@@ -254,7 +254,7 @@
     state.game = null;
     state.aim = null;
     state.lastThink = null;
-    $("result").hidden = true;
+    closeResult();
 
     const sp = spec();
     state.boards = [Rules.newBoard(sp), Rules.newBoard(sp)];
@@ -722,7 +722,7 @@
     renderTally();
     $("againBtn").textContent = "Play again ▶";
     $("resultUndo").hidden = !solo();
-    $("result").hidden = false;
+    openResult();
   }
 
   // The running score only means something once there is more than one game in
@@ -758,9 +758,33 @@
     state.game = null;
     savedGame = null;
     save();
-    $("result").hidden = true;
+    closeResult();
     showScreen("setup");
     renderSetup();
+  }
+
+  /* ── The end card ──────────────────────────────────────────────────────── */
+
+  // It sits on top of the board, and the finished board is usually the thing
+  // worth looking at — so it can be put aside, and the pill brings it back.
+  function openResult() {
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+    $("result").hidden = false;
+  }
+
+  function closeResult() {
+    $("result").hidden = true;
+    $("peekPill").hidden = true;
+    document.body.classList.remove("peeking");
+  }
+
+  function peekBoard() {
+    $("result").hidden = true;
+    $("peekPill").hidden = false;
+    // The game is over, so the row of board buttons has nothing left to offer —
+    // standing it down is what makes room for the pill at the bottom.
+    document.body.classList.add("peeking");
   }
 
   /* ── Undo and hints ────────────────────────────────────────────────────── */
@@ -793,7 +817,7 @@
     state.over = false;
     state.busy = false;
     state.aim = null;
-    $("result").hidden = true;
+    closeResult();
 
     Audio.undo();
     showScreen("game");
@@ -891,7 +915,7 @@
     state.busy = false;
     state.aim = null;
     state.lastThink = null;
-    $("result").hidden = true;
+    closeResult();
 
     buildBattle();
     // A saved two-player game comes back through the handover, because whoever
@@ -962,10 +986,12 @@
     $("menuHowto").addEventListener("click", () => { $("menu").hidden = true; Tutorial.open(); });
     $("menuNew").addEventListener("click", () => { $("menu").hidden = true; abandon(); });
 
-    $("againBtn").addEventListener("click", () => { $("result").hidden = true; startGame(false); });
-    $("resultMenu").addEventListener("click", () => { $("result").hidden = true; abandon(); });
+    $("againBtn").addEventListener("click", () => { closeResult(); startGame(false); });
+    $("resultMenu").addEventListener("click", () => { closeResult(); abandon(); });
     $("resultUndo").addEventListener("click", undo);
 
+    $("peekBtn").addEventListener("click", peekBoard);
+    $("peekPill").addEventListener("click", openResult);
     Tutorial.wire();
     Ui.onResize(fit);
 

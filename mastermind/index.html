@@ -168,10 +168,16 @@
     <button id="undoBtn" class="ghost-btn" type="button">↶ Undo</button>
     <button id="hintBtn" class="ghost-btn" type="button">💡 Hint</button>
     <button id="checkBtn" class="btn btn-go" type="button" disabled>Check ▶</button>
+    <!-- Robo's go is driven by the player, one guess at a time — see app.js. -->
+    <button id="runBtn" class="ghost-btn" type="button" hidden>⏩ Play it out</button>
+    <button id="stepBtn" class="btn btn-go" type="button" hidden>▶ Robo's go</button>
   </div>
 
   <div id="toast" class="toast" hidden></div>
 </main>
+
+<!-- Brings the end card back after it has been put aside. -->
+<button id="peekPill" class="peek-pill" type="button" hidden>🏆 Show the result</button>
 
 <!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
 <div id="menu" class="overlay" hidden>
@@ -225,6 +231,7 @@
     <p id="resultText" class="sub"></p>
     <div id="resultCode" class="reveal"></div>
     <div id="resultTally" class="tally" hidden></div>
+    <button id="peekBtn" class="ghost-btn wide" type="button">👀 Look at the board</button>
     <div class="sheet-buttons">
       <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
       <button id="againBtn" class="btn btn-go" type="button">Play again ▶</button>

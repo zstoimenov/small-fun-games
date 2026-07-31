@@ -179,6 +179,7 @@
     <div id="resultIcon" class="result-icon">🏆</div>
     <h2 id="resultTitle">You win!</h2>
     <p id="resultText" class="sub"></p>
+    <button id="peekBtn" class="ghost-btn wide" type="button">👀 Look at the board</button>
     <div id="resultTally" class="tally" hidden></div>
     <div class="sheet-buttons">
       <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
@@ -188,6 +189,9 @@
   </div>
 </div>
 
+
+<!-- Brings the end card back after it has been put aside. -->
+<button id="peekPill" class="peek-pill" type="button" hidden>🏆 Show the result</button>
 <script src="./js/rules.js"></script>
 <script src="./js/ai.js"></script>
 <script src="./js/audio.js"></script>

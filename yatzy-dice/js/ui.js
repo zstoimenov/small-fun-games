@@ -474,8 +474,26 @@ YZ.Ui = (function () {
         "<span class='rtotal'>" + r.t.total + "</span>";
       el.resultTable.appendChild(row);
     }
+    el.peekPill.hidden = true;
+    document.body.classList.remove("peeking");
     el.result.hidden = false;
     if (winners.some((w) => w.p.kind !== "cpu")) confetti();
+  }
+
+  // The end card covers the scoresheet, which is the thing everyone wants to
+  // read at the end of a game. Peek puts it aside; the pill brings it back.
+  function peekScores() {
+    el.result.hidden = true;
+    el.peekPill.hidden = false;
+    // The game is over, so the dice and the keypad have nothing to do — standing
+    // them down is what leaves room for the pill at the bottom.
+    document.body.classList.add("peeking");
+  }
+
+  function closeResult() {
+    el.result.hidden = true;
+    el.peekPill.hidden = true;
+    document.body.classList.remove("peeking");
   }
 
   /* ── Category help popover ─────────────────────────────────────────────── */
@@ -497,7 +515,7 @@ YZ.Ui = (function () {
 
   function cache() {
     const ids = [
-      "setup", "game", "result", "help", "toast", "coach",
+      "setup", "game", "result", "help", "toast", "coach", "peekBtn", "peekPill",
       "diceArea", "diceRow", "diceHint", "rollBtn", "rollLabel", "rollsLeft",
       "entryArea", "entryDice", "entryTitle", "entryClear", "entryToggle", "keypad",
       "scorecard", "turnName", "turnMeta",
@@ -528,6 +546,7 @@ YZ.Ui = (function () {
     init, el, dieEl, diceStrip, setDie,
     renderDice, animateRoll, renderScorecard, renderTurn, renderEntry,
     showScreen, toast, clearToast, coach, confetti, showResult, showHelp,
+    peekScores, closeResult,
     resetCardScroll, scrollToBest
   };
 })();

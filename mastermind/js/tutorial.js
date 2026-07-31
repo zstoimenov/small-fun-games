@@ -67,9 +67,11 @@ MM.Tutorial = (function () {
       icon: "🔄",
       title: "Two ways to play",
       html: "<p><b>Crack it:</b> the computer hides a code and you break it.</p>" +
-            "<p><b>Set it:</b> you hide a code and the computer breaks it. On Hard it " +
-            "never needs more than five goes — see if you can find one that takes it " +
-            "all five.</p><p>With two of you, take it in turns. Fewest goes wins.</p>",
+            "<p><b>Set it:</b> you hide a code and the computer breaks it — one go at a " +
+            "time, and after each one it tells you how many codes it has just crossed " +
+            "off. On Hard it never needs more than five goes; see if you can find one " +
+            "that takes it all five.</p>" +
+            "<p>With two of you, take it in turns. Fewest goes wins.</p>",
       secret: [2, 4, 0, 4],
       caption: "Repeats and all — this one is perfectly legal."
     },
