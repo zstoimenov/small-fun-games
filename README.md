@@ -32,6 +32,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 | Game | Folder | What it is |
 | --- | --- | --- |
+| 🚢 **Battleship** | [`battleship/`](battleship/) | Морски бой. Hide a fleet on a hidden grid, then call out squares until you've sunk theirs. 1–2 players: pass-and-play on one tablet, with the screen *cleared* between turns rather than covered — the other player's ships are never in the page at all — or an Easy/Medium/Hard opponent that counts where every ship could still be lying and fires where most of them cross. Three sea sizes (6×6, 8×8, 10×10), a drag-free ship placer with a "do it for me" button, an optional extra-go-after-a-hit rule, undo, hints that name a square *and* the reason, and a heat map in the menu showing how obvious your own hiding place is (~age 6+). |
 | ⚫ **Nine Men's Morris** | [`nine-mens-morris/`](nine-mens-morris/) | Дама, on 24 spots. Place nine pieces each, line three up to take one of theirs, then slide — and fly anywhere once you're down to three. 1–2 players, pass-and-play with a flip-the-screen mode, and an Easy/Medium/Hard opponent that searches the game tree. Undo, a hint button that names a spot and its reason, warnings when someone is one piece from a line, and a menu panel showing how far the computer thought. The board is one SVG built from the same 24-point adjacency list the rules use, so the picture can't disagree with the game (~age 7+). |
 | 🔴 **Connect Four** | [`connect-four/`](connect-four/) | Drop discs down a 7×6 grid and line up four. 1–2 players, pass-and-play with a flip-the-screen mode, and an Easy/Medium/Hard opponent that searches the game tree rather than guessing — Hard looks about ten moves ahead. Undo, a hint button that explains itself, and a menu panel showing how far the computer actually thought on its last go. |
 | 🎲 **Yatzy Dice** | [`yatzy-dice/`](yatzy-dice/) | Five dice, three rolls a turn, a card full of boxes. 1–3 players, an Easy/Medium/Hard computer opponent for solo games, a flip-the-screen mode so two people can sit opposite one device, **Yatzy EU and Yatzy US** rules, and a scorecard-only mode for when you'd rather roll real dice. Dice come from `crypto.getRandomValues`, and there's a built-in fairness check to prove it. |
@@ -63,19 +64,12 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 ### Planned
 
-One left to build, so it has no catalogue entry — the shelf it'll land on is
-already set up.
+Nothing outstanding — all four games on the roadmap are built.
 
-Briefs, build order and cost estimates are in
-[`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md).
-
-It's `[1, 2]`: two people face to face on one device, **and** one person against
-the computer. Same as AFL Goal Kick, and the same pass-the-device pattern Yatzy
-uses for its flip-the-screen mode.
-
-| Game | Category | `players` |
-| --- | --- | --- |
-| Battleship (Морски бой) | ♟️ Board & Strategy | `[1, 2]` |
+[`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md) is still worth reading before
+starting a new one: it holds what each build actually cost against what it was
+estimated at, and the handful of things that turned out to be worth knowing in
+advance.
 
 ## Run locally
 

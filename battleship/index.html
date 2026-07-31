@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Battleship</title>
+<meta name="description" content="Hide your fleet, then find theirs. 1-2 players on one device, an Easy/Medium/Hard opponent that works out where ships can still be hiding, hints and undo.">
+<meta name="theme-color" content="#1f7ae0">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Battleship">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet setup-sheet">
+
+    <!-- The back link sits in the sheet's own flow so it can never sit on
+         top of the title, however short the screen is. -->
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+    <h1>🚢 Battleship</h1>
+    <p class="sub">Also called Морски бой. Hide your ships in the sea, then call out squares until you've found every one of theirs. Whoever sinks the other fleet first wins.</p>
+
+    <div class="row">
+      <span class="row-label">Players</span>
+      <div class="seg" id="countChooser">
+        <button class="opt" type="button" data-value="1">1</button>
+        <button class="opt" type="button" data-value="2">2</button>
+      </div>
+    </div>
+    <p class="row-note" id="countNote"></p>
+
+    <div class="row" id="diffRow">
+      <span class="row-label">How good?</span>
+      <div class="seg" id="diffChooser">
+        <button class="opt" type="button" data-value="easy">Easy</button>
+        <button class="opt" type="button" data-value="medium">Medium</button>
+        <button class="opt" type="button" data-value="hard">Hard</button>
+      </div>
+    </div>
+    <p class="row-note" id="diffNote"></p>
+
+    <div class="row">
+      <span class="row-label">Sea</span>
+      <div class="seg" id="presetChooser">
+        <button class="opt" type="button" data-value="small">Small</button>
+        <button class="opt" type="button" data-value="medium">Middle</button>
+        <button class="opt" type="button" data-value="classic">Classic</button>
+      </div>
+    </div>
+    <p class="row-note" id="presetNote"></p>
+
+    <div class="row">
+      <span class="row-label">Another go after a hit</span>
+      <button id="extraToggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">
+      Hit something and you keep firing until you miss. It makes for a much
+      quicker, much wilder game — and a lucky run can end it very fast.
+    </p>
+
+    <div class="row" id="flipRow" hidden>
+      <span class="row-label">Sit opposite</span>
+      <button id="flipToggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note" id="flipNote" hidden>
+      The screen turns around for the second player, so you can leave the device
+      on the table between you instead of picking it up.
+    </p>
+
+    <div class="row">
+      <span class="row-label">Help me</span>
+      <button id="hintToggle" class="switch" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">
+      Puts a <b>💡 Hint</b> button on the board that names a square <i>and</i> the
+      reason for it, and says something useful after every shot.
+    </p>
+
+    <details class="more" id="namesBox" hidden>
+      <summary><span id="namesSummary">Names</span></summary>
+      <div id="namesWrap"></div>
+    </details>
+
+    <div class="sheet-buttons">
+      <button id="howtoBtn" class="btn btn-clear" type="button">❓ How to play</button>
+      <button id="startBtn" class="btn btn-go" type="button">Start game ▶</button>
+    </div>
+    <button id="resumeBtn" class="ghost-btn wide" type="button" hidden>↩︎ Carry on with the saved game</button>
+  </div>
+</div>
+
+<!-- ══ PUTTING THE SHIPS OUT ════════════════════════════════════════════ -->
+<main id="place" hidden>
+  <div class="topbar">
+    <button id="placeBack" class="icon-btn" type="button" title="Back">‹</button>
+    <div class="turn-info">
+      <strong id="placeTitle">Put your ships out</strong>
+      <span id="placeMeta"></span>
+    </div>
+    <button id="placeMute" class="icon-btn" type="button" aria-pressed="true" title="Sound on/off">🔊</button>
+  </div>
+
+  <div id="placeCoach" class="coach"></div>
+
+  <div class="board-wrap" id="placeWrap">
+    <div class="grid-card">
+      <div class="grid" id="placeGrid" role="group" aria-label="Your sea"></div>
+    </div>
+  </div>
+
+  <div id="tray" class="tray" role="group" aria-label="Your ships"></div>
+
+  <div class="board-buttons">
+    <button id="rotateBtn" class="ghost-btn" type="button">🔄 Turn it</button>
+    <button id="randomBtn" class="ghost-btn" type="button">🎲 Do it for me</button>
+    <button id="clearBtn" class="ghost-btn" type="button">🧹 Clear</button>
+    <button id="readyBtn" class="btn btn-go" type="button" disabled>Ready ▶</button>
+  </div>
+</main>
+
+<!-- ══ BATTLE ═══════════════════════════════════════════════════════════ -->
+<!-- The enemy grid is drawn from Rules.publicView and never from their board,
+     so the squares they are hiding in are not in this page at all. -->
+<main id="game" hidden>
+  <div class="topbar">
+    <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
+    <div class="turn-info">
+      <strong id="turnName">Your go</strong>
+      <span id="turnMeta"></span>
+    </div>
+    <button id="muteBtn" class="icon-btn" type="button" aria-pressed="true" title="Sound on/off">🔊</button>
+  </div>
+
+  <div id="coach" class="coach"></div>
+
+  <div class="arena">
+    <div class="board-wrap" id="boardWrap">
+      <div class="grid-card">
+        <div class="grid-head"><span id="enemyHead">Their sea</span></div>
+        <div class="grid" id="enemyGrid" role="group" aria-label="Their sea — tap a square to take aim"></div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="grid-card mini-card">
+        <div class="grid-head"><span id="ownHead">Your sea</span></div>
+        <div class="grid mini" id="ownGrid" role="group" aria-label="Your sea"></div>
+      </div>
+      <div class="fleet-boxes">
+        <div class="fleet-box">
+          <h4 id="enemyFleetHead">Their fleet</h4>
+          <div id="enemyFleet" class="fleet-list"></div>
+        </div>
+        <div class="fleet-box">
+          <h4>Your fleet</h4>
+          <div id="ownFleet" class="fleet-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-buttons">
+    <button id="undoBtn" class="ghost-btn" type="button">↶ Undo</button>
+    <button id="hintBtn" class="ghost-btn" type="button">💡 Hint</button>
+    <button id="fireBtn" class="btn btn-go" type="button" disabled>Fire ▶</button>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+</main>
+
+<!-- ══ PASS THE TABLET ══════════════════════════════════════════════════ -->
+<!-- Both game screens are hidden while this is up. Covering them with an
+     overlay would not be enough: the point is that the other player's sea is
+     not on the page at all when somebody else is holding the device. -->
+<div id="handover" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <div class="result-icon">🤝</div>
+    <h2 id="handTitle">Pass the tablet over</h2>
+    <p id="handSub" class="sub"></p>
+    <div id="handNote" class="hand-note" hidden></div>
+    <div class="sheet-buttons">
+      <button id="handGo" class="btn btn-go" type="button">I'm ready ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
+<div id="menu" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>Menu</h2>
+    <button id="menuSound" class="ghost-btn wide" type="button">🔊 Sound is on</button>
+    <button id="menuHints" class="ghost-btn wide" type="button">💡 Hints: on</button>
+    <button id="menuUndo" class="ghost-btn wide" type="button">↶ Take that shot back</button>
+    <button id="menuHowto" class="ghost-btn wide" type="button">❓ How to play</button>
+    <button id="menuNew" class="ghost-btn wide" type="button">🔄 New game</button>
+    <a class="ghost-btn wide" href="../">🎮 Back to Game Box</a>
+
+    <div class="brain">
+      <h3>What was Robo thinking?</h3>
+      <p class="muted">
+        It counts every way each ship it hasn't sunk could still be lying — every
+        spot that doesn't run off the edge, cross a splash, or cross a wreck — and
+        shoots wherever most of them cross. Bright squares are the likely ones.
+      </p>
+      <div id="brainOut"></div>
+    </div>
+
+    <div class="sheet-buttons">
+      <button id="menuClose" class="btn btn-go" type="button">Back to the game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet sheet-sm howto-sheet">
+    <div class="howto-top">
+      <span id="howtoStep" class="pill">1 / 7</span>
+      <button id="howtoSkip" class="ghost-btn" type="button">Skip</button>
+    </div>
+    <div id="howtoBody" class="howto-body"></div>
+    <div id="howtoDots" class="dots"></div>
+    <div class="sheet-buttons">
+      <button id="howtoPrev" class="btn btn-clear" type="button">‹ Back</button>
+      <button id="howtoNext" class="btn btn-go" type="button">Next ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <div id="resultIcon" class="result-icon">🏆</div>
+    <h2 id="resultTitle">You win!</h2>
+    <p id="resultText" class="sub"></p>
+    <div id="resultReveal" class="reveal"></div>
+    <div id="resultTally" class="tally" hidden></div>
+    <div class="sheet-buttons">
+      <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
+      <button id="againBtn" class="btn btn-go" type="button">Play again ▶</button>
+    </div>
+    <button id="resultUndo" class="ghost-btn wide" type="button">↶ Take that last shot back</button>
+  </div>
+</div>
+
+<script src="./js/rules.js"></script>
+<script src="./js/ai.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/tutorial.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
