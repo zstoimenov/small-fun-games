@@ -592,7 +592,9 @@
   function reasonWords(res) {
     const lost = seatOf(Rules.other(res.winner));
     if (res.reason === "stuck") return lost.name + " had no move left";
-    return lost.name + " is down to two pieces";
+    // The solo human is called "You", so the verb has to agree — same reason the
+    // turn line above doesn't say "You's go".
+    return lost.name + (lost.name === "You" ? " are" : " is") + " down to two pieces";
   }
 
   function showResult(res) {
