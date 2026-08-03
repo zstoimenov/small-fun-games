@@ -1,6 +1,7 @@
 # Game roadmap
 
-Four games planned, **all four now built**. This file is the handover between
+Four games planned, **all four now built**, plus a fifth added later
+(Lemonade Stand, §5) that was never on the original list. This file is the handover between
 sessions: it holds the briefs, the cost estimates and the decisions already made,
 so a fresh session can start building without re-deriving any of it. Nothing here
 is outstanding work any more — what it is now is the record of what each game
@@ -34,10 +35,11 @@ game needs.
 | 2 | ✅ Mastermind | `mastermind/` | 700–900 → **2,817 actual** | 180k–280k → **~330k actual** |
 | 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
 | 4 | ✅ Battleship | `battleship/` | 1,800–2,600 → **3,072 actual** | 550k–850k → 700k–1.1M → **inside it** |
+| 5 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790 actual** | 600k–900k |
 
 For scale, the games measure: Yatzy 3,098 lines, Battleship 3,072, Nine Men's
-Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048,
-Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+Morris 2,928, Mastermind 2,817, Lemonade Stand 2,790, Connect Four 2,202, Footy
+Tactics Lab 2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
 
 **Three games in, the line estimates looked consistently ~2.5× low. Battleship
 was the first to come in under its adjusted figure, and the reason is the useful
@@ -439,3 +441,107 @@ turn, ships that slide back onto the board rather than being refused when you ta
 near the edge, and a heat map in the menu showing where the computer thinks
 *your* ships are — which is the most useful thing in the game for teaching a
 child not to hide them all in one corner.
+
+## 5. Lemonade Stand — `lemonade-stand/` ✅ built
+
+Not on the original four-game list — the shelf had no game about money, and
+`maths` had only Times Table Blaster on it. Solo, one run ≈ 5–10 minutes, aimed
+squarely at an 8-year-old.
+
+- Run a stall for a fixed number of days (7 on Easy, 14 otherwise). Each day is
+  one loop: **morning** (forecast, today's lemon price, buy stock, pick a price
+  from five preset tiles — no typed numbers), **selling** (a short animation over
+  an already-decided result), **evening** (the sums in words, then bank / half /
+  pocket), **night** (interest lands, any loan's running cost is noted).
+- Demand is `footfall(weather) × pull(price) × reputation × event × jitter`, and
+  is monotonically non-increasing in price. Reputation (0–100, drawn as stars) is
+  what makes 75c beat $1.00 across a fortnight while $1.00 wins on any one day.
+- **Interest both ways.** The bank pays 3c a night per dollar banked and charges
+  6c a night per dollar borrowed — twice as much — and the game says exactly
+  that. One loan at a time, fixed repayment stated up front, never offered if it
+  would fall due after the last day, settled automatically, any shortfall written
+  off. Debt cannot grow and balances never go negative.
+- A four-rung savings goal is pinned to the topbar all run ($30 / $60 / $90 /
+  **$120 a bike** on Normal). Three shop items: two that earn their money back
+  and one ice cream that does nothing at all.
+- **Catalogue**: `category: "maths"`, `players: [1, 1]`, `age: 8`.
+
+**Watch for**: the balancing is a measurement job, not a taste job — build the
+economy and the node sweep before wiring a single button.
+
+### What shipped, and where it differs
+
+**2,790 lines against an estimate of 3,600** — one session, and the second game
+to come in under. The rule held; the estimate of the *second* term was too fat.
+This game's own logic is `economy.js` 665 + `chart.js` 106 + `rng.js` 70 = 841
+lines, not the ~1,500 guessed, and the house furniture came to ~1,950. So
+`lines ≈ 2,000 + own logic` predicted 2,841 against 2,790 actual.
+
+The lesson repeats Battleship's: **the fixed floor is the reliable part of the
+estimate and the game-specific part is the one that gets inflated by anxiety.**
+An economy is a page of arithmetic. What made this game feel expensive up front
+was the number of screens, and screens are house furniture — already paid for in
+the 2,000. Five phases cost less than Battleship's two boards, because none of
+them is a bespoke geometry problem.
+
+**The sweep earned its keep three times over, and every one of the three was a
+number that looked fine and taught the wrong thing.**
+
+- **`$1.00` was quietly the best price.** The tiers had been tuned against
+  revenue per customer; what a run accumulates is *profit* per customer, and at
+  a 40c cup `0.62 × 60c` beats `1.00 × 35c`. The game would have taught "charge
+  as much as you can get away with". Dropping the $1.00 pull to 0.52 put the
+  peak back on 75c where the lesson is.
+- **Banking everything made you poorer.** Money in the bank was not spendable in
+  the morning, so banking your takings starved the stall of the cash it needed
+  for tomorrow's lemons: pocketing finished at $136 against banking's $48, and
+  the game taught the exact opposite of its third lesson. Spending now draws
+  pocket-first then bank, free and instant. **The lesson is "money you leave
+  alone grows", not a liquidity puzzle — and that had to be a design decision
+  rather than an accident.**
+- **5c a night was too generous.** It made interest 48% of a well-played
+  fortnight, which teaches "don't bother trading". 3c lands it at 33%.
+
+**The goal price is the one number that cannot be reasoned out, only read off a
+distribution.** $120 was picked because it separates the lessons rather than
+because it is any particular percentile: good play reaches it 82% of the time,
+buying an ice cream every day drops that to 20%, gouging at $1.50 gets 9%, and
+selling under cost gets 0%. Those five numbers are the acceptance test now — if a
+later change moves the ranking, it broke the teaching, not the code.
+
+**One assertion had to be weakened, and weakening it was the honest move.** The
+brief claimed never banking should be unable to reach the bike. It reaches it
+56% of the time, because pocketed money is just as safe in this game — hoarding
+forgoes the interest, it doesn't lose. Asserting the *gap* (82% vs 56%) states
+what the model actually does; the original assertion would have been asserting a
+punishment the design never had.
+
+Verification split the way Morris predicted: 78,838 node assertions over the pure
+economy (the money invariant — every balance and every ledger field an integer
+and a multiple of 5c — caught the most), and 162 browser checks for the things
+that are genuinely visual. Two browser "failures" were the test being wrong, not
+the game: `3c a night for every dollar` is a *rate*, not a coin, and the goal bar
+was measured mid-transition.
+
+Extras beyond the brief: a shut-the-stall day (a child who can't afford lemons
+still has to reach tomorrow), Grandma's $2.00 floor so nobody is locked out of
+the back half of a run, an ice bucket that makes leftovers keep, and a result
+chart that shades the gap between what you had and what you would have had
+without the bank — the compounding is an *area*, not two lines that happen to
+diverge.
+
+Decisions worth recording:
+
+- **Seeded RNG, the opposite of Yatzy.** Yatzy draws from crypto so a roll can't
+  be replayed; here a day must be. The save holds a seed and a ledger, not a
+  pre-rolled fortnight, so resuming regenerates the same forecast and the same
+  lemon price. Closing the tab on a scorcher and coming back to rain would look,
+  correctly, like cheating.
+- **Money is integer cents everywhere, with one rounding function and one
+  formatter, both called only at the edges.** Every visible amount is a multiple
+  of 5c like real Australian cash. This is the single most useful constraint in
+  the game and it is worth copying wholesale into anything else that handles
+  money.
+- **Icons need a build step of their own.** There is no ImageMagick, rsvg-convert,
+  Inkscape or PIL on the box. The three PNGs come out of headless Chromium
+  screenshotting an inline SVG at 192, 512 and 180.

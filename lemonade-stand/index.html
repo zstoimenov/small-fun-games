@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Lemonade Stand</title>
+<meta name="description" content="Run a lemonade stall for a fortnight. Buy your cups, pick a price, and save up for a bike. Money in the bank grows overnight — money you borrow costs you more than you took.">
+<meta name="theme-color" content="#2f9e5a">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lemonade Stand">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet setup-sheet">
+
+    <!-- In the sheet's own flow, so it can never sit on top of the title. -->
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+    <h1>🍋 Lemonade Stand</h1>
+    <p class="sub">Buy your lemons, pick a price, and sell cold lemonade. Money you leave in the bank grows every night. Save up for something big.</p>
+
+    <div class="row">
+      <span class="row-label">How long?</span>
+      <div class="seg" id="levelChooser">
+        <button class="opt" type="button" data-value="easy">7 days</button>
+        <button class="opt" type="button" data-value="normal">14 days</button>
+        <button class="opt" type="button" data-value="tricky">Tricky</button>
+      </div>
+    </div>
+    <p class="row-note" id="levelNote"></p>
+
+    <div class="row">
+      <span class="row-label">Little tips</span>
+      <button class="switch" id="hintToggle" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">Hints on the screen about what might be worth trying.</p>
+
+    <p class="best-line" id="setupBest" hidden></p>
+
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="howtoBtn" type="button">How to play</button>
+      <button class="btn btn-go" id="startBtn" type="button">Open the stall</button>
+    </div>
+    <button class="ghost-btn wide" id="resumeBtn" type="button" hidden>↩︎ Carry on with the saved stall</button>
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
+<main id="game" hidden>
+
+  <div class="topbar">
+    <button class="icon-btn" id="menuBtn" type="button" title="Menu" aria-label="Menu">☰</button>
+    <div class="turn-info">
+      <strong id="dayLabel">Day 1</strong>
+      <span id="dayMeta">of 14</span>
+    </div>
+    <button class="icon-btn" id="muteBtn" type="button" title="Sound" aria-label="Sound" aria-pressed="false">🔊</button>
+  </div>
+
+  <!-- The purse is on screen for the whole run: what you have, where it is,
+       and what you owe. -->
+  <div class="purse" id="purse">
+    <span class="purse-part" id="pocketChip">👛 <b>$10.00</b></span>
+    <span class="purse-part" id="bankChip">🏦 <b>$0.00</b></span>
+    <span class="purse-part debt" id="debtChip" hidden>💳 <b>$0.00</b></span>
+  </div>
+
+  <!-- What you're saving for. Pinned all run, so the goal is a thing you are
+       walking towards rather than a surprise at the end. -->
+  <div class="goal" id="goalBar">
+    <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+    <div class="goal-label" id="goalLabel"></div>
+  </div>
+
+  <div class="coach calm" id="coach" hidden>
+    <span class="coach-face" id="coachFace">🍋</span>
+    <span id="coachText"></span>
+  </div>
+
+  <div class="phases">
+
+    <!-- ── Morning: the only screen where you make decisions ───────────── -->
+    <section id="morning" class="phase">
+      <div class="scroller">
+
+        <!-- Anything the bank did before you could touch anything. -->
+        <div class="card news" id="openingCard" hidden></div>
+
+        <div class="card forecast" id="forecastCard">
+          <div class="forecast-emoji" id="forecastEmoji">🌤️</div>
+          <div>
+            <div class="forecast-name" id="forecastName">Warm</div>
+            <div class="forecast-note muted" id="forecastNote">That's the forecast for today.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span>🍋 Lemons today</span>
+            <strong id="unitPrice">40c</strong>
+          </div>
+          <p class="verdict" id="unitVerdict">The usual sort of price.</p>
+          <div class="buy-row">
+            <button class="pack-btn" id="buySmall" type="button">
+              <span class="pack-cups">5 cups</span>
+              <span class="pack-cost" id="smallCost">$2.00</span>
+            </button>
+            <button class="pack-btn big" id="buyBig" type="button">
+              <span class="pack-cups">📦 15 cups</span>
+              <span class="pack-cost" id="bigCost">$4.80</span>
+              <span class="pack-save" id="bigSave">save $1.20</span>
+            </button>
+          </div>
+          <div class="basket" id="basket">Nothing bought yet.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span>💵 What will you charge?</span></div>
+          <div class="prices" id="priceChooser"></div>
+          <p class="verdict" id="priceNote"></p>
+        </div>
+
+        <div class="extras">
+          <button class="ghost-btn" id="loanBtn" type="button">🏦 The bank</button>
+          <button class="ghost-btn" id="treatBtn" type="button">🎁 Shop</button>
+        </div>
+      </div>
+
+      <button class="btn btn-go big-go" id="openBtn" type="button" disabled>Open the stall</button>
+    </section>
+
+    <!-- ── Selling: nothing to decide, everything already decided ──────── -->
+    <section id="selling" class="phase" hidden>
+      <div class="stall">
+        <div class="stall-sun" id="stallSun">🌤️</div>
+        <div class="stall-table">
+          <div class="stall-sign" id="stallSign">🍋 LEMONADE <span id="stallPrice">75c</span></div>
+          <div class="queue" id="queue"></div>
+        </div>
+        <div class="till">
+          <div class="till-line"><span>Cups left</span><strong id="cupsLeft">15</strong></div>
+          <div class="till-line big"><span>Money in the tin</span><strong id="tillTotal">$0.00</strong></div>
+          <div class="till-line warn" id="turnedLine" hidden><span>Went away thirsty</span><strong id="turnedCount">0</strong></div>
+        </div>
+      </div>
+      <button class="btn btn-clear big-go" id="skipBtn" type="button">Skip to the end of the day</button>
+    </section>
+
+    <!-- ── Evening: the sums, in words ─────────────────────────────────── -->
+    <section id="evening" class="phase" hidden>
+      <div class="scroller">
+        <div class="card sums">
+          <div class="sum-line out"><span>You spent on lemons</span><strong id="sumSpent">$4.80</strong></div>
+          <div class="sum-line in"><span>You took at the stall</span><strong id="sumEarned">$11.25</strong></div>
+          <div class="sum-rule"></div>
+          <div class="sum-line total" id="sumTotalLine"><span id="sumTotalLabel">So you made</span><strong id="sumProfit">$6.45</strong></div>
+        </div>
+
+        <p class="verdict" id="wasteLine" hidden></p>
+        <p class="verdict" id="thirstyLine" hidden></p>
+
+        <div class="card">
+          <div class="card-head"><span>🏦 Where does it sleep tonight?</span></div>
+          <p class="verdict" id="bankNote">Money in the bank grows overnight. Money in your pocket doesn't.</p>
+          <div class="bank-row">
+            <button class="ghost-btn" id="bankNone" type="button">Keep it all</button>
+            <button class="ghost-btn" id="bankHalf" type="button">Bank half</button>
+            <button class="ghost-btn strong" id="bankAll" type="button">Bank it all</button>
+          </div>
+        </div>
+
+        <div class="card night" id="nightCard" hidden>
+          <div class="night-line good" id="interestLine"></div>
+          <div class="night-line bad" id="loanLine" hidden></div>
+        </div>
+      </div>
+
+      <button class="btn btn-go big-go" id="nextBtn" type="button" hidden>Next morning</button>
+    </section>
+
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+</main>
+
+<!-- ══ THE BANK ═════════════════════════════════════════════════════════ -->
+<div id="loanSheet" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>🏦 The bank</h2>
+    <p class="sub" id="bankBlurb"></p>
+    <div id="loanList"></div>
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="loanClose" type="button">Back to the stall</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ THE SHOP ═════════════════════════════════════════════════════════ -->
+<div id="treatSheet" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>🎁 The shop</h2>
+    <p class="sub">Some things earn their money back. One of them really doesn't.</p>
+    <div id="treatList"></div>
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="treatClose" type="button">Back to the stall</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
+<div id="menu" class="overlay" hidden>
+  <div class="sheet sheet-xs">
+    <h2>Menu</h2>
+    <button class="ghost-btn wide" id="menuResume" type="button">↩︎ Back to the stall</button>
+    <button class="ghost-btn wide" id="menuHowto" type="button">📖 How to play</button>
+    <button class="ghost-btn wide" id="menuQuit" type="button">✖ Give up and start again</button>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet">
+    <div class="howto-top">
+      <h2 id="howtoTitle">How to play</h2>
+      <span class="pill" id="howtoStep">1 / 9</span>
+    </div>
+    <div id="howtoBody"></div>
+    <div class="dots" id="howtoDots"></div>
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="howtoSkip" type="button">Skip</button>
+      <button class="btn btn-clear" id="howtoBack" type="button">Back</button>
+      <button class="btn btn-go" id="howtoNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet">
+    <div class="result-top">
+      <div class="result-emoji" id="resultEmoji">🚲</div>
+      <h2 id="resultTitle">You got the bike!</h2>
+      <p class="sub" id="resultSub"></p>
+    </div>
+
+    <div class="result-final" id="resultFinal">$124.60</div>
+
+    <div id="chart"></div>
+    <div class="chart-key">
+      <span><i class="key-swatch wealth"></i> What you had</span>
+      <span><i class="key-swatch lemonade"></i> Without the bank's help</span>
+    </div>
+
+    <div class="ladder" id="ladder"></div>
+
+    <p class="takeaway" id="takeaway"></p>
+    <div class="stickers" id="stickers"></div>
+    <p class="best-line" id="resultBest" hidden></p>
+
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="resultMenu" type="button">Settings</button>
+      <button class="btn btn-go" id="againBtn" type="button">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/rng.js"></script>
+<script src="./js/economy.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/chart.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/tutorial.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
