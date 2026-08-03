@@ -16,7 +16,10 @@ Build conventions are in [`../CLAUDE.md`](../CLAUDE.md). Catalogue fields are in
 - **Every game is `players: [1, 2]`.** Two people face to face on one device,
   *and* one person against the computer. Both modes, every game — including
   Mastermind, which is a two-player game (one sets a code, the other breaks it)
-  before it is a solver showcase.
+  before it is a solver showcase. (Deal or No Deal, added later, is the one
+  exception at `[1, 3]` — see §5. It takes three because each player has a
+  separate board rather than a shared one, which is a different arrangement
+  entirely and not something the other four could copy.)
 - **Categories**: Connect Four, Nine Men's Morris and Battleship are
   `board`. Mastermind is `puzzle` — it is the first game on that shelf, so its
   filter pill appears on the launcher only once it ships.

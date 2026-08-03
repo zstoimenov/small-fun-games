@@ -32,6 +32,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 | Game | Folder | What it is |
 | --- | --- | --- |
+| 💼 **Deal or No Deal** | [`deal-or-no-deal/`](deal-or-no-deal/) | Keep one sealed box back, open the others a few at a time, and every few boxes the Banker rings up and offers to buy yours. 1–3 players: everyone gets their own boxes and play goes round a *round* at a time, so nobody sits watching — or take on a robot contestant on Easy/Medium/Hard. Three board sizes (10, 16 or 22 boxes, top prize $1,000 to $250,000), the endgame swap, a hint that says whether the offer beats the odds *and* why, and a panel showing the Banker's actual arithmetic — the average of what's left, his cut, and how much of that average is riding on one box. Every box lifts off the board and rattles before it opens, so there's a real wait before you find out — set the **Pace** to Quick, Normal or Full drama to taste. Deal early and you still watch your board play out, so you always find out what you turned down. The boxes are filled by `crypto.getRandomValues`, and there's a built-in check that proves the top prize lands in every box equally often (~age 7+). |
 | 🚢 **Battleship** | [`battleship/`](battleship/) | Морски бой. Hide a fleet on a hidden grid, then call out squares until you've sunk theirs. 1–2 players: pass-and-play on one tablet, with the screen *cleared* between turns rather than covered — the other player's ships are never in the page at all — or an Easy/Medium/Hard opponent that counts where every ship could still be lying and fires where most of them cross. Three sea sizes (6×6, 8×8, 10×10), a drag-free ship placer with a "do it for me" button, an optional extra-go-after-a-hit rule, undo, hints that name a square *and* the reason, and a heat map in the menu showing how obvious your own hiding place is (~age 6+). |
 | ⚫ **Nine Men's Morris** | [`nine-mens-morris/`](nine-mens-morris/) | Дама, on 24 spots. Place nine pieces each, line three up to take one of theirs, then slide — and fly anywhere once you're down to three. 1–2 players, pass-and-play with a flip-the-screen mode, and an Easy/Medium/Hard opponent that searches the game tree. Undo, a hint button that names a spot and its reason, warnings when someone is one piece from a line, and a menu panel showing how far the computer thought. The board is one SVG built from the same 24-point adjacency list the rules use, so the picture can't disagree with the game (~age 7+). |
 | 🔴 **Connect Four** | [`connect-four/`](connect-four/) | Drop discs down a 7×6 grid and line up four. 1–2 players, pass-and-play with a flip-the-screen mode, and an Easy/Medium/Hard opponent that searches the game tree rather than guessing — Hard looks about ten moves ahead. Undo, a hint button that explains itself, and a menu panel showing how far the computer actually thought on its last go. |
@@ -64,7 +65,8 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 ### Planned
 
-Nothing outstanding — all four games on the roadmap are built.
+Nothing outstanding. All four games on the original roadmap are built, and
+Deal or No Deal was added on top of them.
 
 [`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md) is still worth reading before
 starting a new one: it holds what each build actually cost against what it was

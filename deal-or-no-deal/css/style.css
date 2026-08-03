@@ -1,0 +1,560 @@
+/* Deal or No Deal — one stylesheet, no framework.                              */
+/* Tablet-first: big tap targets, and a studio that follows the device's light   */
+/* or dark setting.                                                             */
+/*                                                                              */
+/* The board is driven by a single --cell length, set in pixels by ui.js after   */
+/* it has measured the space and worked out how many columns fit. That is the    */
+/* only way twenty-two boxes can be five across on a phone and eight across on   */
+/* a tablet without the page ever scrolling.                                    */
+/*                                                                              */
+/* Money that has gone is never told by colour alone — an amount still in play   */
+/* is bold and lit; one that has been opened is struck through as well as dim.   */
+
+:root{
+  --bg1:#f3ece0; --bg2:#fbf7ef; --ink:#241a10; --muted:#6f6152;
+  --card:#ffffff; --line:#e4d8c4; --shadow:rgba(80,55,20,.18);
+  --accent:#b8121f; --accent2:#c8a021; --good:#1f7a4d; --gold:#c8a021;
+  --chip:#f6ecd8; --chipink:#7a5a12;
+  --box:#c01523; --box-d:#8d0d18; --box-ink:#fff3d6;
+  --gone:#cdbfa8;
+  --rail-lo:#6f6152; --rail-hi:#a8121f;
+  --tap:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg1:#150f0a; --bg2:#241a10; --ink:#f6ecd8; --muted:#a8977f;
+    --card:#2b1f14; --line:#4a3826; --shadow:rgba(0,0,0,.6);
+    --accent:#e8434f; --accent2:#e8c04a; --good:#4ad48a; --gold:#e8c04a;
+    --chip:#3d2c1a; --chipink:#f0d79a;
+    --box:#c8202e; --box-d:#7d0c15; --box-ink:#fff3d6;
+    --gone:#5c4a35;
+    --rail-lo:#9d8a6f; --rail-hi:#e8636d;
+  }
+}
+:root[data-theme="dark"]{
+  --bg1:#150f0a; --bg2:#241a10; --ink:#f6ecd8; --muted:#a8977f;
+  --card:#2b1f14; --line:#4a3826; --shadow:rgba(0,0,0,.6);
+  --accent:#e8434f; --accent2:#e8c04a; --good:#4ad48a; --gold:#e8c04a;
+  --chip:#3d2c1a; --chipink:#f0d79a;
+  --box:#c8202e; --box-d:#7d0c15; --box-ink:#fff3d6;
+  --gone:#5c4a35;
+  --rail-lo:#9d8a6f; --rail-hi:#e8636d;
+}
+:root[data-theme="light"]{
+  --bg1:#f3ece0; --bg2:#fbf7ef; --ink:#241a10; --muted:#6f6152;
+  --card:#ffffff; --line:#e4d8c4; --shadow:rgba(80,55,20,.18);
+  --accent:#b8121f; --accent2:#c8a021; --good:#1f7a4d; --gold:#c8a021;
+  --chip:#f6ecd8; --chipink:#7a5a12;
+  --box:#c01523; --box-d:#8d0d18; --box-ink:#fff3d6;
+  --gone:#cdbfa8;
+  --rail-lo:#6f6152; --rail-hi:#a8121f;
+}
+
+*{box-sizing:border-box}
+/* Class rules like .overlay{display:grid} outrank the browser's own
+   [hidden]{display:none}, which would leave dismissed sheets invisible but
+   still swallowing taps. This puts the attribute back in charge. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;min-height:100dvh;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 500px at 50% -14%, var(--bg2), transparent 62%),
+    linear-gradient(170deg, var(--bg1), var(--bg2));
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  padding:max(12px,env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+}
+
+/* In the sheet's own flow, so it can never sit on top of the title. */
+#back{
+  display:inline-block;margin-bottom:10px;
+  font-size:13px;font-weight:700;text-decoration:none;color:var(--chipink);
+  background:var(--chip);padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn{
+  font:inherit;font-weight:800;border:none;border-radius:16px;cursor:pointer;
+  min-height:var(--tap);padding:12px 20px;color:#fff;
+  background:var(--accent2);box-shadow:0 6px 16px var(--shadow);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-go{background:linear-gradient(145deg,var(--accent),#e0651c);color:#fff}
+.btn-clear{background:var(--chip);color:var(--chipink)}
+.ghost-btn{
+  font:inherit;font-weight:700;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);color:var(--ink);padding:11px 16px;min-height:46px;cursor:pointer;
+}
+.ghost-btn:disabled{opacity:.42;cursor:default}
+.ghost-btn.wide{display:block;width:100%;margin:8px 0;text-align:left}
+.icon-btn{
+  font:inherit;font-size:19px;font-weight:800;line-height:1;
+  width:46px;height:46px;flex:0 0 auto;border-radius:14px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+}
+
+/* ── Overlays and sheets ────────────────────────────────────────────────── */
+
+.overlay{
+  position:fixed;inset:0;z-index:50;
+  display:grid;place-items:center;
+  padding:max(14px,env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+  background:rgba(20,10,4,.66);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  overflow:auto;
+}
+.sheet{
+  width:100%;max-width:520px;background:var(--card);border:1px solid var(--line);
+  border-radius:24px;padding:20px;box-shadow:0 18px 50px var(--shadow);
+  max-height:100%;overflow:auto;
+}
+.sheet-sm{max-width:440px}
+.sheet h1{margin:0 0 4px;font-size:clamp(24px,6vw,30px)}
+.sheet h2{margin:0 0 6px;font-size:22px}
+.sheet h3{margin:14px 0 6px;font-size:16px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.muted{color:var(--muted);font-weight:500;font-size:13px;line-height:1.5;margin:0 0 10px}
+.pill{
+  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+  background:var(--chip);color:var(--chipink);
+}
+.sheet-buttons{display:flex;gap:10px;margin-top:16px}
+.sheet-buttons .btn{flex:1}
+/* Sized to its text so it can't wrap onto two lines and out-grow Start game. */
+#howtoBtn{flex:0 1 auto;white-space:nowrap;font-size:14px;padding:12px 15px}
+
+/* ── Setup ──────────────────────────────────────────────────────────────── */
+
+/* One line per decision: label on the left, a segmented control on the right.
+   Far less to take in than a screen of option cards, and it stays that way as
+   more options appear. */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 0;border-top:1px solid var(--line);
+}
+.row:first-of-type{border-top:none}
+.row-label{font-size:14px;font-weight:700;flex:0 1 auto}
+.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.seg{
+  display:flex;gap:3px;padding:3px;border-radius:13px;
+  background:var(--bg1);border:1px solid var(--line);flex:0 0 auto;
+}
+.seg .opt{
+  font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;
+  border:none;background:none;color:var(--muted);
+  padding:9px 13px;border-radius:10px;min-height:40px;
+}
+.seg .opt.on{background:var(--card);color:var(--accent);box-shadow:0 2px 6px var(--shadow)}
+
+.switch{
+  position:relative;flex:0 0 auto;width:52px;height:31px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg1);padding:0;transition:background .18s;
+}
+.switch .knob{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:var(--card);box-shadow:0 2px 5px var(--shadow);transition:transform .18s;
+}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"] .knob{transform:translateX(21px)}
+
+.more{margin:10px 0 2px;border-top:1px solid var(--line);padding-top:8px}
+.more summary{
+  cursor:pointer;font-size:14px;font-weight:700;padding:7px 2px;
+  list-style:none;display:flex;align-items:center;gap:7px;
+}
+.more summary::-webkit-details-marker{display:none}
+.more summary::before{content:"▸";color:var(--muted);transition:transform .15s;display:inline-block}
+.more[open] summary::before{transform:rotate(90deg)}
+.name-row{display:flex;align-items:center;gap:10px;margin:7px 0}
+.name-row span{font-size:13px;font-weight:700;color:var(--muted);width:74px;flex:0 0 auto}
+.name-row input{
+  font:inherit;flex:1;width:100%;min-height:46px;padding:10px 13px;
+  border-radius:14px;border:1px solid var(--line);
+  background:var(--bg1);color:var(--ink);
+}
+
+/* ── The game screen ────────────────────────────────────────────────────── */
+
+/* The page itself never scrolls in a game — the board is sized to the space
+   that's left rather than pushing anything off the bottom. */
+body.in-game{
+  height:100dvh;overflow:hidden;
+  padding-left:6px;padding-right:6px;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+#game{
+  max-width:960px;margin:0 auto;height:100%;
+  display:flex;flex-direction:column;min-height:0;gap:8px;
+  transition:transform .45s ease;
+}
+
+/* Two people sharing one device, sitting opposite each other. */
+body.flipped #game{transform:rotate(180deg)}
+body.flipped .overlay .sheet{transform:rotate(180deg)}
+@media (prefers-reduced-motion:reduce){ #game{transition:none} }
+
+.topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
+.turn-info strong{display:block;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.turn-info span{display:block;font-size:12px;color:var(--muted)}
+#turnName.cpu{color:var(--accent2)}
+
+/* Who is still in, and what the ones who have finished walked away with. */
+.score-strip{
+  display:flex;gap:6px;flex:0 0 auto;justify-content:center;flex-wrap:wrap;
+}
+.score-chip{
+  display:flex;align-items:baseline;gap:6px;
+  font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;
+  background:var(--chip);color:var(--chipink);border:1px solid var(--line);
+  max-width:100%;overflow:hidden;
+}
+.score-chip .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-chip .amt{font-variant-numeric:tabular-nums;color:var(--ink)}
+.score-chip.now{background:var(--accent);color:#fff;border-color:var(--accent)}
+.score-chip.now .amt{color:#fff}
+.score-chip.done{opacity:.75}
+
+.coach{
+  display:flex;gap:9px;align-items:flex-start;flex:0 0 auto;
+  background:linear-gradient(145deg,var(--accent),#e0651c);color:#fff;
+  padding:11px 13px;border-radius:16px;
+  font-size:14px;font-weight:600;line-height:1.4;
+  box-shadow:0 8px 20px var(--shadow);
+}
+.coach.warn{background:linear-gradient(145deg,#e08a1c,#c01523)}
+.coach.good{background:linear-gradient(145deg,#199e63,#3aa845)}
+/* The everyday "whose go is it" line. It's on screen the whole game, so it has
+   to sit down and be quiet — the coloured versions are for the ones that
+   actually want reading. */
+.coach.calm{
+  background:var(--card);color:var(--muted);font-weight:600;
+  border:1px solid var(--line);box-shadow:none;
+}
+.coach-face{font-size:20px;line-height:1.1}
+
+/* ── The arena ──────────────────────────────────────────────────────────── */
+
+/* Money still to be found runs down both sides of the boxes, small on the
+   left and big on the right, the way the board is laid out on television. */
+.arena{
+  display:flex;gap:6px;flex:1 1 auto;min-height:0;align-items:stretch;
+  justify-content:center;
+}
+.board-wrap{
+  flex:1 1 auto;min-height:0;min-width:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+
+/* The rails stretch the full height of the arena and share it out between
+   them, so the board always sits inside a frame of money rather than next to
+   two short stacks of it. */
+/* A grid rather than a stack, because ui.js switches the rails to two columns
+   when a screen is too short to give each amount a readable row. Column flow so
+   the money still reads straight down a column when it does. */
+.rail{
+  flex:0 0 auto;
+  width:calc(clamp(62px,15vw,108px) * var(--rail-cols,1));
+  display:grid;grid-auto-flow:column;
+  grid-template-rows:repeat(var(--rail-rows,11), minmax(0, 1fr));
+  gap:3px;min-height:0;
+}
+.rail-item{
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--rail-fs,13px);font-weight:800;line-height:1.15;
+  font-variant-numeric:tabular-nums;
+  padding:2px 3px;border-radius:8px;min-height:0;max-height:46px;
+  background:var(--card);border:1px solid var(--line);
+  color:var(--rail-lo);
+  white-space:nowrap;overflow:hidden;
+}
+#railHigh .rail-item{color:var(--rail-hi)}
+/* Gone is struck through as well as faded: on a small screen in bright sun,
+   dimness on its own is not a signal anybody can read. */
+.rail-item.gone{
+  color:var(--gone);background:transparent;border-color:transparent;
+  text-decoration:line-through;font-weight:600;
+}
+.rail-item.just-gone{animation:strike .5s ease}
+@keyframes strike{
+  0%{transform:scale(1.18);color:var(--accent);text-decoration:none}
+  100%{transform:scale(1)}
+}
+
+/* ── The boxes ──────────────────────────────────────────────────────────── */
+
+/* --cell and --n are both set by ui.js after measuring: one number for the size
+   of a box, one for how many fit across. */
+.box-grid{
+  display:grid;
+  grid-template-columns:repeat(var(--n,5), var(--cell,64px));
+  gap:max(3px, calc(var(--cell,64px) * .09));
+}
+.box{
+  width:var(--cell,64px);height:var(--cell,64px);
+  border:none;padding:0;cursor:pointer;font:inherit;
+  border-radius:calc(var(--cell,64px) * .17);
+  background:linear-gradient(155deg,var(--box),var(--box-d));
+  color:var(--box-ink);
+  font-size:calc(var(--cell,64px) * .38);font-weight:900;line-height:1;
+  font-variant-numeric:tabular-nums;
+  display:grid;place-items:center;
+  box-shadow:0 4px 10px var(--shadow), inset 0 -3px 0 rgba(0,0,0,.22);
+  position:relative;
+  transition:transform .12s ease;
+}
+/* The lid seam, so a sealed box reads as a box rather than a tile. */
+.box::after{
+  content:"";position:absolute;left:9%;right:9%;top:31%;height:max(1px,calc(var(--cell,64px) * .035));
+  background:rgba(255,255,255,.28);border-radius:2px;
+}
+.box:disabled{cursor:default}
+.box.aim{
+  transform:translateY(-4px) scale(1.05);
+  outline:3px solid var(--gold);outline-offset:2px;
+  box-shadow:0 10px 22px var(--shadow);
+  z-index:2;
+}
+.box.mine{
+  background:linear-gradient(155deg,var(--gold),#8c6c0e);
+  color:#2a1f05;
+}
+.box.mine::after{background:rgba(255,255,255,.4)}
+
+/* Committed to, but not yet opened — the box is off the board and shaking, and
+   nobody knows what is in it, the page included. The lift and the scale live
+   inside the keyframes rather than in a static transform, because a separate
+   `transform` rule here would be overwritten by the animation on every frame
+   and the box would sink back onto the board as it rattled. */
+.box.opening{
+  animation:rattle .26s ease-in-out infinite;
+  outline:3px solid var(--gold);outline-offset:3px;
+  box-shadow:0 14px 28px var(--shadow);
+  z-index:3;
+}
+@keyframes rattle{
+  0%,100%{transform:translateY(-9px) scale(1.09) rotate(-2.6deg)}
+  50%    {transform:translateY(-9px) scale(1.09) rotate(2.6deg)}
+}
+
+/* An opened box stops being a box: it lies flat and shows what was inside. */
+.box.open{
+  background:var(--bg1);border:1px dashed var(--line);
+  color:var(--muted);
+  font-size:calc(var(--cell,64px) * .26);font-weight:800;
+  box-shadow:none;cursor:default;
+}
+.box.open::after{display:none}
+.box.open.big{color:var(--accent);font-weight:900}
+.box.pop{animation:pop .45s ease}
+@keyframes pop{
+  0%{transform:scale(1)}
+  35%{transform:scale(1.22) rotate(-3deg)}
+  100%{transform:scale(1)}
+}
+/* Reduce the motion, not the suspense. The rattle goes, but the box still
+   lifts and lights up, and — the part that matters — app.js's timing is
+   untouched, so the wait before a box opens is exactly as long either way. */
+@media (prefers-reduced-motion:reduce){
+  /* .box.opening has to be named here as well as in the list: a bare `.box`
+     rule is one class less specific than `.box.opening`, so it loses and the
+     rattle plays on regardless. */
+  .box,.box.pop,.box.opening,.rail-item.just-gone{animation:none;transition:none}
+  .box.opening{transform:translateY(-9px) scale(1.09)}
+}
+
+/* ── The bottom bar ─────────────────────────────────────────────────────── */
+
+.bottom{display:flex;gap:10px;align-items:center;flex:0 0 auto}
+.my-box{
+  flex:0 0 auto;display:flex;flex-direction:column;align-items:center;
+  gap:1px;padding:7px 13px;border-radius:14px;
+  background:linear-gradient(155deg,var(--gold),#8c6c0e);color:#2a1f05;
+  box-shadow:0 5px 14px var(--shadow);
+}
+.my-box-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+.my-box strong{font-size:20px;line-height:1.15;font-variant-numeric:tabular-nums}
+.board-buttons{display:flex;gap:8px;justify-content:center;flex:1 1 auto}
+.board-buttons .btn{flex:1 1 auto;max-width:340px;min-height:52px}
+
+/* ── The Banker's call ──────────────────────────────────────────────────── */
+
+.offer-sheet{text-align:center}
+.phone{font-size:40px;line-height:1;margin-bottom:4px;animation:ring 1.1s ease infinite}
+@keyframes ring{
+  0%,72%,100%{transform:rotate(0)}
+  78%{transform:rotate(-13deg)}
+  84%{transform:rotate(13deg)}
+  90%{transform:rotate(-8deg)}
+}
+@media (prefers-reduced-motion:reduce){ .phone{animation:none} }
+.offer-who{margin:0 0 2px;font-size:13px;font-weight:700;color:var(--muted)}
+.offer-amount{
+  margin:0 0 4px !important;
+  font-size:clamp(34px,11vw,52px);font-weight:900;line-height:1.05;
+  color:var(--accent);font-variant-numeric:tabular-nums;
+}
+.offer-sheet .sub{margin-bottom:12px}
+.offer-sheet .sheet-buttons .btn{font-size:17px;letter-spacing:.03em}
+
+/* The Banker's arithmetic, laid out as three lines a child can follow. */
+.working{
+  text-align:left;background:var(--bg1);border:1px solid var(--line);
+  border-radius:14px;padding:11px 13px;font-size:13px;line-height:1.5;
+}
+.work-row{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+.work-row span:first-child{color:var(--muted)}
+.work-row span:last-child{font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+.work-bar{
+  position:relative;height:11px;border-radius:999px;margin:9px 0 4px;
+  background:var(--chip);overflow:hidden;
+}
+.work-bar i{
+  position:absolute;inset:0 auto 0 0;border-radius:999px;
+  background:linear-gradient(90deg,var(--accent),#e0651c);
+}
+.work-cap{font-size:11.5px;color:var(--muted);line-height:1.4}
+
+.hint-line{
+  margin-top:10px;text-align:left;font-size:13.5px;line-height:1.5;font-weight:600;
+  background:var(--chip);color:var(--chipink);
+  border-radius:14px;padding:11px 13px;
+}
+
+.swap-pair{display:flex;gap:12px;justify-content:center;margin:6px 0 14px}
+.swap-box{
+  width:84px;height:84px;border-radius:16px;display:grid;place-items:center;
+  font-size:30px;font-weight:900;color:var(--box-ink);
+  background:linear-gradient(155deg,var(--box),var(--box-d));
+  box-shadow:0 6px 16px var(--shadow);
+}
+.swap-box.mine{background:linear-gradient(155deg,var(--gold),#8c6c0e);color:#2a1f05}
+.swap-box small{display:block;font-size:10px;font-weight:800;opacity:.85}
+
+/* ── Menu panels ────────────────────────────────────────────────────────── */
+
+.panel{margin-top:16px;border-top:1px solid var(--line);padding-top:6px}
+.panel .working{margin-top:6px}
+#fairOut{margin-top:8px;font-size:13px;line-height:1.55}
+.fair-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(26px,1fr));
+  gap:3px;margin:8px 0;
+}
+.fair-cell{
+  height:34px;border-radius:6px;background:var(--chip);
+  display:flex;align-items:flex-end;justify-content:center;overflow:hidden;
+}
+.fair-cell i{display:block;width:100%;background:var(--accent2);border-radius:5px 5px 0 0}
+.verdict{font-weight:800;color:var(--good)}
+.verdict.bad{color:var(--accent)}
+
+/* ── How to play ────────────────────────────────────────────────────────── */
+
+.howto-sheet{display:flex;flex-direction:column}
+.howto-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.howto-body{flex:1 1 auto;min-height:0}
+.howto-body h3{margin:0 0 6px;font-size:20px}
+.howto-body p{margin:0 0 10px;font-size:14.5px;line-height:1.55}
+.howto-fig{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  background:var(--bg1);border:1px solid var(--line);border-radius:16px;
+  padding:13px 10px;margin:10px 0;
+}
+.howto-cap{font-size:12px;color:var(--muted);text-align:center;line-height:1.4}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line);display:block}
+.dots i.on{background:var(--accent);transform:scale(1.25)}
+
+/* ── Result ─────────────────────────────────────────────────────────────── */
+
+.result-icon{font-size:44px;text-align:center;line-height:1}
+#result h2{text-align:center;margin-top:6px}
+#result .sub{text-align:center}
+.result-table{margin-top:6px}
+.result-row{
+  display:flex;align-items:center;gap:10px;padding:9px 11px;margin:6px 0;
+  border:1px solid var(--line);border-radius:14px;background:var(--bg1);
+}
+.result-row.win{border-color:var(--gold);background:var(--chip)}
+.result-row .who{flex:1;min-width:0;font-weight:800;font-size:14.5px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.result-row .how{font-size:11.5px;color:var(--muted);font-weight:600}
+.result-row .amt{font-weight:900;font-size:17px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.tally-box{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+.tally-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.tally-row .tnum{font-weight:800;font-variant-numeric:tabular-nums}
+.tally-note{font-size:12px;color:var(--muted);margin-top:6px}
+
+.peek-pill{
+  position:fixed;left:50%;transform:translateX(-50%);z-index:60;
+  bottom:calc(12px + env(safe-area-inset-bottom));
+  font:inherit;font-weight:800;font-size:14px;cursor:pointer;
+  border:1px solid var(--line);border-radius:999px;padding:11px 18px;
+  background:var(--card);color:var(--ink);box-shadow:0 8px 22px var(--shadow);
+}
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);z-index:40;
+  top:calc(12px + env(safe-area-inset-top));
+  max-width:min(92vw,460px);text-align:center;
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:11px 16px;font-size:14px;font-weight:700;line-height:1.4;
+  box-shadow:0 12px 30px var(--shadow);
+}
+body.flipped .toast{transform:translateX(-50%) rotate(180deg)}
+
+/* ── Landscape ──────────────────────────────────────────────────────────── */
+
+/* A phone on its side has no height to spare. The rails get narrower, the
+   chrome shrinks, and every flex child keeps min-height:0 so a tall column
+   shrinks inside the arena instead of spilling off both ends of the screen. */
+@media (orientation:landscape) and (max-height:520px){
+  .topbar .icon-btn{width:40px;height:40px;font-size:16px}
+  .turn-info strong{font-size:15px}
+  .turn-info span{font-size:11px}
+  .coach{padding:7px 11px;font-size:12.5px}
+  .rail{width:calc(clamp(52px,11vw,84px) * var(--rail-cols,1))}
+  .my-box strong{font-size:16px}
+  .my-box{padding:5px 10px}
+  .board-buttons .btn{min-height:44px;padding:9px 16px}
+  #game{gap:6px}
+}
+
+/* The Banker's call has to fit a phone lying on its side without the two
+   buttons that matter sliding under the fold. Everything decorative gives up
+   its height first: the ringing phone, the size of the number, the padding. */
+@media (max-height:560px){
+  .sheet{padding:14px}
+  .phone{font-size:24px;margin-bottom:0}
+  .offer-amount{font-size:clamp(26px,7vw,34px)}
+  .offer-sheet .sub{margin-bottom:8px;font-size:13px}
+  .offer-who{font-size:12px}
+  .working{padding:8px 11px;font-size:12px}
+  .work-cap{font-size:10.5px}
+  .sheet-buttons{margin-top:10px}
+  .sheet-buttons .btn{min-height:46px;padding:10px 16px}
+  #offerHintBtn{min-height:40px;padding:8px 14px;margin:6px 0 0}
+  .swap-box{width:64px;height:64px;font-size:24px}
+}
+
+/* ── Confetti ───────────────────────────────────────────────────────────── */
+
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+.confetti i{
+  position:absolute;top:-14px;width:9px;height:14px;border-radius:2px;
+  animation:fall linear forwards;
+}
+@keyframes fall{
+  to{transform:translateY(108vh) rotate(760deg);opacity:.15}
+}

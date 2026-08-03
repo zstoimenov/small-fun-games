@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Deal or No Deal</title>
+<meta name="description" content="Twenty-two sealed boxes, one of them yours. Open the rest and the Banker keeps ringing with an offer. 1-3 players.">
+<meta name="theme-color" content="#c8a021">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Deal or No Deal">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet setup-sheet">
+
+    <!-- The back link sits in the sheet's own flow so it can never sit on
+         top of the title, however short the screen is. -->
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+    <h1>💼 Deal or No Deal</h1>
+    <p class="sub">Keep one box back. Open the others, and every few boxes the Banker
+      rings up and offers to buy yours. Take the money, or find out what's inside.</p>
+
+    <div class="row">
+      <span class="row-label">Players</span>
+      <div class="seg" id="countChooser">
+        <button class="opt" type="button" data-value="1">1</button>
+        <button class="opt" type="button" data-value="2">2</button>
+        <button class="opt" type="button" data-value="3">3</button>
+      </div>
+    </div>
+    <p class="row-note" id="countNote"></p>
+
+    <div class="row">
+      <span class="row-label">Boxes</span>
+      <div class="seg" id="boardChooser">
+        <button class="opt" type="button" data-value="quick">10</button>
+        <button class="opt" type="button" data-value="classic">16</button>
+        <button class="opt" type="button" data-value="full">22</button>
+      </div>
+    </div>
+    <p class="row-note" id="boardNote"></p>
+
+    <div class="row">
+      <span class="row-label">Pace</span>
+      <div class="seg" id="paceChooser">
+        <button class="opt" type="button" data-value="quick">Quick</button>
+        <button class="opt" type="button" data-value="normal">Normal</button>
+        <button class="opt" type="button" data-value="drama">Full drama</button>
+      </div>
+    </div>
+    <p class="row-note" id="paceNote"></p>
+
+    <div class="row" id="roboRow">
+      <span class="row-label">Robo plays too</span>
+      <button id="roboToggle" class="switch" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note" id="roboNote" hidden>
+      Robo gets its own boxes and its own Banker. Beat what it walks away with.
+    </p>
+
+    <div class="row" id="diffRow">
+      <span class="row-label">How good is Robo?</span>
+      <div class="seg" id="diffChooser">
+        <button class="opt" type="button" data-value="easy">Easy</button>
+        <button class="opt" type="button" data-value="medium">Medium</button>
+        <button class="opt" type="button" data-value="hard">Hard</button>
+      </div>
+    </div>
+    <p class="row-note" id="diffNote"></p>
+
+    <div class="row" id="flipRow" hidden>
+      <span class="row-label">Sit opposite</span>
+      <button id="flipToggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note" id="flipNote" hidden>
+      The whole screen turns around on the other player's turn, so you can put the device
+      between you and both read it the right way up.
+    </p>
+
+    <div class="row">
+      <span class="row-label">Help me decide</span>
+      <button id="hintToggle" class="switch" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">
+      Adds a 💡 button that says whether the offer is a good one, and why.
+    </p>
+
+    <details class="more" id="namesBox">
+      <summary><span id="namesSummary">Names</span></summary>
+      <div id="namesWrap"></div>
+    </details>
+
+    <div class="sheet-buttons">
+      <button id="howtoBtn" class="btn btn-clear" type="button">❓ How to play</button>
+      <button id="startBtn" class="btn btn-go" type="button">Start game ▶</button>
+    </div>
+    <button id="resumeBtn" class="ghost-btn wide" type="button" hidden>↩︎ Carry on with the saved game</button>
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
+<main id="game" hidden>
+  <div class="topbar">
+    <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
+    <div class="turn-info">
+      <strong id="turnName">Player 1</strong>
+      <span id="turnMeta">Round 1 of 6</span>
+    </div>
+    <button id="hintBtn" class="icon-btn" type="button" title="Is it a good offer?">💡</button>
+    <button id="muteBtn" class="icon-btn" type="button" title="Sound on/off">🔊</button>
+  </div>
+
+  <div id="scoreStrip" class="score-strip" hidden></div>
+
+  <div id="coach" class="coach calm"></div>
+
+  <!-- The money still to be found runs down both sides, the way it does on
+       the programme: small change on the left, the big money on the right. -->
+  <div class="arena">
+    <div id="railLow" class="rail" aria-label="Small amounts still out there"></div>
+    <div id="boardWrap" class="board-wrap">
+      <div id="boxGrid" class="box-grid"></div>
+    </div>
+    <div id="railHigh" class="rail" aria-label="Big amounts still out there"></div>
+  </div>
+
+  <div class="bottom">
+    <div id="myBox" class="my-box">
+      <span class="my-box-label">Your box</span>
+      <strong id="myBoxNum">—</strong>
+    </div>
+    <div class="board-buttons">
+      <button id="actionBtn" class="btn btn-go" type="button">Open it</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+</main>
+
+<!-- ══ THE BANKER CALLS ═════════════════════════════════════════════════ -->
+<div id="offerSheet" class="overlay" hidden>
+  <div class="sheet sheet-sm offer-sheet">
+    <div class="phone">☎️</div>
+    <p class="offer-who" id="offerWho">The Banker is on the phone for Player 1</p>
+    <h2 class="offer-amount" id="offerAmount">$9,400</h2>
+    <p class="sub" id="offerLine">That's his offer for your box.</p>
+    <div id="offerWorking" class="working"></div>
+    <div id="offerHint" class="hint-line" hidden></div>
+    <div class="sheet-buttons">
+      <button id="noDealBtn" class="btn btn-clear" type="button">NO DEAL</button>
+      <button id="dealBtn" class="btn btn-go" type="button">DEAL</button>
+    </div>
+    <button id="offerHintBtn" class="ghost-btn wide" type="button">💡 Is that a good offer?</button>
+  </div>
+</div>
+
+<!-- ══ KEEP OR SWAP ═════════════════════════════════════════════════════ -->
+<div id="swapSheet" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>Two boxes left</h2>
+    <p class="sub" id="swapLine">Keep your box, or swap it for the last one on the table?</p>
+    <div id="swapPair" class="swap-pair"></div>
+    <p class="row-note">
+      It makes no difference which one you take — the money was put in before the game
+      started, and neither box knows what you picked. Follow your gut.
+    </p>
+    <div class="sheet-buttons">
+      <button id="keepBtn" class="btn btn-clear" type="button">Keep mine</button>
+      <button id="swapBtn" class="btn btn-go" type="button">Swap!</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
+<div id="menu" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>Menu</h2>
+    <button id="menuSound" class="ghost-btn wide" type="button">🔊 Sound is on</button>
+    <button id="menuHowto" class="ghost-btn wide" type="button">❓ How to play</button>
+    <button id="menuNew" class="ghost-btn wide" type="button">🔄 New game</button>
+    <a class="ghost-btn wide" href="../">🎮 Back to Game Box</a>
+
+    <div class="panel" id="bankerPanel" hidden>
+      <h3>What was the Banker thinking?</h3>
+      <div id="bankerWorking"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Does the money really move about?</h3>
+      <p class="muted">
+        The boxes are filled by your device's cryptographic random number generator
+        before anyone touches anything, so the top prize is exactly as likely to be
+        in your box as in any other. Deal forty thousand boards and see.
+      </p>
+      <button id="fairBtn" class="ghost-btn wide" type="button">💼 Run the box check</button>
+      <div id="fairOut"></div>
+    </div>
+
+    <div class="sheet-buttons">
+      <button id="menuClose" class="btn btn-go" type="button">Back to the game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet sheet-sm howto-sheet">
+    <div class="howto-top">
+      <span id="howtoStep" class="pill">1 / 7</span>
+      <button id="howtoSkip" class="ghost-btn" type="button">Skip</button>
+    </div>
+    <div id="howtoBody" class="howto-body"></div>
+    <div id="howtoDots" class="dots"></div>
+    <div class="sheet-buttons">
+      <button id="howtoPrev" class="btn btn-clear" type="button">&lsaquo; Back</button>
+      <button id="howtoNext" class="btn btn-go" type="button">Next &rsaquo;</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <div id="resultIcon" class="result-icon">🏆</div>
+    <h2 id="resultTitle">You won $18,000!</h2>
+    <p class="sub" id="resultLine"></p>
+    <button id="peekBtn" class="ghost-btn wide" type="button">👀 Look at the boards</button>
+    <div id="resultTable" class="result-table"></div>
+    <div id="tallyBox" class="tally-box" hidden></div>
+    <div class="sheet-buttons">
+      <button id="resultMenu" class="btn btn-clear" type="button">Change players</button>
+      <button id="againBtn" class="btn btn-go" type="button">Play again ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- Brings the end card back after it has been put aside. -->
+<button id="peekPill" class="peek-pill" type="button" hidden>🏆 Show the result</button>
+
+<script src="./js/rng.js"></script>
+<script src="./js/rules.js"></script>
+<script src="./js/banker.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/tutorial.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
