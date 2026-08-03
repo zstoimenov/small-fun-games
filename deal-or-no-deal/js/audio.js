@@ -80,6 +80,21 @@ DND.Audio = (function () {
   const tap = () => tone(560, 0.05, 0, "square", 0.035);
   const aim = () => tone(760, 0.07, 0, "triangle", 0.045);
 
+  // The wait before a box opens. A note that climbs for exactly as long as the
+  // hold lasts, so it runs out at the moment the lid comes off — which is why
+  // it takes the duration rather than owning one: the hold changes with the
+  // pace setting, and a drum roll that finishes early is worse than none.
+  function lift(seconds) {
+    const dur = Math.max(0.12, Math.min(3, seconds || 0.9));
+    slide(220, 660, dur, 0, "triangle", 0.04);
+    // A quickening tick under it, so the wait has a pulse and not just a tone.
+    const ticks = Math.min(9, Math.max(2, Math.round(dur * 6)));
+    for (let i = 0; i < ticks; i++) {
+      // Spaced by the square of the progress, so they crowd together at the end.
+      tone(430, 0.04, dur * Math.pow(i / ticks, 1.7), "square", 0.03);
+    }
+  }
+
   // Small money is a shrug; big money is a groan. The board decides which is
   // which (Ui.bigMoney), so a 10-box game gets its own idea of a gasp.
   function small() {
@@ -120,5 +135,5 @@ DND.Audio = (function () {
     slide(400, 130, 0.7, 0, "sawtooth", 0.06);
   }
 
-  return { setMuted, tap, aim, small, big, phone, deal, noDeal, turn, win, lose };
+  return { setMuted, tap, aim, lift, small, big, phone, deal, noDeal, turn, win, lose };
 })();
