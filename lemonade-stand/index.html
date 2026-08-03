@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Lemonade Stand</title>
-<meta name="description" content="Run a lemonade stall for a fortnight. Buy your cups, pick a price, and save up for a bike. Money in the bank grows overnight — money you borrow costs you more than you took.">
+<meta name="description" content="Run a lemonade stall for a fortnight. Buy your cups, pick a price, count out people's change, and save up for a bike. Money in the bank grows overnight; money you borrow costs you more than you took.">
 <meta name="theme-color" content="#2f9e5a">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
@@ -25,7 +25,7 @@
     <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
 
     <h1>🍋 Lemonade Stand</h1>
-    <p class="sub">Buy your lemons, pick a price, and sell cold lemonade. Money you leave in the bank grows every night. Save up for something big.</p>
+    <p class="sub">Buy your lemons, pick a price, and count out people's change. Money you leave in the bank grows every night. Save up for something big — it takes a good fortnight to get there.</p>
 
     <div class="row">
       <span class="row-label">How long?</span>
@@ -141,6 +141,40 @@
 
     <!-- ── Selling: nothing to decide, everything already decided ──────── -->
     <section id="selling" class="phase" hidden>
+
+      <!-- What today turned out to be. Only ever shown once the stall is open —
+           you commit your money first, then find out. -->
+      <div class="card news event" id="eventCard" hidden></div>
+
+      <!-- ── The till. A customer pays with a note and waits for their change. -->
+      <div class="change" id="changePanel" hidden>
+        <div class="change-head">
+          <span class="change-face" id="changeFace">🙂</span>
+          <div class="change-what">
+            <div class="change-say" id="changeSay">"One please!"</div>
+            <div class="change-sum" id="changeSum"></div>
+          </div>
+        </div>
+
+        <div class="tray">
+          <div class="tray-top">
+            <span>Change you're handing over</span>
+            <strong id="trayTotal">$0.00</strong>
+          </div>
+          <div class="tray-coins" id="trayCoins"></div>
+        </div>
+
+        <div class="coin-pad" id="coinPad"></div>
+
+        <p class="change-verdict" id="changeVerdict" hidden></p>
+
+        <div class="change-buttons">
+          <button class="ghost-btn" id="changeClear" type="button">Start again</button>
+          <button class="btn btn-go" id="changeGive" type="button" disabled>Give it to them</button>
+          <button class="btn btn-go" id="changeNext" type="button" hidden>Next customer</button>
+        </div>
+      </div>
+
       <div class="stall">
         <div class="stall-sun" id="stallSun">🌤️</div>
         <div class="stall-table">
@@ -166,6 +200,8 @@
           <div class="sum-line total" id="sumTotalLine"><span id="sumTotalLabel">So you made</span><strong id="sumProfit">$6.45</strong></div>
         </div>
 
+        <p class="verdict" id="tillLine" hidden></p>
+        <p class="verdict" id="lostLine" hidden></p>
         <p class="verdict" id="wasteLine" hidden></p>
         <p class="verdict" id="thirstyLine" hidden></p>
 

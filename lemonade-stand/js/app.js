@@ -215,30 +215,137 @@
   // matches quietly stops instead of paying out into the next day.
   let gen = 0;
   let sellTimer = null;
+  let sellAt = { seen: 0, served: 0, turned: 0 };
+  let tray = [];
 
   const reduceMotion = () =>
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // The next customer still waiting to be paid their change, if any.
+  function pendingMoment() {
+    const r = state.run.result;
+    if (!r || !r.moments) return null;
+    return r.moments[state.run.changeAt] || null;
+  }
 
   function runSelling() {
     const run = state.run;
     const r = run.result;
     const mine = ++gen;
     clearInterval(sellTimer);
+    Ui.changeHide();
 
-    const total = r.want;
-    if (total <= 0 || reduceMotion()) { finishSelling(mine); return; }
+    // The queue always replays from the start, including after a resume. The
+    // model's changeAt is what remembers which sums were already answered, so
+    // replaying the customers can't ask the same one twice.
+    sellAt = { seen: 0, served: 0, turned: 0 };
+    tray = [];
+
+    if (r.want <= 0) { finishSelling(mine); return; }
 
     // A whole day fits in about four seconds however busy it is: a scorcher with
     // forty customers should not take four times as long as a wet Tuesday.
-    const step = Math.max(55, Math.min(190, Math.round(4000 / total)));
-    let seen = 0, served = 0, turned = 0;
+    const step = reduceMotion() ? 0
+      : Math.max(55, Math.min(190, Math.round(4000 / r.want)));
+
+    if (!step) { fastForward(mine); return; }
 
     sellTimer = setInterval(() => {
       if (mine !== gen) { clearInterval(sellTimer); return; }
-      seen++;
-      if (served < r.sold) { served++; Audio.coin(); } else { turned++; }
-      Ui.sellStep(run, served, turned);
-      if (seen >= total) { clearInterval(sellTimer); finishSelling(mine); }
+      sellAt.seen++;
+      if (sellAt.served < r.sold) { sellAt.served++; Audio.coin(); } else { sellAt.turned++; }
+      Ui.sellStep(run, sellAt.served, sellAt.turned);
+
+      // Somebody has just paid with a note and is waiting. Stop the day.
+      const m = pendingMoment();
+      if (m && sellAt.served === m.at + 1) { clearInterval(sellTimer); askForChange(mine); return; }
+
+      if (sellAt.seen >= r.want) { clearInterval(sellTimer); finishSelling(mine); }
+    }, step);
+  }
+
+  // Jump straight to whatever needs a decision next: the next customer owed
+  // change, or the end of the day. Skipping the animation is fine; skipping the
+  // arithmetic is not, so this never steps past a change moment.
+  function fastForward(mine) {
+    const run = state.run;
+    const r = run.result;
+    const m = pendingMoment();
+    if (m) {
+      sellAt.served = m.at + 1;
+      sellAt.seen = sellAt.served;
+      sellAt.turned = 0;
+      Ui.sellStep(run, sellAt.served, sellAt.turned);
+      askForChange(mine);
+      return;
+    }
+    sellAt.served = r.sold;
+    sellAt.turned = r.turned;
+    sellAt.seen = r.want;
+    finishSelling(mine);
+  }
+
+  function askForChange(mine) {
+    if (mine !== gen) return;
+    const run = state.run;
+    tray = [];
+    Ui.coinPad(addCoin);
+    Ui.changeAsk(run, pendingMoment(), E.spec(run.difficulty).showTotal);
+    Audio.pick();
+    save();
+  }
+
+  function addCoin(cents) {
+    if (!pendingMoment()) return;
+    tray.push(cents);
+    Audio.coin();
+    Ui.changeTray(state.run, tray, E.spec(state.run.difficulty).showTotal);
+  }
+
+  function clearTray() {
+    tray = [];
+    Audio.tap();
+    Ui.changeTray(state.run, tray, E.spec(state.run.difficulty).showTotal);
+  }
+
+  function giveChange() {
+    const run = state.run;
+    const moment = pendingMoment();
+    if (!moment) return;
+    const given = tray.reduce((a, b) => a + b, 0);
+    const out = E.giveChange(run, given);
+    if (!out) return;
+    Ui.changeResult(run, out, moment);
+    if (out.ok) Audio.ding(); else Audio.owe();
+    save();
+  }
+
+  function afterChange() {
+    const mine = gen;
+    tray = [];
+    Ui.changeHide();
+    Audio.tap();
+    // Back to the day, from exactly where it stopped.
+    const r = state.run.result;
+    if (sellAt.seen >= r.want) { finishSelling(mine); return; }
+    resumeSelling(mine);
+  }
+
+  function resumeSelling(mine) {
+    const run = state.run;
+    const r = run.result;
+    const step = reduceMotion() ? 0
+      : Math.max(55, Math.min(190, Math.round(4000 / r.want)));
+    if (!step) { fastForward(mine); return; }
+    clearInterval(sellTimer);
+    sellTimer = setInterval(() => {
+      if (mine !== gen) { clearInterval(sellTimer); return; }
+      sellAt.seen++;
+      if (sellAt.served < r.sold) { sellAt.served++; Audio.coin(); } else { sellAt.turned++; }
+      Ui.sellStep(run, sellAt.served, sellAt.turned);
+      const m = pendingMoment();
+      if (m && sellAt.served === m.at + 1) { clearInterval(sellTimer); askForChange(mine); return; }
+      if (sellAt.seen >= r.want) { clearInterval(sellTimer); finishSelling(mine); }
     }, step);
   }
 
@@ -247,6 +354,7 @@
     clearInterval(sellTimer);
     const run = state.run;
     if (run.phase !== "selling") return;
+    Ui.changeHide();
     Ui.sellDone(run);
     Audio.till();
     E.closeDay(run);
@@ -255,9 +363,8 @@
   }
 
   function skipSelling() {
-    const mine = ++gen;      // kill the running timer
     clearInterval(sellTimer);
-    finishSelling(mine);
+    fastForward(gen);
   }
 
   /* ── Evening and night ─────────────────────────────────────────────────── */
@@ -388,6 +495,10 @@
     $("openBtn").addEventListener("click", () => { Audio.tap(); openStall(); });
     $("skipBtn").addEventListener("click", () => { Audio.tap(); skipSelling(); });
 
+    $("changeClear").addEventListener("click", clearTray);
+    $("changeGive").addEventListener("click", giveChange);
+    $("changeNext").addEventListener("click", afterChange);
+
     $("bankNone").addEventListener("click", () => bankIt("none"));
     $("bankHalf").addEventListener("click", () => bankIt("half"));
     $("bankAll").addEventListener("click", () => bankIt("all"));
@@ -424,11 +535,15 @@
     $("againBtn").addEventListener("click", () => { Audio.tap(); newRun(); });
     $("resultMenu").addEventListener("click", () => { Audio.tap(); showSetup(); });
 
-    // A tablet going to sleep mid-day must not leave a timer running.
+    // A tablet going to sleep mid-day must not leave a timer running. If somebody
+    // is standing there waiting for their change, though, leave them waiting —
+    // fast-forwarding past a sum the child hasn't answered would hand them the
+    // money for free.
     document.addEventListener("visibilitychange", () => {
-      if (document.hidden && state.playing && state.run && state.run.phase === "selling") {
-        skipSelling();
-      }
+      if (!document.hidden || !state.playing || !state.run) return;
+      if (state.run.phase !== "selling") return;
+      if ($("changePanel").getClientRects().length) { clearInterval(sellTimer); return; }
+      skipSelling();
     });
   }
 

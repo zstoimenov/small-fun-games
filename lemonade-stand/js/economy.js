@@ -115,15 +115,98 @@ LS.Economy = (function () {
       cost: 150, once: false }
   ];
 
+  /* ── The till ──────────────────────────────────────────────────────────── */
+
+  // Real Australian money. No 1c or 2c coin has existed since 1992, which is
+  // exactly why every price in this game is 5c-clean: the change always has to
+  // be buildable out of these.
+  const COINS = [5, 10, 20, 50, 100, 200];
+  const NOTES = [500, 1000, 2000];
+
+  // What a customer hands over. Never the exact money — the whole point is that
+  // change has to come back — and never so large that the change can't be
+  // counted out by an eight-year-old.
+  function noteFor(priceCents, r) {
+    const options = COINS.concat(NOTES).filter((v) => v > priceCents && v <= priceCents + 1000);
+    return options[r.int(options.length)];
+  }
+
+  // Which customers in the day stop to pay with a note. Deterministic from
+  // (seed, day) so a resumed day asks the same sums, and capped low: three
+  // pieces of real arithmetic is practice, thirty is a chore.
+  function changeMoments(sp, seed, day, priceCents, sold) {
+    if (sold <= 0) return [];
+    const r = LS.Rng.stream(seed, day * 7717 + 3);
+    const n = Math.min(sp.changes, sold);
+    const out = [];
+    const used = {};
+    for (let i = 0; i < n; i++) {
+      let at = r.int(sold);
+      let guard = 0;
+      while (used[at] && guard++ < 8) at = r.int(sold);
+      used[at] = true;
+      const note = noteFor(priceCents, r);
+      out.push({ at, note, price: priceCents, due: note - priceCents });
+    }
+    return out.sort((a, b) => a.at - b.at);
+  }
+
+  // What handing over `given` actually does. Getting it right is worth a little;
+  // getting it wrong costs exactly what a child would expect it to cost.
+  function settleChange(moment, given, r) {
+    const due = moment.due;
+    if (given === due) {
+      // Some people leave the odd coin. This is the reward for doing the sum.
+      const tip = r && r.chance(0.4) ? (r.chance(0.5) ? 10 : 20) : 0;
+      return { ok: true, over: 0, short: 0, tip };
+    }
+    if (given > due) {
+      // You handed over too much and they pocketed it. The money is simply gone,
+      // which is the most honest lesson in the game.
+      return { ok: false, over: given - due, short: 0, tip: 0 };
+    }
+    // Too little: they notice, they get the rest, and they remember.
+    return { ok: false, over: 0, short: due - given, tip: 0 };
+  }
+
+  /* ── Days that don't go to plan ────────────────────────────────────────── */
+
+  // Revealed when the stall OPENS, never in the morning. You commit your money
+  // to stock and a price first, and then the world happens — that is what makes
+  // it a risk rather than a sum.
+  const EVENTS = [
+    { id: "parade", emoji: "🎪", good: true, demand: 1.7,
+      name: "A parade came past!", note: "Crowds everywhere. Everyone's thirsty." },
+    { id: "school", emoji: "🎒", good: true, demand: 1.4,
+      name: "School got out early", note: "A lot of thirsty kids walked right past you." },
+    { id: "rival", emoji: "🏪", good: false, demand: 0.45,
+      name: "Somebody set up a stall up the road", note: "They took half your customers today." },
+    { id: "wasps", emoji: "🐝", good: false, lose: 0.4,
+      name: "Wasps got into the lemonade", note: "You had to tip a lot of it away." },
+    { id: "spill", emoji: "💦", good: false, lose: 0.25,
+      name: "You knocked the jug over", note: "That's some of your lemonade on the grass." },
+    { id: "shower", emoji: "🌦️", good: false, demand: 0.55,
+      name: "A downpour, out of nowhere", note: "Everybody went home. Nobody buys lemonade in the rain." }
+  ];
+
   const LEVELS = {
+    // The top rung is meant to be RARE. Measured over 2,000 runs apiece, a
+    // fortnight played really well — reading the forecast, stocking to it,
+    // banking, and getting the sums right at the till — reaches the bike about
+    // a third of the time. Playing steadily but never adapting the stock to the
+    // weather reaches it almost never, and so does an ice cream a day. The
+    // lower three rungs are what a decent run is actually for.
     easy:   { id: "easy",   days: 7,  wobble: 8,  forecast: 1.00, drift: 1, bonusRate: false,
-              events: 1, bigLoan: false, goal: [1500, 2500, 3500, 4500],
+              eventRate: 0.16, badShare: 0.35, changes: 1, showTotal: true, bigLoan: false,
+              goal: [1500, 3000, 4200, 5500],
               rungs: ["🪀 a yo-yo", "🎨 paints", "🎧 headphones", "🛴 a scooter"] },
-    normal: { id: "normal", days: 14, wobble: 15, forecast: 0.80, drift: 1, bonusRate: true,
-              events: 2, bigLoan: true, goal: [3000, 6000, 9000, 12000],
+    normal: { id: "normal", days: 14, wobble: 15, forecast: 0.72, drift: 1, bonusRate: true,
+              eventRate: 0.3, badShare: 0.62, changes: 2, showTotal: true, bigLoan: true,
+              goal: [4000, 9000, 14000, 20000],
               rungs: ["🪀 a yo-yo", "🎧 headphones", "🛹 a skateboard", "🚲 a bike"] },
-    tricky: { id: "tricky", days: 14, wobble: 22, forecast: 0.60, drift: 2, bonusRate: true,
-              events: 2, bigLoan: true, goal: [3000, 6000, 9000, 12000],
+    tricky: { id: "tricky", days: 14, wobble: 22, forecast: 0.58, drift: 2, bonusRate: true,
+              eventRate: 0.38, badShare: 0.7, changes: 2, showTotal: false, bigLoan: true,
+              goal: [4000, 9000, 14000, 20000],
               rungs: ["🪀 a yo-yo", "🎧 headphones", "🛹 a skateboard", "🚲 a bike"] }
   };
 
@@ -143,11 +226,17 @@ LS.Economy = (function () {
     return w;
   }
 
-  // A parade, a school fete, a hot street market — a day when far more people
-  // walk past than the weather alone would explain.
-  function isEventDay(sp, seed, day) {
-    if (day === 1) return false; // never on day one; nobody has learned the game yet
-    return LS.Rng.stream(seed, day * 613).next() < sp.events / sp.days;
+  // Today's surprise, if there is one. Most days there isn't. Day one never has
+  // one — nobody has learned the game yet — and the good/bad mix is a difficulty
+  // setting, because "some days just go wrong" is the part that has to be true
+  // for saving up to mean anything.
+  function eventOn(sp, seed, day) {
+    if (day === 1) return null;
+    const r = LS.Rng.stream(seed, day * 613);
+    if (!r.chance(sp.eventRate)) return null;
+    const bad = r.chance(sp.badShare);          // decided once, then pick from that half
+    const pool = EVENTS.filter((e) => e.good !== bad);
+    return pool[r.int(pool.length)];
   }
 
   // Everything about today that the player did not decide. Pure in (seed, day),
@@ -174,7 +263,7 @@ LS.Economy = (function () {
       if (options.length) forecast = options[r.int(options.length)];
     }
 
-    return { day, weather, forecast, unit, parade: isEventDay(sp, seed, day), sure: sp.forecast === 1 };
+    return { day, weather, forecast, unit, event: eventOn(sp, seed, day), sure: sp.forecast === 1 };
   }
 
   // What a pack costs today, and what the big one saves against buying small.
@@ -190,32 +279,42 @@ LS.Economy = (function () {
     const tier = priceTier(priceCents);
     const base = WEATHER[info.weather].footfall;
     const repF = 0.7 + (rep / 100) * 0.6; // 0.73 … 1.27
-    const event = info.parade ? 1.6 : 1;
+    const ev = info.event && info.event.demand ? info.event.demand : 1;
     const jitter = 0.85 + LS.Rng.stream(seed, info.day * 31 + 7).next() * 0.3;
-    return Math.max(0, Math.round(base * tier.pull * repF * event * jitter));
+    return Math.max(0, Math.round(base * tier.pull * repF * ev * jitter));
   }
 
   // The day's trading, decided in full the moment the stall opens. ui.js animates
   // this afterwards and cannot change a number in it — Yatzy's rule, and the
   // reason a stale timer can't tick money into tomorrow.
   function sell(run, info) {
+    // Wasps and spilt jugs take their cut before anybody is served. This is the
+    // money you had already spent, gone, through nothing you did wrong — which
+    // is the point of it being here.
+    const lost = info.event && info.event.lose ? Math.round(run.cups * info.event.lose) : 0;
+    const stock = Math.max(0, run.cups - lost);
     const want = wanted(info, run.price, run.rep, run.seed);
-    const sold = Math.min(want, run.cups);
+    const sold = Math.min(want, stock);
     return {
       want,
       sold,
+      lost,                       // destroyed before opening, never sellable
       turned: want - sold,        // people who wanted one and didn't get one
-      wasted: run.cups - sold,    // lemonade doesn't keep, unless you bought the bucket
-      earned: sold * run.price    // 5c-clean: every tier is a multiple of 25c
+      wasted: stock - sold,       // lemonade doesn't keep, unless you bought the bucket
+      earned: sold * run.price,   // 5c-clean: every tier is a multiple of 25c
+      moments: changeMoments(spec(run.difficulty), run.seed, info.day, run.price, sold)
     };
   }
 
   // Regulars. Charge fairly and they come back; gouge them, or send them away
   // thirsty, and they stop turning up.
-  function nextRep(rep, priceCents, result, treats) {
+  function nextRep(rep, priceCents, result, treats, changeWrong) {
     const tier = priceTier(priceCents);
     let d = tier.repDay * (treats.sign ? 2 : 1);
     if (result.turned > 0) d -= 3;
+    // Short-changing people is remembered. Being careful at the till is part of
+    // running a stall well, not a side-game.
+    d -= 2 * (changeWrong || 0);
     return clamp(rep + d, REP_MIN, REP_MAX);
   }
 
@@ -362,6 +461,13 @@ LS.Economy = (function () {
       boughtToday: 0,
       treatToday: 0,
       borrowedToday: 0,
+      // The till, for today only. None of it is real money until closeDay pays
+      // the day in, so a day abandoned half-served simply replays.
+      tipsToday: 0,
+      overpaidToday: 0,
+      changeAt: 0,
+      changeRight: 0,
+      changeWrong: 0,
       loan: null,
       treats: { bucket: false, sign: false, creamsOn: [] },
       ledger: [],
@@ -384,6 +490,7 @@ LS.Economy = (function () {
     run.boughtToday = 0;
     run.treatToday = 0;
     run.borrowedToday = 0;
+    resetTill(run);
     run.result = null;
     run.phase = "morning";
     run.opening = { repay, gift };
@@ -402,17 +509,46 @@ LS.Economy = (function () {
   // still has to be able to reach tomorrow — so this returns an honest empty
   // day rather than a null the caller has to special-case.
   function openStall(run) {
+    // The till starts empty every time the stall opens, so a day left half-served
+    // and picked up later replays from the beginning rather than paying twice.
+    resetTill(run);
     run.result = run.cups > 0
       ? sell(run, run.today)
-      : { want: 0, sold: 0, turned: 0, wasted: 0, earned: 0, shut: true };
+      : { want: 0, sold: 0, lost: 0, turned: 0, wasted: 0, earned: 0, moments: [], shut: true };
     run.phase = "selling";
     return run.result;
   }
 
+  function resetTill(run) {
+    run.tipsToday = 0;
+    run.overpaidToday = 0;
+    run.changeAt = 0;
+    run.changeRight = 0;
+    run.changeWrong = 0;
+  }
+
+  // Hand over `given` cents to the customer waiting at moment index `i`.
+  // Nothing here touches the balances: the day is paid in as one lump at
+  // closeDay, so a half-finished day can never leave money behind.
+  function giveChange(run, given) {
+    const r = run.result;
+    if (!r || !r.moments || run.changeAt >= r.moments.length) return null;
+    const moment = r.moments[run.changeAt];
+    const rng = LS.Rng.stream(run.seed, run.day * 991 + run.changeAt);
+    const out = settleChange(moment, given, rng);
+    run.changeAt++;
+    run.tipsToday += out.tip;
+    run.overpaidToday += out.over;
+    if (out.ok) run.changeRight++; else run.changeWrong++;
+    return Object.assign({ moment }, out);
+  }
+
   function closeDay(run) {
     const r = run.result;
-    run.pocket += r.earned;
-    run.rep = nextRep(run.rep, run.price, r, run.treats);
+    // Everything the day made, all at once: cups sold, plus what people left as
+    // a thank-you, minus whatever was handed back over the odds.
+    run.pocket += r.earned + run.tipsToday - run.overpaidToday;
+    run.rep = nextRep(run.rep, run.price, r, run.treats, run.changeWrong);
     run.carry = run.treats.bucket ? r.wasted : 0;
     run.phase = "evening";
     return r;
@@ -438,8 +574,10 @@ LS.Economy = (function () {
     const r = run.result;
     const o = run.opening || { repay: null, gift: 0 };
     const loanCost = loanTonight(run);
+    // Money thrown away: cups nobody bought, plus any the wasps got. Display
+    // only — it moves nothing, it just names what the waste was worth.
     const binned = run.boughtToday > 0
-      ? cents5(Math.round((r.wasted * run.spentToday) / run.boughtToday))
+      ? cents5(Math.round(((r.wasted + (r.lost || 0)) * run.spentToday) / run.boughtToday))
       : 0;
 
     run.ledger.push({
@@ -447,13 +585,19 @@ LS.Economy = (function () {
       weather: run.today.weather,
       unit: run.today.unit,
       price: run.price,
-      cups: r.sold + r.wasted,
+      cups: r.sold + r.wasted + (r.lost || 0),
       sold: r.sold,
       turned: r.turned,
       wasted: r.wasted,
+      lost: r.lost || 0,
+      event: run.today.event ? run.today.event.id : null,
       spent: run.spentToday,
       earned: r.earned,
-      profit: r.earned - run.spentToday,
+      tips: run.tipsToday,
+      overpaid: run.overpaidToday,
+      changeRight: run.changeRight,
+      changeWrong: run.changeWrong,
+      profit: r.earned + run.tipsToday - run.overpaidToday - run.spentToday,
       binned,                                  // display only, moves no money
       treatCost: run.treatToday,
       loanCost: loanCost ? loanCost.perNight : 0, // display only, moves no money
@@ -509,6 +653,11 @@ LS.Economy = (function () {
       owed: add("loanNet"),   // what borrowing cost, across every settled loan
       borrowed: add("borrowed"),
       binned: add("binned"),
+      tips: add("tips"),
+      overpaid: add("overpaid"),
+      changeRight: add("changeRight"),
+      changeWrong: add("changeWrong"),
+      lost: add("lost"),
       treats: add("treatCost"),
       written: add("written"),
       creams: run.treats.creamsOn.length,
@@ -535,12 +684,20 @@ LS.Economy = (function () {
     return { wealth: wealthLine, lemonade: lemonadeLine };
   }
 
-  // One sentence, chosen by what actually happened, in priority order.
+  // One sentence, chosen by what actually happened, in priority order. It says
+  // what happened and what it cost — not "well done".
   function takeaway(run) {
     const s = summary(run);
     const sp = spec(run.difficulty);
     if (s.written > 0) {
       return "You borrowed more than the stall could pay back. Next time, borrow only when a hot day is coming.";
+    }
+    if (s.overpaid > 0 && s.overpaid >= s.tips) {
+      return "You handed out " + money(s.overpaid) + " too much in change. Money given away by mistake is gone just as surely as money spent.";
+    }
+    if (s.changeRight > 0 && s.changeWrong === 0) {
+      return "You got every single sum at the till right, and people left you " +
+        money(s.tips) + " in tips for it. Being careful pays.";
     }
     if (s.interest > 0 && s.traded > 0 && s.interest * 3 >= s.traded) {
       return "Look at that — the bank paid you " + money(s.interest) +
@@ -572,6 +729,8 @@ LS.Economy = (function () {
       cups: run.cups, carry: run.carry, price: run.price,
       spentToday: run.spentToday, boughtToday: run.boughtToday,
       treatToday: run.treatToday, borrowedToday: run.borrowedToday,
+      tipsToday: run.tipsToday, overpaidToday: run.overpaidToday,
+      changeAt: run.changeAt, changeRight: run.changeRight, changeWrong: run.changeWrong,
       loan: run.loan ? { id: run.loan.id, borrow: run.loan.borrow, repay: run.loan.repay,
                          due: run.loan.due, taken: run.loan.taken } : null,
       treats: { bucket: run.treats.bucket, sign: run.treats.sign,
@@ -616,6 +775,11 @@ LS.Economy = (function () {
       run.boughtToday = snap.boughtToday || 0;
       run.treatToday = snap.treatToday || 0;
       run.borrowedToday = snap.borrowedToday || 0;
+      run.tipsToday = snap.tipsToday || 0;
+      run.overpaidToday = snap.overpaidToday || 0;
+      run.changeAt = snap.changeAt || 0;
+      run.changeRight = snap.changeRight || 0;
+      run.changeWrong = snap.changeWrong || 0;
       run.loan = snap.loan ? Object.assign({}, snap.loan) : null;
       run.treats = { bucket: !!snap.treats.bucket, sign: !!snap.treats.sign,
                      creamsOn: (snap.treats.creamsOn || []).slice() };
@@ -646,11 +810,14 @@ LS.Economy = (function () {
     // constants
     START_CASH, STALL_LIMIT, RATE, RATE_BONUS, BONUS_AT, GRANDMA,
     REP_MIN, REP_MAX, WEATHER, PRICES, PACKS, LOANS, TREATS, LEVELS,
+    COINS, NOTES, EVENTS,
     spec, priceTier,
     // the day
-    dayOf, weatherOn, packPrice, packSaving,
+    dayOf, weatherOn, eventOn, packPrice, packSaving,
     // trading
     wanted, sell, nextRep,
+    // the till
+    noteFor, changeMoments, settleChange, giveChange, resetTill,
     // banking
     interestOn, loanTonight, loanOffers, takeLoan, dueRepayment, grandma,
     // shopping

@@ -326,6 +326,78 @@ body.in-game{
 @keyframes walkup{ from{transform:translateY(9px);opacity:0} to{transform:none;opacity:1} }
 @media (prefers-reduced-motion:reduce){ .customer{animation:none} }
 
+/* ── The till ───────────────────────────────────────────────────────────── */
+
+/* Takes over the selling screen while somebody is waiting for their change.
+   Everything else stays on screen behind it so the day still reads as a day. */
+.change{
+  flex:1 1 auto;min-height:0;overflow-y:auto;
+  background:var(--card);border:2px solid var(--accent);border-radius:18px;
+  padding:12px;box-shadow:0 10px 26px var(--shadow);
+  display:flex;flex-direction:column;gap:9px;
+}
+.change-head{display:flex;align-items:center;gap:11px}
+.change-face{font-size:34px;line-height:1}
+.change-what{flex:1;min-width:0}
+.change-say{font-size:15px;font-weight:800}
+.change-sum{font-size:13.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+.change-sum b{color:var(--ink)}
+
+.tray{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:9px 11px}
+.tray-top{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  font-size:12.5px;font-weight:700;color:var(--muted);
+}
+.tray-top strong{font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums}
+.tray-top strong.hidden-total{font-size:15px;color:var(--muted)}
+.tray-coins{
+  display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:26px;
+  font-size:12px;font-weight:800;
+}
+.tray-coin{
+  background:var(--chip);color:var(--chipink);border-radius:999px;padding:4px 9px;
+  animation:dropin .18s ease-out;
+}
+@keyframes dropin{ from{transform:translateY(-6px);opacity:0} to{transform:none;opacity:1} }
+@media (prefers-reduced-motion:reduce){ .tray-coin{animation:none} }
+
+/* Real Australian coins, in the order they sit in a hand. */
+.coin-pad{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.coin{
+  font:inherit;font-weight:800;cursor:pointer;
+  min-width:60px;min-height:var(--tap);padding:8px 10px;
+  border-radius:50%;border:2px solid var(--gold);
+  background:linear-gradient(160deg,#ffe9a8,#e8b83c);color:#5a3a12;
+}
+.coin.silver{
+  border-color:#9aa7ad;background:linear-gradient(160deg,#f2f5f6,#b9c4c9);color:#33403f;
+}
+.coin:active{transform:translateY(1px)}
+.coin:disabled{opacity:.4;cursor:default}
+
+.change-verdict{
+  margin:0;font-size:14px;font-weight:800;line-height:1.45;text-align:center;
+  border-radius:12px;padding:10px;
+}
+.change-verdict.right{background:var(--chip);color:var(--chipink)}
+.change-verdict.wrong{background:rgba(209,73,63,.14);color:var(--bad)}
+/* Pinned to the bottom of the panel. On a 360x640 phone the coin pad pushed
+   "Give it to them" below the fold inside the panel's own scroller, which left
+   a child with a customer waiting and no visible way to pay them. */
+.change-buttons{
+  display:flex;gap:8px;margin-top:auto;position:sticky;bottom:0;
+  padding-top:8px;background:var(--card);
+}
+.change-buttons .btn,.change-buttons .ghost-btn{flex:1}
+
+/* While somebody is waiting for their change, the stall scene gets out of the
+   way. It is decoration; the sum is the game. */
+#selling.till-open .stall,
+#selling.till-open #skipBtn{display:none}
+
+.event{border-left-color:var(--accent2)}
+.event.bad{border-left-color:var(--bad)}
+
 .till{
   flex:0 0 auto;background:var(--card);border:1px solid var(--line);
   border-radius:16px;padding:10px 13px;

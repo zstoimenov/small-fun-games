@@ -19,7 +19,9 @@ LS.Ui = (function () {
   function header(run) {
     const sp = E.spec(run.difficulty);
     text("dayLabel", "Day " + run.day);
-    text("dayMeta", "of " + sp.days + (run.today && run.today.parade ? " · a parade is on!" : ""));
+    // Deliberately says nothing about today's event: you find that out when the
+    // stall opens, not while you still have money to commit.
+    text("dayMeta", "of " + sp.days);
   }
 
   function purse(run) {
@@ -216,6 +218,8 @@ LS.Ui = (function () {
   // into the next day.
   function sellingScreen(run) {
     phase("selling");
+    changeHide();
+    event(run.today);
     text("stallSun", E.WEATHER[run.today.weather].emoji);
     $("stallSign").innerHTML = "🍋 LEMONADE <span>" + E.price(run.price) + "</span>";
     $("queue").textContent = "";
@@ -243,6 +247,101 @@ LS.Ui = (function () {
     }
   }
 
+  /* ── The till ───────────────────────────────────────────────────────────── */
+
+  // The coin pad is built once from Economy.COINS, so the buttons and the money
+  // model can never disagree about what an Australian coin is.
+  function coinPad(onCoin) {
+    const pad = $("coinPad");
+    if (pad.children.length) return;
+    for (const c of E.COINS) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "coin" + (c < 100 ? " silver" : "");
+      b.dataset.value = String(c);
+      b.textContent = E.price(c);
+      b.addEventListener("click", () => onCoin(c));
+      pad.appendChild(b);
+    }
+  }
+
+  // `showTotal` is the difficulty dial that matters most: with the running total
+  // on, the child is checking their arithmetic as they go; with it off, they
+  // have to hold the sum in their head and find out afterwards.
+  function changeAsk(run, moment, showTotal) {
+    show($("changePanel"), true);
+    $("selling").classList.add("till-open");
+    coach(null);
+    show($("changeVerdict"), false);
+    show($("changeGive"), true);
+    show($("changeNext"), false);
+    $("changeClear").disabled = false;
+    text("changeFace", "🙂");
+    text("changeSay", '"One please!"');
+    $("changeSum").innerHTML = "A cup is <b>" + E.price(moment.price) +
+      "</b>. They've handed you <b>" + E.money(moment.note) +
+      "</b>.<br>How much do you give back?";
+    changeTray(run, [], showTotal);
+  }
+
+  function changeTray(run, coins, showTotal) {
+    const total = coins.reduce((a, b) => a + b, 0);
+    const box = $("trayTotal");
+    box.classList.toggle("hidden-total", !showTotal);
+    box.textContent = showTotal ? E.price(total) : coins.length ? "counting…" : "—";
+    const host = $("trayCoins");
+    host.textContent = "";
+    for (const c of coins) {
+      const s = document.createElement("span");
+      s.className = "tray-coin";
+      s.textContent = E.price(c);
+      host.appendChild(s);
+    }
+    $("changeGive").disabled = coins.length === 0;
+  }
+
+  // What actually happened, said plainly. No scolding — the number is the point.
+  function changeResult(run, out, moment) {
+    const v = $("changeVerdict");
+    show(v, true);
+    show($("changeGive"), false);
+    show($("changeNext"), true);
+    $("changeClear").disabled = true;
+    if (out.ok) {
+      text("changeFace", "😃");
+      v.className = "change-verdict right";
+      v.textContent = out.tip > 0
+        ? "That's right — " + E.money(moment.note) + " minus " + E.price(moment.price) +
+          " is " + E.price(moment.due) + ". They left you " + E.price(out.tip) + " as a thank-you!"
+        : "That's right. " + E.money(moment.note) + " minus " + E.price(moment.price) +
+          " is " + E.price(moment.due) + ".";
+    } else if (out.over > 0) {
+      text("changeFace", "🙂");
+      v.className = "change-verdict wrong";
+      v.textContent = "That was " + E.price(out.over) + " too much. The right change was " +
+        E.price(moment.due) + " — and they've walked off with the extra.";
+    } else {
+      text("changeFace", "😠");
+      v.className = "change-verdict wrong";
+      v.textContent = "That was " + E.price(out.short) + " short. They counted it, and they " +
+        "weren't happy. The right change was " + E.price(moment.due) + ".";
+    }
+  }
+
+  function changeHide() {
+    show($("changePanel"), false);
+    $("selling").classList.remove("till-open");
+  }
+
+  // Today's surprise, revealed only once the stall is open.
+  function event(info) {
+    const card = $("eventCard");
+    if (!info.event) { show(card, false); return; }
+    card.className = "card news event" + (info.event.good ? "" : " bad");
+    card.innerHTML = "<b>" + info.event.emoji + " " + info.event.name + "</b>" + info.event.note;
+    show(card, true);
+  }
+
   function sellDone(run) {
     const r = run.result;
     text("cupsLeft", String(Math.max(0, run.cups - r.sold)));
@@ -258,12 +357,33 @@ LS.Ui = (function () {
     header(run); purse(run); goal(run);
     coach(null);
 
-    const profit = r.earned - run.spentToday;
+    const takings = r.earned + run.tipsToday - run.overpaidToday;
+    const profit = takings - run.spentToday;
     text("sumSpent", E.money(run.spentToday));
-    text("sumEarned", E.money(r.earned));
+    text("sumEarned", E.money(takings));
     text("sumProfit", E.money(Math.abs(profit)));
     text("sumTotalLabel", profit < 0 ? "So you lost" : "So you made");
     $("sumTotalLine").classList.toggle("loss", profit < 0);
+
+    // The till, and what today's surprise took off you. Both are money, and
+    // both belong next to the sums rather than tucked away.
+    const tillLine = $("tillLine");
+    const bits = [];
+    if (run.tipsToday > 0) bits.push("people left you " + E.price(run.tipsToday) + " in tips");
+    if (run.overpaidToday > 0) bits.push("you gave away " + E.price(run.overpaidToday) + " in wrong change");
+    if (bits.length) {
+      tillLine.textContent = "🪙 At the till: " + bits.join(", ") + ".";
+      tillLine.className = "verdict " + (run.overpaidToday > 0 ? "bad" : "good");
+      show(tillLine, true);
+    } else show(tillLine, false);
+
+    const lostLine = $("lostLine");
+    if (r.lost > 0) {
+      lostLine.textContent = run.today.event.emoji + " " + r.lost +
+        " cups were gone before you sold a single one. That money was already spent.";
+      lostLine.className = "verdict bad";
+      show(lostLine, true);
+    } else show(lostLine, false);
 
     const waste = $("wasteLine");
     if (r.wasted > 0 && run.treats.bucket) {
@@ -434,6 +554,7 @@ LS.Ui = (function () {
 
   return { show, text, header, purse, goal, coach, toast, phase,
            morning, packs, prices, basket, hint,
-           sellingScreen, sellStep, sellDone,
+           sellingScreen, sellStep, sellDone, event,
+           coinPad, changeAsk, changeTray, changeResult, changeHide,
            evening, night, bankSheet, treatSheet, result };
 })();

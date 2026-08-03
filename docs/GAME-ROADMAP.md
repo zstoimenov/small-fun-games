@@ -35,11 +35,12 @@ game needs.
 | 2 | ✅ Mastermind | `mastermind/` | 700–900 → **2,817 actual** | 180k–280k → **~330k actual** |
 | 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
 | 4 | ✅ Battleship | `battleship/` | 1,800–2,600 → **3,072 actual** | 550k–850k → 700k–1.1M → **inside it** |
-| 5 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790 actual** | 600k–900k |
+| 5 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790**, then **3,318** after the till and risk pass | 600k–900k |
 
 For scale, the games measure: Yatzy 3,098 lines, Battleship 3,072, Nine Men's
-Morris 2,928, Mastermind 2,817, Lemonade Stand 2,790, Connect Four 2,202, Footy
-Tactics Lab 2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy
+Tactics Lab 2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913 —
+and Lemonade Stand 3,318, now the largest in the repo.
 
 **Three games in, the line estimates looked consistently ~2.5× low. Battleship
 was the first to come in under its adjusted figure, and the reason is the useful
@@ -545,3 +546,79 @@ Decisions worth recording:
 - **Icons need a build step of their own.** There is no ImageMagick, rsvg-convert,
   Inkscape or PIL on the box. The three PNGs come out of headless Chromium
   screenshotting an inline SVG at 192, 512 and 180.
+
+### Second pass: the till, risk, and making the prize rare
+
+Three things were asked for after the first build: customers should pay with a
+note so the child has to count out change, the game should have real risk and
+reward, and **the top prize should be rare**, because the point is that big
+things take work and consistency rather than a dopamine hit.
+
+**The till.** Up to two customers a day (one on Easy) pay with a note instead of
+the exact money, and the day stops until the change is counted out of real
+Australian coins. Exact change sometimes earns a tip; too much is simply gone,
+and the customer keeps it; too little is noticed and costs reputation. The
+running total is shown on Easy and Normal and **hidden on Tricky**, which is the
+difficulty dial that matters most — with it on, the child checks the arithmetic
+as they go; with it off, they have to hold the sum in their head.
+
+Two rules made this safe rather than fiddly:
+
+- **Nothing at the till moves a balance.** Tips and overpayments accumulate on
+  the run and are paid in as one lump at `closeDay`, so a day abandoned
+  half-served replays from the start instead of paying out twice.
+- **Skip may skip the animation, never a sum.** `fastForward` jumps to the next
+  customer owed change, not past them, and the visibility handler explicitly
+  refuses to fast-forward while somebody is waiting. Otherwise the arithmetic —
+  the whole mechanic — would be optional, and free money.
+
+**Risk.** Six events, revealed when the stall OPENS and never in the morning:
+you commit your money to stock and a price first, and then the world happens.
+A rival stall halves the crowd, wasps take 40% of the stock before you sell a
+cup, a downpour sends everybody home; a parade or an early school pickup goes
+the other way. Normal runs 30% event days at roughly 2:1 bad-to-good. Measured:
+an ordinary day makes $8.42 and a bad day makes $2.14.
+
+**The rare prize, and how it was set.** The bike went from $120 to $200 and the
+whole distribution moved under it. The acceptance test was rewritten from
+scratch, because the old assertions encoded the *old* design goal — "good play
+should usually get the bike" is precisely what is no longer wanted. What it
+asserts now is the ordering and the size of the gaps:
+
+| how it is played | median | gets the bike |
+| --- | --- | --- |
+| reads the weather, banks, sums right | $166 | **34%** |
+| ...but half the till sums wrong | $147 | 26% |
+| ...but every till sum wrong | $127 | 15% |
+| steady, but never adapts the stock | $130 | **0%** |
+| ...and an ice cream every day | $99 | 0% |
+| ...and never banks a cent | $109 | 2% |
+| charges $1.50 for everything | $68 | 0% |
+| sells at 25c, under what they cost | $2 | 0% |
+
+**That 0% for "steady but never adapts the stock" is the consistency lesson
+working.** A child who buys the same fifteen cups every day and plays perfectly
+otherwise finishes around $130 and never gets there, because the bike needs the
+hot days to be backed properly. One good day is not enough; a fortnight of
+paying attention is.
+
+**The floor matters as much as the ceiling.** A well-played run reaches rung 2
+or better 90% of the time and finishes with nothing 0% of the time. A rare top
+rung reads as failure without that, and a child who feels the game is
+unwinnable learns nothing at all.
+
+Decisions worth recording:
+
+- **Assertions encode design intent, so changing the intent means rewriting
+  them, not weakening them.** The first build asserted "good play usually gets
+  the bike" and passed; the same assertion is now exactly the thing that must
+  fail. Keeping it and loosening the bound would have hidden the change.
+- **A rate is not a coin.** `3c a night for every dollar` is quoted to the cent
+  like a real interest rate, while every payable amount stays 5c-clean. The
+  browser check that scrapes visible money had to learn the difference.
+- **The panel has to fit before the sum is worth asking.** On a 360x640 phone
+  the coin pad pushed "Give it to them" below the fold inside the panel's own
+  scroller — no page overflow, so the layout check passed, and a child would
+  still have been stuck with a customer waiting and no visible way to pay them.
+  The stall scene now gets out of the way while the till is open, and the
+  buttons are sticky.

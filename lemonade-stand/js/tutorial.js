@@ -57,6 +57,21 @@ LS.Tutorial = (function () {
           "Sell at <b>" + E.price(25) + "</b> and you <i>lose</i> " + E.price(unit - 25) + " each time!</div>" +
           "<p>Charge too much and hardly anyone buys. Charge too little and you lose money on every cup.</p>" },
 
+      { title: "Counting out the change",
+        html: "<p>Some people pay with a note. You have to work out what to give back, and count it out in real coins.</p>" +
+          "<div class='demo'>A cup costs <b>" + E.price(75) + "</b>.<br>" +
+          "They hand you <b>" + E.money(500) + "</b>.<br>" +
+          "So the change is <span class='big-num'>" + E.money(425) + "</span>" +
+          "That's " + E.money(400) + " + " + E.price(20) + " + " + E.price(5) + ".</div>" +
+          "<p>Get it right and people often leave you a little extra. Give too much and they keep it — that money is gone. Give too little and they notice.</p>" },
+
+      { title: "Some days go wrong",
+        html: "<p>You buy your lemons before you know how the day will go. Sometimes it goes badly.</p>" +
+          "<div class='demo'>🐝 Wasps get into the lemonade.<br>" +
+          "🏪 Somebody sets up a stall up the road.<br>" +
+          "🌦️ It buckets down and everyone goes home.</div>" +
+          "<p>That isn't your fault, and it will still cost you money. It's why one good day is never enough — you need a lot of steady ones.</p>" },
+
       { title: "Money in, money out",
         html: "<p>At the end of each day you'll see the sums.</p>" +
           "<div class='demo'>You spent on lemons <b>" + E.money(big) + "</b><br>" +
@@ -97,7 +112,9 @@ LS.Tutorial = (function () {
           "<p>Every evening: look at what you made, and bank it.</p>" +
           "<div class='demo'>Get to <b>" + E.money(target) + "</b> in " + sp.days + " days and " +
           sp.rungs[sp.rungs.length - 1].replace(/^[^ ]+ /, "") + " is yours.</div>" +
-          "<p>Good luck!</p>" }
+          "<p><b>Most fortnights won't get there</b>, and that's meant to be true. " +
+          "That's a lot of lemonade. There are three smaller things to save for on the way.</p>" +
+          "<p>Take your time. Steady beats lucky.</p>" }
     ];
   }
 

@@ -1,7 +1,7 @@
 {
   "name": "Lemonade Stand",
   "short_name": "Lemonade",
-  "description": "Run a lemonade stall for a fortnight. Buy your cups, pick a price, and save up for a bike.",
+  "description": "Run a lemonade stall for a fortnight. Buy your cups, pick a price, count out the change, and save up for a bike.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
