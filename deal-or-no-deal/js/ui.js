@@ -113,7 +113,12 @@ DND.Ui = (function () {
   // to open, so a mis-tap never costs a box — the same bargain Battleship makes
   // before it fires a shell. `locked` is on while it is Robo's go or a box is
   // mid-flourish, and it only ever takes taps away.
-  function paintBoxes(game, aim, locked) {
+  //
+  // `opening` is the box that has been committed to but not yet opened. It is
+  // still drawn as a sealed box wearing its own number, because at that moment
+  // nothing on the page knows what is inside it — app.js has not called
+  // Rules.open yet.
+  function paintBoxes(game, aim, locked, opening) {
     const grid = $("boxGrid");
     const kids = grid.children;
     for (let i = 0; i < kids.length; i++) {
@@ -123,6 +128,7 @@ DND.Ui = (function () {
       b.className = "box" +
         (open ? " open" : "") +
         (mine && !open ? " mine" : "") +
+        (opening === i && !open ? " opening" : "") +
         (aim === i && !open ? " aim" : "") +
         (open && game.values[i] >= bigMoney(game) ? " big" : "");
       b.textContent = open ? Rules.moneyShort(game.values[i]) : String(i + 1);

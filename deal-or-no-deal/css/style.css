@@ -330,6 +330,22 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 }
 .box.mine::after{background:rgba(255,255,255,.4)}
 
+/* Committed to, but not yet opened — the box is off the board and shaking, and
+   nobody knows what is in it, the page included. The lift and the scale live
+   inside the keyframes rather than in a static transform, because a separate
+   `transform` rule here would be overwritten by the animation on every frame
+   and the box would sink back onto the board as it rattled. */
+.box.opening{
+  animation:rattle .26s ease-in-out infinite;
+  outline:3px solid var(--gold);outline-offset:3px;
+  box-shadow:0 14px 28px var(--shadow);
+  z-index:3;
+}
+@keyframes rattle{
+  0%,100%{transform:translateY(-9px) scale(1.09) rotate(-2.6deg)}
+  50%    {transform:translateY(-9px) scale(1.09) rotate(2.6deg)}
+}
+
 /* An opened box stops being a box: it lies flat and shows what was inside. */
 .box.open{
   background:var(--bg1);border:1px dashed var(--line);
@@ -345,8 +361,15 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   35%{transform:scale(1.22) rotate(-3deg)}
   100%{transform:scale(1)}
 }
+/* Reduce the motion, not the suspense. The rattle goes, but the box still
+   lifts and lights up, and — the part that matters — app.js's timing is
+   untouched, so the wait before a box opens is exactly as long either way. */
 @media (prefers-reduced-motion:reduce){
-  .box,.box.pop,.rail-item.just-gone{animation:none;transition:none}
+  /* .box.opening has to be named here as well as in the list: a bare `.box`
+     rule is one class less specific than `.box.opening`, so it loses and the
+     rattle plays on regardless. */
+  .box,.box.pop,.box.opening,.rail-item.just-gone{animation:none;transition:none}
+  .box.opening{transform:translateY(-9px) scale(1.09)}
 }
 
 /* ── The bottom bar ─────────────────────────────────────────────────────── */

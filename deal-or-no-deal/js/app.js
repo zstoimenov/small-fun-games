@@ -23,12 +23,29 @@
   const SAVE_KEY = "dealOrNoDealSave_v1";
   const BOT_NAME = "Robo";
 
-  // How long things take. The reveal is deliberately quick: a player who has
-  // dealt still watches their board play out, and everybody else is waiting.
-  const AIM_TO_OPEN = 520;   // the box popping open before play carries on
-  const ROBO_STEP = 620;     // Robo taking its go
-  const PLAYOUT_STEP = 230;  // the run of boxes at the end
-  const HELD_PAUSE = 950;    // the beat before the last box
+  // How long things take.
+  //
+  // `hold` is the one that matters and the one this game was first built
+  // without: the gap between committing to a box and finding out what is in it.
+  // That gap is where the whole programme lives, and with it at zero the game
+  // reads as a list of numbers appearing rather than as a gamble.
+  //
+  //   hold    the box lifted and rattling, still sealed
+  //   settle  the amount on screen before the next box can be tapped
+  //   robo    Robo taking a go, so it looks like it is deciding
+  //   playout the run of boxes at the end of a settled board
+  //   held    the beat either side of the very last box
+  const PACES = {
+    quick:  { hold: 320,  settle: 420,  robo: 420,  playout: 190, held: 700 },
+    normal: { hold: 900,  settle: 1100, robo: 850,  playout: 480, held: 1500 },
+    drama:  { hold: 1600, settle: 1700, robo: 1200, playout: 800, held: 2400 }
+  };
+  const pace = () => PACES[state.pace] || PACES.normal;
+
+  // Every delay in the game is scaled by this. It exists for the browser
+  // checks, which drive hundreds of boxes and would otherwise spend most of
+  // their time watching suspense they cannot appreciate.
+  let speed = 1;
 
   /* ── State ─────────────────────────────────────────────────────────────── */
 
@@ -37,6 +54,7 @@
     board: "full",
     robo: true,
     difficulty: "medium",
+    pace: "normal",
     names: ["Player 1", "Player 2", "Player 3"],
     flip: false,
     hints: true,
@@ -48,6 +66,7 @@
     players: [],           // { name, kind, game, finished, won }
     seat: 0,
     aim: null,             // the box tapped once and not yet confirmed
+    opening: null,         // the box being opened, before anyone knows what's in it
     busy: false,           // a box is opening, or Robo is thinking
     playing: false,
     over: false,
@@ -67,7 +86,7 @@
   // opening boxes on this one.
   function later(fn, ms) {
     const g = state.gen;
-    setTimeout(() => { if (g === state.gen) fn(); }, ms);
+    setTimeout(() => { if (g === state.gen) fn(); }, Math.max(0, ms * speed));
   }
 
   /* ── Saving ────────────────────────────────────────────────────────────── */
@@ -101,7 +120,8 @@
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         playerCount: state.playerCount, board: state.board, robo: state.robo,
-        difficulty: state.difficulty, names: state.names, flip: state.flip,
+        difficulty: state.difficulty, pace: state.pace,
+        names: state.names, flip: state.flip,
         hints: state.hints, muted: state.muted, seenHowTo: state.seenHowTo,
         tally: state.tally, best: state.best, game: savedGame
       }));
@@ -113,8 +133,8 @@
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
       const s = JSON.parse(raw);
-      for (const k of ["playerCount", "board", "robo", "difficulty", "flip",
-        "hints", "muted", "seenHowTo"]) {
+      for (const k of ["playerCount", "board", "robo", "difficulty", "pace",
+        "flip", "hints", "muted", "seenHowTo"]) {
         if (s[k] !== undefined) state[k] = s[k];
       }
       if (Array.isArray(s.names)) state.names = s.names;
@@ -188,6 +208,12 @@
       sp.ladder.length + " boxes, biggest prize " + Rules.money(sp.ladder[sp.ladder.length - 1]) +
       ", " + sp.schedule.length + " calls from the Banker. About " + sp.minutes + ".";
 
+    $("paceNote").textContent = {
+      quick: "Straight through. Good once everyone knows how it goes.",
+      normal: "A moment on each box before it opens, so it's worth watching.",
+      drama: "A long, agonising wait on every single box. The proper way."
+    }[state.pace];
+
     $("diffNote").textContent = {
       easy: "Robo holds out for a huge offer, so it usually ends up gambling on the last two boxes.",
       medium: "Robo deals when the offer looks fair, and sometimes gets it wrong.",
@@ -252,6 +278,7 @@
     state.players = makePlayers();
     state.seat = 0;
     state.aim = null;
+    state.opening = null;
     state.busy = false;
     state.playing = true;
     state.over = false;
@@ -285,6 +312,7 @@
     // resumed game always starts on a seat that still has something to do.
     if (state.players[state.seat].finished) state.seat = nextSeat();
     state.aim = null;
+    state.opening = null;
     state.busy = false;
     state.playing = true;
     state.over = false;
@@ -335,7 +363,7 @@
     $("turnName").classList.toggle("cpu", p.kind === "cpu");
     $("turnMeta").textContent = metaLine(g);
 
-    Ui.paintBoxes(g, state.aim, state.busy || p.kind === "cpu");
+    Ui.paintBoxes(g, state.aim, state.busy || p.kind === "cpu", state.opening);
     Ui.paintRails(g, justGone);
     $("myBoxNum").textContent = g.held >= 0 ? String(g.held + 1) : "—";
     $("myBox").hidden = g.held < 0;
@@ -454,26 +482,45 @@
     openBox(i);
   }
 
+  // Opening a box happens in three beats, and the first of them is the whole
+  // point: the box lifts off the board and rattles with the lid still on, and
+  // for that second nobody in the room knows what is in it.
+  //
+  // `Rules.open` is called at the *reveal*, not at the tap. That is deliberate
+  // and it is what makes the hold real rather than a curtain drawn over an
+  // answer the page already has — during the hold the amount is not in the
+  // game state, not in the DOM, and not in the save. Close the tab mid-suspense
+  // and the box comes back sealed.
   function openBox(i) {
     const g = curGame();
-    const value = Rules.open(g, i);
-    if (value === null) return;
+    if (!Rules.canOpen(g, i)) return;
+    const p = pace();
 
     state.aim = null;
+    state.opening = i;
     state.busy = true;
-    const big = value >= Ui.bigMoney(g);
-    if (big) Audio.big(); else Audio.small();
-    Ui.pop(i);
-    render(value);
-    if (big && cur().kind !== "cpu") {
-      Ui.toast("Ouch — " + Rules.money(value) + " is gone.", 1600);
-    }
-    save();
+    Audio.lift(p.hold / 1000);
+    render();
 
     later(() => {
-      state.busy = false;
-      afterAction();
-    }, AIM_TO_OPEN);
+      const value = Rules.open(g, i);
+      state.opening = null;
+      if (value === null) { state.busy = false; render(); return; }
+
+      const big = value >= Ui.bigMoney(g);
+      if (big) Audio.big(); else Audio.small();
+      Ui.pop(i);
+      render(value);
+      if (big && cur().kind !== "cpu") {
+        Ui.toast("Ouch — " + Rules.money(value) + " is gone.", 1600);
+      }
+      save();
+
+      later(() => {
+        state.busy = false;
+        afterAction();
+      }, p.settle);
+    }, p.hold);
   }
 
   // The one place that decides what happens after any box, deal or swap. Every
@@ -542,7 +589,7 @@
   function showSwap() {
     const g = curGame();
     if (cur().kind === "cpu") {
-      later(() => { Rules.swap(g, Banker.roboSwaps()); save(); render(); runPlayout(); }, ROBO_STEP);
+      later(() => { Rules.swap(g, Banker.roboSwaps()); save(); render(); runPlayout(); }, pace().robo);
       render();
       return;
     }
@@ -577,29 +624,47 @@
     render();
 
     const step = () => {
+      const p = pace();
       if (Rules.isOver(g)) { finishSeat(); return; }
       const table = Rules.tableBoxes(g);
       if (table.length) {
-        const v = Rules.open(g, table[0]);
-        Audio.small();
-        Ui.pop(table[0]);
-        render(v);
-        later(step, PLAYOUT_STEP);
+        // The run slows right down as it thins out. The last few boxes are the
+        // ones worth watching, and at a flat rate they go past in a blur just
+        // as the board gets interesting.
+        const slow = table.length <= 3 ? 2.2 : table.length <= 6 ? 1.5 : 1;
+        const i = table[0];
+        state.opening = i;
+        render();
+        later(() => {
+          const v = Rules.open(g, i);
+          state.opening = null;
+          if (v === null) { finishSeat(); return; }
+          if (v >= Ui.bigMoney(g)) Audio.big(); else Audio.small();
+          Ui.pop(i);
+          render(v);
+          later(step, p.playout * slow);
+        }, p.playout * slow * 0.7);
         return;
       }
-      // The held box, last, with a pause in front of it.
+      // The held box, last, with a long beat either side of it.
       later(() => {
-        const v = Rules.openHeld(g);
-        if (v !== null) {
-          const big = v >= Ui.bigMoney(g);
-          if (big) Audio.big(); else Audio.small();
-          Ui.pop(g.held);
-          render(v);
-        }
-        later(finishSeat, HELD_PAUSE);
-      }, HELD_PAUSE);
+        state.opening = g.held;
+        render();
+        Audio.lift(p.held / 1000);
+        later(() => {
+          const v = Rules.openHeld(g);
+          state.opening = null;
+          if (v !== null) {
+            const big = v >= Ui.bigMoney(g);
+            if (big) Audio.big(); else Audio.small();
+            Ui.pop(g.held);
+            render(v);
+          }
+          later(finishSeat, p.held);
+        }, p.held);
+      }, p.held * 0.6);
     };
-    later(step, PLAYOUT_STEP);
+    later(step, pace().playout);
   }
 
   function finishSeat() {
@@ -649,6 +714,7 @@
 
   function handOverTo(seat) {
     state.aim = null;
+    state.opening = null;
     state.busy = false;
     save();
     render();
@@ -674,7 +740,7 @@
         render();
         save();
         maybeRobo();
-      }, ROBO_STEP);
+      }, pace().robo);
       return;
     }
     if (g.phase === "open") {
@@ -682,7 +748,7 @@
         const table = Rules.tableBoxes(g);
         if (!table.length) { afterAction(); return; }
         openBox(table[Rng.int(table.length)]);
-      }, ROBO_STEP);
+      }, pace().robo);
       return;
     }
     if (g.phase === "offer") { showOffer(); return; }
@@ -710,7 +776,7 @@
         if (g.phase === "swap") { showSwap(); return; }
         handOver();
       }
-    }, ROBO_STEP * 2);
+    }, pace().robo * 2);
   }
 
   /* ── The end ───────────────────────────────────────────────────────────── */
@@ -876,6 +942,7 @@
     });
     chooser("boardChooser", state.board, (v) => { state.board = v; renderSetup(); save(); });
     chooser("diffChooser", state.difficulty, (v) => { state.difficulty = v; renderSetup(); save(); });
+    chooser("paceChooser", state.pace, (v) => { state.pace = v; renderSetup(); save(); });
     switchCtl("roboToggle", state.robo, (on) => {
       state.robo = on;
       state.tally = { wins: [0, 0, 0], games: 0 };
@@ -955,8 +1022,13 @@
     }
   }
 
-  // Handy from the console, and used by the browser checks.
-  window.DND.debug = { state, spec, Rules, Banker, Rng };
+  // Handy from the console, and used by the browser checks. `setSpeed` scales
+  // every delay in the game: the checks drive hundreds of boxes and have no use
+  // for the suspense.
+  window.DND.debug = {
+    state, spec, Rules, Banker, Rng, PACES,
+    setSpeed: (v) => { speed = Math.max(0, Number(v) || 0); return speed; }
+  };
 
   boot();
 })();

@@ -508,6 +508,34 @@ two are the ones that would have cost a lot to find late.
   threshold. Yatzy's dice check has the same 1-in-20 property and is worth
   revisiting.
 
+- **"Too fast" was not a tuning problem, and reading it as one would have wasted
+  the fix.** Play-tested, opening a box had no tension in it. The obvious
+  response is to make the pauses longer, and it would not have worked: the
+  original `openBox()` called `Rules.open()` and `render()` in the *same tick as
+  the tap*, so the amount was on screen before the finger left the glass, and
+  every millisecond of delay after that was a cooldown on a question already
+  answered. The gap between committing to a box and knowing what is in it — the
+  only place suspense can live — was exactly zero, and no amount of retuning
+  creates a phase that isn't there. What shipped is a three-beat opening (hold →
+  reveal → settle) with **`Rules.open` moved to the reveal**, so during the hold
+  the amount is not in the game state, not in the DOM and not in the save. It is
+  checkable, and it is checked: a browser test watches every frame between the
+  tap and the reveal and asserts the box still shows its own number and its
+  amount appears in no box and on no struck-out rail. **When something feels
+  wrong, find the missing phase before reaching for the constants.**
+- **A pace setting, because the right answer differs by play-through.** Quick /
+  Normal / Full drama, defaulting to Normal, as an ordinary `chooser()` row. The
+  first game wants the full treatment; the fifth 22-box game does not. It also
+  gave the browser suites something they badly needed — a `DND.debug.setSpeed()`
+  hook scaling every delay, without which a three-player 22-box run goes from a
+  minute to many and the drivers' guard loops time out on a game that is working
+  perfectly.
+- **Reduce the motion, not the suspense.** Under `prefers-reduced-motion` the
+  box stops rattling but still lifts, still lights up, and waits exactly as long.
+  Worth knowing: the reset needs `.box.opening` named explicitly, because a bare
+  `.box{animation:none}` is one class less specific and loses to it — the rattle
+  played on regardless, and only a computed-style check caught it.
+
 Two layout notes:
 
 - **`bestLayout` must apply its size cap after choosing the columns, not
