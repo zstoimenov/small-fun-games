@@ -1,12 +1,12 @@
 # Game roadmap
 
-Four games planned, **all four built**, plus **Deal or No Deal** added afterwards
-from a standing start. This file is the handover between sessions: it holds the
-briefs, the cost estimates and the decisions already made, so a fresh session can
-start building without re-deriving any of it. Nothing here is outstanding work
-any more — what it is now is the record of what each game cost against what it
-was estimated at, and of the handful of things that turned out to be worth
-knowing in advance.
+Four games planned, **all four now built**, plus a fifth added later
+(Lemonade Stand, §5) that was never on the original list. This file is the handover between
+sessions: it holds the briefs, the cost estimates and the decisions already made,
+so a fresh session can start building without re-deriving any of it. Nothing here
+is outstanding work any more — what it is now is the record of what each game
+cost against what it was estimated at, and of the handful of things that turned
+out to be worth knowing in advance.
 
 Build conventions are in [`../CLAUDE.md`](../CLAUDE.md). Catalogue fields are in
 [`../README.md`](../README.md#add-a-new-game).
@@ -38,17 +38,12 @@ game needs.
 | 2 | ✅ Mastermind | `mastermind/` | 700–900 → **2,817 actual** | 180k–280k → **~330k actual** |
 | 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
 | 4 | ✅ Battleship | `battleship/` | 1,800–2,600 → **3,072 actual** | 550k–850k → 700k–1.1M → **inside it** |
-| 5 | ✅ Deal or No Deal | `deal-or-no-deal/` | not on the list → **3,063 actual** | not estimated |
+| 5 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790**, then **3,318** after the till and risk pass | 600k–900k |
 
-For scale, the games measure: Yatzy 3,098 lines, Battleship 3,072, Deal or No
-Deal 3,063, Nine Men's Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy
-Tactics Lab 2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
-
-**Deal or No Deal is the fifth data point for `lines ≈ 2,000 + the game's own
-logic`, and it lands on it.** Its rules and Banker together are 545 lines; the
-other 2,518 are the house furniture. It is also the cheapest game in the
-collection per line of anything interesting, because it has no search in it at
-all — see below.
+For scale, the games measure: Yatzy 3,098 lines, Battleship 3,072, Nine Men's
+Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy
+Tactics Lab 2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913 —
+and Lemonade Stand 3,318, now the largest in the repo.
 
 **Three games in, the line estimates looked consistently ~2.5× low. Battleship
 was the first to come in under its adjusted figure, and the reason is the useful
@@ -451,114 +446,182 @@ near the edge, and a heat map in the menu showing where the computer thinks
 *your* ships are — which is the most useful thing in the game for teaching a
 child not to hide them all in one corner.
 
-## 5. Deal or No Deal — `deal-or-no-deal/` ✅ built
+## 5. Lemonade Stand — `lemonade-stand/` ✅ built
 
-Not on the original list. Added afterwards, from a one-line brief: *"1, 2 or 3
-human players, use some of the elements from previous games, follow the real game
-mechanics with box openings and offers."*
+Not on the original four-game list — the shelf had no game about money, and
+`maths` had only Times Table Blaster on it. Solo, one run ≈ 5–10 minutes, aimed
+squarely at an 8-year-old.
 
-- 10, 16 or 22 boxes holding a money ladder from 1c to $250,000. Keep one back,
-  open the rest to a fixed schedule, and the Banker calls after every round.
-- Deal and you bank the money; no deal and you play on. Two boxes left is a
-  final offer and then the swap.
-- Catalogue: `category: "board"`, `players: [1, 3]`.
+- Run a stall for a fixed number of days (7 on Easy, 14 otherwise). Each day is
+  one loop: **morning** (forecast, today's lemon price, buy stock, pick a price
+  from five preset tiles — no typed numbers), **selling** (a short animation over
+  an already-decided result), **evening** (the sums in words, then bank / half /
+  pocket), **night** (interest lands, any loan's running cost is noted).
+- Demand is `footfall(weather) × pull(price) × reputation × event × jitter`, and
+  is monotonically non-increasing in price. Reputation (0–100, drawn as stars) is
+  what makes 75c beat $1.00 across a fortnight while $1.00 wins on any one day.
+- **Interest both ways.** The bank pays 3c a night per dollar banked and charges
+  6c a night per dollar borrowed — twice as much — and the game says exactly
+  that. One loan at a time, fixed repayment stated up front, never offered if it
+  would fall due after the last day, settled automatically, any shortfall written
+  off. Debt cannot grow and balances never go negative.
+- A four-rung savings goal is pinned to the topbar all run ($30 / $60 / $90 /
+  **$120 a bike** on Normal). Three shop items: two that earn their money back
+  and one ice cream that does nothing at all.
+- **Catalogue**: `category: "maths"`, `players: [1, 1]`, `age: 8`.
 
-3,063 lines, one session. Five things are worth carrying forward, and the first
-two are the ones that would have cost a lot to find late.
+**Watch for**: the balancing is a measurement job, not a taste job — build the
+economy and the node sweep before wiring a single button.
 
-- **The mean cannot rank the difficulties, and it is a trap laid by the game
-  itself.** Refusing every offer wins the board average *by construction* — your
-  box is a uniform pick from the ladder — so a greedier Robo always has the
-  higher mean take. Measured on the first attempt, Medium and Hard came out
-  "better" than Easy on mean while dealing in 18% and 0% of games respectively:
-  they were not hard opponents, they were opponents that never played. What
-  separates good from bad here is the **median** and how often you walk away with
-  small change. On those, the shipped ladder is monotone both ways: Easy $2,550
-  median and busts 46% of the time, Medium $10,100 / 23%, Hard $12,000 / 7%,
-  with Hard within a few hundred dollars of the best any fixed threshold manages.
-  **Before tuning a difficulty ladder, work out which number actually moves.**
-- **Difficulty must not touch the rules, only the opponent — and this game
-  proves why by breaking when it does.** The first cut had the Banker get
-  stingier at Hard *and* Robo get shrewder. Those pull opposite ways: a meaner
-  Banker shrinks Robo's takings too, so "Hard" measured as the level with the
-  *lowest* score to beat. There is now one Banker for everybody and difficulty is
-  Robo alone, which is what Connect Four, Morris, Mastermind and Battleship all
-  do already. The board-size picker is where "how hard is this game" lives.
-- **No search, and that is the whole cost story.** The board is pure chance;
-  there is nothing to work out about it. What replaces `ai.js` is `banker.js`, a
-  *price* — the average of what's left, times a cut that climbs each round, times
-  a discount for how much of that average rides on one box. 208 lines, no tree.
-  It is why this game came in at Battleship's size while being much less work:
-  rank by how much a second person can see *and* by whether there is a search at
-  all.
-- **The acceptance test wrote itself, and it is the best one in the repo.**
-  Never dealing must average the ladder mean exactly — a known number, not a
-  judgement, the equivalent of Knuth's 4.4761 or density's 44.6. Measured over
-  40,000 games per board it lands within 0.5%, and *swapping at the end changes
-  nothing*, which is the counterintuitive half and so is measured separately.
-  The average is also computed two ways throughout (running remainder vs the
-  whole ladder minus the opened set) and compared after every single opening.
-  390,000 assertions, all in node.
-- **A fairness panel at p = 0.05 cries wolf one run in twenty, and a test nobody
-  believes is worse than no test.** The 22-box check failed a build on a
-  perfectly good shuffle. Repeated runs showed mean chi-square landing within a
-  point of the degrees of freedom every time — the shuffle was never the problem,
-  the false-alarm rate was. The in-game panel now draws its line at p = 0.01, and
-  the build gate checks the *mean* over ten runs instead of one run against a
-  threshold. Yatzy's dice check has the same 1-in-20 property and is worth
-  revisiting.
+### What shipped, and where it differs
 
-- **"Too fast" was not a tuning problem, and reading it as one would have wasted
-  the fix.** Play-tested, opening a box had no tension in it. The obvious
-  response is to make the pauses longer, and it would not have worked: the
-  original `openBox()` called `Rules.open()` and `render()` in the *same tick as
-  the tap*, so the amount was on screen before the finger left the glass, and
-  every millisecond of delay after that was a cooldown on a question already
-  answered. The gap between committing to a box and knowing what is in it — the
-  only place suspense can live — was exactly zero, and no amount of retuning
-  creates a phase that isn't there. What shipped is a three-beat opening (hold →
-  reveal → settle) with **`Rules.open` moved to the reveal**, so during the hold
-  the amount is not in the game state, not in the DOM and not in the save. It is
-  checkable, and it is checked: a browser test watches every frame between the
-  tap and the reveal and asserts the box still shows its own number and its
-  amount appears in no box and on no struck-out rail. **When something feels
-  wrong, find the missing phase before reaching for the constants.**
-- **A pace setting, because the right answer differs by play-through.** Quick /
-  Normal / Full drama, defaulting to Normal, as an ordinary `chooser()` row. The
-  first game wants the full treatment; the fifth 22-box game does not. It also
-  gave the browser suites something they badly needed — a `DND.debug.setSpeed()`
-  hook scaling every delay, without which a three-player 22-box run goes from a
-  minute to many and the drivers' guard loops time out on a game that is working
-  perfectly.
-- **Reduce the motion, not the suspense.** Under `prefers-reduced-motion` the
-  box stops rattling but still lifts, still lights up, and waits exactly as long.
-  Worth knowing: the reset needs `.box.opening` named explicitly, because a bare
-  `.box{animation:none}` is one class less specific and loses to it — the rattle
-  played on regardless, and only a computed-style check caught it.
+**2,790 lines against an estimate of 3,600** — one session, and the second game
+to come in under. The rule held; the estimate of the *second* term was too fat.
+This game's own logic is `economy.js` 665 + `chart.js` 106 + `rng.js` 70 = 841
+lines, not the ~1,500 guessed, and the house furniture came to ~1,950. So
+`lines ≈ 2,000 + own logic` predicted 2,841 against 2,790 actual.
 
-Two layout notes:
+The lesson repeats Battleship's: **the fixed floor is the reliable part of the
+estimate and the game-specific part is the one that gets inflated by anxiety.**
+An economy is a page of arithmetic. What made this game feel expensive up front
+was the number of screens, and screens are house furniture — already paid for in
+the 2,000. Five phases cost less than Battleship's two boards, because none of
+them is a bespoke geometry problem.
 
-- **`bestLayout` must apply its size cap after choosing the columns, not
-  during.** Capping first makes every roomy layout tie at the maximum and the
-  first candidate wins — which on a tall tablet was two columns, drawing a
-  chimney of boxes down the middle with the money rails stranded either side.
-  Choose on raw fit; among layouts big enough to be capped, the widest wins.
-- **Twenty-two amounts down a rail on a phone lying on its side is nine pixels
-  each.** The rails switch to two columns when a row would fall under 24px, and
-  the text is sized from the row height that actually resulted rather than from
-  the viewport. Found by measuring `scrollHeight > clientHeight` on every element
-  at seven viewports, not by looking — the overflow was invisible in a screenshot.
+**The sweep earned its keep three times over, and every one of the three was a
+number that looked fine and taught the wrong thing.**
 
-Elements taken from the other games, as the brief asked: the setup sheet and its
-`chooser`/`setChooser` controls, rows hidden rather than disabled, Yatzy's
-flip-the-screen mode and its `crypto` RNG, Battleship's two-tap commit and its
-`savedGame`-as-the-record save, the seven-page lesson drawn with the real rules,
-the menu's what-was-it-thinking panel, and the running tally. New here: three
-players (a first for this repo), the rotating-round turn order, and a lesson that
-teaches expected value without ever using the words.
+- **`$1.00` was quietly the best price.** The tiers had been tuned against
+  revenue per customer; what a run accumulates is *profit* per customer, and at
+  a 40c cup `0.62 × 60c` beats `1.00 × 35c`. The game would have taught "charge
+  as much as you can get away with". Dropping the $1.00 pull to 0.52 put the
+  peak back on 75c where the lesson is.
+- **Banking everything made you poorer.** Money in the bank was not spendable in
+  the morning, so banking your takings starved the stall of the cash it needed
+  for tomorrow's lemons: pocketing finished at $136 against banking's $48, and
+  the game taught the exact opposite of its third lesson. Spending now draws
+  pocket-first then bank, free and instant. **The lesson is "money you leave
+  alone grows", not a liquidity puzzle — and that had to be a design decision
+  rather than an accident.**
+- **5c a night was too generous.** It made interest 48% of a well-played
+  fortnight, which teaches "don't bother trading". 3c lands it at 33%.
 
-**No undo, deliberately.** Every other game here has one. Opening a box is the
-drama, and being able to take it back destroys the game — the two-tap commit
-covers the mis-tap that undo was really there for. **No handover screen either:**
-nobody, not even the player, knows what is in a box, so there is no hidden state
-to protect and Battleship's whole secrecy problem simply does not arise.
+**The goal price is the one number that cannot be reasoned out, only read off a
+distribution.** $120 was picked because it separates the lessons rather than
+because it is any particular percentile: good play reaches it 82% of the time,
+buying an ice cream every day drops that to 20%, gouging at $1.50 gets 9%, and
+selling under cost gets 0%. Those five numbers are the acceptance test now — if a
+later change moves the ranking, it broke the teaching, not the code.
+
+**One assertion had to be weakened, and weakening it was the honest move.** The
+brief claimed never banking should be unable to reach the bike. It reaches it
+56% of the time, because pocketed money is just as safe in this game — hoarding
+forgoes the interest, it doesn't lose. Asserting the *gap* (82% vs 56%) states
+what the model actually does; the original assertion would have been asserting a
+punishment the design never had.
+
+Verification split the way Morris predicted: 78,838 node assertions over the pure
+economy (the money invariant — every balance and every ledger field an integer
+and a multiple of 5c — caught the most), and 162 browser checks for the things
+that are genuinely visual. Two browser "failures" were the test being wrong, not
+the game: `3c a night for every dollar` is a *rate*, not a coin, and the goal bar
+was measured mid-transition.
+
+Extras beyond the brief: a shut-the-stall day (a child who can't afford lemons
+still has to reach tomorrow), Grandma's $2.00 floor so nobody is locked out of
+the back half of a run, an ice bucket that makes leftovers keep, and a result
+chart that shades the gap between what you had and what you would have had
+without the bank — the compounding is an *area*, not two lines that happen to
+diverge.
+
+Decisions worth recording:
+
+- **Seeded RNG, the opposite of Yatzy.** Yatzy draws from crypto so a roll can't
+  be replayed; here a day must be. The save holds a seed and a ledger, not a
+  pre-rolled fortnight, so resuming regenerates the same forecast and the same
+  lemon price. Closing the tab on a scorcher and coming back to rain would look,
+  correctly, like cheating.
+- **Money is integer cents everywhere, with one rounding function and one
+  formatter, both called only at the edges.** Every visible amount is a multiple
+  of 5c like real Australian cash. This is the single most useful constraint in
+  the game and it is worth copying wholesale into anything else that handles
+  money.
+- **Icons need a build step of their own.** There is no ImageMagick, rsvg-convert,
+  Inkscape or PIL on the box. The three PNGs come out of headless Chromium
+  screenshotting an inline SVG at 192, 512 and 180.
+
+### Second pass: the till, risk, and making the prize rare
+
+Three things were asked for after the first build: customers should pay with a
+note so the child has to count out change, the game should have real risk and
+reward, and **the top prize should be rare**, because the point is that big
+things take work and consistency rather than a dopamine hit.
+
+**The till.** Up to two customers a day (one on Easy) pay with a note instead of
+the exact money, and the day stops until the change is counted out of real
+Australian coins. Exact change sometimes earns a tip; too much is simply gone,
+and the customer keeps it; too little is noticed and costs reputation. The
+running total is shown on Easy and Normal and **hidden on Tricky**, which is the
+difficulty dial that matters most — with it on, the child checks the arithmetic
+as they go; with it off, they have to hold the sum in their head.
+
+Two rules made this safe rather than fiddly:
+
+- **Nothing at the till moves a balance.** Tips and overpayments accumulate on
+  the run and are paid in as one lump at `closeDay`, so a day abandoned
+  half-served replays from the start instead of paying out twice.
+- **Skip may skip the animation, never a sum.** `fastForward` jumps to the next
+  customer owed change, not past them, and the visibility handler explicitly
+  refuses to fast-forward while somebody is waiting. Otherwise the arithmetic —
+  the whole mechanic — would be optional, and free money.
+
+**Risk.** Six events, revealed when the stall OPENS and never in the morning:
+you commit your money to stock and a price first, and then the world happens.
+A rival stall halves the crowd, wasps take 40% of the stock before you sell a
+cup, a downpour sends everybody home; a parade or an early school pickup goes
+the other way. Normal runs 30% event days at roughly 2:1 bad-to-good. Measured:
+an ordinary day makes $8.42 and a bad day makes $2.14.
+
+**The rare prize, and how it was set.** The bike went from $120 to $200 and the
+whole distribution moved under it. The acceptance test was rewritten from
+scratch, because the old assertions encoded the *old* design goal — "good play
+should usually get the bike" is precisely what is no longer wanted. What it
+asserts now is the ordering and the size of the gaps:
+
+| how it is played | median | gets the bike |
+| --- | --- | --- |
+| reads the weather, banks, sums right | $166 | **34%** |
+| ...but half the till sums wrong | $147 | 26% |
+| ...but every till sum wrong | $127 | 15% |
+| steady, but never adapts the stock | $130 | **0%** |
+| ...and an ice cream every day | $99 | 0% |
+| ...and never banks a cent | $109 | 2% |
+| charges $1.50 for everything | $68 | 0% |
+| sells at 25c, under what they cost | $2 | 0% |
+
+**That 0% for "steady but never adapts the stock" is the consistency lesson
+working.** A child who buys the same fifteen cups every day and plays perfectly
+otherwise finishes around $130 and never gets there, because the bike needs the
+hot days to be backed properly. One good day is not enough; a fortnight of
+paying attention is.
+
+**The floor matters as much as the ceiling.** A well-played run reaches rung 2
+or better 90% of the time and finishes with nothing 0% of the time. A rare top
+rung reads as failure without that, and a child who feels the game is
+unwinnable learns nothing at all.
+
+Decisions worth recording:
+
+- **Assertions encode design intent, so changing the intent means rewriting
+  them, not weakening them.** The first build asserted "good play usually gets
+  the bike" and passed; the same assertion is now exactly the thing that must
+  fail. Keeping it and loosening the bound would have hidden the change.
+- **A rate is not a coin.** `3c a night for every dollar` is quoted to the cent
+  like a real interest rate, while every payable amount stays 5c-clean. The
+  browser check that scrapes visible money had to learn the difference.
+- **The panel has to fit before the sum is worth asking.** On a 360x640 phone
+  the coin pad pushed "Give it to them" below the fold inside the panel's own
+  scroller — no page overflow, so the layout check passed, and a child would
+  still have been stuck with a customer waiting and no visible way to pay them.
+  The stall scene now gets out of the way while the till is open, and the
+  buttons are sticky.

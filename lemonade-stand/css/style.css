@@ -1,0 +1,535 @@
+/* Lemonade Stand — one stylesheet, no framework.                                */
+/* Tablet-first: big tap targets, and a palette that follows the device's light  */
+/* or dark setting.                                                              */
+/*                                                                              */
+/* The play area is a column that never scrolls as a whole: the topbar, purse,   */
+/* goal bar and the big button are pinned, and only the middle of a phase        */
+/* scrolls. A child mid-decision should never lose the Open the stall button off */
+/* the bottom of a phone.                                                        */
+
+:root{
+  --bg1:#fffaea; --bg2:#eafbef; --ink:#20301d; --muted:#5f7159;
+  --card:#ffffff; --line:#e6ecd8; --shadow:rgba(70,90,30,.16);
+  --accent:#2f9e5a; --accent2:#f2b705; --good:#1f9d55; --gold:#e8a300;
+  --chip:#eef7e6; --chipink:#2c6b3f;
+  --bad:#d1493f; --sun:#ffd23d; --sky:#cfeeff; --wood:#c98b4b; --wood2:#a86f38;
+  --tap:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg1:#111a12; --bg2:#16211a; --ink:#effaef; --muted:#9db79b;
+    --card:#1c2a1f; --line:#2f4234; --shadow:rgba(0,0,0,.55);
+    --accent:#4ad48a; --accent2:#ffc23d; --good:#4ad48a; --gold:#ffc23d;
+    --chip:#26382a; --chipink:#bfe9c8;
+    --bad:#ff7a6d; --sun:#ffc23d; --sky:#1f3a4a; --wood:#8b5f2f; --wood2:#6d4a24;
+  }
+}
+:root[data-theme="dark"]{
+  --bg1:#111a12; --bg2:#16211a; --ink:#effaef; --muted:#9db79b;
+  --card:#1c2a1f; --line:#2f4234; --shadow:rgba(0,0,0,.55);
+  --accent:#4ad48a; --accent2:#ffc23d; --good:#4ad48a; --gold:#ffc23d;
+  --chip:#26382a; --chipink:#bfe9c8;
+  --bad:#ff7a6d; --sun:#ffc23d; --sky:#1f3a4a; --wood:#8b5f2f; --wood2:#6d4a24;
+}
+:root[data-theme="light"]{
+  --bg1:#fffaea; --bg2:#eafbef; --ink:#20301d; --muted:#5f7159;
+  --card:#ffffff; --line:#e6ecd8; --shadow:rgba(70,90,30,.16);
+  --accent:#2f9e5a; --accent2:#f2b705; --good:#1f9d55; --gold:#e8a300;
+  --chip:#eef7e6; --chipink:#2c6b3f;
+  --bad:#d1493f; --sun:#ffd23d; --sky:#cfeeff; --wood:#c98b4b; --wood2:#a86f38;
+}
+
+*{box-sizing:border-box}
+/* Class rules like .overlay{display:grid} outrank the browser's own
+   [hidden]{display:none}, which would leave dismissed sheets invisible but
+   still swallowing taps. This puts the attribute back in charge. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;min-height:100dvh;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(900px 500px at 12% -8%, var(--bg2), transparent 62%),
+    linear-gradient(165deg, var(--bg1), var(--bg2));
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  padding:max(12px,env(safe-area-inset-top)) 12px calc(14px + env(safe-area-inset-bottom));
+}
+
+/* In the sheet's own flow, so it can never sit on top of the title. */
+#back{
+  display:inline-block;margin-bottom:10px;
+  font-size:13px;font-weight:700;text-decoration:none;color:var(--chipink);
+  background:var(--chip);padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn{
+  font:inherit;font-weight:800;border:none;border-radius:16px;cursor:pointer;
+  min-height:var(--tap);padding:12px 20px;color:#fff;
+  background:var(--accent);box-shadow:0 6px 16px var(--shadow);
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn-go{background:linear-gradient(145deg,var(--accent),#54c07a)}
+.btn-clear{background:var(--chip);color:var(--chipink)}
+.ghost-btn{
+  font:inherit;font-weight:700;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);color:var(--ink);padding:11px 16px;min-height:48px;cursor:pointer;
+}
+.ghost-btn:disabled{opacity:.42;cursor:default}
+.ghost-btn.wide{display:block;width:100%;margin:8px 0;text-align:left}
+.ghost-btn.strong{border-color:var(--accent);color:var(--accent);font-weight:800}
+.icon-btn{
+  font:inherit;font-size:19px;font-weight:800;line-height:1;
+  width:46px;height:46px;flex:0 0 auto;border-radius:14px;cursor:pointer;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+}
+
+/* ── Overlays and sheets ────────────────────────────────────────────────── */
+
+.overlay{
+  position:fixed;inset:0;z-index:50;
+  display:grid;place-items:center;
+  padding:max(14px,env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));
+  background:rgba(12,26,14,.58);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  overflow:auto;
+}
+.sheet{
+  width:100%;max-width:520px;background:var(--card);border:1px solid var(--line);
+  border-radius:24px;padding:20px;box-shadow:0 18px 50px var(--shadow);
+  max-height:100%;overflow:auto;
+}
+.sheet-sm{max-width:440px}
+.sheet-xs{max-width:340px}
+.sheet h1{margin:0 0 4px;font-size:clamp(24px,6vw,30px)}
+.sheet h2{margin:0 0 6px;font-size:22px}
+.sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
+.muted{color:var(--muted);font-weight:500}
+.pill{
+  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+  background:var(--chip);color:var(--chipink);
+}
+.sheet-buttons{display:flex;gap:10px;margin-top:16px}
+.sheet-buttons .btn{flex:1}
+#howtoBtn{flex:0 1 auto;white-space:nowrap;font-size:14px;padding:12px 15px}
+.best-line{
+  margin:12px 0 0;font-size:13px;font-weight:700;color:var(--chipink);
+  background:var(--chip);border-radius:12px;padding:9px 12px;text-align:center;
+}
+
+/* ── Setup ──────────────────────────────────────────────────────────────── */
+
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:9px 0;border-top:1px solid var(--line);
+}
+.row:first-of-type{border-top:none}
+.row-label{font-size:14px;font-weight:700;flex:0 0 auto}
+.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.seg{
+  display:flex;gap:3px;padding:3px;border-radius:13px;
+  background:var(--bg2);border:1px solid var(--line);flex:0 1 auto;
+}
+.seg .opt{
+  font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap;
+  border:none;background:none;color:var(--muted);
+  padding:9px 13px;border-radius:10px;min-height:40px;
+}
+.seg .opt.on{background:var(--card);color:var(--accent);box-shadow:0 2px 6px var(--shadow)}
+
+.switch{
+  position:relative;flex:0 0 auto;width:52px;height:31px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--line);background:var(--bg2);padding:0;transition:background .18s;
+}
+.switch .knob{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:var(--card);box-shadow:0 2px 5px var(--shadow);transition:transform .18s;
+}
+.switch[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.switch[aria-checked="true"] .knob{transform:translateX(21px)}
+
+/* ── The play area ──────────────────────────────────────────────────────── */
+
+body.in-game{
+  height:100dvh;overflow:hidden;
+  padding-left:8px;padding-right:8px;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom));
+}
+#game{
+  max-width:620px;margin:0 auto;height:100%;
+  display:flex;flex-direction:column;min-height:0;gap:8px;
+}
+
+.topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
+.turn-info strong{display:block;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.turn-info span{display:block;font-size:12px;color:var(--muted)}
+
+/* The purse. Big enough to read across the room, because it is the number the
+   whole game is about. */
+.purse{
+  display:flex;gap:7px;flex:0 0 auto;
+}
+.purse-part{
+  flex:1 1 0;text-align:center;font-size:12.5px;font-weight:700;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:7px 4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.purse-part b{display:block;font-size:17px;color:var(--ink);margin-top:1px}
+.purse-part.debt b{color:var(--bad)}
+.purse-part.lit{border-color:var(--accent);background:var(--chip)}
+
+/* ── The goal bar ───────────────────────────────────────────────────────── */
+
+.goal{flex:0 0 auto}
+.goal-track{
+  position:relative;height:14px;border-radius:999px;overflow:hidden;
+  background:var(--chip);border:1px solid var(--line);
+}
+.goal-fill{
+  height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,var(--accent2),var(--accent));
+  transition:width .5s ease;
+}
+.goal-label{
+  margin-top:4px;font-size:12.5px;font-weight:700;color:var(--muted);text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+@media (prefers-reduced-motion:reduce){ .goal-fill{transition:none} }
+
+/* ── Coach ──────────────────────────────────────────────────────────────── */
+
+.coach{
+  display:flex;gap:9px;align-items:flex-start;flex:0 0 auto;
+  background:linear-gradient(145deg,var(--accent),#54c07a);color:#fff;
+  padding:10px 12px;border-radius:16px;
+  font-size:13.5px;font-weight:600;line-height:1.4;
+  box-shadow:0 8px 20px var(--shadow);
+}
+.coach.warn{background:linear-gradient(145deg,#f0803a,#e8483f)}
+.coach.calm{
+  background:var(--card);color:var(--muted);font-weight:600;
+  border:1px solid var(--line);box-shadow:none;
+}
+.coach-face{font-size:19px;line-height:1.1}
+
+/* ── Phases ─────────────────────────────────────────────────────────────── */
+
+/* One phase visible at a time. The wrapper takes all the leftover height so the
+   scroller inside it has something definite to scroll against. */
+.phases{flex:1 1 auto;min-height:0;display:flex}
+.phase{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px;min-height:0}
+.scroller{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  display:flex;flex-direction:column;gap:8px;padding-bottom:2px;
+}
+.big-go{flex:0 0 auto;width:100%;font-size:17px}
+
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:12px 13px;box-shadow:0 6px 16px var(--shadow);flex:0 0 auto;
+}
+.card-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-size:14px;font-weight:800;margin-bottom:7px;
+}
+.card-head strong{font-size:19px;color:var(--accent)}
+.verdict{margin:6px 0 0;font-size:13px;line-height:1.45;color:var(--muted)}
+.verdict.good{color:var(--good);font-weight:700}
+.verdict.bad{color:var(--bad);font-weight:700}
+
+/* The bank's opening move, before the child touches anything. */
+.news{border-left:5px solid var(--accent2);font-size:13.5px;line-height:1.5}
+.news.bad{border-left-color:var(--bad)}
+.news b{display:block;font-size:15px;margin-bottom:3px}
+
+/* ── Forecast ───────────────────────────────────────────────────────────── */
+
+.forecast{display:flex;align-items:center;gap:13px}
+.forecast-emoji{font-size:40px;line-height:1}
+.forecast-name{font-size:19px;font-weight:800}
+.forecast-note{font-size:12.5px;margin-top:2px;line-height:1.4}
+
+/* ── Buying ─────────────────────────────────────────────────────────────── */
+
+.buy-row{display:flex;gap:8px;margin-top:4px}
+.pack-btn{
+  font:inherit;flex:1 1 0;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  border:1px solid var(--line);border-radius:15px;background:var(--bg2);color:var(--ink);
+  padding:10px 6px;min-height:var(--tap);
+}
+.pack-btn:disabled{opacity:.4;cursor:default}
+.pack-btn.big{border-color:var(--accent2)}
+.pack-cups{font-size:13.5px;font-weight:800}
+.pack-cost{font-size:16px;font-weight:800;color:var(--accent)}
+.pack-save{font-size:11.5px;font-weight:800;color:var(--gold)}
+.basket{
+  margin-top:9px;font-size:13.5px;font-weight:700;text-align:center;
+  background:var(--chip);color:var(--chipink);border-radius:12px;padding:9px 10px;
+}
+
+/* ── Price tiles ────────────────────────────────────────────────────────── */
+
+.prices{display:flex;gap:6px}
+.price-opt{
+  font:inherit;flex:1 1 0;cursor:pointer;font-weight:800;font-size:14px;
+  border:1px solid var(--line);border-radius:14px;background:var(--bg2);color:var(--muted);
+  padding:12px 2px;min-height:var(--tap);
+}
+.price-opt.on{
+  background:var(--accent);border-color:var(--accent);color:#fff;
+  box-shadow:0 4px 12px var(--shadow);
+}
+
+.extras{display:flex;gap:8px}
+.extras .ghost-btn{flex:1 1 0;text-align:center}
+.extras .ghost-btn.due{border-color:var(--bad);color:var(--bad)}
+
+/* ── Selling ────────────────────────────────────────────────────────────── */
+
+.stall{
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:8px;
+  background:linear-gradient(180deg,var(--sky),transparent 62%);
+  border-radius:18px;padding:10px;position:relative;overflow:hidden;
+}
+.stall-sun{position:absolute;top:8px;right:12px;font-size:32px}
+/* Centred, not bottom-aligned. Pinned to the bottom it left a tall empty sky
+   above the sign on a phone, which read as a broken layout rather than as air. */
+.stall-table{
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;
+}
+.stall-sign{
+  font-size:15px;font-weight:900;letter-spacing:.5px;color:#5a3a12;
+  background:linear-gradient(180deg,var(--sun),#f0a800);
+  border-radius:12px;padding:8px 16px;box-shadow:0 6px 16px var(--shadow);
+}
+.stall-sign span{display:block;font-size:20px;text-align:center}
+
+/* Customers walk up as the day plays out. One span per person served. */
+.queue{
+  width:100%;min-height:52px;display:flex;flex-wrap:wrap;gap:2px;
+  align-items:flex-end;justify-content:center;
+  border-bottom:9px solid var(--wood);border-radius:4px;padding-bottom:5px;
+  box-shadow:0 9px 0 var(--wood2);
+}
+.customer{font-size:22px;line-height:1;animation:walkup .32s ease-out}
+.customer.thirsty{opacity:.45;filter:grayscale(1)}
+@keyframes walkup{ from{transform:translateY(9px);opacity:0} to{transform:none;opacity:1} }
+@media (prefers-reduced-motion:reduce){ .customer{animation:none} }
+
+/* ── The till ───────────────────────────────────────────────────────────── */
+
+/* Takes over the selling screen while somebody is waiting for their change.
+   Everything else stays on screen behind it so the day still reads as a day. */
+.change{
+  flex:1 1 auto;min-height:0;overflow-y:auto;
+  background:var(--card);border:2px solid var(--accent);border-radius:18px;
+  padding:12px;box-shadow:0 10px 26px var(--shadow);
+  display:flex;flex-direction:column;gap:9px;
+}
+.change-head{display:flex;align-items:center;gap:11px}
+.change-face{font-size:34px;line-height:1}
+.change-what{flex:1;min-width:0}
+.change-say{font-size:15px;font-weight:800}
+.change-sum{font-size:13.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+.change-sum b{color:var(--ink)}
+
+.tray{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:9px 11px}
+.tray-top{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  font-size:12.5px;font-weight:700;color:var(--muted);
+}
+.tray-top strong{font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums}
+.tray-top strong.hidden-total{font-size:15px;color:var(--muted)}
+.tray-coins{
+  display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;min-height:26px;
+  font-size:12px;font-weight:800;
+}
+.tray-coin{
+  background:var(--chip);color:var(--chipink);border-radius:999px;padding:4px 9px;
+  animation:dropin .18s ease-out;
+}
+@keyframes dropin{ from{transform:translateY(-6px);opacity:0} to{transform:none;opacity:1} }
+@media (prefers-reduced-motion:reduce){ .tray-coin{animation:none} }
+
+/* Real Australian coins, in the order they sit in a hand. */
+.coin-pad{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.coin{
+  font:inherit;font-weight:800;cursor:pointer;
+  min-width:60px;min-height:var(--tap);padding:8px 10px;
+  border-radius:50%;border:2px solid var(--gold);
+  background:linear-gradient(160deg,#ffe9a8,#e8b83c);color:#5a3a12;
+}
+.coin.silver{
+  border-color:#9aa7ad;background:linear-gradient(160deg,#f2f5f6,#b9c4c9);color:#33403f;
+}
+.coin:active{transform:translateY(1px)}
+.coin:disabled{opacity:.4;cursor:default}
+
+.change-verdict{
+  margin:0;font-size:14px;font-weight:800;line-height:1.45;text-align:center;
+  border-radius:12px;padding:10px;
+}
+.change-verdict.right{background:var(--chip);color:var(--chipink)}
+.change-verdict.wrong{background:rgba(209,73,63,.14);color:var(--bad)}
+/* Pinned to the bottom of the panel. On a 360x640 phone the coin pad pushed
+   "Give it to them" below the fold inside the panel's own scroller, which left
+   a child with a customer waiting and no visible way to pay them. */
+.change-buttons{
+  display:flex;gap:8px;margin-top:auto;position:sticky;bottom:0;
+  padding-top:8px;background:var(--card);
+}
+.change-buttons .btn,.change-buttons .ghost-btn{flex:1}
+
+/* While somebody is waiting for their change, the stall scene gets out of the
+   way. It is decoration; the sum is the game. */
+#selling.till-open .stall,
+#selling.till-open #skipBtn{display:none}
+
+.event{border-left-color:var(--accent2)}
+.event.bad{border-left-color:var(--bad)}
+
+.till{
+  flex:0 0 auto;background:var(--card);border:1px solid var(--line);
+  border-radius:16px;padding:10px 13px;
+}
+.till-line{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-size:13px;font-weight:700;color:var(--muted);padding:2px 0;
+}
+.till-line strong{font-size:17px;color:var(--ink)}
+.till-line.big strong{font-size:24px;color:var(--accent)}
+.till-line.warn strong{color:var(--bad)}
+
+/* ── Evening ────────────────────────────────────────────────────────────── */
+
+.sums{padding:14px}
+.sum-line{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  font-size:14px;font-weight:700;padding:5px 0;
+}
+.sum-line strong{font-size:19px;font-variant-numeric:tabular-nums}
+.sum-line.out strong{color:var(--bad)}
+.sum-line.in strong{color:var(--good)}
+.sum-rule{height:2px;background:var(--line);margin:5px 0;border-radius:2px}
+.sum-line.total{font-size:16px;font-weight:900}
+.sum-line.total strong{font-size:27px;color:var(--accent)}
+.sum-line.total.loss strong{color:var(--bad)}
+
+.bank-row{display:flex;gap:7px;margin-top:6px}
+.bank-row .ghost-btn{flex:1 1 0;text-align:center;padding:11px 6px;font-size:13.5px}
+
+.night{border-left:5px solid var(--accent)}
+.night-line{font-size:14px;font-weight:700;line-height:1.5;padding:3px 0}
+.night-line.good{color:var(--good)}
+.night-line.bad{color:var(--bad)}
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+
+.toast{
+  position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:60;
+  background:var(--ink);color:var(--bg1);
+  font-size:14px;font-weight:700;padding:11px 18px;border-radius:999px;
+  box-shadow:0 10px 26px var(--shadow);max-width:90vw;text-align:center;
+}
+
+/* ── The bank and shop sheets ───────────────────────────────────────────── */
+
+.offer{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  border:1px solid var(--line);border-radius:16px;background:var(--card);
+  padding:12px;margin-bottom:9px;font:inherit;color:var(--ink);cursor:pointer;
+  min-height:var(--tap);
+}
+.offer:disabled{opacity:.45;cursor:default}
+.offer-emoji{font-size:27px;line-height:1;flex:0 0 auto}
+.offer-body{flex:1;min-width:0}
+.offer-name{font-size:15px;font-weight:800}
+.offer-note{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:2px}
+.offer-cost{font-size:16px;font-weight:800;color:var(--accent);flex:0 0 auto}
+.offer.owned{border-color:var(--accent);background:var(--chip)}
+.offer.owned .offer-cost{color:var(--chipink);font-size:13px}
+.debt-card{
+  border:1px solid var(--bad);border-radius:16px;padding:12px;margin-bottom:12px;
+  font-size:13.5px;line-height:1.5;
+}
+.debt-card b{display:block;font-size:15px;margin-bottom:3px;color:var(--bad)}
+
+/* ── How to play ────────────────────────────────────────────────────────── */
+
+.howto-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#howtoBody{font-size:14.5px;line-height:1.6;min-height:190px}
+#howtoBody p{margin:0 0 11px}
+#howtoBody .demo{
+  background:var(--bg2);border:1px solid var(--line);border-radius:14px;
+  padding:11px 13px;margin:0 0 11px;font-size:13.5px;
+}
+#howtoBody .demo b{color:var(--accent)}
+#howtoBody .big-num{font-size:25px;font-weight:900;color:var(--accent);display:block;margin:3px 0}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.on{background:var(--accent);transform:scale(1.25)}
+
+/* ── Result ─────────────────────────────────────────────────────────────── */
+
+.result-top{text-align:center}
+.result-emoji{font-size:52px;line-height:1.1}
+.result-final{
+  font-size:40px;font-weight:900;text-align:center;color:var(--accent);
+  font-variant-numeric:tabular-nums;margin:2px 0 10px;
+}
+#chart{width:100%}
+#chart svg{width:100%;height:auto;display:block}
+.chart-key{
+  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  font-size:12px;font-weight:700;color:var(--muted);margin:4px 0 12px;
+}
+.key-swatch{display:inline-block;width:16px;height:4px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.key-swatch.wealth{background:var(--accent)}
+.key-swatch.lemonade{background:var(--muted)}
+
+.ladder{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.rung{
+  display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;
+  padding:8px 11px;border-radius:12px;background:var(--bg2);color:var(--muted);
+  border:1px solid var(--line);
+}
+.rung.got{background:var(--chip);color:var(--chipink);border-color:var(--accent)}
+.rung-tick{font-size:15px;flex:0 0 auto}
+.rung-cost{margin-left:auto;font-variant-numeric:tabular-nums}
+
+.takeaway{
+  font-size:14.5px;line-height:1.55;font-weight:700;text-align:center;
+  background:var(--chip);color:var(--chipink);border-radius:16px;padding:13px;margin:0 0 10px;
+}
+.stickers{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font-size:22px;margin-bottom:4px}
+
+/* ── Narrow phones ──────────────────────────────────────────────────────── */
+
+@media (max-width:400px){
+  .price-opt{font-size:12.5px;padding:12px 1px}
+  .purse-part{font-size:11px}
+  .purse-part b{font-size:15px}
+  .result-final{font-size:33px}
+}
+
+/* Phone on its side: the stall scene is the first thing to give up its height,
+   because the till underneath it is the part that actually carries the numbers. */
+@media (max-height:480px){
+  .stall{background:none;padding:0}
+  .stall-sun{display:none}
+  .queue{min-height:34px}
+  .customer{font-size:17px}
+  .forecast-emoji{font-size:30px}
+  #howtoBody{min-height:0}
+}

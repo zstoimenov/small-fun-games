@@ -1,0 +1,17 @@
+{
+  "name": "Lemonade Stand",
+  "short_name": "Lemonade",
+  "description": "Run a lemonade stall for a fortnight. Buy your cups, pick a price, count out the change, and save up for a bike.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fffaea",
+  "theme_color": "#2f9e5a",
+  "categories": ["education", "games"],
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,169 @@
+/* Lemonade Stand — the how-to lesson.                                          */
+/*                                                                              */
+/* Nine short pages. Every figure on them is computed by calling the real        */
+/* economy rather than typed in, so the lesson cannot drift away from the game   */
+/* when a number is tuned. The interest page in particular runs the actual       */
+/* fourteen nights through interestOn() — if the rate ever changes, the page     */
+/* changes with it.                                                              */
+"use strict";
+window.LS = window.LS || {};
+
+LS.Tutorial = (function () {
+  const E = LS.Economy;
+  const $ = (id) => document.getElementById(id);
+
+  // What $10 becomes if you leave it alone for a whole run. Computed, not typed.
+  function growth(difficulty) {
+    const sp = E.spec(difficulty);
+    let bal = E.START_CASH;
+    const each = [];
+    for (let n = 0; n < sp.days; n++) {
+      const paid = E.interestOn(bal, sp).paid;
+      bal += paid;
+      each.push(paid);
+    }
+    return { start: E.START_CASH, end: bal, nights: sp.days, first: each[0], last: each[each.length - 1] };
+  }
+
+  function pages(difficulty) {
+    const sp = E.spec(difficulty);
+    const g = growth(difficulty);
+    const unit = 40;
+    const small = E.packPrice(unit, E.PACKS[0]);
+    const big = E.packPrice(unit, E.PACKS[1]);
+    const loan = E.LOANS[0];
+    const target = sp.goal[sp.goal.length - 1];
+
+    return [
+      { title: "You've got a stall",
+        html: "<p>For " + sp.days + " days you're running a lemonade stall.</p>" +
+          "<p>You start with <b>" + E.money(E.START_CASH) + "</b>. Every day you buy lemons, " +
+          "decide what to charge, and sell as much as you can.</p>" +
+          "<div class='demo'>You're saving up for <b>" + sp.rungs[sp.rungs.length - 1] +
+          "</b>. It costs <span class='big-num'>" + E.money(target) + "</span></div>" },
+
+      { title: "Buy your lemons",
+        html: "<p>Lemons cost a different amount every day. Some days they're cheap — those are the days to buy plenty.</p>" +
+          "<div class='demo'>If lemons are " + E.price(unit) + " a cup:<br>" +
+          "5 cups cost <b>" + E.money(small) + "</b><br>" +
+          "📦 15 cups cost <b>" + E.money(big) + "</b> — not " + E.money(small * 3) + "<br>" +
+          "The big pack saves you <b>" + E.money(E.packSaving(unit)) + "</b>.</div>" +
+          "<p>Buying the bigger pack is nearly always the better deal.</p>" },
+
+      { title: "Pick your price",
+        html: "<p>You choose what a cup costs. This is the biggest decision you make.</p>" +
+          "<div class='demo'>Lemons cost you " + E.price(unit) + " a cup.<br>" +
+          "Sell at <b>" + E.price(75) + "</b> and you keep <b>" + E.price(75 - unit) + "</b> each time.<br>" +
+          "Sell at <b>" + E.price(25) + "</b> and you <i>lose</i> " + E.price(unit - 25) + " each time!</div>" +
+          "<p>Charge too much and hardly anyone buys. Charge too little and you lose money on every cup.</p>" },
+
+      { title: "Counting out the change",
+        html: "<p>Some people pay with a note. You have to work out what to give back, and count it out in real coins.</p>" +
+          "<div class='demo'>A cup costs <b>" + E.price(75) + "</b>.<br>" +
+          "They hand you <b>" + E.money(500) + "</b>.<br>" +
+          "So the change is <span class='big-num'>" + E.money(425) + "</span>" +
+          "That's " + E.money(400) + " + " + E.price(20) + " + " + E.price(5) + ".</div>" +
+          "<p>Get it right and people often leave you a little extra. Give too much and they keep it — that money is gone. Give too little and they notice.</p>" },
+
+      { title: "Some days go wrong",
+        html: "<p>You buy your lemons before you know how the day will go. Sometimes it goes badly.</p>" +
+          "<div class='demo'>🐝 Wasps get into the lemonade.<br>" +
+          "🏪 Somebody sets up a stall up the road.<br>" +
+          "🌦️ It buckets down and everyone goes home.</div>" +
+          "<p>That isn't your fault, and it will still cost you money. It's why one good day is never enough — you need a lot of steady ones.</p>" },
+
+      { title: "Money in, money out",
+        html: "<p>At the end of each day you'll see the sums.</p>" +
+          "<div class='demo'>You spent on lemons <b>" + E.money(big) + "</b><br>" +
+          "You took at the stall <b>" + E.money(15 * 75) + "</b><br>" +
+          "So you made <span class='big-num'>" + E.money(15 * 75 - big) + "</span></div>" +
+          "<p>That's <b>profit</b>: what came in, minus what went out.</p>" },
+
+      { title: "Don't make too much",
+        html: "<p>Lemonade doesn't keep. Any cups you don't sell go in the bin, and the money you spent on them is gone.</p>" +
+          "<p>Watch the weather. On a hot day lots of people walk past. When it's raining, hardly anybody does — so don't fill the stall.</p>" +
+          "<p>You can buy an ice bucket at the shop. Then your leftovers keep until tomorrow.</p>" },
+
+      { title: "The bank pays you",
+        html: "<p>At the end of each day you choose: keep your money in your pocket, or put it in the bank.</p>" +
+          "<div class='demo'>The bank pays you <b>" + E.RATE + "c every night</b> for every dollar you leave with it.<br>" +
+          "Your pocket pays you nothing at all.</div>" +
+          "<p>Leave " + E.money(g.start) + " in the bank and don't touch it, and after " +
+          g.nights + " nights it's worth</p><p style='text-align:center'><span class='big-num'>" +
+          E.money(g.end) + "</span></p>" +
+          "<p>You can still spend bank money whenever you like. There's no reason not to bank it.</p>" },
+
+      { title: "It grows faster the longer it sits",
+        html: "<p>The first night, the bank paid you " + E.money(g.first) + ".</p>" +
+          "<p>The last night, it paid you " + E.money(g.last) + " — for doing exactly the same nothing.</p>" +
+          "<div class='demo'>That's because it pays you on what's <i>there</i>. The more that's there, the more it pays. So money you bank <b>early</b> earns for longer.</div>" +
+          "<p>Real banks work exactly like this one. They're just a lot slower.</p>" },
+
+      { title: "Borrowing costs you",
+        html: "<p>The bank will lend you money if you need it. But you always pay back <b>more</b> than you borrowed.</p>" +
+          "<div class='demo'>Borrow <b>" + E.money(loan.borrow) + "</b><br>" +
+          "Pay back <b>" + E.money(loan.repay) + "</b> " + loan.nights + " days later<br>" +
+          "Borrowing cost you <span class='big-num'>" + E.money(loan.repay - loan.borrow) + "</span></div>" +
+          "<p>The bank pays you " + E.RATE + "c a night for saving, and charges you 6c a night for borrowing — <b>twice as much</b>. That gap is how a bank makes money.</p>" +
+          "<p>Borrowing is worth it if it earns you more than it costs. It isn't worth it for an ice cream.</p>" },
+
+      { title: "Ready?",
+        html: "<p>Every morning: check the weather, buy your lemons, pick your price.</p>" +
+          "<p>Every evening: look at what you made, and bank it.</p>" +
+          "<div class='demo'>Get to <b>" + E.money(target) + "</b> in " + sp.days + " days and " +
+          sp.rungs[sp.rungs.length - 1].replace(/^[^ ]+ /, "") + " is yours.</div>" +
+          "<p><b>Most fortnights won't get there</b>, and that's meant to be true. " +
+          "That's a lot of lemonade. There are three smaller things to save for on the way.</p>" +
+          "<p>Take your time. Steady beats lucky.</p>" }
+    ];
+  }
+
+  /* ── The carousel ──────────────────────────────────────────────────────── */
+
+  let list = [];
+  let at = 0;
+  let onClose = null;
+
+  function draw() {
+    const p = list[at];
+    $("howtoTitle").textContent = p.title;
+    $("howtoStep").textContent = (at + 1) + " / " + list.length;
+    $("howtoBody").innerHTML = p.html;
+
+    const dots = $("howtoDots");
+    dots.textContent = "";
+    for (let i = 0; i < list.length; i++) {
+      const d = document.createElement("span");
+      d.className = "dot" + (i === at ? " on" : "");
+      dots.appendChild(d);
+    }
+    $("howtoBack").disabled = at === 0;
+    $("howtoNext").textContent = at === list.length - 1 ? "Let's go" : "Next";
+  }
+
+  function open(difficulty, done) {
+    list = pages(difficulty);
+    at = 0;
+    onClose = done || null;
+    draw();
+    $("howto").hidden = false;
+  }
+
+  function close() {
+    $("howto").hidden = true;
+    const cb = onClose;
+    onClose = null;
+    if (cb) cb();
+  }
+
+  function next() {
+    if (at < list.length - 1) { at++; draw(); LS.Audio.tap(); }
+    else close();
+  }
+
+  function back() {
+    if (at > 0) { at--; draw(); LS.Audio.tap(); }
+  }
+
+  return { open, close, next, back, pages, growth };
+})();

@@ -69,14 +69,14 @@ const ASSETS = [
   "./battleship/icons/icon-192.png", "./battleship/icons/icon-512.png",
   "./battleship/icons/apple-touch-icon.png",
 
-  "./deal-or-no-deal/", "./deal-or-no-deal/index.html", "./deal-or-no-deal/manifest.webmanifest",
-  "./deal-or-no-deal/css/style.css",
-  "./deal-or-no-deal/js/rng.js", "./deal-or-no-deal/js/rules.js",
-  "./deal-or-no-deal/js/banker.js", "./deal-or-no-deal/js/audio.js",
-  "./deal-or-no-deal/js/ui.js", "./deal-or-no-deal/js/tutorial.js",
-  "./deal-or-no-deal/js/app.js",
-  "./deal-or-no-deal/icons/icon-192.png", "./deal-or-no-deal/icons/icon-512.png",
-  "./deal-or-no-deal/icons/apple-touch-icon.png",
+  "./lemonade-stand/", "./lemonade-stand/index.html", "./lemonade-stand/manifest.webmanifest",
+  "./lemonade-stand/css/style.css",
+  "./lemonade-stand/js/rng.js", "./lemonade-stand/js/economy.js",
+  "./lemonade-stand/js/audio.js", "./lemonade-stand/js/chart.js",
+  "./lemonade-stand/js/ui.js", "./lemonade-stand/js/tutorial.js",
+  "./lemonade-stand/js/app.js",
+  "./lemonade-stand/icons/icon-192.png", "./lemonade-stand/icons/icon-512.png",
+  "./lemonade-stand/icons/apple-touch-icon.png",
 ];
 
 // Precache fresh copies — cache:"reload" bypasses the HTTP cache so the offline
