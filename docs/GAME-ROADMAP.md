@@ -1022,3 +1022,49 @@ pays you back every day whether you do anything or not:
   that's 3 cups you'd have sold whatever the weather did"*;
 - the result says what the fortnight actually built: *"you started with nobody
   and finished with 21 regulars"*.
+
+#### Quality check on the regulars, and three things it caught
+
+Played, and the report was that the screen promised 25 regulars and the next day
+they weren't there. All three defects were real, and the day-by-day audit that
+found them is the tool worth keeping — printing *what the screen said* next to
+*what the model did*, one row per day, for a whole run.
+
+**1. The screen was lying, and the model was right.** The weather step printed
+`run.regulars` and the words "will come whatever the weather does", while
+`wanted()` scaled turnout by weather (0.35 in the rain) and by price. Over a
+fortnight only **74%** of promised regulars actually turned up: *"15 regulars
+will come whatever the weather does"*, then nine came. Fixed at both ends —
+`regularShare()` is now one function that `wanted()` and the morning estimate
+both call, so the promise and the turnout cannot disagree, and the screen states
+today's honest number: *"About 6 of your 12 regulars will come out in this — the
+rest will stay home"*, or *"All 12 of your regulars should come today."*
+`REG_WEATHER` was softened to `[0.5, 0.75, 1, 1, 1]` so loyalty means something,
+which takes turnout to 82%.
+
+**2. More regulars turned up than existed.** Day 14 of the audit: it said 20 and
+served 26. A good event multiplied the regulars — `evReg = min(ev, 1.3)` — so a
+parade conjured six loyal customers out of nothing. **A good event brings
+strangers, never regulars: a parade cannot make somebody turn up twice.** Every
+factor on the regulars line is now `<= 1` and the result is clamped to the count
+you actually have, which is asserted in the audit harness rather than trusted.
+
+**3. Regulars were people, and their cups were counted as people.** `wanted()`
+returns CUPS; `run.regulars` counts PEOPLE; `partiesFor()` then grouped some of
+those cups into two- and three-cup customers. So "5 regulars" on the legend
+could be three people. Regulars now buy one cup each and are kept out of the
+party grouping, which makes the count mean the same thing everywhere; the field
+is `regularCups` rather than `cameBack`, because that is what it is.
+
+**The cap came down from 25 to 12, and it is a decision about the DECISION, not
+about the balance.** A stall you can actually stock holds 20–30 cups, so 25
+guaranteed customers meant the back half of a run stopped being about the
+forecast at all. Measured across 8 / 10 / 12 / 16 / 25 the money does not move —
+median $122.45 to $122.50, top rung 28–29% — so nothing was bought with it
+except the weather mattering again. Good play now reaches 12 right at the end of
+a fortnight, so the ceiling reads as an achievement rather than a wall, and the
+big sign gets you there by day five.
+
+Balance after all four changes, unchanged where it matters: good play **29%** on
+the top rung, never banking **$93.65 against $124.30**, steady-15-cups still
+**0%**, gouging and every-sum-wrong still finish with **no regulars at all**.

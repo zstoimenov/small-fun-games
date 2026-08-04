@@ -136,8 +136,9 @@ LS.Ui = (function () {
 
     text("forecastEmoji", E.WEATHER[info.forecast].emoji);
     text("forecastName", E.WEATHER[info.forecast].name);
+    const regsToday = E.regularsExpected(run.regulars, info.forecast, run.price);
     text("forecastNote", run.regulars > 0
-      ? "😀 " + run.regulars + " regulars coming too"
+      ? "😀 about " + regsToday + " of your " + run.regulars + " regulars"
       : info.sure ? "Always right on this setting" : "Usually right — not always");
 
     text("unitPrice", E.price(info.unit));
@@ -282,12 +283,18 @@ LS.Ui = (function () {
       text("stepWeatherCrowd", crowdWords(info.forecast));
       // Regulars come whatever the sky is doing. Saying so here, next to the
       // forecast, is what turns them from a number into a reason to stock up.
+      // The honest number for TODAY, not the headline count. Weather keeps some
+      // of them at home, and a screen that promises twelve and serves nine is a
+      // screen a child stops believing.
       const reg = $("stepRegulars");
       show(reg, run.regulars > 0);
       if (run.regulars > 0) {
-        reg.innerHTML = "😀 <b>" + run.regulars + "</b> regular" +
-          (run.regulars === 1 ? "" : "s") + " will come whatever the weather does" +
-          (info.forecast <= 1 ? " — that's most of your day." : ".");
+        const coming = E.regularsExpected(run.regulars, info.forecast, run.price);
+        reg.innerHTML = coming >= run.regulars
+          ? "😀 All <b>" + run.regulars + "</b> of your regulars should come today."
+          : "😀 About <b>" + coming + "</b> of your <b>" + run.regulars +
+            "</b> regulars will come out in this" +
+            (info.forecast <= 1 ? " — the rest will stay home." : ".");
       }
       show($("stepWeather"), true);
       text("stepNext", "Next");
@@ -389,9 +396,10 @@ LS.Ui = (function () {
   function stepTip(run, id) {
     const info = run.today;
     if (id === "weather") {
-      if (info.forecast <= 1 && run.regulars >= 5) {
-        return { s: "Miserable out, but your " + run.regulars +
-          " regulars will still come. That's the point of having them." };
+      const coming = E.regularsExpected(run.regulars, info.forecast, run.price);
+      if (info.forecast <= 1 && coming >= 3) {
+        return { s: "Hardly anyone will walk past, so your regulars are most of today. " +
+          "Don't make many more cups than that." };
       }
       if (info.forecast >= 3) return { s: "Busy day coming. A full stall could really pay off." };
       if (info.forecast <= 1) return { s: "Hardly anyone will be about. Don't make more than you can sell.", c: "warn" };
@@ -443,8 +451,9 @@ LS.Ui = (function () {
       return { s: "Lemons are cheap today — " + E.price(info.unit) +
         " a cup. This is the day to fill the stall." };
     }
-    if (run.regulars > 0 && run.cups < run.regulars) {
-      return { s: "You've got " + run.regulars + " regulars who'll come whatever happens. " +
+    const coming = E.regularsExpected(run.regulars, info.forecast, run.price);
+    if (coming > 0 && run.cups < coming) {
+      return { s: "About " + coming + " of your regulars are coming today whatever happens. " +
         "Make at least that many cups." };
     }
     if (info.forecast >= 3 && run.cups < 20) return { s: "It's going to be busy. More cups might be worth it." };
@@ -489,7 +498,7 @@ LS.Ui = (function () {
     text("boughtCount", "0");
     text("thirstyCount", "0");
     text("backCount", "0");
-    show($("legendRegulars"), (run.result && run.result.cameBack > 0));
+    show($("legendRegulars"), !!(run.result && run.result.regularCups > 0));
     show($("legend"), true);
     show($("dayDone"), false);
     show($("skipBtn"), true);
@@ -503,7 +512,7 @@ LS.Ui = (function () {
     const thirsty = turnedSoFar > 0 && servedSoFar >= run.result.sold;
     // Regulars are at the front of the queue, so the first cups of the day go
     // to them. This party started at (servedSoFar - partySize).
-    const back = run.result.cameBack || 0;
+    const back = run.result.regularCups || 0;
     const mine = !thirsty && servedSoFar - partySize < back;
     const person = document.createElement("span");
     person.className = "customer" + (thirsty ? " thirsty" : "") +
@@ -683,8 +692,8 @@ LS.Ui = (function () {
 
   function sellDone(run) {
     const r = run.result;
-    show($("legendRegulars"), (r.cameBack || 0) > 0);
-    text("backCount", String(r.cameBack || 0));
+    show($("legendRegulars"), (r.regularCups || 0) > 0);
+    text("backCount", String(r.regularCups || 0));
     text("cupsLeft", String(Math.max(0, run.cups - r.sold)));
     text("tillTotal", E.money(r.earned));
     if (r.turned > 0) { show($("turnedLine"), true); text("turnedCount", String(r.turned)); }
@@ -783,7 +792,8 @@ LS.Ui = (function () {
       : g.after === 0
         ? "Nobody's a regular yet. Serve more people and some of them will start coming back."
       : g.after > g.before
-        ? g.after + " people will come to your stall tomorrow whatever the weather does."
+        ? g.after + " people will be looking for your stall tomorrow. Bad weather keeps a few " +
+          "of them home, but never all of them."
         : "No new regulars today, but you've still got " + g.after + ".";
   }
 
@@ -917,9 +927,10 @@ LS.Ui = (function () {
     }
 
     // What the business you've built did for you today, in cups.
-    if ((r.cameBack || 0) > 0) {
-      rows.push({ e: "😀", did: r.cameBack + " of your customers were regulars.",
-        so: "That's <b>" + r.cameBack + " cups</b> you'd have sold whatever the weather did." });
+    if ((r.regularCups || 0) > 0) {
+      rows.push({ e: "😀", did: "Your regulars came, and bought " + r.regularCups +
+          (r.regularCups === 1 ? " cup." : " cups."),
+        so: "That's <b>" + r.regularCups + "</b> you'd have sold whatever the weather did." });
     }
 
     // The trip to the bank. Small money, but it is the only thing in the game

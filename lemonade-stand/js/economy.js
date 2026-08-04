@@ -66,13 +66,25 @@ LS.Economy = (function () {
   // become regulars. That is the honest shape of the loss, and it is what makes
   // a bigger stall grow faster than a small one.
   const REGULARS_START = 0;
-  const MAX_REGULARS = 25;   // a stall on a footpath can only hold so many
+  // Twelve, and the ceiling is deliberatelylow — see below. A stall you can
+  // actually stock holds 20-30 cups on a good day, so a guaranteed dozen is a
+  // real cushion (about a fifth of a day's demand) without swamping the weather,
+  // which is the decision the whole morning is built around. At 25 the back half
+  // of a run stopped being about the forecast at all. Measured across 8 / 10 /
+  // 12 / 16 / 25 the money doesn't move ($122.45 to $122.50 median), so this is
+  // chosen for what it does to the DECISION, not to the balance. Good play
+  // reaches it right at the end of a fortnight, so the cap reads as an
+  // achievement rather than a wall.
+  const MAX_REGULARS = 12;
   const GROW_AT = 10;        // serve this many cups for a full day's growth
   const SIGN_REGULARS = 5;   // what the big sign brings in on the spot
 
-  // Loyalty is not immunity: nobody wants lemonade in freezing rain. Indexed by
-  // weather, same order as WEATHER.
-  const REG_WEATHER = [0.35, 0.6, 0.85, 1, 1];
+  // Loyalty is not immunity — nobody wants lemonade in freezing rain — but it
+  // has to be close enough to it that "they come whatever the weather" is a fair
+  // thing to tell a child. At [0.35, 0.6, …] only 74% of promised regulars
+  // actually turned up across a fortnight; here it is 82%, and the morning says
+  // the honest number for the day rather than the total either way.
+  const REG_WEATHER = [0.5, 0.75, 1, 1, 1];
 
   // The two numbers the whole borrowing lesson rests on: the bank pays you 3c a
   // night for every dollar you leave with it, and charges you 6c a night for
@@ -251,10 +263,17 @@ LS.Economy = (function () {
   //
   // It also makes the till sum a better one: two cups at 75c is a multiply
   // before it is a subtract.
-  function partiesFor(seed, day, cups) {
+  function partiesFor(seed, day, cups, singles) {
     const r = LS.Rng.stream(seed, day * 4441 + 9);
     const out = [];
     let left = cups;
+    // Your regulars are at the front of the queue and buy one cup each — which
+    // is what lets "12 regulars" mean "12 cups", on the screen and in the model.
+    // Group them like everyone else and a count of people would quietly become a
+    // count of cups, and the two numbers on screen would stop agreeing.
+    const solo = Math.min(Math.max(0, singles || 0), left);
+    for (let i = 0; i < solo; i++) out.push(1);
+    left -= solo;
     while (left > 0) {
       // Most people buy one. A few buy two. Occasionally somebody buys three.
       let want = r.chance(0.68) ? 1 : r.chance(0.75) ? 2 : 3;
@@ -424,6 +443,20 @@ LS.Economy = (function () {
   // property a child needs to be able to trust, and it is why the loyalty
   // factor is written off `pull` rather than as its own table that could drift
   // out of order with it.
+  // What fraction of your regulars turn up, before the day's surprises. The UI
+  // shows the morning's estimate off this same function, so what the weather
+  // step promises and what walks up to the stall cannot disagree.
+  function regularShare(weatherIndex, priceCents) {
+    const tier = priceTier(priceCents);
+    const loyal = Math.min(1, 0.5 + tier.pull / 2);
+    return REG_WEATHER[weatherIndex] * loyal;
+  }
+
+  // The morning's honest estimate: the FORECAST rather than the weather, and no
+  // event, because you don't know either yet. Display only.
+  const regularsExpected = (regulars, forecastIndex, priceCents) =>
+    Math.min(regulars || 0, Math.round((regulars || 0) * regularShare(forecastIndex, priceCents)));
+
   function wanted(info, priceCents, regulars, seed) {
     const tier = priceTier(priceCents);
     const ev = info.event && info.event.demand ? info.event.demand : 1;
@@ -434,10 +467,15 @@ LS.Economy = (function () {
     // Regulars forgive a price rise a stranger wouldn't, and a rival stall up
     // the road only tempts away some of them — that is the whole value of
     // having them, and it is what makes a bad day survivable.
-    const loyal = Math.min(1, 0.5 + tier.pull / 2);
-    const evReg = ev >= 1 ? Math.min(ev, 1.3) : (1 + ev) / 2;
-    const regs = Math.max(0,
-      Math.round((regulars || 0) * REG_WEATHER[info.weather] * loyal * evReg));
+    //
+    // A good event only ever brings STRANGERS. A parade cannot make a regular
+    // turn up twice, and letting it try is how the game came to print "20
+    // regulars" in the morning and then serve 26 of them in the afternoon.
+    // Every factor here is <= 1 for exactly that reason: turnout can never
+    // exceed the number of regulars you have.
+    const evReg = Math.min(1, ev);
+    const regs = Math.max(0, Math.min(regulars || 0,
+      Math.round((regulars || 0) * regularShare(info.weather, priceCents) * evReg)));
 
     return { passing, regulars: regs, total: passing + regs };
   }
@@ -456,7 +494,10 @@ LS.Economy = (function () {
     const sold = Math.min(want, stock);
     // How those cups were grouped into people, so the queue and the till both
     // know that the third customer bought two.
-    const parties = partiesFor(run.seed, info.day, sold);
+    // Regulars are served first — they know when you open — so the cups that go
+    // to them are the first ones sold.
+    const regularCups = Math.min(crowd.regulars, sold);
+    const parties = partiesFor(run.seed, info.day, sold, regularCups);
     return {
       want,
       sold,
@@ -467,9 +508,9 @@ LS.Economy = (function () {
       earned: sold * run.price,   // 5c-clean: every tier is a multiple of 25c
       wantedRegulars: crowd.regulars,
       wantedPassing: crowd.passing,
-      // Regulars are at the front of the queue — they know when you open. So a
-      // stall that runs out disappoints strangers before it disappoints its own.
-      cameBack: Math.min(crowd.regulars, sold),
+      // A stall that runs out disappoints strangers before it disappoints its
+      // own. One cup each, so this is a count of people as well as of cups.
+      regularCups,
       moments: changeMoments(spec(run.difficulty), run.seed, info.day, run.price, parties)
     };
   }
@@ -853,7 +894,7 @@ LS.Economy = (function () {
       interest: int.paid,
       rate: int.rate,
       regulars: run.regulars,
-      cameBack: r.cameBack || 0,
+      regularCups: r.regularCups || 0,
       pocket: run.pocket,
       bank: run.bank
     });
@@ -916,7 +957,7 @@ LS.Economy = (function () {
       written: add("written"),
       creams: run.treats.creamsOn.length,
       regulars: run.regulars,
-      cameBack: add("cameBack"),
+      regularCups: add("regularCups"),
       rung: rungReached(final, sp.goal),
       target: sp.goal[sp.goal.length - 1],
       prize: sp.rungs[sp.rungs.length - 1],
@@ -1090,7 +1131,7 @@ LS.Economy = (function () {
     // the day
     dayOf, weatherOn, eventOn, packPrice, packSaving,
     // trading
-    wanted, sell, nextRegulars,
+    wanted, regularShare, regularsExpected, sell, nextRegulars,
     // the till
     paymentFor, coinsFor, isNote, partiesFor, changeMoments, settleChange, giveChange, resetTill,
     // banking

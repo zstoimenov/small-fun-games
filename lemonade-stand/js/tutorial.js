@@ -71,11 +71,13 @@ LS.Tutorial = (function () {
 
       { title: "People come back",
         html: "<p>Serve somebody a fair cup and some of them come back tomorrow. Those are your <b>regulars</b>.</p>" +
-          "<div class='demo'>Regulars turn up <i>whatever the weather</i>.<br>" +
+          "<div class='demo'>Regulars turn up when other people don't.<br>" +
           "On a rainy day they might be your whole queue.<br>" +
           "The more people you serve, the more you win.</div>" +
-          "<p>You lose them by charging silly prices, running out all the time, or getting their change wrong. " +
-          "Look after them and your little stall turns into a proper business.</p>" },
+          "<p>Bad weather keeps some of them at home, but never all of them. You lose them for good by " +
+          "charging silly prices or getting their change wrong.</p>" +
+          "<p>Look after them and your little stall turns into a proper business — up to <b>" +
+          E.MAX_REGULARS + "</b> of them, which is as many as one stall can serve.</p>" },
 
       { title: "Some days go wrong",
         html: "<p>You buy your lemons before you know how the day will go. Sometimes it goes badly.</p>" +
