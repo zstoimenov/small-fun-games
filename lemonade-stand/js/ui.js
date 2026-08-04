@@ -107,23 +107,7 @@ LS.Ui = (function () {
     const o = run.opening || {};
     const card = $("openingCard");
     if (o.repay || o.gift) {
-      let html = "";
-      if (o.repay) {
-        const r = o.repay;
-        if (r.written > 0) {
-          html += "<b>💳 The bank came for its money.</b>It took the " + E.money(r.repaid) +
-            " you had and let you off the last " + E.money(r.written) +
-            ". Borrowing is a promise — that one hurt.";
-        } else {
-          html += "<b>💳 You paid back your loan.</b>You borrowed " + E.money(r.borrowed) +
-            " and paid back " + E.money(r.repay) + ". Borrowing cost you " + E.money(r.cost) + ".";
-        }
-      }
-      if (o.gift) {
-        html += (html ? "<br><br>" : "") + "<b>👵 Grandma popped by.</b>She left you " +
-          E.money(o.gift) + " so you can keep going. Don't waste it.";
-      }
-      card.innerHTML = html;
+      card.innerHTML = newsHtml(run);
       card.className = "card news" + (o.repay && o.repay.written > 0 ? " bad" : "");
       show(card, true);
     } else {
@@ -132,14 +116,15 @@ LS.Ui = (function () {
 
     text("forecastEmoji", E.WEATHER[info.forecast].emoji);
     text("forecastName", E.WEATHER[info.forecast].name);
-    text("forecastNote", info.sure
-      ? "Today's weather, and it's always right on this setting."
-      : "That's the forecast. It's usually right — but not always.");
+    text("forecastNote", info.sure ? "Always right on this setting" : "Usually right — not always");
 
     text("unitPrice", E.price(info.unit));
     const v = unitVerdict(info.unit);
     $("unitVerdict").textContent = v.s;
     $("unitVerdict").className = "verdict " + v.c;
+
+    text("planPriceValue", E.price(run.price));
+    text("planPriceNote", "lemons cost " + E.price(info.unit) + " a cup");
 
     packs(run);
     prices(run);
@@ -185,17 +170,139 @@ LS.Ui = (function () {
     $("priceNote").className = "verdict " + n.c;
   }
 
+  // Two places say what's in the basket: the plan row on the morning screen and
+  // the buying step. They are the same fact, so they are written together.
   function basket(run) {
-    const b = $("basket");
-    if (run.cups === 0) {
-      b.textContent = "Nothing bought yet.";
-      return;
-    }
     const carried = run.cups - run.boughtToday;
-    b.textContent = "🥤 " + run.cups + " cups ready" +
-      (run.boughtToday ? " · spent " + E.money(run.spentToday) : "") +
-      (carried > 0 ? " · " + carried + " kept from yesterday" : "");
+    text("basket", run.cups === 0 ? "nothing yet" : run.cups + " cups");
+    text("planStockNote", run.cups === 0 ? "Tap to buy some lemons"
+      : "spent " + E.money(run.spentToday) +
+        (carried > 0 ? " · " + carried + " kept from yesterday" : ""));
+    text("stepBasket", run.cups === 0 ? "Nothing bought yet."
+      : "🥤 " + run.cups + " cups ready" +
+        (run.boughtToday ? " · spent " + E.money(run.spentToday) : "") +
+        (carried > 0 ? " · " + carried + " kept from yesterday" : ""));
   }
+
+  /* ── The morning, one step at a time ────────────────────────────────────── */
+
+  const PARTS = ["stepNews", "stepWeather", "stepBuy", "stepPrice", "stepReady"];
+
+  function dots(hostId, total, at) {
+    const host = $(hostId);
+    host.textContent = "";
+    for (let i = 0; i < total; i++) {
+      const d = document.createElement("span");
+      d.className = "dot" + (i === at ? " on" : "");
+      host.appendChild(d);
+    }
+  }
+
+  // How busy the crowd will be, in words rather than a footfall number.
+  function crowdWords(w) {
+    return ["Hardly anybody will be out in this.",
+            "A few people about.",
+            "A fair few people will walk past.",
+            "Lots of people out — and thirsty.",
+            "The street will be packed."][w];
+  }
+
+  // Draws one step. Exactly one `.step-part` is ever visible, which is the whole
+  // point of the screen and is checked in the browser tests.
+  function stepShow(run, id, at, total, single) {
+    show($("step"), true);
+    for (const p of PARTS) show($(p), false);
+    text("stepCount", (at + 1) + " / " + total);
+    show($("stepCount"), !single);
+    show($("stepDots"), !single);
+    dots("stepDots", total, at);
+    show($("stepBack"), at > 0 && !single);
+
+    const info = run.today;
+    if (id === "news") {
+      text("stepTitle", "Before you open");
+      text("stepSay", "The bank has been.");
+      $("stepNews").innerHTML = newsHtml(run);
+      show($("stepNews"), true);
+      text("stepNext", "OK");
+    } else if (id === "weather") {
+      text("stepTitle", "What's it like today?");
+      text("stepSay", info.sure
+        ? "Here's the weather. It decides how many people walk past your stall."
+        : "Here's the forecast. It decides how many people walk past — but it isn't always right.");
+      text("stepWeatherEmoji", E.WEATHER[info.forecast].emoji);
+      text("stepWeatherName", E.WEATHER[info.forecast].name);
+      text("stepWeatherCrowd", crowdWords(info.forecast));
+      show($("stepWeather"), true);
+      text("stepNext", "Next");
+    } else if (id === "buy") {
+      text("stepTitle", "How much will you make?");
+      text("stepSay", "Buy too few and you'll run out. Buy too many and the rest goes in the bin.");
+      packs(run);
+      basket(run);
+      // The bank, offered at the moment the money runs out rather than two
+      // sheets later. This is the whole reason day one has a decision in it.
+      const big = E.packPrice(info.unit, E.PACKS[1]);
+      const offers = E.loanOffers(run);
+      const short = E.affordable(run) < big;
+      const b = $("stepBorrow");
+      if (short && offers.length && !run.loan) {
+        b.textContent = "🏦 Short of a full stall? The bank will lend you " +
+          E.money(offers[0].borrow);
+        show(b, true);
+      } else if (run.loan) {
+        b.textContent = "🏦 You owe the bank " + E.money(run.loan.repay) + ", due day " + run.loan.due;
+        show(b, true);
+      } else show(b, false);
+      show($("stepBuy"), true);
+      text("stepNext", run.cups > 0 ? "Next" : "Don't buy any");
+    } else if (id === "price") {
+      text("stepTitle", "What will you charge?");
+      text("stepSay", "You keep whatever is left after the lemons are paid for.");
+      prices(run);
+      show($("stepPrice"), true);
+      text("stepNext", "Next");
+    } else {
+      text("stepTitle", "Ready to open?");
+      text("stepSay", "That's everything decided.");
+      readyStep(run);
+      show($("stepReady"), true);
+      text("stepNext", run.cups > 0 ? "Open the stall" : "Stay shut today");
+    }
+    if (single) text("stepNext", "Done");
+  }
+
+  function readyStep(run) {
+    const most = run.cups * run.price;
+    $("readyPlan").innerHTML = run.cups > 0
+      ? "<b>" + run.cups + " cups</b> at <b>" + E.price(run.price) + "</b> each"
+      : "<b>No cups.</b> You're staying shut today.";
+    text("readyNote", run.cups > 0
+      ? "If you sell the lot that's " + E.money(most) + ". You spent " +
+        E.money(run.spentToday) + " on the lemons."
+      : "You'll earn nothing, but you'll spend nothing either.");
+  }
+
+  function newsHtml(run) {
+    const o = run.opening || {};
+    let html = "";
+    if (o.repay) {
+      const r = o.repay;
+      html += r.written > 0
+        ? "<b>💳 The bank came for its money.</b>It took the " + E.money(r.repaid) +
+          " you had and let you off the last " + E.money(r.written) +
+          ". Borrowing is a promise — that one hurt."
+        : "<b>💳 You paid back your loan.</b>You borrowed " + E.money(r.borrowed) +
+          " and paid back " + E.money(r.repay) + ". Borrowing cost you " + E.money(r.cost) + ".";
+    }
+    if (o.gift) {
+      html += (html ? "<br><br>" : "") + "<b>👵 Grandma popped by.</b>She left you " +
+        E.money(o.gift) + " so you can keep going. Don't waste it.";
+    }
+    return html;
+  }
+
+  const stepHide = () => show($("step"), false);
 
   // One short nudge, and only when the tips switch is on.
   function hint(run) {
@@ -227,13 +334,27 @@ LS.Ui = (function () {
     text("tillTotal", E.money(0));
     show($("turnedLine"), false);
     text("turnedCount", "0");
+    text("boughtCount", "0");
+    text("thirstyCount", "0");
+    show($("legend"), true);
+    show($("dayDone"), false);
+    show($("skipBtn"), true);
+    show($("countUpBtn"), false);
   }
 
-  function sellStep(run, servedSoFar, turnedSoFar) {
+  // `servedSoFar` counts CUPS; the queue draws PEOPLE, so a party of three is
+  // one face with a ×3 on it rather than three identical faces.
+  function sellStep(run, servedSoFar, turnedSoFar, partySize) {
     const q = $("queue");
+    const thirsty = turnedSoFar > 0 && servedSoFar >= run.result.sold;
     const person = document.createElement("span");
-    person.className = "customer" + (turnedSoFar > 0 && servedSoFar >= run.result.sold ? " thirsty" : "");
-    person.textContent = turnedSoFar > 0 && servedSoFar >= run.result.sold ? "😕" : "🙂";
+    person.className = "customer" + (thirsty ? " thirsty" : "") + (partySize > 1 ? " party" : "");
+    person.textContent = thirsty ? "😕" : "🙂";
+    if (partySize > 1 && !thirsty) {
+      const badge = document.createElement("i");
+      badge.textContent = "×" + partySize;
+      person.appendChild(badge);
+    }
     q.appendChild(person);
     // A day is at most forty-odd people; past three rows it stops reading as a
     // queue and starts reading as noise, so the oldest walk off.
@@ -241,10 +362,30 @@ LS.Ui = (function () {
 
     text("cupsLeft", String(Math.max(0, run.cups - servedSoFar)));
     text("tillTotal", E.money(servedSoFar * run.price));
+    text("boughtCount", String(servedSoFar));
+    text("thirstyCount", String(turnedSoFar));
     if (turnedSoFar > 0) {
       show($("turnedLine"), true);
       text("turnedCount", String(turnedSoFar));
     }
+  }
+
+  // The day stops and waits to be read. Nothing here closes the day — that
+  // happens when the child taps, in app.js.
+  function dayDone(run) {
+    const r = run.result;
+    text("doneSold", String(r.sold));
+    text("doneTurned", String(r.turned));
+    text("doneLeft", String(r.wasted));
+    show($("doneTurnedRow"), r.turned > 0);
+    show($("doneLeftRow"), r.wasted > 0);
+    $("dayDone").querySelector(".done-head").textContent = r.shut
+      ? "🔕 You stayed shut today."
+      : r.sold === 0 ? "🔔 That's the day done. Nobody bought a thing."
+      : "🔔 That's the day done.";
+    show($("dayDone"), true);
+    show($("skipBtn"), false);
+    show($("countUpBtn"), true);
   }
 
   /* ── The till ───────────────────────────────────────────────────────────── */
@@ -265,6 +406,29 @@ LS.Ui = (function () {
     }
   }
 
+  // Says the handful out loud: "a $2 coin and a 20c", "two $1 coins". Which
+  // pieces are notes comes from the model, so the wording can't drift from what
+  // an Australian note actually is.
+  const ONE = ["", "a ", "two ", "three ", "four ", "five ", "six "];
+  function describe(parts) {
+    if (!parts || !parts.length) return "some money";
+    const groups = [];
+    for (const p of parts) {
+      const last = groups[groups.length - 1];
+      if (last && last.v === p) last.n++;
+      else groups.push({ v: p, n: 1 });
+    }
+    const words = groups.map((g) => {
+      const kind = E.isNote(g.v) ? " note" : g.v >= 100 ? " coin" : "";
+      // Nobody says "a $1.00 coin" — the cents come off whole-dollar pieces.
+      const face = g.v >= 100 && g.v % 100 === 0 ? "$" + g.v / 100 : E.price(g.v);
+      const name = face + kind;
+      return g.n === 1 ? "a " + name : (ONE[g.n] || g.n + " ") + name + (kind ? "s" : "");
+    });
+    if (words.length === 1) return words[0];
+    return words.slice(0, -1).join(", ") + " and " + words[words.length - 1];
+  }
+
   // `showTotal` is the difficulty dial that matters most: with the running total
   // on, the child is checking their arithmetic as they go; with it off, they
   // have to hold the sum in their head and find out afterwards.
@@ -277,10 +441,18 @@ LS.Ui = (function () {
     show($("changeNext"), false);
     $("changeClear").disabled = false;
     text("changeFace", "🙂");
-    text("changeSay", '"One please!"');
-    $("changeSum").innerHTML = "A cup is <b>" + E.price(moment.price) +
-      "</b>. They've handed you <b>" + E.money(moment.note) +
-      "</b>.<br>How much do you give back?";
+    const n = moment.cups || 1;
+    text("changeFace", n > 1 ? "🙂🙂" : "🙂");
+    text("changeSay", n === 1 ? '"One please!"'
+      : n === 2 ? '"Two please!"' : '"Three please!"');
+    // For a party the sum is a multiply THEN a subtract, and both halves are
+    // spelled out — that is the whole reason parties are worth having.
+    $("changeSum").innerHTML = (n === 1
+      ? "A cup is <b>" + E.price(moment.price) + "</b>."
+      : "<b>" + n + " cups</b> at <b>" + E.price(moment.price) + "</b> each is <b>" +
+        E.money(moment.total) + "</b>.") +
+      " They've handed you " + describe(moment.parts) + " — <b>" +
+      E.money(moment.paid) + "</b>.<br>How much do you give back?";
     changeTray(run, [], showTotal);
   }
 
@@ -310,11 +482,11 @@ LS.Ui = (function () {
     if (out.ok) {
       text("changeFace", "😃");
       v.className = "change-verdict right";
+      const sum = E.money(moment.paid) + " minus " + E.price(moment.total) + " is " +
+        E.price(moment.due);
       v.textContent = out.tip > 0
-        ? "That's right — " + E.money(moment.note) + " minus " + E.price(moment.price) +
-          " is " + E.price(moment.due) + ". They left you " + E.price(out.tip) + " as a thank-you!"
-        : "That's right. " + E.money(moment.note) + " minus " + E.price(moment.price) +
-          " is " + E.price(moment.due) + ".";
+        ? "That's right — " + sum + ". They left you " + E.price(out.tip) + " as a thank-you!"
+        : "That's right. " + sum + ".";
     } else if (out.over > 0) {
       text("changeFace", "🙂");
       v.className = "change-verdict wrong";
@@ -365,17 +537,11 @@ LS.Ui = (function () {
     text("sumTotalLabel", profit < 0 ? "So you lost" : "So you made");
     $("sumTotalLine").classList.toggle("loss", profit < 0);
 
-    // The till, and what today's surprise took off you. Both are money, and
-    // both belong next to the sums rather than tucked away.
-    const tillLine = $("tillLine");
-    const bits = [];
-    if (run.tipsToday > 0) bits.push("people left you " + E.price(run.tipsToday) + " in tips");
-    if (run.overpaidToday > 0) bits.push("you gave away " + E.price(run.overpaidToday) + " in wrong change");
-    if (bits.length) {
-      tillLine.textContent = "🪙 At the till: " + bits.join(", ") + ".";
-      tillLine.className = "verdict " + (run.overpaidToday > 0 ? "bad" : "good");
-      show(tillLine, true);
-    } else show(tillLine, false);
+    causes(run);
+
+    // The till used to get its own line here. "What your choices did" already
+    // names it, with the reason attached, so the second line was just noise.
+    show($("tillLine"), false);
 
     const lostLine = $("lostLine");
     if (r.lost > 0) {
@@ -412,20 +578,129 @@ LS.Ui = (function () {
       : "Nothing in your pocket to bank tonight.";
   }
 
-  // The overnight card: what the bank paid you, and what any loan is costing.
+  // Counts a money figure up to its final value in 5c steps. Steps, not a
+  // tween on a raw number — a tween would print fractions of a cent on the way
+  // and every amount in this game is whole 5c.
+  let countTimer = null;
+  function countUpTo(id, from, to, done) {
+    clearInterval(countTimer);
+    const reduce = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const steps = Math.round((to - from) / 5);
+    if (reduce || steps <= 0 || steps > 400) { text(id, E.money(to)); if (done) done(); return; }
+    let at = from;
+    const every = Math.max(16, Math.min(90, Math.round(700 / steps)));
+    countTimer = setInterval(() => {
+      at += 5;
+      if (at >= to) { at = to; clearInterval(countTimer); if (done) done(); }
+      text(id, E.money(at));
+    }, every);
+  }
+
+  /* ── Cause and effect ───────────────────────────────────────────────────── */
+
+  // Every choice the child made today, each one paired with what it actually
+  // caused. The evening used to report outcomes without saying which decision
+  // produced them, which is the difference between a scoreboard and a lesson.
+  function causes(run) {
+    const r = run.result;
+    const list = $("causeList");
+    list.textContent = "";
+    const rows = [];
+
+    // How many you made.
+    if (r.shut) {
+      rows.push({ e: "🥤", did: "You didn't buy any lemons.",
+                  so: "So there was nothing to sell, and you earned <b class='bad'>nothing</b>." });
+    } else {
+      const made = r.sold + r.wasted + (r.lost || 0);
+      if (r.turned > 0) {
+        rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
+          so: "You sold every one — and <b class='bad'>" + r.turned +
+              " more</b> people wanted one you didn't have." });
+      } else if (r.wasted > 0) {
+        rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
+          so: "You only sold " + r.sold + ", so <b class='bad'>" + r.wasted +
+              "</b> went in the bin." });
+      } else {
+        rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
+          so: "You sold <b>every one</b>, with none left over. Spot on." });
+      }
+    }
+
+    // What you charged.
+    if (!r.shut) {
+      const margin = run.price - run.today.unit;
+      rows.push({ e: "💵", did: "You charged " + E.price(run.price) + " a cup.",
+        so: margin > 0
+          ? "Each one cost you " + E.price(run.today.unit) + ", so you kept <b>" +
+            E.price(margin) + "</b> of every cup you sold."
+          : "Each one cost you " + E.price(run.today.unit) + " to make, so you <b class='bad'>lost " +
+            E.price(-margin) + "</b> on every cup." });
+    }
+
+    // What the weather did to that.
+    if (run.today.event) {
+      const ev = run.today.event;
+      rows.push({ e: ev.emoji, did: ev.name + ".",
+        so: ev.good ? "That brought you <b>more customers</b> than the forecast promised."
+          : ev.lose ? "That cost you <b class='bad'>" + (r.lost || 0) + " cups</b> before you sold a single one."
+          : "That sent <b class='bad'>a lot of your customers away</b>." });
+    }
+
+    // The till.
+    if (run.changeRight + run.changeWrong > 0) {
+      rows.push({ e: "🪙",
+        did: run.changeWrong > 0 ? "You got the change wrong." : "You got the change right.",
+        so: run.overpaidToday > 0
+          ? "You handed over <b class='bad'>" + E.price(run.overpaidToday) + " too much</b>, and they kept it."
+          : run.changeWrong > 0
+            ? "They noticed, and your regulars <b class='bad'>liked you a bit less</b> for it."
+            : run.tipsToday > 0
+              ? "They left you <b>" + E.price(run.tipsToday) + "</b> as a thank-you."
+              : "No money lost at the till." });
+    }
+
+    for (const row of rows) {
+      const d = document.createElement("div");
+      d.className = "cause";
+      d.innerHTML = '<span class="cause-emoji">' + row.e + '</span><span class="cause-body">' +
+        '<span class="cause-did">' + row.did + '</span>' +
+        '<span class="cause-so">' + row.so + "</span></span>";
+      list.appendChild(d);
+    }
+  }
+
+  // The overnight card: the bank book, the bars, and what any loan is costing.
   function night(run, res) {
     const card = $("nightCard");
     show(card, true);
-    const line = $("interestLine");
-    if (res.interest.paid > 0) {
-      // price() rather than money(): "45c" is how a child says it, "$0.45" isn't.
-      line.textContent = "🏦 The bank paid you " + E.price(res.interest.paid) +
-        " while you slept — " + res.interest.rate + "c for every dollar you left with it.";
-    } else if (run.bank > 0) {
-      line.textContent = "🏦 Not quite enough in the bank to earn a whole 5c tonight.";
+
+    text("bankBefore", E.money(res.bankBefore));
+    // price() rather than money(): "45c" is how a child says it, "$0.45" isn't.
+    text("bankAdded", res.interest.paid > 0 ? "+ " + E.price(res.interest.paid) : "nothing");
+    text("bankRate", res.interest.paid > 0 ? "(" + res.interest.rate + "c for every dollar)" : "");
+    text("bankAfter", E.money(res.bankBefore));
+    countUpTo("bankAfter", res.bankBefore, res.bankAfter);
+
+    LS.Chart.bank($("bankChart"), run);
+
+    const so = $("bankPaidSoFar");
+    if (res.paidSoFar > 0) {
+      so.textContent = "The bank has paid you " + E.price(res.paidSoFar) +
+        " so far, for doing nothing at all.";
+      so.className = "verdict good";
+      show(so, true);
+    } else if (res.bankBefore > 0) {
+      so.textContent = "Not quite enough in the bank yet to earn a whole 5c overnight. Keep adding to it.";
+      so.className = "verdict";
+      show(so, true);
     } else {
-      line.textContent = "🏦 Nothing in the bank, so the bank paid you nothing.";
+      so.textContent = "Nothing in the bank, so the bank paid you nothing. Money in your pocket doesn't grow.";
+      so.className = "verdict";
+      show(so, true);
     }
+
     const loan = $("loanLine");
     if (res.loan) {
       loan.textContent = "💳 Your loan cost you " + E.price(res.loan.perNight) +
@@ -553,8 +828,8 @@ LS.Ui = (function () {
   }
 
   return { show, text, header, purse, goal, coach, toast, phase,
-           morning, packs, prices, basket, hint,
-           sellingScreen, sellStep, sellDone, event,
+           morning, packs, prices, basket, hint, stepShow, stepHide,
+           sellingScreen, sellStep, sellDone, dayDone, event,
            coinPad, changeAsk, changeTray, changeResult, changeHide,
            evening, night, bankSheet, treatSheet, result };
 })();

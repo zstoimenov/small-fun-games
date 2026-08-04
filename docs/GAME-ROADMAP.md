@@ -39,18 +39,25 @@ game needs.
 | 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
 | 4 | ✅ Battleship | `battleship/` | 1,800–2,600 → **3,072 actual** | 550k–850k → 700k–1.1M → **inside it** |
 | 5 | ✅ Deal or No Deal | `deal-or-no-deal/` | not on the list → **3,063 actual** | not estimated |
-| 6 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790**, then **3,318** after the till and risk pass | 600k–900k |
+| 6 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790**, then **3,318** (till + risk), then **4,089** (pacing + one-at-a-time) | 600k–900k |
 
-For scale, the games measure: Lemonade Stand 3,318 (the largest in the repo),
-Yatzy 3,098, Battleship 3,072, Deal or No Deal 3,063, Nine Men's Morris 2,928,
-Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048, Times Table
-Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+For scale, the games measure: Lemonade Stand 4,089 (comfortably the largest in
+the repo), Yatzy 3,098, Battleship 3,072, Deal or No Deal 3,063, Nine Men's
+Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048,
+Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
 
 **Deal or No Deal is a fifth data point for `lines ≈ 2,000 + the game's own
 logic`, and it lands on it.** Its rules and Banker together are 545 lines; the
 other 2,518 are the house furniture. It is also the cheapest game in the
 collection per line of anything interesting, because it has no search in it at
 all — see §5.
+
+**Lemonade Stand is the counter-example worth keeping next to it.** It has grown
+to 4,089 over three passes without its economy getting much bigger — `economy.js`
+is 900-odd lines of the total. The growth is all *pacing*: a step-through morning,
+a day that stops to be read, a bank book, a cause-and-effect panel. **Teaching a
+thing costs more lines than modelling it**, and none of that shows up in an
+estimate that only counts the rules.
 
 **Three games in, the line estimates looked consistently ~2.5× low. Battleship
 was the first to come in under its adjusted figure, and the reason is the useful
@@ -744,3 +751,93 @@ Decisions worth recording:
   still have been stuck with a customer waiting and no visible way to pay them.
   The stall scene now gets out of the way while the till is open, and the
   buttons are sticky.
+
+### Third pass: pacing, cause and effect, and a purse worth borrowing against
+
+Playing it properly turned up five things, four of which are the same complaint:
+**the game showed correct numbers too fast and all at once.**
+
+**The morning asks one question at a time now.** It used to put four decisions
+and six facts on one screen. It is now a walk-through of sheets — the weather,
+then how many cups, then what to charge, then a recap — with the answers kept on
+a plan card behind, one line each, tappable to change. `#step` reuses the how-to
+carousel's furniture. The weather deliberately gets its own sheet: reading it
+*before* committing money is the lesson, and folded into the buying step it
+would have been decoration above a button.
+
+Two details that matter for anyone doing this again:
+
+- **One set of controls, two ways in.** `#buyBig`, `#priceChooser` and the rest
+  live in the step sheet and keep their ids. With the walk-through off, a plan
+  row opens that same sheet as a *single* step that closes on Done. There is no
+  second layout to maintain, and the browser checks only needed teaching where
+  to tap.
+- **The bank has to be offered where the money runs out.** The buying step shows
+  the 15-cup pack greyed out when you can't afford it; without a "the bank will
+  lend you $5" row right there, the whole borrowing mechanic is two sheets away
+  and never gets found.
+
+**The day stops and waits.** The selling animation ran at `4000/want` ms and
+then the evening arrived on its own and wiped it. It now runs at `6000/want`
+(floor 110ms, ceiling 320ms), carries a permanent legend saying what 🙂 and 😕
+mean with live counts, and ends on a `#dayDone` card that holds until tapped.
+Skipping skips the animation, never the hold and never a till sum.
+
+**The evening says what caused what.** A `#causes` panel pairs every decision
+with its consequence — *"You made 20 cups for $4.80 → you sold every one, and 3
+more people wanted one you didn't have"*, *"You charged 75c → each cost you 40c,
+so you kept 35c of every cup"*. The evening used to report outcomes without
+naming the decision that produced them, which is the difference between a
+scoreboard and a lesson.
+
+**The bank book.** Interest was one sentence. It is now a sum laid out the way a
+sum is laid out on paper — last night, what the bank added, tonight — with the
+total counting up in 5c steps (never a raw number tween, which would print
+fractions of a cent), the running total paid so far, and a bar per night that
+grows across the fortnight. `Chart.bank()` reserves a slot for every night of
+the run so the bars march across a fixed row instead of rescaling every evening.
+
+**The till: once a day, worth more, and never the same sum twice.**
+
+- `changes: 1` everywhere. Two a day was a chore that got tapped through.
+- Stakes up to compensate: tips 20-50c at 55%, short-changing costs 4 reputation
+  a time. **Measured: the gap between getting every sum right and every sum
+  wrong is still 19 points on reaching the bike (32% vs 13%), so the >15-point
+  assertion did not have to move.**
+- `paymentFor()` replaces `noteFor()`: four shapes — a single piece, a piece
+  rounded up so the change comes back a round 50c, a piece plus a stray coin,
+  two of the same. **Distinct change amounts per price went from 4 to 20-33,
+  with no single sum more than 17% of draws**, and that is asserted.
+- **Customers buy more than one.** `partiesFor()` groups the cups the demand
+  model already decided into people (68% one, then two, occasionally three), so
+  the economy is untouched and the queue stops being a row of identical faces.
+  The till sum becomes a multiply *then* a subtract: two cups at 75c is $1.50,
+  they hand you a $2 coin.
+
+**The purse got small, and that is what made the bank real.** Starting cash went
+from $10.00 to **$3.00** — deliberately not enough for the 15-cup pack, which
+costs $3.60-$7.20. The 5-cup pack stays affordable at every lemon price, so
+borrowing is a choice and never a requirement. Measured over 1,500 runs:
+borrowing early finishes at **$155 against $138**, and reaches the bike **42% of
+the time against 32%**. At $10 the loan was decoration; there was no day on which
+you needed it.
+
+Everything downstream moved with it and the goal ladder was re-measured, not
+guessed: the bike went $200 → **$170** ($30 / $70 / $110 / $170), which puts a
+really well-played fortnight back at 32% — inside the 25-45% band the second
+pass set. Easy's ladder came down to $10 / $20 / $30 / $42 and sits at 69%.
+
+Decisions worth recording:
+
+- **A smaller purse is a better teacher than a bigger goal.** Making the prize
+  dearer only makes the run longer; making the *starting capital* tight makes
+  every early decision matter and gives the bank something to do. If a mechanic
+  is being ignored, look at whether the player is ever short of anything.
+- **"Buy the big pack" stopped being unconditional advice**, which is a better
+  lesson than it was. On day one it is genuinely out of reach, and the honest
+  answer is either five cups or a loan — the browser checks had to learn this
+  too, because three of them hung on a `#buyBig` that is now disabled.
+- **The queue draws people; the money counts cups.** Keeping those two units
+  separate is what let parties be added without touching a single balance
+  number — `wanted()` still returns cups, and `partiesFor()` only decides how
+  they are grouped.

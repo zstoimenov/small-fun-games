@@ -55,7 +55,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 | Game | Folder | What it is |
 | --- | --- | --- |
-| 🍋 **Lemonade Stand** | [`lemonade-stand/`](lemonade-stand/) | Run a lemonade stall for a fortnight. Buy your cups, pick a price from five tiles, and count out real change when somebody pays with a note — the running total is hidden on Tricky, so you have to hold the sum in your head. Money in the bank grows overnight; money you borrow costs twice as much as it pays. Events land when the stall *opens*, not in the morning, so you commit your stock and your price before the world happens. Saving up for the bike takes a genuinely good fortnight (~age 8+). |
+| 🍋 **Lemonade Stand** | [`lemonade-stand/`](lemonade-stand/) | Run a lemonade stall for a fortnight. Each morning asks one thing at a time — what's the weather, how many cups, what price — and the evening shows every decision next to what it caused. Count out real change when somebody pays with a handful of coins, and sometimes they want two or three cups, so the sum is a multiply before it is a subtract. Money in the bank grows overnight and you watch it go up; money you borrow costs twice as much as it pays. You start with $3.00, which is not enough for a full stall, so the bank is a real choice on day one. Saving up for the bike takes a genuinely good fortnight (~age 8+). |
 | ⭐ **Times Table Blaster** | [`times-table-blaster/`](times-table-blaster/) | Practise your times tables. Ninja Belt mode ranks you up one table at a time; Classic mode adds timers, streaks and a leaderboard. |
 
 ### ⚽ Sport

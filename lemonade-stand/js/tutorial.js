@@ -13,16 +13,20 @@ LS.Tutorial = (function () {
   const $ = (id) => document.getElementById(id);
 
   // What $10 becomes if you leave it alone for a whole run. Computed, not typed.
+  // Illustrated with a round $10 rather than the starting purse: the purse is
+  // deliberately small now, and "$3 becomes $4.50" doesn't show a child what
+  // compounding looks like.
+  const EXAMPLE = 1000;
   function growth(difficulty) {
     const sp = E.spec(difficulty);
-    let bal = E.START_CASH;
+    let bal = EXAMPLE;
     const each = [];
     for (let n = 0; n < sp.days; n++) {
       const paid = E.interestOn(bal, sp).paid;
       bal += paid;
       each.push(paid);
     }
-    return { start: E.START_CASH, end: bal, nights: sp.days, first: each[0], last: each[each.length - 1] };
+    return { start: EXAMPLE, end: bal, nights: sp.days, first: each[0], last: each[each.length - 1] };
   }
 
   function pages(difficulty) {
@@ -37,8 +41,9 @@ LS.Tutorial = (function () {
     return [
       { title: "You've got a stall",
         html: "<p>For " + sp.days + " days you're running a lemonade stall.</p>" +
-          "<p>You start with <b>" + E.money(E.START_CASH) + "</b>. Every day you buy lemons, " +
-          "decide what to charge, and sell as much as you can.</p>" +
+          "<p>You start with <b>" + E.money(E.START_CASH) + "</b>. That's not much — not even enough " +
+          "for a full stall's worth of lemons. Every day you buy what you can, decide what to charge, " +
+          "and sell as much as you can.</p>" +
           "<div class='demo'>You're saving up for <b>" + sp.rungs[sp.rungs.length - 1] +
           "</b>. It costs <span class='big-num'>" + E.money(target) + "</span></div>" },
 
@@ -58,11 +63,10 @@ LS.Tutorial = (function () {
           "<p>Charge too much and hardly anyone buys. Charge too little and you lose money on every cup.</p>" },
 
       { title: "Counting out the change",
-        html: "<p>Some people pay with a note. You have to work out what to give back, and count it out in real coins.</p>" +
-          "<div class='demo'>A cup costs <b>" + E.price(75) + "</b>.<br>" +
-          "They hand you <b>" + E.money(500) + "</b>.<br>" +
-          "So the change is <span class='big-num'>" + E.money(425) + "</span>" +
-          "That's " + E.money(400) + " + " + E.price(20) + " + " + E.price(5) + ".</div>" +
+        html: "<p>Once a day somebody pays with a handful of money instead of the exact coins. You work out what to give back, and count it out.</p>" +
+          "<div class='demo'>They want <b>2 cups</b> at <b>" + E.price(75) + "</b> each.<br>" +
+          "That's <b>" + E.money(150) + "</b>.<br>" +
+          "They hand you a $2 coin — so the change is <span class='big-num'>" + E.price(50) + "</span></div>" +
           "<p>Get it right and people often leave you a little extra. Give too much and they keep it — that money is gone. Give too little and they notice.</p>" },
 
       { title: "Some days go wrong",
