@@ -63,6 +63,33 @@ LS.Economy = (function () {
   const BONUS_AT = 2000;
   const GRANDMA = 200; // the soft floor; a child is never locked out of their own game
 
+  // What a trip to the bank costs. This is the number that makes the purse worth
+  // having at all.
+  //
+  // Bank money is spendable — see affordable() for why that has to stay true —
+  // and the bank pays interest, so without a fee "bank every last cent" was
+  // strictly the right answer every single night, and the evening's question was
+  // not a question. A flat fee, charged the first time you dip into the bank on
+  // a given day and never again that day, makes it one: interest scales with the
+  // pile and the fee doesn't, so banking the SURPLUS still wins by miles, while
+  // keeping tomorrow's lemon money in your purse is what stops you paying a toll
+  // every morning. That is the household lesson — keep a little cash to hand,
+  // save the rest.
+  //
+  // 50c, and the size was measured rather than picked. Keeping $X out of the
+  // bank forgoes 3c per dollar per night, so a float only pays for itself when
+  // FEE x (how often it covers the day's shopping) > 0.03X. At 25c it didn't:
+  // over 1,200 fortnights, banking every last cent finished at $117.60 against
+  // the float's $115.10, and the mechanic was decoration. At 50c the ordering
+  // flips — $112.40 against $113.20 — and a careless player pays $6.50 across a
+  // fortnight against a careful one's $2.09. Small money against a $170 bike,
+  // and entirely avoidable, which is the point.
+  const WITHDRAW_FEE = 50;
+  // What a day's shopping costs, near enough: enough to cover most mornings
+  // without leaving so much idle that the forgone interest outweighs the fee.
+  // Measured across $5 / $8 / $10 — $8 is the best of the three.
+  const FLOAT = 800;
+
   const WEATHER = [
     { id: "cold",     emoji: "🌧️", name: "Cold and rainy", footfall: 8 },
     { id: "cloudy",   emoji: "⛅",  name: "Cloudy",         footfall: 14 },
@@ -109,14 +136,16 @@ LS.Economy = (function () {
     { id: "big",   borrow: 1000, repay: 1300, nights: 5, perNight: 60 }
   ];
 
+  // `short` is for the shelf on the buying screen, where there is room for one
+  // line and no more; `blurb` is for the shop sheet, which can afford a sentence.
   const TREATS = [
-    { id: "bucket", emoji: "🧊", name: "Ice bucket",
+    { id: "bucket", emoji: "🧊", name: "Ice bucket", short: "Leftover cups keep till tomorrow.",
       blurb: "Cups you don't sell keep until tomorrow instead of being thrown out.",
       cost: 400, once: true },
-    { id: "sign", emoji: "🪧", name: "A big sign",
+    { id: "sign", emoji: "🪧", name: "A big sign", short: "Ten more regulars, for the whole run.",
       blurb: "Ten more regulars right away, and everything you do for them counts double.",
       cost: 300, once: true },
-    { id: "cream", emoji: "🍦", name: "An ice cream, for you",
+    { id: "cream", emoji: "🍦", name: "An ice cream, for you", short: "Does nothing at all. Very nice.",
       blurb: "It does nothing at all for the stall. It is just very nice.",
       cost: 150, once: false }
   ];
@@ -482,8 +511,8 @@ LS.Economy = (function () {
 
   /* ── Shopping ──────────────────────────────────────────────────────────── */
 
-  // Everything you own is spendable. Money comes out of the pocket first and
-  // out of the bank behind it, free and instantly.
+  // Everything you own is spendable. Money comes out of the pocket first and out
+  // of the bank behind it, instantly — bank money is never LOCKED.
   //
   // This is deliberate, and the game would teach the OPPOSITE lesson without it.
   // If banking locked money away until morning, then banking your takings would
@@ -491,13 +520,41 @@ LS.Economy = (function () {
   // stuffing the money under the mattress would win. Measured: pocketing
   // everything finished at $136 against banking's $48 before this existed.
   // The lesson here is "money you leave alone grows", not a liquidity puzzle.
-  const affordable = (run) => run.pocket + run.bank;
+  //
+  // What reaching into the bank does cost is one 25c trip, once a day. See
+  // WITHDRAW_FEE.
+  const dipsIntoBank = (run, amount) => amount > run.pocket;
+
+  // The fee this purchase would trigger: nothing if your purse covers it, and
+  // nothing if you have already been to the bank today.
+  function feeFor(run, amount) {
+    if (!dipsIntoBank(run, amount) || run.bank <= 0 || run.feePaid) return 0;
+    return WITHDRAW_FEE;
+  }
+
+  // What the purchase really costs you today, trip included. This is the number
+  // the buying screen shows — a child should never tap a $4.80 button and find
+  // $5.05 gone without having been told.
+  const costOf = (run, amount) => amount + feeFor(run, amount);
+
+  // The biggest single thing you could buy right now, fee included. Emptying the
+  // purse without touching the bank is always allowed, which is why this is a
+  // max of the two ways rather than one sum.
+  function affordable(run) {
+    if (run.bank <= 0 || run.feePaid) return run.pocket + run.bank;
+    return Math.max(run.pocket, run.pocket + run.bank - WITHDRAW_FEE);
+  }
+
+  const canAfford = (run, amount) => costOf(run, amount) <= run.pocket + run.bank;
 
   function spend(run, amount) {
-    if (amount > affordable(run)) return false;
-    const fromPocket = Math.min(run.pocket, amount);
+    const fee = feeFor(run, amount);
+    const total = amount + fee;
+    if (total > run.pocket + run.bank) return false;
+    const fromPocket = Math.min(run.pocket, total);
     run.pocket -= fromPocket;
-    run.bank -= amount - fromPocket;
+    run.bank -= total - fromPocket;
+    if (fee > 0) { run.feePaid = true; run.feesToday += fee; }
     return true;
   }
 
@@ -506,11 +563,15 @@ LS.Economy = (function () {
     if (!pack) return null;
     const cost = packPrice(info.unit, pack);
     if (run.cups + pack.cups > STALL_LIMIT) return null;
+    const fee = feeFor(run, cost);
+    // The fee is not part of what the lemons cost, and never gets added to
+    // spentToday — the evening has to be able to say "lemons $4.80" and
+    // "trip to the bank 25c" as two separate facts.
     if (!spend(run, cost)) return null;
     run.cups += pack.cups;
     run.spentToday += cost;
     run.boughtToday += pack.cups;
-    return { cups: pack.cups, cost };
+    return { cups: pack.cups, cost, fee };
   }
 
   const treatById = (id) => TREATS.find((t) => t.id === id);
@@ -527,6 +588,7 @@ LS.Economy = (function () {
   function buyTreat(run, id) {
     const t = treatById(id);
     if (!t || !treatAvailable(run, id)) return null;
+    const fee = feeFor(run, t.cost);
     if (!spend(run, t.cost)) return null;
     run.treatToday += t.cost;
     if (t.id === "cream") run.treats.creamsOn.push(run.day);
@@ -534,7 +596,7 @@ LS.Economy = (function () {
       run.treats[t.id] = true;
       if (t.id === "sign") run.rep = clamp(run.rep + 10, REP_MIN, REP_MAX);
     }
-    return t;
+    return Object.assign({ fee }, t);
   }
 
   /* ── The run ───────────────────────────────────────────────────────────── */
@@ -556,6 +618,10 @@ LS.Economy = (function () {
       boughtToday: 0,
       treatToday: 0,
       borrowedToday: 0,
+      // One trip to the bank a day, so the fee can't be charged twice for
+      // buying lemons and then a bucket ten seconds later.
+      feePaid: false,
+      feesToday: 0,
       // The till, for today only. None of it is real money until closeDay pays
       // the day in, so a day abandoned half-served simply replays.
       tipsToday: 0,
@@ -585,6 +651,8 @@ LS.Economy = (function () {
     run.boughtToday = 0;
     run.treatToday = 0;
     run.borrowedToday = 0;
+    run.feePaid = false;
+    run.feesToday = 0;
     resetTill(run);
     run.result = null;
     run.phase = "morning";
@@ -649,9 +717,12 @@ LS.Economy = (function () {
     return r;
   }
 
-  // "all" | "half" | "none" — how much of the pocket goes into the bank tonight.
+  // "all" | "float" | "half" | "none" — how much of the pocket goes in tonight.
+  // "float" is the one worth naming: it banks everything except tomorrow's lemon
+  // money, which is the answer the withdrawal fee is quietly teaching.
   function bankChoice(run, choice) {
     const move = choice === "all" ? run.pocket
+      : choice === "float" ? Math.max(0, run.pocket - FLOAT)
       : choice === "half" ? cents5(Math.floor(run.pocket / 2))
       : 0;
     run.pocket -= move;
@@ -696,6 +767,7 @@ LS.Economy = (function () {
       profit: r.earned + run.tipsToday - run.overpaidToday - run.spentToday,
       binned,                                  // display only, moves no money
       treatCost: run.treatToday,
+      fees: run.feesToday,                     // trips to the bank
       loanCost: loanCost ? loanCost.perNight : 0, // display only, moves no money
       borrowed: run.borrowedToday,
       repaid: o.repay ? o.repay.repaid : 0,
@@ -766,6 +838,7 @@ LS.Economy = (function () {
       changeWrong: add("changeWrong"),
       lost: add("lost"),
       treats: add("treatCost"),
+      fees: add("fees"),
       written: add("written"),
       creams: run.treats.creamsOn.length,
       rung: rungReached(final, sp.goal),
@@ -806,6 +879,10 @@ LS.Economy = (function () {
       return "You got every single sum at the till right, and people left you " +
         money(s.tips) + " in tips for it. Being careful pays.";
     }
+    if (s.fees > 0 && s.fees >= s.interest) {
+      return "You paid " + money(s.fees) + " in trips to the bank — as much as the bank paid you. " +
+        "Keep tomorrow's lemon money in your purse and that stays yours.";
+    }
     if (s.interest > 0 && s.traded > 0 && s.interest * 3 >= s.traded) {
       return "Look at that — the bank paid you " + money(s.interest) +
         " for doing nothing at all. Money you leave alone works while you sleep.";
@@ -815,12 +892,12 @@ LS.Economy = (function () {
         money(s.treats) + ". That was money that never made it to the goal.";
     }
     if (s.binned > 0 && s.traded > 0 && s.binned * 4 >= s.traded) {
-      return "You threw away " + money(s.binned) + " of lemonade. Buying only what you can sell is money in your pocket.";
+      return "You threw away " + money(s.binned) + " of lemonade. Buying only what you can sell is money in your purse.";
     }
     if (s.interest > 0) {
       return "The bank paid you " + money(s.interest) + " this fortnight. Bank it earlier next time and it pays you for longer.";
     }
-    return "You kept your money in your pocket all fortnight. Try leaving it in the bank — it grows every single night.";
+    return "You kept your money in your purse all fortnight. Try leaving it in the bank — it grows every single night.";
   }
 
   /* ── Saving ────────────────────────────────────────────────────────────── */
@@ -836,6 +913,7 @@ LS.Economy = (function () {
       cups: run.cups, carry: run.carry, price: run.price,
       spentToday: run.spentToday, boughtToday: run.boughtToday,
       treatToday: run.treatToday, borrowedToday: run.borrowedToday,
+      feePaid: !!run.feePaid, feesToday: run.feesToday,
       tipsToday: run.tipsToday, overpaidToday: run.overpaidToday,
       changeAt: run.changeAt, changeRight: run.changeRight, changeWrong: run.changeWrong,
       loan: run.loan ? { id: run.loan.id, borrow: run.loan.borrow, repay: run.loan.repay,
@@ -882,6 +960,8 @@ LS.Economy = (function () {
       run.boughtToday = snap.boughtToday || 0;
       run.treatToday = snap.treatToday || 0;
       run.borrowedToday = snap.borrowedToday || 0;
+      run.feePaid = !!snap.feePaid;
+      run.feesToday = snap.feesToday || 0;
       run.tipsToday = snap.tipsToday || 0;
       run.overpaidToday = snap.overpaidToday || 0;
       run.changeAt = snap.changeAt || 0;
@@ -916,6 +996,7 @@ LS.Economy = (function () {
     cents5, money, price, clamp,
     // constants
     START_CASH, STALL_LIMIT, RATE, RATE_BONUS, BONUS_AT, GRANDMA,
+    WITHDRAW_FEE, FLOAT,
     REP_MIN, REP_MAX, WEATHER, PRICES, PACKS, LOANS, TREATS, LEVELS,
     COINS, NOTES, EVENTS,
     spec, priceTier,
@@ -928,7 +1009,8 @@ LS.Economy = (function () {
     // banking
     interestOn, loanTonight, loanOffers, takeLoan, dueRepayment, grandma,
     // shopping
-    buyPack, buyTreat, treatAvailable, treatById, affordable, spend,
+    buyPack, buyTreat, treatAvailable, treatById,
+    affordable, canAfford, costOf, feeFor, dipsIntoBank, spend,
     // the run
     newRun, startDay, setPrice, openStall, closeDay, bankChoice, night, nextDay,
     // scoring

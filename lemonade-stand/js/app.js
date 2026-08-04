@@ -185,7 +185,7 @@
 
   function redrawMorning() {
     Ui.morning(state.run, state.hints);
-    if (stepOpen) Ui.stepShow(state.run, stepList[stepAt], stepAt, stepList.length, stepSingle);
+    if (stepOpen) drawStep();
     save();
   }
 
@@ -193,6 +193,13 @@
     const got = E.buyPack(state.run, state.run.today, index);
     if (!got) { Ui.toast("You can't afford that."); return; }
     Audio.buy();
+    // A trip to the bank is money leaving that the child did not ask to spend,
+    // so it gets said out loud the moment it happens rather than only in the
+    // evening sums.
+    if (got.fee > 0) {
+      Ui.toast("🏦 " + E.money(got.cost) + " for the lemons, and " + E.price(got.fee) +
+        " for the trip to the bank.");
+    }
     redrawMorning();
   }
 
@@ -222,6 +229,18 @@
     return list.concat(["weather", "buy", "price", "ready"]);
   }
 
+  // One place that draws the open step, so every redraw carries the same things:
+  // the purse, the tip for this question, and live handlers for the shelves the
+  // buying step puts on screen.
+  function drawStep() {
+    Ui.stepShow(state.run, stepList[stepAt], stepAt, stepList.length, {
+      single: stepSingle,
+      hints: state.hints,
+      onLoan: takeLoan,
+      onTreat: buyTreat
+    });
+  }
+
   function openSteps(at, single) {
     const run = state.run;
     if (!run || run.phase !== "morning") return;
@@ -229,7 +248,7 @@
     stepAt = Math.max(0, Math.min(stepList.length - 1, at || 0));
     stepOpen = true;
     stepSingle = !!single;
-    Ui.stepShow(run, stepList[stepAt], stepAt, stepList.length, stepSingle);
+    drawStep();
   }
 
   // Reopen one step to change your mind about it — what the plan rows do.
@@ -254,14 +273,14 @@
       return;
     }
     stepAt++;
-    Ui.stepShow(state.run, stepList[stepAt], stepAt, stepList.length, stepSingle);
+    drawStep();
   }
 
   function stepBack() {
     if (stepAt === 0 || stepSingle) return;
     Audio.tap();
     stepAt--;
-    Ui.stepShow(state.run, stepList[stepAt], stepAt, stepList.length, stepSingle);
+    drawStep();
   }
 
   function openStall() {
@@ -505,35 +524,50 @@
     savedRun = null;               // a finished run is not something to carry on
     state.playing = false;
     save();
-    Ui.result(run, state.best[run.difficulty]);
+    // On screen first, then drawn: the prize landing on the counter is a CSS
+    // animation, and an animation on a display:none element plays to nobody.
     $("result").hidden = false;
-    setTimeout(() => (s.won ? Audio.win() : Audio.till()), 250);
+    Ui.result(run, state.best[run.difficulty]);
+    // Timed to land with the total finishing its count-up, not with the sheet
+    // appearing. Anything you can walk out with is worth the fanfare, not only
+    // the top of the shelf.
+    setTimeout(() => (s.rung > 0 ? Audio.win() : Audio.till()), 850);
   }
 
   /* ── Sheets ────────────────────────────────────────────────────────────── */
 
+  // Borrowing and buying happen in two places now — inline on the buying screen,
+  // where the money is actually short, and in the sheets the morning screen
+  // opens. One function each, handed to whichever is drawing, so the two places
+  // can never end up behaving differently.
+
+  function takeLoan(id) {
+    const took = E.takeLoan(state.run, id);
+    if (!took) return;
+    Audio.owe();
+    Ui.toast("You borrowed " + E.money(took.borrow) + ". Pay back " +
+      E.money(took.repay) + " on day " + took.due + ".");
+    $("loanSheet").hidden = true;
+    redrawMorning();   // redraws the open step too, so the packs light up
+  }
+
+  function buyTreat(id) {
+    const bought = E.buyTreat(state.run, id);
+    if (!bought) { Ui.toast("You can't afford that."); return; }
+    Audio.treat();
+    Ui.toast(bought.emoji + " " + bought.name + " — " + E.money(bought.cost) +
+      (bought.fee > 0 ? ", plus " + E.price(bought.fee) + " for the trip to the bank" : ""));
+    if (!$("treatSheet").hidden) openShop();  // the sheet, if that's where we are
+    redrawMorning();                          // ...and the morning behind it
+  }
+
   function openBank() {
-    Ui.bankSheet(state.run, (id) => {
-      const took = E.takeLoan(state.run, id);
-      if (!took) return;
-      Audio.owe();
-      Ui.toast("You borrowed " + E.money(took.borrow) + ". Pay back " +
-        E.money(took.repay) + " on day " + took.due + ".");
-      $("loanSheet").hidden = true;
-      redrawMorning();   // redraws the open step too, so the packs light up
-    });
+    Ui.bankSheet(state.run, takeLoan);
     $("loanSheet").hidden = false;
   }
 
   function openShop() {
-    Ui.treatSheet(state.run, (id) => {
-      const bought = E.buyTreat(state.run, id);
-      if (!bought) { Ui.toast("You can't afford that."); return; }
-      Audio.treat();
-      Ui.toast(bought.emoji + " " + bought.name + " — " + E.money(bought.cost));
-      openShop();          // redraw the sheet so it shows as bought
-      redrawMorning();     // ...and the morning behind it, so the purse agrees
-    });
+    Ui.treatSheet(state.run, buyTreat);
     $("treatSheet").hidden = false;
   }
 
@@ -586,15 +620,18 @@
     $("treatBtn").addEventListener("click", () => { Audio.tap(); openShop(); });
     $("loanClose").addEventListener("click", () => { Audio.tap(); $("loanSheet").hidden = true; });
     $("treatClose").addEventListener("click", () => { Audio.tap(); $("treatSheet").hidden = true; });
+    // Straight from "I can't afford this" to the money. One tap, one sheet.
+    $("treatBorrow").addEventListener("click", () => {
+      Audio.tap();
+      $("treatSheet").hidden = true;
+      openBank();
+    });
 
     $("stepNext").addEventListener("click", stepNext);
     $("stepBack").addEventListener("click", stepBack);
     $("planWeather").addEventListener("click", () => openStepNamed("weather"));
     $("planStock").addEventListener("click", () => openStepNamed("buy"));
     $("planPrice").addEventListener("click", () => openStepNamed("price"));
-    $("stepLoanBtn").addEventListener("click", () => { Audio.tap(); openBank(); });
-    $("stepBorrow").addEventListener("click", () => { Audio.tap(); openBank(); });
-    $("stepTreatBtn").addEventListener("click", () => { Audio.tap(); openShop(); });
 
     $("stepToggle").addEventListener("click", () => {
       state.stepBy = !state.stepBy;
@@ -613,6 +650,7 @@
 
     $("bankNone").addEventListener("click", () => bankIt("none"));
     $("bankHalf").addEventListener("click", () => bankIt("half"));
+    $("bankFloat").addEventListener("click", () => bankIt("float"));
     $("bankAll").addEventListener("click", () => bankIt("all"));
     $("nextBtn").addEventListener("click", () => { Audio.tap(); nextMorning(); });
 
@@ -682,6 +720,27 @@
         !Number.isInteger(r.pocket) || !Number.isInteger(r.bank) ||
         r.pocket % 5 !== 0 || r.bank % 5 !== 0 || r.pocket < 0 || r.bank < 0);
       if (bad) console.warn("Lemonade Stand: the money model produced a value that isn't whole cents.");
+
+      // The trip to the bank, which is the newest way for money to move and so
+      // the likeliest to be wrong: empty the purse, buy something out of the
+      // bank, and insist the fee came off exactly once.
+      const t = E.newRun("normal", 999);
+      E.startDay(t);
+      t.bank = t.pocket; t.pocket = 0;
+      const before = t.bank;
+      const first = E.buyPack(t, t.today, 0);
+      const second = E.affordable(t) >= E.packPrice(t.today.unit, E.PACKS[0])
+        ? E.buyPack(t, t.today, 0) : null;
+      if (first && first.fee !== E.WITHDRAW_FEE) {
+        console.warn("Lemonade Stand: the first trip to the bank didn't charge for itself.");
+      }
+      if (second && second.fee !== 0) {
+        console.warn("Lemonade Stand: the bank charged twice for one day's trip.");
+      }
+      const spent = first ? first.cost + (second ? second.cost : 0) + E.WITHDRAW_FEE : 0;
+      if (first && t.pocket + t.bank !== before - spent) {
+        console.warn("Lemonade Stand: money went missing on the way to the bank.");
+      }
       const missing = ["morning", "selling", "evening", "goalFill", "priceChooser", "chart"]
         .filter((id) => !document.getElementById(id));
       if (missing.length) console.warn("Lemonade Stand: markup is missing " + missing.join(", "));

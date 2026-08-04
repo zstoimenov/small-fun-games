@@ -841,3 +841,103 @@ Decisions worth recording:
   separate is what let parties be added without touching a single balance
   number — `wanted()` still returns cups, and `partiesFor()` only decides how
   they are grouped.
+
+### Fourth pass: the decision screens, the purse, and a pay-off
+
+Played again, and the complaints were all one complaint wearing four hats: **the
+one-question-at-a-time sheets from the third pass were the old screens moved
+into pop-ups, not screens designed to be pop-ups.** A sheet covers everything
+behind it, and what it covered was the purse, the coach and every button.
+
+**A sheet that asks you to spend money now shows the money.** `Ui.purseInto()`
+draws the same three chips — purse, bank, what you owe — into the step sheet,
+the bank sheet and the shop sheet. The topbar copy is still there for the
+uncovered screens; this is the same component, labelled, because a sheet has
+room to say which number is which.
+
+**The buying screen carries everything the buying decision needs.** It used to
+carry two pack buttons and a link to the bank; the ice bucket and the big sign
+were three taps away behind a 🎁 button on a screen you only see with the
+walk-through turned off, and the loan came *after* you had already decided about
+the lemons. It now carries, in order: today's lemon price, the packs, the
+basket, **the bank's live offers inline**, and **the shop**, with anything
+already owned dropped from the list so the shelf only ever holds live decisions.
+`loansInto()` and `shopInto()` render into whatever node they are handed, so the
+inline copy and the sheet copy cannot drift.
+
+- **"Offered where the money runs out" was right and did not go far enough.**
+  The third pass showed a borrow row only when you were short of the 15-cup
+  pack — so a child who could afford a full stall but wanted more never met the
+  bank at all. The offers are now always on the buying screen.
+- **A tip belongs on the screen it is a tip about.** The coach lives on the
+  morning screen, under the sheet. Each step now has its own line: the buying
+  step names the shortfall and points at the offer below it, the price step
+  names what the lemons cost, the ready step says what is missing.
+
+**Red means walking away.** "Don't buy any", "Stay shut today" and "Give up and
+start again" were the same green as "Open the stall". They are `.btn-no` now,
+and `--no` is a separate colour from `--bad` so that a warning and a decline
+don't have to share a swatch.
+
+**The 15-cup pack had a gold border and no meaning.** It read as *selected* on a
+pair of buttons where nothing is ever selected — they are tills you tap. Both
+packs are identical now and the saving is a chip that says `save $1.35`.
+
+#### The purse was redundant, so it was given a cost to avoid
+
+Money in the bank paid interest and was spendable, so **"bank every last cent"
+was strictly correct every night** and the evening's question was not a
+question. Fixed with one number: fetching money out of the bank costs a flat fee,
+charged the first time you dip in on a given day and never again that day.
+
+The size was measured, not chosen. Keeping $X in your purse forgoes 3c per
+dollar per night, so a float only pays for itself when
+`FEE × P(it covers the day's shopping) > 0.03X`. Over 1,200 fortnights:
+
+| fee | float | bank every cent | keep the float | never bank |
+| --- | --- | --- | --- | --- |
+| 25c | $5 | **$117.60** (fees $3.25) | $115.10 (fees $1.79) | $85.25 |
+| 50c | $5 | $112.40 (fees $6.50) | **$112.50** (fees $3.57) | $85.25 |
+| 50c | **$8** | $112.40 (fees $6.50) | **$113.20** (fees $2.09) | $85.25 |
+| 75c | $8 | $106.55 (fees $9.75) | **$112.00** (fees $3.12) | $85.25 |
+
+**At 25c the mechanic was decoration** — banking everything still won, which is
+the exact thing it was added to fix. 50c with an $8 float is the first cell
+where the ordering flips, and 75c only widens it by making the toll punitive.
+The two strategies finish within a dollar of each other, which is the target:
+neither should dominate, or it stops being a decision again. What makes it
+*teachable* is not the aggregate, it is that the fee is named four times on the
+day it happens — a toast when it is charged, a line in the evening sums, a row
+in "what your choices did", and the tip on tomorrow's buying screen.
+
+**The big lesson is untouched: never banking finishes at $86.30 against $113.40,
+and reaches the bike 2% of the time against 22%.** The consistency lesson holds
+too — steady 15 cups a day still reaches the top rung 0% of the time.
+
+The evening's question grew a fourth answer, `bankChoice(run, "float")`, and all
+four buttons now print the actual money underneath: *Bank half — bank $6.25*.
+The recommended one is marked honestly rather than always pointing at the bank:
+with $5 in your purse on day two, banking the lot earns 15c of interest and
+costs 50c to get back, so **"keep it all" really is the answer** and saying
+otherwise would be a lie the child can check.
+
+#### The end of a fortnight has to buy something
+
+The result screen ended on a ladder of tickboxes, which is a receipt. Fourteen
+days of saving up now end at a shop counter: the total counts up from the $3.00
+you started with, the best thing your money actually reaches lands on the
+counter with a pop and a handful of confetti, and it says what it cost and what
+you have left. The ladder became a shelf — the things you can afford in colour,
+the ones you can't behind the glass with **the gap written on them** (*"$13.15
+more and it was yours"*), which is the number a child comes back for.
+
+Two implementation notes worth keeping:
+
+- **A CSS animation only plays on a node that is new to the document.** Setting
+  `textContent` on the prize would have shown it without the moment where it
+  lands. The emoji element is rebuilt on every draw, and the result overlay is
+  un-hidden *before* it is drawn, not after.
+- **`countUpTo` had a step, not a duration.** It counted in fixed 5c steps and
+  bailed out above 400 of them — so it worked for the bank book's few cents a
+  night and silently did nothing for a $170 total. It now sizes the step to the
+  distance and keeps it a whole multiple of 5c.

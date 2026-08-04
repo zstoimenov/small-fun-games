@@ -1,6 +1,6 @@
 /* Lemonade Stand — the how-to lesson.                                          */
 /*                                                                              */
-/* Nine short pages. Every figure on them is computed by calling the real        */
+/* A dozen short pages. Every figure on them is computed by calling the real     */
 /* economy rather than typed in, so the lesson cannot drift away from the game   */
 /* when a number is tuned. The interest page in particular runs the actual       */
 /* fourteen nights through interestOn() — if the rate ever changes, the page     */
@@ -89,13 +89,21 @@ LS.Tutorial = (function () {
           "<p>You can buy an ice bucket at the shop. Then your leftovers keep until tomorrow.</p>" },
 
       { title: "The bank pays you",
-        html: "<p>At the end of each day you choose: keep your money in your pocket, or put it in the bank.</p>" +
+        html: "<p>At the end of each day you choose: keep your money in your purse, or put it in the bank.</p>" +
           "<div class='demo'>The bank pays you <b>" + E.RATE + "c every night</b> for every dollar you leave with it.<br>" +
-          "Your pocket pays you nothing at all.</div>" +
+          "Your purse pays you nothing at all.</div>" +
           "<p>Leave " + E.money(g.start) + " in the bank and don't touch it, and after " +
           g.nights + " nights it's worth</p><p style='text-align:center'><span class='big-num'>" +
-          E.money(g.end) + "</span></p>" +
-          "<p>You can still spend bank money whenever you like. There's no reason not to bank it.</p>" },
+          E.money(g.end) + "</span></p>" },
+
+      { title: "Keep a bit in your purse",
+        html: "<p>You can spend bank money any time you like. But going to the bank to fetch it costs <b>" +
+          E.price(E.WITHDRAW_FEE) + "</b> — once a day, however much you take out.</p>" +
+          "<div class='demo'>Bank <i>everything</i> and tomorrow's lemons cost you " +
+          E.price(E.WITHDRAW_FEE) + " extra.<br>" +
+          "Keep <i>everything</i> in your purse and the bank pays you nothing at all.</div>" +
+          "<p>So do what grown-ups do: keep about <b>" + E.money(E.FLOAT) +
+          "</b> in your purse for tomorrow, and put the rest in the bank.</p>" },
 
       { title: "It grows faster the longer it sits",
         html: "<p>The first night, the bank paid you " + E.money(g.first) + ".</p>" +
@@ -113,7 +121,7 @@ LS.Tutorial = (function () {
 
       { title: "Ready?",
         html: "<p>Every morning: check the weather, buy your lemons, pick your price.</p>" +
-          "<p>Every evening: look at what you made, and bank it.</p>" +
+          "<p>Every evening: look at what you made, and bank what you won't need.</p>" +
           "<div class='demo'>Get to <b>" + E.money(target) + "</b> in " + sp.days + " days and " +
           sp.rungs[sp.rungs.length - 1].replace(/^[^ ]+ /, "") + " is yours.</div>" +
           "<p><b>Most fortnights won't get there</b>, and that's meant to be true. " +
