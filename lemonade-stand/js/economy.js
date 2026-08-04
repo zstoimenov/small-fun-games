@@ -47,7 +47,12 @@ LS.Economy = (function () {
   // The 5-cup pack stays affordable at every lemon price, so borrowing is a
   // choice and never a requirement.
   const START_CASH = 300;
-  const STALL_LIMIT = 40; // cups the stall physically holds in a day
+  // 45 — three big packs, and deliberately a little MORE than the busiest day
+  // can ask for. It used to be 40 against a scorcher that wanted 54, which meant
+  // the answer to "how many cups?" was "as many as you can" on every warm day or
+  // hotter, and the child had no way to buy their way out of a queue. A ceiling
+  // has to sit above the demand or the decision underneath it isn't one.
+  const STALL_LIMIT = 45;
 
   /* ── Regulars ──────────────────────────────────────────────────────────── */
 
@@ -66,7 +71,7 @@ LS.Economy = (function () {
   // become regulars. That is the honest shape of the loss, and it is what makes
   // a bigger stall grow faster than a small one.
   const REGULARS_START = 0;
-  // Twelve, and the ceiling is deliberatelylow — see below. A stall you can
+  // Twelve, and the ceiling is deliberately low — see below. A stall you can
   // actually stock holds 20-30 cups on a good day, so a guaranteed dozen is a
   // real cushion (about a fifth of a day's demand) without swamping the weather,
   // which is the decision the whole morning is built around. At 25 the back half
@@ -112,26 +117,46 @@ LS.Economy = (function () {
   // every morning. That is the household lesson — keep a little cash to hand,
   // save the rest.
   //
-  // 50c, and the size was measured rather than picked. Keeping $X out of the
-  // bank forgoes 3c per dollar per night, so a float only pays for itself when
-  // FEE x (how often it covers the day's shopping) > 0.03X. At 25c it didn't:
-  // over 1,200 fortnights, banking every last cent finished at $117.60 against
-  // the float's $115.10, and the mechanic was decoration. At 50c the ordering
-  // flips — $112.40 against $113.20 — and a careless player pays $6.50 across a
-  // fortnight against a careful one's $2.09. Small money against a $170 bike,
-  // and entirely avoidable, which is the point.
-  const WITHDRAW_FEE = 50;
+  // 75c, and the size is measured, not picked — and it has been measured twice,
+  // because it depends on how much a day's shopping costs and the rebalance
+  // changed that. Keeping $X in your purse forgoes 3c per dollar per night, and
+  // a float that is never banked also forgoes the EARLY compounding, which is
+  // the part that matters most. So the fee has to beat both.
+  //
+  // At 25c, banking every last cent won outright and the mechanic was
+  // decoration. 50c fixed that at the old footfall and stopped working at the
+  // new one — measured over 2,500 fortnights, banking the lot came back ahead by
+  // $0.70-$2.20, which would have left the game recommending a play that loses.
+  // At 75c the float is ahead by $3.15 and pays $5.81 in trips against banking
+  // everything's $9.75. Against a $130 fortnight that is a visible toll and an
+  // entirely avoidable one, which is the whole point.
+  const WITHDRAW_FEE = 75;
   // What a day's shopping costs, near enough: enough to cover most mornings
   // without leaving so much idle that the forgone interest outweighs the fee.
-  // Measured across $5 / $8 / $10 — $8 is the best of the three.
+  // Re-measured at $4 / $5 / $6 / $8 against the new footfall; $6 and $8 are
+  // within a nickel of each other and both beat the smaller floats, so this
+  // stays where it was.
   const FLOAT = 800;
 
+  // How many people walk past. These came down by about a quarter when the
+  // stall turned out to be permanently oversubscribed: at 22 passers-by on an
+  // ordinary warm day, plus a dozen regulars, a full 40-cup stall still sent
+  // people away, and a child stocking as hard as they could sold out on 91% of
+  // days and binned six cups in a fortnight. "Don't make more than you can
+  // sell" cannot be taught by a game in which you can never make enough.
+  //
+  // At these numbers the busiest plausible day asks for about 45 and the stall
+  // holds 45, so meeting the queue is possible — and paying for cups nobody
+  // wanted is now a real risk rather than a theoretical one. Measured: stocking
+  // tight sells out on 82% of days, stocking to the forecast on 55%, stocking
+  // generously on 34% while binning something on 63%. Three different mistakes,
+  // all available, which is what makes the morning a question.
   const WEATHER = [
-    { id: "cold",     emoji: "🌧️", name: "Cold and rainy", footfall: 8 },
-    { id: "cloudy",   emoji: "⛅",  name: "Cloudy",         footfall: 14 },
-    { id: "warm",     emoji: "🌤️", name: "Warm",           footfall: 22 },
-    { id: "hot",      emoji: "☀️",  name: "Hot",            footfall: 32 },
-    { id: "scorcher", emoji: "🔥",  name: "A scorcher",     footfall: 42 }
+    { id: "cold",     emoji: "🌧️", name: "Cold and rainy", footfall: 6 },
+    { id: "cloudy",   emoji: "⛅",  name: "Cloudy",         footfall: 10 },
+    { id: "warm",     emoji: "🌤️", name: "Warm",           footfall: 16 },
+    { id: "hot",      emoji: "☀️",  name: "Hot",            footfall: 23 },
+    { id: "scorcher", emoji: "🔥",  name: "A scorcher",     footfall: 29 }
   ];
 
   // Five tiles, no typing. `pull` is what fraction of the passers-by would pay
