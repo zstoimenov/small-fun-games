@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v13";
+const CACHE = "game-box-v14";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",

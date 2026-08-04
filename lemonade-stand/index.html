@@ -217,6 +217,14 @@
       <div class="scroller">
         <div class="card sums">
           <div class="sum-line out"><span>You spent on lemons</span><strong id="sumSpent">$4.80</strong></div>
+          <div class="sum-line out" id="sumTreatLine" hidden>
+            <span>You bought things for the stall</span><strong id="sumTreat">$0.00</strong>
+          </div>
+          <!-- Only ever here on a day the bank was dipped into. Silence on the
+               other days is what makes it land on the days it appears. -->
+          <div class="sum-line out" id="sumFeeLine" hidden>
+            <span>🏦 Trip to the bank</span><strong id="sumFee">25c</strong>
+          </div>
           <div class="sum-line in"><span>You took at the stall</span><strong id="sumEarned">$11.25</strong></div>
           <div class="sum-rule"></div>
           <div class="sum-line total" id="sumTotalLine"><span id="sumTotalLabel">So you made</span><strong id="sumProfit">$6.45</strong></div>
@@ -237,11 +245,16 @@
 
         <div class="card">
           <div class="card-head"><span>🏦 Where does it sleep tonight?</span></div>
-          <p class="verdict" id="bankNote">Money in the bank grows overnight. Money in your pocket doesn't.</p>
+          <p class="verdict" id="bankNote">Money in the bank grows overnight. Money in your purse doesn't.</p>
+          <!-- The catch, said before the choice rather than after it: bank the
+               lot and tomorrow's lemons cost you a trip. -->
+          <p class="verdict" id="floatNote"></p>
+          <p class="verdict bad" id="dueNote" hidden></p>
           <div class="bank-row">
-            <button class="ghost-btn" id="bankNone" type="button">Keep it all</button>
-            <button class="ghost-btn" id="bankHalf" type="button">Bank half</button>
-            <button class="ghost-btn strong" id="bankAll" type="button">Bank it all</button>
+            <button class="ghost-btn" id="bankNone" type="button">Keep it all<i></i></button>
+            <button class="ghost-btn" id="bankHalf" type="button">Bank half<i></i></button>
+            <button class="ghost-btn" id="bankFloat" type="button"></button>
+            <button class="ghost-btn" id="bankAll" type="button">Bank it all<i></i></button>
           </div>
         </div>
 
@@ -278,8 +291,9 @@
 </main>
 
 <!-- ══ THE MORNING, ONE STEP AT A TIME ══════════════════════════════════
-     One question per sheet. The plan card behind stays visible through the
-     backdrop, so the context never disappears while a decision is being made. -->
+     One question per sheet. A sheet covers the purse and the coach, so each one
+     carries its own copy of both: the money you have and the tip about what to
+     do with it belong on the screen where the decision is made, not behind it. -->
 <div id="step" class="overlay" hidden>
   <div class="sheet sheet-sm step-sheet">
     <div class="howto-top">
@@ -287,7 +301,12 @@
       <span class="pill" id="stepCount">1 / 4</span>
     </div>
 
+    <!-- Filled by Ui.purseInto. Same markup as the topbar purse, so a child
+         reads the same three numbers wherever they are. -->
+    <div class="purse sheet-purse" id="stepPurse"></div>
+
     <p class="step-say" id="stepSay"></p>
+    <p class="step-hint" id="stepHint" hidden></p>
 
     <!-- Only one of these is ever on screen at a time. -->
     <div class="step-part" id="stepNews" hidden></div>
@@ -298,6 +317,8 @@
       <div class="weather-crowd muted" id="stepWeatherCrowd"></div>
     </div>
 
+    <!-- The one screen where money leaves your hand. Everything you can spend it
+         on, and the one place you can get more of it, are all on it. -->
     <div class="step-part" id="stepBuy" hidden>
       <div class="card-head">
         <span>🍋 Lemons today</span>
@@ -306,33 +327,44 @@
       <p class="verdict" id="unitVerdict">The usual sort of price.</p>
       <div class="buy-row">
         <button class="pack-btn" id="buySmall" type="button">
-          <span class="pack-cups">5 cups</span>
+          <span class="pack-cups">Buy 5 cups</span>
           <span class="pack-cost" id="smallCost">$2.00</span>
+          <span class="pack-save"></span>
         </button>
-        <button class="pack-btn big" id="buyBig" type="button">
-          <span class="pack-cups">📦 15 cups</span>
+        <button class="pack-btn" id="buyBig" type="button">
+          <span class="pack-cups">Buy 15 cups</span>
           <span class="pack-cost" id="bigCost">$4.80</span>
           <span class="pack-save" id="bigSave">save $1.20</span>
         </button>
       </div>
       <div class="basket" id="stepBasket">Nothing bought yet.</div>
-      <!-- Offered right where the shortfall is felt. Without this the big pack
-           just sits there greyed out and the bank never gets walked into. -->
-      <button class="ghost-btn wide" id="stepBorrow" type="button" hidden></button>
+
+      <!-- The bank, at the moment the money runs out rather than two sheets
+           later. Always here, whether you're short or not: borrowing has to be
+           a choice you can see, or the lesson is only ever taught by accident. -->
+      <div class="shelf" id="stepBank">
+        <div class="shelf-head">🏦 The bank</div>
+        <div id="stepBankList"></div>
+      </div>
+
+      <!-- Things for the stall, on the shelf rather than behind a button. Each
+           one disappears the moment you own it, so the shelf only ever holds
+           what you can still decide about. -->
+      <div class="shelf" id="stepShop" hidden>
+        <div class="shelf-head">🎁 Things you can buy</div>
+        <div id="stepShopList"></div>
+      </div>
     </div>
 
     <div class="step-part" id="stepPrice" hidden>
       <div class="prices" id="priceChooser"></div>
       <p class="verdict" id="priceNote"></p>
+      <div class="ready-line" id="priceTake"></div>
     </div>
 
     <div class="step-part" id="stepReady" hidden>
       <div class="ready-line" id="readyPlan"></div>
       <p class="verdict" id="readyNote"></p>
-      <div class="extras">
-        <button class="ghost-btn" id="stepLoanBtn" type="button">🏦 The bank</button>
-        <button class="ghost-btn" id="stepTreatBtn" type="button">🎁 Shop</button>
-      </div>
     </div>
 
     <div class="dots" id="stepDots"></div>
@@ -348,6 +380,7 @@
 <div id="loanSheet" class="overlay" hidden>
   <div class="sheet sheet-sm">
     <h2>🏦 The bank</h2>
+    <div class="purse sheet-purse" id="loanPurse"></div>
     <p class="sub" id="bankBlurb"></p>
     <div id="loanList"></div>
     <div class="sheet-buttons">
@@ -360,8 +393,12 @@
 <div id="treatSheet" class="overlay" hidden>
   <div class="sheet sheet-sm">
     <h2>🎁 The shop</h2>
+    <div class="purse sheet-purse" id="treatPurse"></div>
     <p class="sub">Some things earn their money back. One of them really doesn't.</p>
     <div id="treatList"></div>
+    <!-- Short of the thing you're looking at? Say so, and say where the money
+         could come from — the same offer the buying screen makes. -->
+    <button class="ghost-btn wide" id="treatBorrow" type="button" hidden></button>
     <div class="sheet-buttons">
       <button class="btn btn-clear" id="treatClose" type="button">Back to the stall</button>
     </div>
@@ -374,7 +411,7 @@
     <h2>Menu</h2>
     <button class="ghost-btn wide" id="menuResume" type="button">↩︎ Back to the stall</button>
     <button class="ghost-btn wide" id="menuHowto" type="button">📖 How to play</button>
-    <button class="ghost-btn wide" id="menuQuit" type="button">✖ Give up and start again</button>
+    <button class="ghost-btn wide danger" id="menuQuit" type="button">✖ Give up and start again</button>
   </div>
 </div>
 
@@ -398,21 +435,33 @@
 <!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
 <div id="result" class="overlay" hidden>
   <div class="sheet">
-    <div class="result-top">
-      <div class="result-emoji" id="resultEmoji">🚲</div>
+
+    <!-- The pay-off. A fortnight of saving has to END in something, and a list
+         of ticks is not something. This is the shop counter: the money you
+         finished with, and the thing you walk out with. -->
+    <div class="payoff" id="payoff">
+      <div class="payoff-say" id="payoffSay">You saved up</div>
+      <div class="result-final" id="resultFinal">$0.00</div>
+      <div class="prize" id="prize">
+        <div class="prize-burst" id="prizeBurst" aria-hidden="true"></div>
+        <div class="prize-emoji" id="prizeEmoji">🚲</div>
+      </div>
       <h2 id="resultTitle">You got the bike!</h2>
       <p class="sub" id="resultSub"></p>
+      <p class="prize-change" id="prizeChange" hidden></p>
     </div>
 
-    <div class="result-final" id="resultFinal">$124.60</div>
+    <!-- The shelf you were shopping from all fortnight. Bought things look
+         bought; the rest say how much short you were, which is the number worth
+         taking into the next run. -->
+    <div class="shelf-head">🏆 The shelf</div>
+    <div class="ladder" id="ladder"></div>
 
     <div id="chart"></div>
     <div class="chart-key">
       <span><i class="key-swatch wealth"></i> What you had</span>
       <span><i class="key-swatch lemonade"></i> Without the bank's help</span>
     </div>
-
-    <div class="ladder" id="ladder"></div>
 
     <p class="takeaway" id="takeaway"></p>
     <div class="stickers" id="stickers"></div>
