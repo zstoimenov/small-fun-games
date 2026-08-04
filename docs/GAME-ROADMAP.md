@@ -941,3 +941,84 @@ Two implementation notes worth keeping:
   bailed out above 400 of them — so it worked for the bank book's few cents a
   night and silently did nothing for a $170 total. It now sizes the step to the
   distance and keeps it a whole multiple of 5c.
+
+### Fifth pass: the business grows
+
+"Is there a growing-business mechanic?" There was a `rep` score, 0–100, and two
+things were wrong with it.
+
+**It was invisible.** It multiplied demand by 0.73…1.27 and appeared nowhere on
+screen — no number, no bar, no face. Two sentences mentioned "your regulars" in
+passing; that was the whole surface area. (An earlier draft of this document
+claims it is "drawn as stars". It never was.)
+
+**And for a child playing well it went DOWN.** Averaged over 600 fortnights:
+
+| how it was played | day 1 | day 14 |
+| --- | --- | --- |
+| 75c, stocks to the weather | 49 | **46** |
+| 75c, steady 15 cups | 49 | 50 |
+| 75c + the big sign | 49 | 76 |
+| $1.50 | 44 | 5 |
+| every till sum wrong | 45 | 5 |
+
+Reading the forecast and stocking tightly means selling out, and selling out
+cost 3 a day against the +2 a fair price earned. **The punishment side worked
+loudly and the growth side was only reachable by buying the sign or by
+underpricing.**
+
+**Regulars replace it: a count, not a score.** Demand is now
+`passers-by + your regulars`, two halves a child can reason about separately —
+the weather decides one, you built the other. Regulars turn up whatever the sky
+is doing (`REG_WEATHER`, 0.35 in freezing rain up to 1.0 when it's hot), forgive
+a price rise a stranger wouldn't, and a rival stall up the road only tempts away
+some of them. That is the whole value of having them, and it is what makes a bad
+day survivable rather than merely cheaper.
+
+**You win them by serving people, not by avoiding mistakes.** The old rule
+punished you for turning people away. The new one doesn't: the people you turned
+away simply never become regulars. That is the honest shape of the loss — an
+opportunity missed, not a fine — and it is what fixes the direction. Growth
+scales with cups sold (`GROW_AT = 10` for a full day's worth), capped per day, so
+the loop is **linear in regulars and compounding in money**: predictable enough
+to measure, and the stall still visibly grows.
+
+| how it's played | regulars, day 14 |
+| --- | --- |
+| 75c, stocks to the weather | 19 |
+| 75c + the big sign | 25 (the cap) |
+| $1.00 | 13 |
+| $1.50 | 0 |
+| every till sum wrong | 0 |
+| half the till sums wrong | 8 |
+
+The whole run moved with it, and stayed inside its bands: good play goes from
+22% to **30%** on the top rung, still inside the 25–45% the second pass set;
+never banking still finishes at $94.90 against $125.30; steady-15-cups still
+reaches the bike **0%** of the time, so the consistency lesson is untouched.
+
+Two tuning results worth keeping:
+
+- **A harsher till penalty measures as nothing, because the floor saturates.**
+  Going from −2 to −4 regulars per wrong sum changed the "every sum wrong" run
+  by literally zero — it sits on 0 regulars either way. It only shows up on a
+  player who gets *some* wrong: at −2, half-wrong finishes with 8 regulars
+  against 19. −2 was kept, because leaving a careless child with a smaller
+  business teaches better than leaving them with none.
+- **`GROW_AT` barely matters** (10 / 15 / 20 moved the median by 40c). The lever
+  that matters is `back` per price tier, not the saturation point.
+
+**Making it visible was most of the work**, and it is deliberately modelled on
+the bank book — the same idea in another currency, a thing you build up that
+pays you back every day whether you do anything or not:
+
+- the weather step says *"😀 5 regulars will come whatever the weather does"*,
+  next to the forecast, so the known half of the crowd sits beside the guessed
+  half at the moment you decide how much to make;
+- your own faces are starred in the queue and counted in their own legend chip;
+- the evening gets a card laid out exactly like the bank book — yesterday, who
+  came back, who gave up, tomorrow — with a line naming the reason;
+- "what your choices did" gains a row: *"3 of your customers were regulars →
+  that's 3 cups you'd have sold whatever the weather did"*;
+- the result says what the fortnight actually built: *"you started with nobody
+  and finished with 21 regulars"*.

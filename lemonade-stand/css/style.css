@@ -408,6 +408,22 @@ body.in-game{
 }
 .stall-sign span{display:block;font-size:20px;text-align:center}
 
+/* Your own regulars, marked with a star so a day's queue reads as "these ones
+   are mine". */
+.customer.regular u{
+  position:absolute;left:-4px;top:-3px;
+  text-decoration:none;font-size:10px;color:var(--gold);
+  text-shadow:0 1px 2px var(--shadow);
+}
+.legend-bit.regulars b{color:var(--gold)}
+
+/* The known half of the crowd, on the weather step. */
+.regulars-line{
+  margin-top:9px;font-size:13.5px;font-weight:700;text-align:center;line-height:1.45;
+  background:var(--chip);color:var(--chipink);border-radius:12px;padding:9px 11px;
+}
+.regulars-line b{font-size:16px}
+
 /* Customers walk up as the day plays out. One span per person served. */
 .queue{
   width:100%;min-height:52px;display:flex;flex-wrap:wrap;gap:2px;
@@ -574,6 +590,12 @@ body.in-game{
 .cause-so b{color:var(--good)}
 .cause-so b.bad{color:var(--bad)}
 
+/* The business growing, drawn like the bank book on purpose — same idea, other
+   currency. */
+.grow{border-left:5px solid var(--gold)}
+.grow .card-head strong{color:var(--gold)}
+.book-row.gone strong{color:var(--bad)}
+
 .night{border-left:5px solid var(--accent)}
 .night-line{font-size:14px;font-weight:700;line-height:1.5;padding:3px 0}
 .night-line.good{color:var(--good)}
@@ -715,6 +737,12 @@ body.in-game{
 }
 .rung-cost{margin-left:auto;flex:0 0 auto;font-variant-numeric:tabular-nums}
 .rung-tick{font-size:15px;flex:0 0 auto}
+
+.grew-line{
+  margin:0 0 10px;font-size:13.5px;font-weight:700;line-height:1.5;text-align:center;
+  background:var(--bg2);border:1px solid var(--line);color:var(--muted);
+  border-radius:14px;padding:11px 12px;
+}
 
 .takeaway{
   font-size:14.5px;line-height:1.55;font-weight:700;text-align:center;
