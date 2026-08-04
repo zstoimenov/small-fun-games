@@ -1,12 +1,12 @@
 # Game roadmap
 
-Four games planned, **all four now built**, plus a fifth added later
-(Lemonade Stand, §5) that was never on the original list. This file is the handover between
-sessions: it holds the briefs, the cost estimates and the decisions already made,
-so a fresh session can start building without re-deriving any of it. Nothing here
-is outstanding work any more — what it is now is the record of what each game
-cost against what it was estimated at, and of the handful of things that turned
-out to be worth knowing in advance.
+Four games planned, **all four now built**, plus two added later that were never
+on the original list — Deal or No Deal (§5) and Lemonade Stand (§6). This file is
+the handover between sessions: it holds the briefs, the cost estimates and the
+decisions already made, so a fresh session can start building without re-deriving
+any of it. Nothing here is outstanding work any more — what it is now is the
+record of what each game cost against what it was estimated at, and of the
+handful of things that turned out to be worth knowing in advance.
 
 Build conventions are in [`../CLAUDE.md`](../CLAUDE.md). Catalogue fields are in
 [`../README.md`](../README.md#add-a-new-game).
@@ -38,12 +38,19 @@ game needs.
 | 2 | ✅ Mastermind | `mastermind/` | 700–900 → **2,817 actual** | 180k–280k → **~330k actual** |
 | 3 | ✅ Nine Men's Morris | `nine-mens-morris/` | 1,000–1,400 → **2,928 actual** | 300k–450k → **~500k actual** |
 | 4 | ✅ Battleship | `battleship/` | 1,800–2,600 → **3,072 actual** | 550k–850k → 700k–1.1M → **inside it** |
-| 5 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790**, then **3,318** after the till and risk pass | 600k–900k |
+| 5 | ✅ Deal or No Deal | `deal-or-no-deal/` | not on the list → **3,063 actual** | not estimated |
+| 6 | ✅ Lemonade Stand | `lemonade-stand/` | 3,600 → **2,790**, then **3,318** after the till and risk pass | 600k–900k |
 
-For scale, the games measure: Yatzy 3,098 lines, Battleship 3,072, Nine Men's
-Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy
-Tactics Lab 2,048, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913 —
-and Lemonade Stand 3,318, now the largest in the repo.
+For scale, the games measure: Lemonade Stand 3,318 (the largest in the repo),
+Yatzy 3,098, Battleship 3,072, Deal or No Deal 3,063, Nine Men's Morris 2,928,
+Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048, Times Table
+Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+
+**Deal or No Deal is a fifth data point for `lines ≈ 2,000 + the game's own
+logic`, and it lands on it.** Its rules and Banker together are 545 lines; the
+other 2,518 are the house furniture. It is also the cheapest game in the
+collection per line of anything interesting, because it has no search in it at
+all — see §5.
 
 **Three games in, the line estimates looked consistently ~2.5× low. Battleship
 was the first to come in under its adjusted figure, and the reason is the useful
@@ -446,7 +453,119 @@ near the edge, and a heat map in the menu showing where the computer thinks
 *your* ships are — which is the most useful thing in the game for teaching a
 child not to hide them all in one corner.
 
-## 5. Lemonade Stand — `lemonade-stand/` ✅ built
+## 5. Deal or No Deal — `deal-or-no-deal/` ✅ built
+
+Not on the original list. Added afterwards, from a one-line brief: *"1, 2 or 3
+human players, use some of the elements from previous games, follow the real game
+mechanics with box openings and offers."*
+
+- 10, 16 or 22 boxes holding a money ladder from 1c to $250,000. Keep one back,
+  open the rest to a fixed schedule, and the Banker calls after every round.
+- Deal and you bank the money; no deal and you play on. Two boxes left is a
+  final offer and then the swap.
+- Catalogue: `category: "board"`, `players: [1, 3]`.
+
+3,063 lines, one session. Five things are worth carrying forward, and the first
+two are the ones that would have cost a lot to find late.
+
+- **The mean cannot rank the difficulties, and it is a trap laid by the game
+  itself.** Refusing every offer wins the board average *by construction* — your
+  box is a uniform pick from the ladder — so a greedier Robo always has the
+  higher mean take. Measured on the first attempt, Medium and Hard came out
+  "better" than Easy on mean while dealing in 18% and 0% of games respectively:
+  they were not hard opponents, they were opponents that never played. What
+  separates good from bad here is the **median** and how often you walk away with
+  small change. On those, the shipped ladder is monotone both ways: Easy $2,550
+  median and busts 46% of the time, Medium $10,100 / 23%, Hard $12,000 / 7%,
+  with Hard within a few hundred dollars of the best any fixed threshold manages.
+  **Before tuning a difficulty ladder, work out which number actually moves.**
+- **Difficulty must not touch the rules, only the opponent — and this game
+  proves why by breaking when it does.** The first cut had the Banker get
+  stingier at Hard *and* Robo get shrewder. Those pull opposite ways: a meaner
+  Banker shrinks Robo's takings too, so "Hard" measured as the level with the
+  *lowest* score to beat. There is now one Banker for everybody and difficulty is
+  Robo alone, which is what Connect Four, Morris, Mastermind and Battleship all
+  do already. The board-size picker is where "how hard is this game" lives.
+- **No search, and that is the whole cost story.** The board is pure chance;
+  there is nothing to work out about it. What replaces `ai.js` is `banker.js`, a
+  *price* — the average of what's left, times a cut that climbs each round, times
+  a discount for how much of that average rides on one box. 208 lines, no tree.
+  It is why this game came in at Battleship's size while being much less work:
+  rank by how much a second person can see *and* by whether there is a search at
+  all.
+- **The acceptance test wrote itself, and it is the best one in the repo.**
+  Never dealing must average the ladder mean exactly — a known number, not a
+  judgement, the equivalent of Knuth's 4.4761 or density's 44.6. Measured over
+  40,000 games per board it lands within 0.5%, and *swapping at the end changes
+  nothing*, which is the counterintuitive half and so is measured separately.
+  The average is also computed two ways throughout (running remainder vs the
+  whole ladder minus the opened set) and compared after every single opening.
+  390,000 assertions, all in node.
+- **A fairness panel at p = 0.05 cries wolf one run in twenty, and a test nobody
+  believes is worse than no test.** The 22-box check failed a build on a
+  perfectly good shuffle. Repeated runs showed mean chi-square landing within a
+  point of the degrees of freedom every time — the shuffle was never the problem,
+  the false-alarm rate was. The in-game panel now draws its line at p = 0.01, and
+  the build gate checks the *mean* over ten runs instead of one run against a
+  threshold. Yatzy's dice check has the same 1-in-20 property and is worth
+  revisiting.
+
+- **"Too fast" was not a tuning problem, and reading it as one would have wasted
+  the fix.** Play-tested, opening a box had no tension in it. The obvious
+  response is to make the pauses longer, and it would not have worked: the
+  original `openBox()` called `Rules.open()` and `render()` in the *same tick as
+  the tap*, so the amount was on screen before the finger left the glass, and
+  every millisecond of delay after that was a cooldown on a question already
+  answered. The gap between committing to a box and knowing what is in it — the
+  only place suspense can live — was exactly zero, and no amount of retuning
+  creates a phase that isn't there. What shipped is a three-beat opening (hold →
+  reveal → settle) with **`Rules.open` moved to the reveal**, so during the hold
+  the amount is not in the game state, not in the DOM and not in the save. It is
+  checkable, and it is checked: a browser test watches every frame between the
+  tap and the reveal and asserts the box still shows its own number and its
+  amount appears in no box and on no struck-out rail. **When something feels
+  wrong, find the missing phase before reaching for the constants.**
+- **A pace setting, because the right answer differs by play-through.** Quick /
+  Normal / Full drama, defaulting to Normal, as an ordinary `chooser()` row. The
+  first game wants the full treatment; the fifth 22-box game does not. It also
+  gave the browser suites something they badly needed — a `DND.debug.setSpeed()`
+  hook scaling every delay, without which a three-player 22-box run goes from a
+  minute to many and the drivers' guard loops time out on a game that is working
+  perfectly.
+- **Reduce the motion, not the suspense.** Under `prefers-reduced-motion` the
+  box stops rattling but still lifts, still lights up, and waits exactly as long.
+  Worth knowing: the reset needs `.box.opening` named explicitly, because a bare
+  `.box{animation:none}` is one class less specific and loses to it — the rattle
+  played on regardless, and only a computed-style check caught it.
+
+Two layout notes:
+
+- **`bestLayout` must apply its size cap after choosing the columns, not
+  during.** Capping first makes every roomy layout tie at the maximum and the
+  first candidate wins — which on a tall tablet was two columns, drawing a
+  chimney of boxes down the middle with the money rails stranded either side.
+  Choose on raw fit; among layouts big enough to be capped, the widest wins.
+- **Twenty-two amounts down a rail on a phone lying on its side is nine pixels
+  each.** The rails switch to two columns when a row would fall under 24px, and
+  the text is sized from the row height that actually resulted rather than from
+  the viewport. Found by measuring `scrollHeight > clientHeight` on every element
+  at seven viewports, not by looking — the overflow was invisible in a screenshot.
+
+Elements taken from the other games, as the brief asked: the setup sheet and its
+`chooser`/`setChooser` controls, rows hidden rather than disabled, Yatzy's
+flip-the-screen mode and its `crypto` RNG, Battleship's two-tap commit and its
+`savedGame`-as-the-record save, the seven-page lesson drawn with the real rules,
+the menu's what-was-it-thinking panel, and the running tally. New here: three
+players (a first for this repo), the rotating-round turn order, and a lesson that
+teaches expected value without ever using the words.
+
+**No undo, deliberately.** Every other game here has one. Opening a box is the
+drama, and being able to take it back destroys the game — the two-tap commit
+covers the mis-tap that undo was really there for. **No handover screen either:**
+nobody, not even the player, knows what is in a box, so there is no hidden state
+to protect and Battleship's whole secrecy problem simply does not arise.
+
+## 6. Lemonade Stand — `lemonade-stand/` ✅ built
 
 Not on the original four-game list — the shelf had no game about money, and
 `maths` had only Times Table Blaster on it. Solo, one run ≈ 5–10 minutes, aimed
