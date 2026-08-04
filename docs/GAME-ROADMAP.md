@@ -583,7 +583,8 @@ squarely at an 8-year-old.
   from five preset tiles — no typed numbers), **selling** (a short animation over
   an already-decided result), **evening** (the sums in words, then bank / half /
   pocket), **night** (interest lands, any loan's running cost is noted).
-- Demand is `footfall(weather) × pull(price) × reputation × event × jitter`, and
+- Demand is `footfall(weather) × pull(price) × event × jitter`, plus your regulars
+  (§ fifth and sixth passes; it was `× reputation` until the fifth), and
   is monotonically non-increasing in price. Reputation (0–100, drawn as stars) is
   what makes 75c beat $1.00 across a fortnight while $1.00 wins on any one day.
 - **Interest both ways.** The bank pays 3c a night per dollar banked and charges
@@ -1068,3 +1069,67 @@ big sign gets you there by day five.
 Balance after all four changes, unchanged where it matters: good play **29%** on
 the top rung, never banking **$93.65 against $124.30**, steady-15-cups still
 **0%**, gouging and every-sum-wrong still finish with **no regulars at all**.
+
+### Sixth pass: the stall was permanently oversubscribed
+
+"Too many clients coming back. I can't satisfy the demand with 30 cups a day."
+The regulars were the smaller half of that, and the bigger half had been there
+since the first build without anybody noticing.
+
+**A child stocking as hard as they possibly could sold out on 91% of days and
+binned six cups in a fortnight.** Demand on an ordinary warm day was 22
+passers-by, and a hot day 32, against a stall that physically held 40 — so once
+a dozen regulars were added on top, every day from warm upwards was
+oversubscribed no matter what the child did. The answer to "how many cups?" was
+"as many as you can afford", every single morning, and **"don't make more than
+you can sell" cannot be taught by a game in which you can never make enough.**
+
+The measurement that made it obvious was demand against *what you can put out*,
+rather than demand on its own:
+
+| weather | demand (12 regulars) | fits in 30 cups? | fits in 40? |
+| --- | --- | --- | --- |
+| cold and rainy | 14 | yes | yes |
+| cloudy | 23 | yes | yes |
+| warm | 34 | **never** | yes |
+| hot | 44 | never | **14%** |
+| a scorcher | 54 | never | never |
+
+**Footfall came down about a quarter, to `[6, 10, 16, 23, 29]`, and the stall
+went up to 45 cups** — three big packs, deliberately a little more than the
+busiest plausible day can ask for. A ceiling has to sit *above* the demand, or
+the decision underneath it isn't one.
+
+What that buys is a morning with three real answers instead of one:
+
+| how the stall is stocked | sold out | binned something | finished |
+| --- | --- | --- | --- |
+| tight (0.8× the forecast) | 82% of days | 16% | $115.00 |
+| to the forecast | 55% | 37% | **$127.55** |
+| generously (1.3×) | 29% | 67% | $118.75 |
+
+There is a peak, it is in the middle, and both mistakes cost real money — which
+is the whole shape the game was missing. People turned away across a fortnight
+went from 181 to 53.
+
+**Two things fell out of it that weren't the point but are worth recording.**
+The ice bucket finally earns its keep: waste happens on a third of days now
+instead of 7%, so it is worth **+$3.70 and three points** on the top rung
+instead of being a curiosity. And the till lesson got much sharper without being
+touched — every sum wrong now finishes at $82.45 against $127.55, a **23-point
+gap** on the top rung where it used to be 10, because regulars are a larger
+share of a smaller crowd and losing them all costs more.
+
+**The goal ladder did not move**, which was checked rather than assumed: at
+$30 / $70 / $110 / $170 the best play lands at 25-28% on the top rung, inside
+the 25-45% band the second pass set, and every ordering holds — steady-15-cups
+0%, never-banking 3%, an ice cream a day 10%, gouging and selling under cost 0%
+with nothing at all to show for it.
+
+**The withdrawal fee had to be re-measured, and it had stopped working.** It is
+a ratio between a flat toll and the interest forgone on an idle float, and the
+rebalance changed the size of a day's shopping underneath it: at 50c, banking
+every last cent came back ahead by $0.70-$2.20, so the game would have been
+recommending a play that loses. At 75c the float is ahead by $3.15 again.
+**A tuned constant is only tuned against the numbers it was measured with —
+change the scale and every ratio in the game has to be re-run.**
