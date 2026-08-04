@@ -40,7 +40,13 @@ LS.Economy = (function () {
 
   /* ── Constants ─────────────────────────────────────────────────────────── */
 
-  const START_CASH = 1000; // $10.00 — enough for one good day's stock, not two
+  // $3.00. Deliberately NOT enough for the 15-cup pack, which costs $3.60-$7.20
+  // depending on the day — at $10 you could buy the big pack twice over on day
+  // one and the bank was decoration. Now day one is a real decision: five cups
+  // out of your own pocket, or borrow $5 and fill the stall on a hot forecast.
+  // The 5-cup pack stays affordable at every lemon price, so borrowing is a
+  // choice and never a requirement.
+  const START_CASH = 300;
   const STALL_LIMIT = 40; // cups the stall physically holds in a day
   const REP_START = 50, REP_MIN = 5, REP_MAX = 95;
 
@@ -123,30 +129,112 @@ LS.Economy = (function () {
   const COINS = [5, 10, 20, 50, 100, 200];
   const NOTES = [500, 1000, 2000];
 
-  // What a customer hands over. Never the exact money — the whole point is that
-  // change has to come back — and never so large that the change can't be
-  // counted out by an eight-year-old.
-  function noteFor(priceCents, r) {
-    const options = COINS.concat(NOTES).filter((v) => v > priceCents && v <= priceCents + 1000);
-    return options[r.int(options.length)];
+  // $1 and $2 are coins here; $5 and up are notes. The UI says "a $2 coin" or
+  // "a $5 note" off the back of this rather than hardcoding the list twice.
+  const isNote = (v) => v >= 500;
+
+  const MAX_CHANGE = 1000; // $10 — past this the counting stops being countable
+
+  // The smallest set of real coins adding up to n. Everything in this game is
+  // 5c-clean, so greedy from the top is always exact.
+  function coinsFor(n) {
+    const out = [];
+    let rest = n;
+    for (let i = COINS.length - 1; i >= 0; i--) {
+      while (rest >= COINS[i]) { out.push(COINS[i]); rest -= COINS[i]; }
+    }
+    return rest === 0 ? out : null;
   }
 
-  // Which customers in the day stop to pay with a note. Deterministic from
-  // (seed, day) so a resumed day asks the same sums, and capped low: three
-  // pieces of real arithmetic is practice, thirty is a chore.
-  function changeMoments(sp, seed, day, priceCents, sold) {
-    if (sold <= 0) return [];
+  // What a customer actually hands over — a handful, not a single note.
+  //
+  // The first version drew one piece of money at random, which gave four
+  // possible payments per price and repeated inside a single fortnight. Four
+  // shapes fixes that, and each one is a different sum to do:
+  //
+  //   a single piece      a $10 note                     -> $9.25
+  //   rounded up          a $2 coin, a 20c and a 5c      -> $1.50
+  //   a stray coin        a $2 coin and a 20c            -> $1.45
+  //   two of the same     two $1 coins                   -> $1.25
+  //
+  // The rounded-up one is the interesting one: people really do hand over
+  // $2.25 for a $1.75 cup to get a round 50c back, and spotting why is worth
+  // knowing. Every piece is a denomination that exists — there is no 25c coin,
+  // so "25c over" is built as a 20c and a 5c.
+  function paymentFor(price, r) {
+    const all = COINS.concat(NOTES);
+    const bases = all.filter((v) => v > price && v - price <= MAX_CHANGE);
+    if (!bases.length) return { parts: [all[all.length - 1]], total: all[all.length - 1] };
+
+    const pick = (a) => a[r.int(a.length)];
+    const shape = r.int(4);
+    let parts = [pick(bases)];
+
+    if (shape === 1) {
+      // Pay a little over so the change comes back a round 50c or dollar.
+      const due = parts[0] - price;
+      const extra = Math.ceil((due + 1) / 50) * 50 - due;
+      const coins = extra > 0 && extra <= 200 ? coinsFor(extra) : null;
+      if (coins) parts = parts.concat(coins);
+    } else if (shape === 2) {
+      parts.push(pick(COINS));
+    } else if (shape === 3) {
+      const pairs = all.filter((v) => 2 * v > price && 2 * v - price <= MAX_CHANGE);
+      if (pairs.length) { const v = pick(pairs); parts = [v, v]; }
+    }
+
+    let total = parts.reduce((a, b) => a + b, 0);
+    // Any shape that overshot the countable range falls back to the plain note.
+    if (total - price > MAX_CHANGE) { parts = [parts[0]]; total = parts[0]; }
+    parts.sort((a, b) => b - a);
+    return { parts, total };
+  }
+
+  // Not everybody buys one cup. A mum with two kids buys three; somebody grabs
+  // a second for their mate. The cups are already decided by the demand model —
+  // this only decides how those cups are grouped into people, so the economy is
+  // untouched and the queue stops being a row of identical faces.
+  //
+  // It also makes the till sum a better one: two cups at 75c is a multiply
+  // before it is a subtract.
+  function partiesFor(seed, day, cups) {
+    const r = LS.Rng.stream(seed, day * 4441 + 9);
+    const out = [];
+    let left = cups;
+    while (left > 0) {
+      // Most people buy one. A few buy two. Occasionally somebody buys three.
+      let want = r.chance(0.68) ? 1 : r.chance(0.75) ? 2 : 3;
+      if (want > left) want = left;
+      out.push(want);
+      left -= want;
+    }
+    return out;
+  }
+
+  // Which customer in the day pays with a handful instead of the exact money.
+  // Deterministic from (seed, day) so a resumed day asks the same sum, and
+  // `sp.changes` is 1 everywhere: one real piece of arithmetic a day is
+  // practice, several is a chore that gets skipped through.
+  //
+  // Parties of two or three are picked out of the queue a little more often
+  // than they occur, because those are the sums worth stopping for.
+  function changeMoments(sp, seed, day, priceCents, parties) {
+    if (!parties || !parties.length) return [];
     const r = LS.Rng.stream(seed, day * 7717 + 3);
-    const n = Math.min(sp.changes, sold);
+    const n = Math.min(sp.changes, parties.length);
+    const multi = parties.map((c, i) => i).filter((i) => parties[i] > 1);
     const out = [];
     const used = {};
     for (let i = 0; i < n; i++) {
-      let at = r.int(sold);
+      let at = multi.length && r.chance(0.45) ? multi[r.int(multi.length)] : r.int(parties.length);
       let guard = 0;
-      while (used[at] && guard++ < 8) at = r.int(sold);
+      while (used[at] && guard++ < 8) at = r.int(parties.length);
       used[at] = true;
-      const note = noteFor(priceCents, r);
-      out.push({ at, note, price: priceCents, due: note - priceCents });
+      const cups = parties[at];
+      const total = cups * priceCents;
+      const pay = paymentFor(total, r);
+      out.push({ at, cups, price: priceCents, total,
+                 paid: pay.total, parts: pay.parts, due: pay.total - total });
     }
     return out.sort((a, b) => a.at - b.at);
   }
@@ -156,8 +244,10 @@ LS.Economy = (function () {
   function settleChange(moment, given, r) {
     const due = moment.due;
     if (given === due) {
-      // Some people leave the odd coin. This is the reward for doing the sum.
-      const tip = r && r.chance(0.4) ? (r.chance(0.5) ? 10 : 20) : 0;
+      // Some people leave the odd coin. This is the reward for doing the sum,
+      // and it went up when the till dropped to one customer a day — one sum
+      // has to carry the weight two used to.
+      const tip = r && r.chance(0.55) ? (r.chance(0.5) ? 20 : 50) : 0;
       return { ok: true, over: 0, short: 0, tip };
     }
     if (given > due) {
@@ -198,15 +288,15 @@ LS.Economy = (function () {
     // lower three rungs are what a decent run is actually for.
     easy:   { id: "easy",   days: 7,  wobble: 8,  forecast: 1.00, drift: 1, bonusRate: false,
               eventRate: 0.16, badShare: 0.35, changes: 1, showTotal: true, bigLoan: false,
-              goal: [1500, 3000, 4200, 5500],
+              goal: [1000, 2000, 3000, 4200],
               rungs: ["🪀 a yo-yo", "🎨 paints", "🎧 headphones", "🛴 a scooter"] },
     normal: { id: "normal", days: 14, wobble: 15, forecast: 0.72, drift: 1, bonusRate: true,
-              eventRate: 0.3, badShare: 0.62, changes: 2, showTotal: true, bigLoan: true,
-              goal: [4000, 9000, 14000, 20000],
+              eventRate: 0.3, badShare: 0.62, changes: 1, showTotal: true, bigLoan: true,
+              goal: [3000, 7000, 11000, 17000],
               rungs: ["🪀 a yo-yo", "🎧 headphones", "🛹 a skateboard", "🚲 a bike"] },
     tricky: { id: "tricky", days: 14, wobble: 22, forecast: 0.58, drift: 2, bonusRate: true,
-              eventRate: 0.38, badShare: 0.7, changes: 2, showTotal: false, bigLoan: true,
-              goal: [4000, 9000, 14000, 20000],
+              eventRate: 0.38, badShare: 0.7, changes: 1, showTotal: false, bigLoan: true,
+              goal: [3000, 7000, 11000, 17000],
               rungs: ["🪀 a yo-yo", "🎧 headphones", "🛹 a skateboard", "🚲 a bike"] }
   };
 
@@ -295,14 +385,18 @@ LS.Economy = (function () {
     const stock = Math.max(0, run.cups - lost);
     const want = wanted(info, run.price, run.rep, run.seed);
     const sold = Math.min(want, stock);
+    // How those cups were grouped into people, so the queue and the till both
+    // know that the third customer bought two.
+    const parties = partiesFor(run.seed, info.day, sold);
     return {
       want,
       sold,
+      parties,
       lost,                       // destroyed before opening, never sellable
-      turned: want - sold,        // people who wanted one and didn't get one
+      turned: want - sold,        // cups people wanted and didn't get
       wasted: stock - sold,       // lemonade doesn't keep, unless you bought the bucket
       earned: sold * run.price,   // 5c-clean: every tier is a multiple of 25c
-      moments: changeMoments(spec(run.difficulty), run.seed, info.day, run.price, sold)
+      moments: changeMoments(spec(run.difficulty), run.seed, info.day, run.price, parties)
     };
   }
 
@@ -312,9 +406,10 @@ LS.Economy = (function () {
     const tier = priceTier(priceCents);
     let d = tier.repDay * (treats.sign ? 2 : 1);
     if (result.turned > 0) d -= 3;
-    // Short-changing people is remembered. Being careful at the till is part of
-    // running a stall well, not a side-game.
-    d -= 2 * (changeWrong || 0);
+    // Short-changing people is remembered, and remembered hard: reputation
+    // compounds through demand for the rest of the run, so this is the lever
+    // that keeps one sum a day mattering to where you finish.
+    d -= 4 * (changeWrong || 0);
     return clamp(rep + d, REP_MIN, REP_MAX);
   }
 
@@ -514,7 +609,7 @@ LS.Economy = (function () {
     resetTill(run);
     run.result = run.cups > 0
       ? sell(run, run.today)
-      : { want: 0, sold: 0, lost: 0, turned: 0, wasted: 0, earned: 0, moments: [], shut: true };
+      : { want: 0, sold: 0, parties: [], lost: 0, turned: 0, wasted: 0, earned: 0, moments: [], shut: true };
     run.phase = "selling";
     return run.result;
   }
@@ -568,6 +663,7 @@ LS.Economy = (function () {
   // money), and the day is written into the ledger.
   function night(run) {
     const sp = spec(run.difficulty);
+    const bankBefore = run.bank;
     const int = interestOn(run.bank, sp);
     run.bank += int.paid;
 
@@ -617,7 +713,10 @@ LS.Economy = (function () {
     });
 
     run.phase = "night";
-    return { interest: int, loan: loanCost, binned };
+    // Everything the bank book needs, worked out here rather than re-derived by
+    // the UI — the panel shows a sum, and a sum should have one author.
+    return { interest: int, loan: loanCost, binned,
+             bankBefore, bankAfter: run.bank, paidSoFar: totalInterest(run) };
   }
 
   // Move to tomorrow, or end the run.
@@ -631,6 +730,14 @@ LS.Economy = (function () {
     startDay(run);
     return true;
   }
+
+  // Every cent the bank has paid across the run. Called after tonight's row is
+  // pushed, so it includes tonight.
+  const totalInterest = (run) => run.ledger.reduce((n, row) => n + row.interest, 0);
+
+  // The bank balance at the end of each night so far — what the little bar
+  // chart draws.
+  const bankHistory = (run) => run.ledger.map((row) => row.bank);
 
   /* ── Scoring ───────────────────────────────────────────────────────────── */
 
@@ -817,7 +924,7 @@ LS.Economy = (function () {
     // trading
     wanted, sell, nextRep,
     // the till
-    noteFor, changeMoments, settleChange, giveChange, resetTill,
+    paymentFor, coinsFor, isNote, partiesFor, changeMoments, settleChange, giveChange, resetTill,
     // banking
     interestOn, loanTonight, loanOffers, takeLoan, dueRepayment, grandma,
     // shopping
@@ -825,7 +932,7 @@ LS.Economy = (function () {
     // the run
     newRun, startDay, setPrice, openStall, closeDay, bankChoice, night, nextDay,
     // scoring
-    wealth, rungReached, summary, series, takeaway,
+    wealth, rungReached, summary, series, takeaway, totalInterest, bankHistory,
     // saving
     snapshot, restore
   };

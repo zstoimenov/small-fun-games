@@ -250,6 +250,51 @@ body.in-game{
 .news.bad{border-left-color:var(--bad)}
 .news b{display:block;font-size:15px;margin-bottom:3px}
 
+/* ── The plan card ──────────────────────────────────────────────────────── */
+
+/* What's behind the step sheets: the decisions already made, one line each.
+   Tapping a row reopens that step, so nothing is a dead end. */
+.plan-row{
+  font:inherit;text-align:left;cursor:pointer;flex:0 0 auto;
+  display:flex;align-items:center;gap:11px;
+  background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:11px 13px;min-height:var(--tap);color:var(--ink);
+  box-shadow:0 4px 12px var(--shadow);
+}
+.plan-row:active{transform:translateY(1px)}
+.plan-emoji{font-size:26px;line-height:1;flex:0 0 auto}
+.plan-what{flex:0 1 auto;min-width:0}
+.plan-label{display:block;font-size:11.5px;font-weight:700;color:var(--muted)}
+.plan-value{display:block;font-size:17px;font-weight:800}
+.plan-note{
+  margin-left:auto;text-align:right;font-size:11.5px;font-weight:600;
+  flex:1 1 auto;min-width:0;line-height:1.35;
+}
+
+/* ── The step sheet ─────────────────────────────────────────────────────── */
+
+/* One question at a time. The buttons are pinned to the bottom of the sheet so
+   [Next] is always reachable on a small phone — the trap the till panel fell
+   into before it learned to get out of its own way. */
+.step-sheet{display:flex;flex-direction:column;gap:10px}
+.step-say{
+  margin:0;font-size:14px;line-height:1.5;color:var(--muted);font-weight:600;
+}
+.step-part{flex:0 1 auto}
+.step-sheet .dots{margin-top:auto}
+.step-sheet .sheet-buttons{position:sticky;bottom:0;background:var(--card);padding-bottom:2px}
+#stepBack{flex:0 1 110px}
+
+.weather-big{font-size:64px;line-height:1.1;text-align:center}
+.weather-name{font-size:22px;font-weight:900;text-align:center}
+.weather-crowd{font-size:14px;text-align:center;margin-top:4px;line-height:1.45}
+
+.ready-line{
+  font-size:19px;font-weight:800;text-align:center;padding:10px;
+  background:var(--chip);color:var(--chipink);border-radius:14px;
+}
+.ready-line b{color:var(--accent)}
+
 /* ── Forecast ───────────────────────────────────────────────────────────── */
 
 .forecast{display:flex;align-items:center;gap:13px}
@@ -321,7 +366,13 @@ body.in-game{
   border-bottom:9px solid var(--wood);border-radius:4px;padding-bottom:5px;
   box-shadow:0 9px 0 var(--wood2);
 }
-.customer{font-size:22px;line-height:1;animation:walkup .32s ease-out}
+.customer{font-size:22px;line-height:1;animation:walkup .32s ease-out;position:relative}
+/* Somebody buying two or three: one person, with what they took on their arm. */
+.customer.party i{
+  position:absolute;right:-3px;bottom:-2px;
+  font-style:normal;font-size:10px;font-weight:900;
+  background:var(--accent);color:#fff;border-radius:999px;padding:1px 4px;
+}
 .customer.thirsty{opacity:.45;filter:grayscale(1)}
 @keyframes walkup{ from{transform:translateY(9px);opacity:0} to{transform:none;opacity:1} }
 @media (prefers-reduced-motion:reduce){ .customer{animation:none} }
@@ -393,10 +444,33 @@ body.in-game{
 /* While somebody is waiting for their change, the stall scene gets out of the
    way. It is decoration; the sum is the game. */
 #selling.till-open .stall,
+#selling.till-open .legend,
 #selling.till-open #skipBtn{display:none}
 
 .event{border-left-color:var(--accent2)}
 .event.bad{border-left-color:var(--bad)}
+
+/* What the faces mean. On screen for the whole day, because without it the
+   queue is just emoji going past. */
+.legend{
+  flex:0 0 auto;display:flex;gap:8px;
+}
+.legend-bit{
+  flex:1 1 0;text-align:center;font-size:12px;font-weight:700;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:14px;padding:7px 5px;
+}
+.legend-bit b{display:block;font-size:20px;color:var(--good);font-variant-numeric:tabular-nums}
+.legend-bit.thirsty b{color:var(--bad)}
+
+/* The day stops here and waits to be read. */
+.done{flex:0 0 auto;border-left:5px solid var(--accent2)}
+.done-head{font-size:16px;font-weight:900;margin-bottom:6px}
+.done-line{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  font-size:14px;font-weight:700;color:var(--muted);padding:3px 0;
+}
+.done-line strong{font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.done-line.warn strong{color:var(--bad)}
 
 .till{
   flex:0 0 auto;background:var(--card);border:1px solid var(--line);
@@ -428,10 +502,41 @@ body.in-game{
 .bank-row{display:flex;gap:7px;margin-top:6px}
 .bank-row .ghost-btn{flex:1 1 0;text-align:center;padding:11px 6px;font-size:13.5px}
 
+/* Decision on the left, consequence on the right. Reading down the column is
+   meant to feel like reading a list of because-of-that. */
+.causes{border-left:5px solid var(--accent2)}
+.cause{
+  display:flex;gap:10px;align-items:flex-start;padding:7px 0;
+  border-top:1px solid var(--line);font-size:13.5px;line-height:1.45;
+}
+.cause:first-child{border-top:none}
+.cause-emoji{font-size:19px;line-height:1.2;flex:0 0 auto}
+.cause-body{flex:1;min-width:0}
+.cause-did{font-weight:800;display:block}
+.cause-so{color:var(--muted);font-weight:600;display:block;margin-top:1px}
+.cause-so b{color:var(--good)}
+.cause-so b.bad{color:var(--bad)}
+
 .night{border-left:5px solid var(--accent)}
 .night-line{font-size:14px;font-weight:700;line-height:1.5;padding:3px 0}
 .night-line.good{color:var(--good)}
 .night-line.bad{color:var(--bad)}
+
+/* The bank book: a sum laid out the way a sum is laid out on paper, so the
+   child reads it as one. */
+.book{margin:2px 0 8px}
+.book-row{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  font-size:13.5px;font-weight:700;color:var(--muted);padding:3px 0;
+}
+.book-row strong{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
+.book-row i{font-style:normal;font-weight:600;font-size:11.5px;opacity:.8}
+.book-row.added strong{color:var(--good)}
+.book-rule{height:2px;background:var(--line);margin:4px 0;border-radius:2px}
+.book-row.total{font-size:15px;font-weight:900;color:var(--ink)}
+.book-row.total strong{font-size:25px;color:var(--accent)}
+#bankChart{margin:2px 0 4px}
+#bankChart svg{width:100%;height:auto;display:block}
 
 /* ── Toast ──────────────────────────────────────────────────────────────── */
 

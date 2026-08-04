@@ -38,6 +38,14 @@
     <p class="row-note" id="levelNote"></p>
 
     <div class="row">
+      <span class="row-label">One at a time</span>
+      <button class="switch" id="stepToggle" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">Walk through each morning one question at a time. Turn it off and you can just tap whichever bit you want to change.</p>
+
+    <div class="row">
       <span class="row-label">Little tips</span>
       <button class="switch" id="hintToggle" type="button" role="switch" aria-checked="true">
         <span class="knob"></span>
@@ -89,46 +97,42 @@
 
   <div class="phases">
 
-    <!-- ── Morning: the only screen where you make decisions ───────────── -->
+    <!-- ── Morning ──────────────────────────────────────────────────────
+         The decisions live in the step sheet below, one at a time. What is
+         left here is the plan as it stands: the context a decision was made
+         in, never more than a glance's worth. Tap a row to change it. -->
     <section id="morning" class="phase">
       <div class="scroller">
 
         <!-- Anything the bank did before you could touch anything. -->
         <div class="card news" id="openingCard" hidden></div>
 
-        <div class="card forecast" id="forecastCard">
-          <div class="forecast-emoji" id="forecastEmoji">🌤️</div>
-          <div>
-            <div class="forecast-name" id="forecastName">Warm</div>
-            <div class="forecast-note muted" id="forecastNote">That's the forecast for today.</div>
-          </div>
-        </div>
+        <button class="plan-row" id="planWeather" type="button">
+          <span class="plan-emoji" id="forecastEmoji">🌤️</span>
+          <span class="plan-what">
+            <span class="plan-label">Today looks</span>
+            <span class="plan-value" id="forecastName">Warm</span>
+          </span>
+          <span class="plan-note muted" id="forecastNote"></span>
+        </button>
 
-        <div class="card">
-          <div class="card-head">
-            <span>🍋 Lemons today</span>
-            <strong id="unitPrice">40c</strong>
-          </div>
-          <p class="verdict" id="unitVerdict">The usual sort of price.</p>
-          <div class="buy-row">
-            <button class="pack-btn" id="buySmall" type="button">
-              <span class="pack-cups">5 cups</span>
-              <span class="pack-cost" id="smallCost">$2.00</span>
-            </button>
-            <button class="pack-btn big" id="buyBig" type="button">
-              <span class="pack-cups">📦 15 cups</span>
-              <span class="pack-cost" id="bigCost">$4.80</span>
-              <span class="pack-save" id="bigSave">save $1.20</span>
-            </button>
-          </div>
-          <div class="basket" id="basket">Nothing bought yet.</div>
-        </div>
+        <button class="plan-row" id="planStock" type="button">
+          <span class="plan-emoji">🥤</span>
+          <span class="plan-what">
+            <span class="plan-label">You've made</span>
+            <span class="plan-value" id="basket">nothing yet</span>
+          </span>
+          <span class="plan-note muted" id="planStockNote"></span>
+        </button>
 
-        <div class="card">
-          <div class="card-head"><span>💵 What will you charge?</span></div>
-          <div class="prices" id="priceChooser"></div>
-          <p class="verdict" id="priceNote"></p>
-        </div>
+        <button class="plan-row" id="planPrice" type="button">
+          <span class="plan-emoji">💵</span>
+          <span class="plan-what">
+            <span class="plan-label">A cup costs</span>
+            <span class="plan-value" id="planPriceValue">75c</span>
+          </span>
+          <span class="plan-note muted" id="planPriceNote"></span>
+        </button>
 
         <div class="extras">
           <button class="ghost-btn" id="loanBtn" type="button">🏦 The bank</button>
@@ -175,6 +179,13 @@
         </div>
       </div>
 
+      <!-- What the faces mean, on screen the whole time. Without this the day is
+           just a row of emoji going past. -->
+      <div class="legend" id="legend">
+        <span class="legend-bit"><b id="boughtCount">0</b> 🙂 bought a cup</span>
+        <span class="legend-bit thirsty"><b id="thirstyCount">0</b> 😕 went away thirsty</span>
+      </div>
+
       <div class="stall">
         <div class="stall-sun" id="stallSun">🌤️</div>
         <div class="stall-table">
@@ -187,7 +198,18 @@
           <div class="till-line warn" id="turnedLine" hidden><span>Went away thirsty</span><strong id="turnedCount">0</strong></div>
         </div>
       </div>
+
+      <!-- The day stops here and waits. The evening used to arrive on its own
+           and wipe the day away before it had been read. -->
+      <div class="card done" id="dayDone" hidden>
+        <div class="done-head">🔔 That's the day done.</div>
+        <div class="done-line"><span>🙂 bought a cup</span><strong id="doneSold">0</strong></div>
+        <div class="done-line warn" id="doneTurnedRow"><span>😕 went away thirsty</span><strong id="doneTurned">0</strong></div>
+        <div class="done-line" id="doneLeftRow"><span>🥤 cups left over</span><strong id="doneLeft">0</strong></div>
+      </div>
+
       <button class="btn btn-clear big-go" id="skipBtn" type="button">Skip to the end of the day</button>
+      <button class="btn btn-go big-go" id="countUpBtn" type="button" hidden>Count up the money</button>
     </section>
 
     <!-- ── Evening: the sums, in words ─────────────────────────────────── -->
@@ -198,6 +220,14 @@
           <div class="sum-line in"><span>You took at the stall</span><strong id="sumEarned">$11.25</strong></div>
           <div class="sum-rule"></div>
           <div class="sum-line total" id="sumTotalLine"><span id="sumTotalLabel">So you made</span><strong id="sumProfit">$6.45</strong></div>
+        </div>
+
+        <!-- Every decision of the day, next to what it actually caused. This is
+             the whole point of the evening: not "you made $5" but "you charged
+             75c, and THAT is why you made $5". -->
+        <div class="card causes" id="causes">
+          <div class="card-head"><span>🔎 What your choices did</span></div>
+          <div id="causeList"></div>
         </div>
 
         <p class="verdict" id="tillLine" hidden></p>
@@ -215,8 +245,26 @@
           </div>
         </div>
 
+        <!-- The bank book. The point of the whole savings lesson is that you can
+             watch it happen, so it gets a sum you can follow and a row of bars
+             that grows a little every night. -->
         <div class="card night" id="nightCard" hidden>
-          <div class="night-line good" id="interestLine"></div>
+          <div class="card-head"><span>🏦 Your bank book</span></div>
+
+          <div class="book">
+            <div class="book-row"><span>Last night</span><strong id="bankBefore">$0.00</strong></div>
+            <div class="book-row added">
+              <span>The bank added <i id="bankRate"></i></span>
+              <strong id="bankAdded">+ 0c</strong>
+            </div>
+            <div class="book-rule"></div>
+            <div class="book-row total"><span>Tonight</span><strong id="bankAfter">$0.00</strong></div>
+          </div>
+
+          <div id="bankChart"></div>
+          <p class="verdict good" id="bankPaidSoFar"></p>
+
+          <div class="night-line" id="interestLine" hidden></div>
           <div class="night-line bad" id="loanLine" hidden></div>
         </div>
       </div>
@@ -228,6 +276,73 @@
 
   <div class="toast" id="toast" hidden></div>
 </main>
+
+<!-- ══ THE MORNING, ONE STEP AT A TIME ══════════════════════════════════
+     One question per sheet. The plan card behind stays visible through the
+     backdrop, so the context never disappears while a decision is being made. -->
+<div id="step" class="overlay" hidden>
+  <div class="sheet sheet-sm step-sheet">
+    <div class="howto-top">
+      <h2 id="stepTitle">Today</h2>
+      <span class="pill" id="stepCount">1 / 4</span>
+    </div>
+
+    <p class="step-say" id="stepSay"></p>
+
+    <!-- Only one of these is ever on screen at a time. -->
+    <div class="step-part" id="stepNews" hidden></div>
+
+    <div class="step-part" id="stepWeather" hidden>
+      <div class="weather-big" id="stepWeatherEmoji">🌤️</div>
+      <div class="weather-name" id="stepWeatherName">Warm</div>
+      <div class="weather-crowd muted" id="stepWeatherCrowd"></div>
+    </div>
+
+    <div class="step-part" id="stepBuy" hidden>
+      <div class="card-head">
+        <span>🍋 Lemons today</span>
+        <strong id="unitPrice">40c</strong>
+      </div>
+      <p class="verdict" id="unitVerdict">The usual sort of price.</p>
+      <div class="buy-row">
+        <button class="pack-btn" id="buySmall" type="button">
+          <span class="pack-cups">5 cups</span>
+          <span class="pack-cost" id="smallCost">$2.00</span>
+        </button>
+        <button class="pack-btn big" id="buyBig" type="button">
+          <span class="pack-cups">📦 15 cups</span>
+          <span class="pack-cost" id="bigCost">$4.80</span>
+          <span class="pack-save" id="bigSave">save $1.20</span>
+        </button>
+      </div>
+      <div class="basket" id="stepBasket">Nothing bought yet.</div>
+      <!-- Offered right where the shortfall is felt. Without this the big pack
+           just sits there greyed out and the bank never gets walked into. -->
+      <button class="ghost-btn wide" id="stepBorrow" type="button" hidden></button>
+    </div>
+
+    <div class="step-part" id="stepPrice" hidden>
+      <div class="prices" id="priceChooser"></div>
+      <p class="verdict" id="priceNote"></p>
+    </div>
+
+    <div class="step-part" id="stepReady" hidden>
+      <div class="ready-line" id="readyPlan"></div>
+      <p class="verdict" id="readyNote"></p>
+      <div class="extras">
+        <button class="ghost-btn" id="stepLoanBtn" type="button">🏦 The bank</button>
+        <button class="ghost-btn" id="stepTreatBtn" type="button">🎁 Shop</button>
+      </div>
+    </div>
+
+    <div class="dots" id="stepDots"></div>
+
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="stepBack" type="button">Back</button>
+      <button class="btn btn-go" id="stepNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ THE BANK ═════════════════════════════════════════════════════════ -->
 <div id="loanSheet" class="overlay" hidden>

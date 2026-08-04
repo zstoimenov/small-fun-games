@@ -19,6 +19,7 @@
   const state = {
     difficulty: "normal",
     hints: true,
+    stepBy: true,        // walk the morning one decision at a time
     seenHowTo: false,
     best: { easy: 0, normal: 0, tricky: 0 },
     run: null,
@@ -46,6 +47,7 @@
         difficulty: state.difficulty,
         muted: Audio.isMuted(),
         hints: state.hints,
+        stepBy: state.stepBy,
         seenHowTo: state.seenHowTo,
         best: state.best,
         run: savedRun
@@ -63,6 +65,7 @@
 
     if (E.LEVELS[d.difficulty]) state.difficulty = d.difficulty;
     if (typeof d.hints === "boolean") state.hints = d.hints;
+    if (typeof d.stepBy === "boolean") state.stepBy = d.stepBy;
     if (typeof d.seenHowTo === "boolean") state.seenHowTo = d.seenHowTo;
     Audio.setMuted(!!d.muted);
     if (d.best && typeof d.best === "object") {
@@ -131,6 +134,7 @@
     $("result").hidden = true;
     setChooser("levelChooser", state.difficulty);
     setSwitch("hintToggle", state.hints);
+    setSwitch("stepToggle", state.stepBy);
     levelNote();
     $("resumeBtn").hidden = !resumable();
   }
@@ -173,6 +177,7 @@
     } else {
       Ui.phase("morning");
       Ui.morning(run, state.hints);
+      if (state.stepBy) openSteps(0); else closeSteps();
     }
   }
 
@@ -180,6 +185,7 @@
 
   function redrawMorning() {
     Ui.morning(state.run, state.hints);
+    if (stepOpen) Ui.stepShow(state.run, stepList[stepAt], stepAt, stepList.length, stepSingle);
     save();
   }
 
@@ -190,14 +196,83 @@
     redrawMorning();
   }
 
+  /* ── The morning, one decision at a time ───────────────────────────────── */
+
+  // Everything on the morning screen used to be on screen at once: four
+  // decisions and six facts competing for an eight-year-old's attention. Now
+  // each one gets its own sheet, in the order you'd actually think about them —
+  // what's the weather, how much shall I make, what shall I charge, ready? —
+  // and the plan card behind keeps the answers visible once they're given.
+  //
+  // The weather deliberately gets its own step rather than sitting above the
+  // buy buttons: reading it BEFORE committing money is the lesson, and folded
+  // into the buying step it would just be decoration above a button.
+  let stepList = [];
+  let stepAt = 0;
+  let stepOpen = false;
+  // Opened from a plan row to change one thing, rather than walked through from
+  // the top. Same sheet, same controls — it just closes again when you're done
+  // instead of marching on to the next question.
+  let stepSingle = false;
+
+  function stepsFor(run) {
+    const o = run.opening || {};
+    const list = [];
+    if (o.repay || o.gift) list.push("news");
+    return list.concat(["weather", "buy", "price", "ready"]);
+  }
+
+  function openSteps(at, single) {
+    const run = state.run;
+    if (!run || run.phase !== "morning") return;
+    stepList = stepsFor(run);
+    stepAt = Math.max(0, Math.min(stepList.length - 1, at || 0));
+    stepOpen = true;
+    stepSingle = !!single;
+    Ui.stepShow(run, stepList[stepAt], stepAt, stepList.length, stepSingle);
+  }
+
+  // Reopen one step to change your mind about it — what the plan rows do.
+  function openStepNamed(name) {
+    const list = stepsFor(state.run);
+    const at = list.indexOf(name);
+    if (at >= 0) { Audio.tap(); openSteps(at, true); }
+  }
+
+  function closeSteps() {
+    stepOpen = false;
+    stepSingle = false;
+    Ui.stepHide();
+  }
+
+  function stepNext() {
+    Audio.tap();
+    if (stepSingle) { closeSteps(); redrawMorning(); return; }
+    if (stepAt >= stepList.length - 1) {
+      closeSteps();
+      openStall();
+      return;
+    }
+    stepAt++;
+    Ui.stepShow(state.run, stepList[stepAt], stepAt, stepList.length, stepSingle);
+  }
+
+  function stepBack() {
+    if (stepAt === 0 || stepSingle) return;
+    Audio.tap();
+    stepAt--;
+    Ui.stepShow(state.run, stepList[stepAt], stepAt, stepList.length, stepSingle);
+  }
+
   function openStall() {
     const run = state.run;
+    closeSteps();
     if (run.cups === 0) {
       // A shut day is a legal day. It still has to reach the evening, or a child
       // who couldn't afford lemons would be stuck on the morning screen forever.
       E.openStall(run);
-      E.closeDay(run);
-      Ui.evening(run);
+      Ui.sellingScreen(run);
+      Ui.dayDone(run);
       Audio.bin();
       save();
       return;
@@ -215,7 +290,7 @@
   // matches quietly stops instead of paying out into the next day.
   let gen = 0;
   let sellTimer = null;
-  let sellAt = { seen: 0, served: 0, turned: 0 };
+  let sellAt = { party: 0, served: 0, turned: 0 };
   let tray = [];
 
   const reduceMotion = () =>
@@ -228,6 +303,39 @@
     return r.moments[state.run.changeAt] || null;
   }
 
+  // One tick = one CUSTOMER, not one cup: a party of three is served in a
+  // single step. `served` counts cups because that is what the money is made
+  // of; `party` counts people because that is what the queue draws.
+  function tickOnce() {
+    const run = state.run;
+    const r = run.result;
+    const parties = r.parties || [];
+    if (sellAt.party < parties.length) {
+      const n = parties[sellAt.party];
+      sellAt.party++;
+      sellAt.served += n;
+      Audio.coin();
+      Ui.sellStep(run, sellAt.served, sellAt.turned, n);
+    } else {
+      sellAt.turned++;
+      Ui.sellStep(run, sellAt.served, sellAt.turned, 1);
+    }
+  }
+
+  const stepsLeft = () => {
+    const r = state.run.result;
+    return (r.parties || []).length + r.turned - (sellAt.party + sellAt.turned);
+  };
+
+  const stepMs = () => {
+    const r = state.run.result;
+    const total = Math.max(1, (r.parties || []).length + r.turned);
+    // Six seconds for a busy day rather than four, and a floor high enough that
+    // a quiet day isn't over before it has been seen. The faces were going past
+    // faster than they could be read.
+    return Math.max(110, Math.min(320, Math.round(6000 / total)));
+  };
+
   function runSelling() {
     const run = state.run;
     const r = run.result;
@@ -238,30 +346,24 @@
     // The queue always replays from the start, including after a resume. The
     // model's changeAt is what remembers which sums were already answered, so
     // replaying the customers can't ask the same one twice.
-    sellAt = { seen: 0, served: 0, turned: 0 };
+    sellAt = { party: 0, served: 0, turned: 0 };
     tray = [];
 
-    if (r.want <= 0) { finishSelling(mine); return; }
+    if (r.want <= 0) { endOfDay(mine); return; }
+    if (reduceMotion()) { fastForward(mine); return; }
+    startTicking(mine);
+  }
 
-    // A whole day fits in about four seconds however busy it is: a scorcher with
-    // forty customers should not take four times as long as a wet Tuesday.
-    const step = reduceMotion() ? 0
-      : Math.max(55, Math.min(190, Math.round(4000 / r.want)));
-
-    if (!step) { fastForward(mine); return; }
-
+  function startTicking(mine) {
+    clearInterval(sellTimer);
     sellTimer = setInterval(() => {
       if (mine !== gen) { clearInterval(sellTimer); return; }
-      sellAt.seen++;
-      if (sellAt.served < r.sold) { sellAt.served++; Audio.coin(); } else { sellAt.turned++; }
-      Ui.sellStep(run, sellAt.served, sellAt.turned);
-
-      // Somebody has just paid with a note and is waiting. Stop the day.
+      tickOnce();
+      // Somebody has just paid with a handful and is waiting. Stop the day.
       const m = pendingMoment();
-      if (m && sellAt.served === m.at + 1) { clearInterval(sellTimer); askForChange(mine); return; }
-
-      if (sellAt.seen >= r.want) { clearInterval(sellTimer); finishSelling(mine); }
-    }, step);
+      if (m && sellAt.party === m.at + 1) { clearInterval(sellTimer); askForChange(mine); return; }
+      if (stepsLeft() <= 0) { clearInterval(sellTimer); endOfDay(mine); }
+    }, stepMs());
   }
 
   // Jump straight to whatever needs a decision next: the next customer owed
@@ -271,18 +373,21 @@
     const run = state.run;
     const r = run.result;
     const m = pendingMoment();
+    const parties = r.parties || [];
     if (m) {
-      sellAt.served = m.at + 1;
-      sellAt.seen = sellAt.served;
-      sellAt.turned = 0;
-      Ui.sellStep(run, sellAt.served, sellAt.turned);
+      sellAt.party = 0; sellAt.served = 0; sellAt.turned = 0;
+      for (let i = 0; i <= m.at && i < parties.length; i++) {
+        sellAt.party++; sellAt.served += parties[i];
+      }
+      Ui.sellStep(run, sellAt.served, sellAt.turned, parties[m.at] || 1);
       askForChange(mine);
       return;
     }
+    sellAt.party = parties.length;
     sellAt.served = r.sold;
     sellAt.turned = r.turned;
-    sellAt.seen = r.want;
-    finishSelling(mine);
+    Ui.sellStep(run, sellAt.served, sellAt.turned, 1);
+    endOfDay(mine);
   }
 
   function askForChange(mine) {
@@ -325,38 +430,27 @@
     tray = [];
     Ui.changeHide();
     Audio.tap();
-    // Back to the day, from exactly where it stopped.
-    const r = state.run.result;
-    if (sellAt.seen >= r.want) { finishSelling(mine); return; }
-    resumeSelling(mine);
+    if (stepsLeft() <= 0) { endOfDay(mine); return; }
+    if (reduceMotion()) { fastForward(mine); return; }
+    startTicking(mine);
   }
 
-  function resumeSelling(mine) {
-    const run = state.run;
-    const r = run.result;
-    const step = reduceMotion() ? 0
-      : Math.max(55, Math.min(190, Math.round(4000 / r.want)));
-    if (!step) { fastForward(mine); return; }
-    clearInterval(sellTimer);
-    sellTimer = setInterval(() => {
-      if (mine !== gen) { clearInterval(sellTimer); return; }
-      sellAt.seen++;
-      if (sellAt.served < r.sold) { sellAt.served++; Audio.coin(); } else { sellAt.turned++; }
-      Ui.sellStep(run, sellAt.served, sellAt.turned);
-      const m = pendingMoment();
-      if (m && sellAt.served === m.at + 1) { clearInterval(sellTimer); askForChange(mine); return; }
-      if (sellAt.seen >= r.want) { clearInterval(sellTimer); finishSelling(mine); }
-    }, step);
-  }
-
-  function finishSelling(mine) {
+  function endOfDay(mine) {
     if (mine !== undefined && mine !== gen) return;
     clearInterval(sellTimer);
     const run = state.run;
     if (run.phase !== "selling") return;
     Ui.changeHide();
     Ui.sellDone(run);
+    Ui.dayDone(run);
     Audio.till();
+    save();
+  }
+
+  function countUp() {
+    const run = state.run;
+    if (!run || run.phase !== "selling") return;
+    Audio.tap();
     E.closeDay(run);
     Ui.evening(run);
     save();
@@ -396,6 +490,7 @@
     if (E.nextDay(run)) {
       Ui.phase("morning");
       Ui.morning(run, state.hints);
+      if (state.stepBy) openSteps(0); else closeSteps();
       Audio.morning();
       save();
     } else {
@@ -425,7 +520,7 @@
       Ui.toast("You borrowed " + E.money(took.borrow) + ". Pay back " +
         E.money(took.repay) + " on day " + took.due + ".");
       $("loanSheet").hidden = true;
-      redrawMorning();
+      redrawMorning();   // redraws the open step too, so the packs light up
     });
     $("loanSheet").hidden = false;
   }
@@ -492,8 +587,25 @@
     $("loanClose").addEventListener("click", () => { Audio.tap(); $("loanSheet").hidden = true; });
     $("treatClose").addEventListener("click", () => { Audio.tap(); $("treatSheet").hidden = true; });
 
+    $("stepNext").addEventListener("click", stepNext);
+    $("stepBack").addEventListener("click", stepBack);
+    $("planWeather").addEventListener("click", () => openStepNamed("weather"));
+    $("planStock").addEventListener("click", () => openStepNamed("buy"));
+    $("planPrice").addEventListener("click", () => openStepNamed("price"));
+    $("stepLoanBtn").addEventListener("click", () => { Audio.tap(); openBank(); });
+    $("stepBorrow").addEventListener("click", () => { Audio.tap(); openBank(); });
+    $("stepTreatBtn").addEventListener("click", () => { Audio.tap(); openShop(); });
+
+    $("stepToggle").addEventListener("click", () => {
+      state.stepBy = !state.stepBy;
+      setSwitch("stepToggle", state.stepBy);
+      Audio.tap();
+      save();
+    });
+
     $("openBtn").addEventListener("click", () => { Audio.tap(); openStall(); });
     $("skipBtn").addEventListener("click", () => { Audio.tap(); skipSelling(); });
+    $("countUpBtn").addEventListener("click", countUp);
 
     $("changeClear").addEventListener("click", clearTray);
     $("changeGive").addEventListener("click", giveChange);

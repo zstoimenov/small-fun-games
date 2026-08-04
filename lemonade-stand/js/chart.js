@@ -102,5 +102,58 @@ LS.Chart = (function () {
     return svg;
   }
 
-  return { render };
+  /* ── The nightly bank book ─────────────────────────────────────────────── */
+
+  // One bar per night, drawn beside the bank book so the growing pile is a
+  // thing you watch build up night after night rather than a curve you meet
+  // once at the end. Bars, not a line: a child can count bars.
+  const BW = 300, BH = 76;
+
+  function bank(host, run) {
+    const E = LS.Economy;
+    const nights = E.bankHistory(run);
+    host.textContent = "";
+    if (!nights.length) return null;
+
+    const svg = el("svg", { viewBox: "0 0 " + BW + " " + BH, role: "img",
+      "aria-label": "Your bank balance at the end of each night" });
+
+    const top = Math.max.apply(null, nights) || 1;
+    const days = E.spec(run.difficulty).days;
+    // Slots are reserved for the whole run, so the bars don't shuffle sideways
+    // and rescale every night — they march across a fixed row instead.
+    const slot = BW / days;
+    const w = Math.max(3, Math.min(16, slot * 0.62));
+
+    nights.forEach((v, i) => {
+      const h = Math.max(1.5, (v / top) * (BH - 14));
+      svg.appendChild(el("rect", {
+        x: i * slot + (slot - w) / 2, y: BH - 12 - h, width: w, height: h, rx: Math.min(3, w / 2),
+        // Tonight is the one that just moved, so it is the one picked out.
+        fill: i === nights.length - 1 ? "var(--accent)" : "var(--chipink)",
+        opacity: i === nights.length - 1 ? 1 : 0.42
+      }));
+    });
+
+    svg.appendChild(el("line", { x1: 0, y1: BH - 11, x2: BW, y2: BH - 11,
+      stroke: "var(--line)", "stroke-width": 1.5 }));
+
+    const label = el("text", { x: 0, y: BH - 1, fill: "var(--muted)",
+      "font-size": 10, "font-weight": 700 });
+    label.textContent = "night 1";
+    svg.appendChild(label);
+    // On the very first night both ends would say "night 1", which reads as a
+    // bug rather than a scale.
+    if (nights.length > 1) {
+      const now = el("text", { x: BW, y: BH - 1, "text-anchor": "end",
+        fill: "var(--muted)", "font-size": 10, "font-weight": 700 });
+      now.textContent = "night " + nights.length;
+      svg.appendChild(now);
+    }
+
+    host.appendChild(svg);
+    return svg;
+  }
+
+  return { render, bank };
 })();
