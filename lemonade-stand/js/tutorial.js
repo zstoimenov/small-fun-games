@@ -69,6 +69,14 @@ LS.Tutorial = (function () {
           "They hand you a $2 coin — so the change is <span class='big-num'>" + E.price(50) + "</span></div>" +
           "<p>Get it right and people often leave you a little extra. Give too much and they keep it — that money is gone. Give too little and they notice.</p>" },
 
+      { title: "People come back",
+        html: "<p>Serve somebody a fair cup and some of them come back tomorrow. Those are your <b>regulars</b>.</p>" +
+          "<div class='demo'>Regulars turn up <i>whatever the weather</i>.<br>" +
+          "On a rainy day they might be your whole queue.<br>" +
+          "The more people you serve, the more you win.</div>" +
+          "<p>You lose them by charging silly prices, running out all the time, or getting their change wrong. " +
+          "Look after them and your little stall turns into a proper business.</p>" },
+
       { title: "Some days go wrong",
         html: "<p>You buy your lemons before you know how the day will go. Sometimes it goes badly.</p>" +
           "<div class='demo'>🐝 Wasps get into the lemonade.<br>" +

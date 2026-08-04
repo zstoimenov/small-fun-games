@@ -183,6 +183,7 @@
            just a row of emoji going past. -->
       <div class="legend" id="legend">
         <span class="legend-bit"><b id="boughtCount">0</b> 🙂 bought a cup</span>
+        <span class="legend-bit regulars" id="legendRegulars" hidden><b id="backCount">0</b> 😀 your regulars</span>
         <span class="legend-bit thirsty"><b id="thirstyCount">0</b> 😕 went away thirsty</span>
       </div>
 
@@ -242,6 +243,22 @@
         <p class="verdict" id="lostLine" hidden></p>
         <p class="verdict" id="wasteLine" hidden></p>
         <p class="verdict" id="thirstyLine" hidden></p>
+
+        <div class="card grow" id="growCard" hidden>
+          <div class="card-head"><span>😀 Your regulars</span><strong id="growCount">0</strong></div>
+          <div class="book">
+            <div class="book-row"><span>Yesterday</span><strong id="growBefore">0</strong></div>
+            <div class="book-row added" id="growGainedRow">
+              <span>Liked you enough to come back</span><strong id="growGained">+ 0</strong>
+            </div>
+            <div class="book-row gone" id="growLostRow" hidden>
+              <span id="growLostWhy">Gave up on you</span><strong id="growLost">- 0</strong>
+            </div>
+            <div class="book-rule"></div>
+            <div class="book-row total"><span>Come back tomorrow</span><strong id="growAfter">0</strong></div>
+          </div>
+          <p class="verdict" id="growNote"></p>
+        </div>
 
         <div class="card">
           <div class="card-head"><span>🏦 Where does it sleep tonight?</span></div>
@@ -315,6 +332,8 @@
       <div class="weather-big" id="stepWeatherEmoji">🌤️</div>
       <div class="weather-name" id="stepWeatherName">Warm</div>
       <div class="weather-crowd muted" id="stepWeatherCrowd"></div>
+      <!-- The half of the crowd you already know about, because you earned it. -->
+      <div class="regulars-line" id="stepRegulars" hidden></div>
     </div>
 
     <!-- The one screen where money leaves your hand. Everything you can spend it
@@ -463,6 +482,7 @@
       <span><i class="key-swatch lemonade"></i> Without the bank's help</span>
     </div>
 
+    <p class="grew-line" id="grewLine" hidden></p>
     <p class="takeaway" id="takeaway"></p>
     <div class="stickers" id="stickers"></div>
     <p class="best-line" id="resultBest" hidden></p>

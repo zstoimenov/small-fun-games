@@ -48,7 +48,31 @@ LS.Economy = (function () {
   // choice and never a requirement.
   const START_CASH = 300;
   const STALL_LIMIT = 40; // cups the stall physically holds in a day
-  const REP_START = 50, REP_MIN = 5, REP_MAX = 95;
+
+  /* ── Regulars ──────────────────────────────────────────────────────────── */
+
+  // The business growing, as a number of people rather than a hidden score.
+  //
+  // This used to be `rep`, a 0-100 dial that multiplied demand by 0.73…1.27 and
+  // appeared nowhere on screen. Two things were wrong with it. It was invisible,
+  // so the stall could not be felt to grow; and measured over 600 fortnights it
+  // went the WRONG WAY for a child playing well — 50 down to 46 — because
+  // selling out cost 3 a day and a fair price only earned 2, so reading the
+  // forecast and stocking tightly quietly punished you.
+  //
+  // Regulars are a count you can see and count. They turn up whatever the
+  // weather, on top of whoever happens to walk past, and you win them by
+  // SERVING people: the ones you turn away don't punish you, they just never
+  // become regulars. That is the honest shape of the loss, and it is what makes
+  // a bigger stall grow faster than a small one.
+  const REGULARS_START = 0;
+  const MAX_REGULARS = 25;   // a stall on a footpath can only hold so many
+  const GROW_AT = 10;        // serve this many cups for a full day's growth
+  const SIGN_REGULARS = 5;   // what the big sign brings in on the spot
+
+  // Loyalty is not immunity: nobody wants lemonade in freezing rain. Indexed by
+  // weather, same order as WEATHER.
+  const REG_WEATHER = [0.35, 0.6, 0.85, 1, 1];
 
   // The two numbers the whole borrowing lesson rests on: the bank pays you 3c a
   // night for every dollar you leave with it, and charges you 6c a night for
@@ -99,7 +123,8 @@ LS.Economy = (function () {
   ];
 
   // Five tiles, no typing. `pull` is what fraction of the passers-by would pay
-  // this much; `repDay` is what charging it does to your regulars each day.
+  // this much; `back` is how many of them come back tomorrow as regulars if you
+  // serve a full stall's worth at that price.
   //
   // These are tuned against PROFIT per passer-by, not revenue, because that is
   // what a run actually accumulates. At the average 40c cup:
@@ -115,11 +140,11 @@ LS.Economy = (function () {
   // Reputation then widens the 75c/$1.00 gap over a fortnight rather than
   // creating it — one clear peak, and a visible fall-off on both sides.
   const PRICES = [
-    { cents: 25,  pull: 1.70, repDay: +5 },
-    { cents: 50,  pull: 1.35, repDay: +4 },
-    { cents: 75,  pull: 1.00, repDay: +2 },
-    { cents: 100, pull: 0.52, repDay: -1 },
-    { cents: 150, pull: 0.16, repDay: -6 }
+    { cents: 25,  pull: 1.70, back: +3 },
+    { cents: 50,  pull: 1.35, back: +3 },
+    { cents: 75,  pull: 1.00, back: +2 },
+    { cents: 100, pull: 0.52, back: +1 },
+    { cents: 150, pull: 0.16, back: -3 }
   ];
 
   // The value lesson, in two buttons. The big pack is always cheaper per cup,
@@ -391,16 +416,30 @@ LS.Economy = (function () {
 
   /* ── Demand ────────────────────────────────────────────────────────────── */
 
-  // How many cups people want today. Monotonically non-increasing in price —
-  // that is asserted in the harness, because it is the one property a child
-  // needs to be able to trust.
-  function wanted(info, priceCents, rep, seed) {
+  // How many cups people want today, split into the two halves a child can
+  // actually reason about: the strangers walking past, which the weather
+  // decides, and your own regulars, which YOU built.
+  //
+  // Both halves are monotonically non-increasing in price — that is the one
+  // property a child needs to be able to trust, and it is why the loyalty
+  // factor is written off `pull` rather than as its own table that could drift
+  // out of order with it.
+  function wanted(info, priceCents, regulars, seed) {
     const tier = priceTier(priceCents);
-    const base = WEATHER[info.weather].footfall;
-    const repF = 0.7 + (rep / 100) * 0.6; // 0.73 … 1.27
     const ev = info.event && info.event.demand ? info.event.demand : 1;
     const jitter = 0.85 + LS.Rng.stream(seed, info.day * 31 + 7).next() * 0.3;
-    return Math.max(0, Math.round(base * tier.pull * repF * ev * jitter));
+    const passing = Math.max(0,
+      Math.round(WEATHER[info.weather].footfall * tier.pull * ev * jitter));
+
+    // Regulars forgive a price rise a stranger wouldn't, and a rival stall up
+    // the road only tempts away some of them — that is the whole value of
+    // having them, and it is what makes a bad day survivable.
+    const loyal = Math.min(1, 0.5 + tier.pull / 2);
+    const evReg = ev >= 1 ? Math.min(ev, 1.3) : (1 + ev) / 2;
+    const regs = Math.max(0,
+      Math.round((regulars || 0) * REG_WEATHER[info.weather] * loyal * evReg));
+
+    return { passing, regulars: regs, total: passing + regs };
   }
 
   // The day's trading, decided in full the moment the stall opens. ui.js animates
@@ -412,7 +451,8 @@ LS.Economy = (function () {
     // is the point of it being here.
     const lost = info.event && info.event.lose ? Math.round(run.cups * info.event.lose) : 0;
     const stock = Math.max(0, run.cups - lost);
-    const want = wanted(info, run.price, run.rep, run.seed);
+    const crowd = wanted(info, run.price, run.regulars, run.seed);
+    const want = crowd.total;
     const sold = Math.min(want, stock);
     // How those cups were grouped into people, so the queue and the till both
     // know that the third customer bought two.
@@ -425,21 +465,49 @@ LS.Economy = (function () {
       turned: want - sold,        // cups people wanted and didn't get
       wasted: stock - sold,       // lemonade doesn't keep, unless you bought the bucket
       earned: sold * run.price,   // 5c-clean: every tier is a multiple of 25c
+      wantedRegulars: crowd.regulars,
+      wantedPassing: crowd.passing,
+      // Regulars are at the front of the queue — they know when you open. So a
+      // stall that runs out disappoints strangers before it disappoints its own.
+      cameBack: Math.min(crowd.regulars, sold),
       moments: changeMoments(spec(run.difficulty), run.seed, info.day, run.price, parties)
     };
   }
 
-  // Regulars. Charge fairly and they come back; gouge them, or send them away
-  // thirsty, and they stop turning up.
-  function nextRep(rep, priceCents, result, treats, changeWrong) {
-    const tier = priceTier(priceCents);
-    let d = tier.repDay * (treats.sign ? 2 : 1);
-    if (result.turned > 0) d -= 3;
-    // Short-changing people is remembered, and remembered hard: reputation
-    // compounds through demand for the rest of the run, so this is the lever
-    // that keeps one sum a day mattering to where you finish.
-    d -= 4 * (changeWrong || 0);
-    return clamp(rep + d, REP_MIN, REP_MAX);
+  // Tonight's word of mouth: how many people liked your stall enough to make it
+  // their stall. Returns the whole story rather than a number, because the
+  // evening has to be able to say WHY it moved.
+  //
+  // Growth scales with how many you served, so a bigger stall grows faster —
+  // that is the compounding the game is about — but it is capped per day rather
+  // than proportional, which keeps the loop linear and the run measurable.
+  function nextRegulars(run, result) {
+    const tier = priceTier(run.price);
+    const before = run.regulars;
+    let gained = 0;
+    let lost = 0;
+
+    if (result.shut) {
+      lost += 1;                       // you weren't there; somebody else was
+    } else if (tier.back < 0) {
+      lost += -tier.back;              // that is not a price, that is a liberty
+    } else {
+      const reach = Math.min(1, result.sold / GROW_AT);
+      gained += Math.round(tier.back * reach * (run.treats.sign ? 2 : 1));
+    }
+    // Running out doesn't cost you the people you turned away — they were never
+    // yours. It costs you one, because word gets round that you sell out.
+    if (!result.shut && result.turned > result.sold) lost += 1;
+    // Short-changing people is remembered, and remembered hard: regulars feed
+    // demand for the rest of the run, so this is the lever that keeps one sum a
+    // day mattering to where you finish.
+    lost += 2 * (run.changeWrong || 0);
+
+    const raw = before + gained - lost;
+    return { before, after: clamp(raw, 0, MAX_REGULARS), gained, lost,
+             capped: raw > MAX_REGULARS, shut: !!result.shut,
+             gouged: tier.back < 0, soldOut: !result.shut && result.turned > result.sold,
+             wrongChange: run.changeWrong || 0 };
   }
 
   /* ── Interest, both directions ─────────────────────────────────────────── */
@@ -594,7 +662,7 @@ LS.Economy = (function () {
     if (t.id === "cream") run.treats.creamsOn.push(run.day);
     else {
       run.treats[t.id] = true;
-      if (t.id === "sign") run.rep = clamp(run.rep + 10, REP_MIN, REP_MAX);
+      if (t.id === "sign") run.regulars = clamp(run.regulars + SIGN_REGULARS, 0, MAX_REGULARS);
     }
     return Object.assign({ fee }, t);
   }
@@ -610,7 +678,7 @@ LS.Economy = (function () {
       phase: "morning",
       pocket: START_CASH,
       bank: 0,
-      rep: REP_START,
+      regulars: REGULARS_START,
       cups: 0,
       carry: 0,
       price: 75, // preselected so the Open button lights up on the first purchase
@@ -634,6 +702,7 @@ LS.Economy = (function () {
       ledger: [],
       today: null,
       result: null,
+      growth: null,     // what tonight's word of mouth did, for the evening card
       opening: null // what the bank did to you before you could touch anything
     };
   }
@@ -655,6 +724,7 @@ LS.Economy = (function () {
     run.feesToday = 0;
     resetTill(run);
     run.result = null;
+    run.growth = null;
     run.phase = "morning";
     run.opening = { repay, gift };
     return run.opening;
@@ -711,7 +781,10 @@ LS.Economy = (function () {
     // Everything the day made, all at once: cups sold, plus what people left as
     // a thank-you, minus whatever was handed back over the odds.
     run.pocket += r.earned + run.tipsToday - run.overpaidToday;
-    run.rep = nextRep(run.rep, run.price, r, run.treats, run.changeWrong);
+    // Kept on the run so the evening can show the sum, and so a resumed evening
+    // shows the same one rather than recomputing it against moved numbers.
+    run.growth = nextRegulars(run, r);
+    run.regulars = run.growth.after;
     run.carry = run.treats.bucket ? r.wasted : 0;
     run.phase = "evening";
     return r;
@@ -779,7 +852,8 @@ LS.Economy = (function () {
       grandma: o.gift,
       interest: int.paid,
       rate: int.rate,
-      rep: run.rep,
+      regulars: run.regulars,
+      cameBack: r.cameBack || 0,
       pocket: run.pocket,
       bank: run.bank
     });
@@ -841,6 +915,8 @@ LS.Economy = (function () {
       fees: add("fees"),
       written: add("written"),
       creams: run.treats.creamsOn.length,
+      regulars: run.regulars,
+      cameBack: add("cameBack"),
       rung: rungReached(final, sp.goal),
       target: sp.goal[sp.goal.length - 1],
       prize: sp.rungs[sp.rungs.length - 1],
@@ -879,6 +955,10 @@ LS.Economy = (function () {
       return "You got every single sum at the till right, and people left you " +
         money(s.tips) + " in tips for it. Being careful pays.";
     }
+    if (s.regulars >= 12) {
+      return "You finished with " + s.regulars + " regulars — people who came to your stall " +
+        "every single day because you looked after them. That is what a business is.";
+    }
     if (s.fees > 0 && s.fees >= s.interest) {
       return "You paid " + money(s.fees) + " in trips to the bank — as much as the bank paid you. " +
         "Keep tomorrow's lemon money in your purse and that stays yours.";
@@ -909,7 +989,8 @@ LS.Economy = (function () {
     if (!run || run.phase === "over") return null;
     return {
       difficulty: run.difficulty, seed: run.seed, day: run.day, phase: run.phase,
-      pocket: run.pocket, bank: run.bank, rep: run.rep,
+      pocket: run.pocket, bank: run.bank, regulars: run.regulars,
+      growth: run.growth,
       cups: run.cups, carry: run.carry, price: run.price,
       spentToday: run.spentToday, boughtToday: run.boughtToday,
       treatToday: run.treatToday, borrowedToday: run.borrowedToday,
@@ -952,7 +1033,12 @@ LS.Economy = (function () {
       run.day = snap.day;
       run.pocket = snap.pocket;
       run.bank = snap.bank;
-      run.rep = clamp(snap.rep, REP_MIN, REP_MAX);
+      // Saves written before regulars existed carry a 0-100 `rep` instead. There
+      // is no sensible conversion, so such a run simply starts building its
+      // regulars from where a new one would.
+      run.regulars = Number.isInteger(snap.regulars)
+        ? clamp(snap.regulars, 0, MAX_REGULARS) : REGULARS_START;
+      run.growth = snap.growth || null;
       run.cups = snap.cups;
       run.carry = snap.carry || 0;
       run.price = snap.price;
@@ -997,13 +1083,14 @@ LS.Economy = (function () {
     // constants
     START_CASH, STALL_LIMIT, RATE, RATE_BONUS, BONUS_AT, GRANDMA,
     WITHDRAW_FEE, FLOAT,
-    REP_MIN, REP_MAX, WEATHER, PRICES, PACKS, LOANS, TREATS, LEVELS,
+    REGULARS_START, MAX_REGULARS, GROW_AT, SIGN_REGULARS,
+    WEATHER, PRICES, PACKS, LOANS, TREATS, LEVELS,
     COINS, NOTES, EVENTS,
     spec, priceTier,
     // the day
     dayOf, weatherOn, eventOn, packPrice, packSaving,
     // trading
-    wanted, sell, nextRep,
+    wanted, sell, nextRegulars,
     // the till
     paymentFor, coinsFor, isNote, partiesFor, changeMoments, settleChange, giveChange, resetTill,
     // banking

@@ -112,10 +112,10 @@ LS.Ui = (function () {
         E.price(run.price) + " you lose " + E.price(-margin) + " every time somebody buys one.", c: "bad" };
     }
     if (margin === 0) return { s: "You'd make nothing at all on each cup.", c: "bad" };
-    const words = tier.repDay >= 4 ? "Lots of people will buy, but there's not much in it for you."
-      : tier.repDay > 0 ? "A fair price. People come back to a stall that's fair."
-      : tier.repDay === -1 ? "You make more on each cup, but fewer people will buy one."
-      : "Not many will pay that, and your regulars won't like it.";
+    const words = tier.pull > 1.2 ? "Lots of people will buy, but there's not much in it for you."
+      : tier.back >= 2 ? "A fair price. People come back to a stall that's fair."
+      : tier.back > 0 ? "You make more on each cup, but fewer people will buy one, and fewer come back."
+      : "Hardly anybody will pay that, and you'd lose regulars over it.";
     return { s: "You keep " + E.price(margin) + " on every cup. " + words, c: "" };
   }
 
@@ -136,7 +136,9 @@ LS.Ui = (function () {
 
     text("forecastEmoji", E.WEATHER[info.forecast].emoji);
     text("forecastName", E.WEATHER[info.forecast].name);
-    text("forecastNote", info.sure ? "Always right on this setting" : "Usually right — not always");
+    text("forecastNote", run.regulars > 0
+      ? "😀 " + run.regulars + " regulars coming too"
+      : info.sure ? "Always right on this setting" : "Usually right — not always");
 
     text("unitPrice", E.price(info.unit));
     const v = unitVerdict(info.unit);
@@ -278,6 +280,15 @@ LS.Ui = (function () {
       text("stepWeatherEmoji", E.WEATHER[info.forecast].emoji);
       text("stepWeatherName", E.WEATHER[info.forecast].name);
       text("stepWeatherCrowd", crowdWords(info.forecast));
+      // Regulars come whatever the sky is doing. Saying so here, next to the
+      // forecast, is what turns them from a number into a reason to stock up.
+      const reg = $("stepRegulars");
+      show(reg, run.regulars > 0);
+      if (run.regulars > 0) {
+        reg.innerHTML = "😀 <b>" + run.regulars + "</b> regular" +
+          (run.regulars === 1 ? "" : "s") + " will come whatever the weather does" +
+          (info.forecast <= 1 ? " — that's most of your day." : ".");
+      }
       show($("stepWeather"), true);
       text("stepNext", "Next");
     } else if (id === "buy") {
@@ -378,6 +389,10 @@ LS.Ui = (function () {
   function stepTip(run, id) {
     const info = run.today;
     if (id === "weather") {
+      if (info.forecast <= 1 && run.regulars >= 5) {
+        return { s: "Miserable out, but your " + run.regulars +
+          " regulars will still come. That's the point of having them." };
+      }
       if (info.forecast >= 3) return { s: "Busy day coming. A full stall could really pay off." };
       if (info.forecast <= 1) return { s: "Hardly anyone will be about. Don't make more than you can sell.", c: "warn" };
       return { s: "An ordinary sort of day. Something in the middle is about right." };
@@ -428,6 +443,10 @@ LS.Ui = (function () {
       return { s: "Lemons are cheap today — " + E.price(info.unit) +
         " a cup. This is the day to fill the stall." };
     }
+    if (run.regulars > 0 && run.cups < run.regulars) {
+      return { s: "You've got " + run.regulars + " regulars who'll come whatever happens. " +
+        "Make at least that many cups." };
+    }
     if (info.forecast >= 3 && run.cups < 20) return { s: "It's going to be busy. More cups might be worth it." };
     if (info.forecast <= 1 && run.cups > 15) return { s: "Not many people about today. That's a lot of cups to shift.", c: "warn" };
     if (run.cups === 0) return { s: "The big pack is always cheaper per cup. Buy as many as you think you can sell." };
@@ -469,6 +488,8 @@ LS.Ui = (function () {
     text("turnedCount", "0");
     text("boughtCount", "0");
     text("thirstyCount", "0");
+    text("backCount", "0");
+    show($("legendRegulars"), (run.result && run.result.cameBack > 0));
     show($("legend"), true);
     show($("dayDone"), false);
     show($("skipBtn"), true);
@@ -480,9 +501,19 @@ LS.Ui = (function () {
   function sellStep(run, servedSoFar, turnedSoFar, partySize) {
     const q = $("queue");
     const thirsty = turnedSoFar > 0 && servedSoFar >= run.result.sold;
+    // Regulars are at the front of the queue, so the first cups of the day go
+    // to them. This party started at (servedSoFar - partySize).
+    const back = run.result.cameBack || 0;
+    const mine = !thirsty && servedSoFar - partySize < back;
     const person = document.createElement("span");
-    person.className = "customer" + (thirsty ? " thirsty" : "") + (partySize > 1 ? " party" : "");
-    person.textContent = thirsty ? "😕" : "🙂";
+    person.className = "customer" + (thirsty ? " thirsty" : "") +
+      (partySize > 1 ? " party" : "") + (mine ? " regular" : "");
+    person.textContent = thirsty ? "😕" : mine ? "😀" : "🙂";
+    if (mine) {
+      const star = document.createElement("u");
+      star.textContent = "★";
+      person.appendChild(star);
+    }
     if (partySize > 1 && !thirsty) {
       const badge = document.createElement("i");
       badge.textContent = "×" + partySize;
@@ -497,6 +528,9 @@ LS.Ui = (function () {
     text("tillTotal", E.money(servedSoFar * run.price));
     text("boughtCount", String(servedSoFar));
     text("thirstyCount", String(turnedSoFar));
+    const served = Math.min(back, servedSoFar);
+    show($("legendRegulars"), served > 0);
+    text("backCount", String(served));
     if (turnedSoFar > 0) {
       show($("turnedLine"), true);
       text("turnedCount", String(turnedSoFar));
@@ -649,6 +683,8 @@ LS.Ui = (function () {
 
   function sellDone(run) {
     const r = run.result;
+    show($("legendRegulars"), (r.cameBack || 0) > 0);
+    text("backCount", String(r.cameBack || 0));
     text("cupsLeft", String(Math.max(0, run.cups - r.sold)));
     text("tillTotal", E.money(r.earned));
     if (r.turned > 0) { show($("turnedLine"), true); text("turnedCount", String(r.turned)); }
@@ -709,9 +745,46 @@ LS.Ui = (function () {
       show(thirsty, true);
     } else show(thirsty, false);
 
+    grewCard(run);
     show($("nightCard"), false);
     show($("nextBtn"), false);
     bankChoices(run);
+  }
+
+  // Word of mouth, laid out exactly like the bank book — because it is the same
+  // idea in a different currency: a thing you build up that pays you back every
+  // day whether you do anything or not.
+  function grewCard(run) {
+    const g = run.growth;
+    const card = $("growCard");
+    if (!g) { show(card, false); return; }
+    show(card, true);
+
+    text("growCount", String(g.after));
+    text("growBefore", String(g.before));
+    text("growGained", "+ " + g.gained);
+    show($("growGainedRow"), g.gained > 0 || g.lost === 0);
+    show($("growLostRow"), g.lost > 0);
+    text("growLost", "- " + g.lost);
+    text("growLostWhy", g.gouged ? "Walked off at that price"
+      : g.shut ? "Went somewhere else today"
+      : g.wrongChange > 0 ? "Didn't like being short-changed"
+      : "Couldn't get one and gave up");
+    text("growAfter", String(g.after));
+
+    const note = $("growNote");
+    note.className = "verdict" + (g.after > g.before ? " good" : g.after < g.before ? " bad" : "");
+    note.textContent = g.capped
+      ? "That's as many as your stall can serve at once. You've built a proper little business."
+      : g.gouged
+        ? "Nobody comes back to a stall that charges " + E.price(run.price) + " a cup."
+      : g.wrongChange > 0
+        ? "People remember being short-changed. Get the sums right and they come back."
+      : g.after === 0
+        ? "Nobody's a regular yet. Serve more people and some of them will start coming back."
+      : g.after > g.before
+        ? g.after + " people will come to your stall tomorrow whatever the weather does."
+        : "No new regulars today, but you've still got " + g.after + ".";
   }
 
   // Tonight's question, with the actual money written on every button. It is a
@@ -841,6 +914,12 @@ LS.Ui = (function () {
         so: ev.good ? "That brought you <b>more customers</b> than the forecast promised."
           : ev.lose ? "That cost you <b class='bad'>" + (r.lost || 0) + " cups</b> before you sold a single one."
           : "That sent <b class='bad'>a lot of your customers away</b>." });
+    }
+
+    // What the business you've built did for you today, in cups.
+    if ((r.cameBack || 0) > 0) {
+      rows.push({ e: "😀", did: r.cameBack + " of your customers were regulars.",
+        so: "That's <b>" + r.cameBack + " cups</b> you'd have sold whatever the weather did." });
     }
 
     // The trip to the bank. Small money, but it is the only thing in the game
@@ -1128,12 +1207,21 @@ LS.Ui = (function () {
       ladder.appendChild(d);
     });
 
+    const grew = $("grewLine");
+    show(grew, run.regulars > 0);
+    if (run.regulars > 0) {
+      grew.textContent = "😀 You started with nobody and finished with " + run.regulars +
+        " regular" + (run.regulars === 1 ? "" : "s") +
+        " — people who came to your stall every day.";
+    }
+
     text("takeaway", E.takeaway(run));
 
     const st = $("stickers");
     st.textContent = "";
     const stickers = [];
     for (let i = 0; i < s.creams; i++) stickers.push("🍦");
+    if (run.regulars >= 10) stickers.push("😀");
     if (run.treats.sign) stickers.push("🪧");
     if (run.treats.bucket) stickers.push("🧊");
     if (s.interest > 0) stickers.push("🏦");
