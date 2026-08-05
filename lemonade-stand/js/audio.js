@@ -94,6 +94,14 @@ LS.Audio = (function () {
   const owe = () => { tone(330, 0.16, 0, "sawtooth", 0.055); tone(220, 0.22, 0.1, "sawtooth", 0.05); };
 
   const treat = () => { [660, 880, 1100].forEach((f, i) => tone(f, 0.12, i * 0.06, "triangle", 0.07)); };
+
+  // The ice cream. Longer and sillier than anything else in the game, on
+  // purpose — it is the only thing you buy that isn't an investment.
+  const yum = () => {
+    [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.22, i * 0.075, "triangle", 0.075));
+    [1047, 1319, 1568].forEach((f, i) => tone(f, 0.3, 0.42 + i * 0.055, "sine", 0.07));
+  };
+
   const bin = () => noise(0.3, 420, 0.1);
   const morning = () => { tone(523, 0.14, 0, "sine", 0.06); tone(784, 0.18, 0.1, "sine", 0.06); };
 
@@ -105,6 +113,6 @@ LS.Audio = (function () {
     [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, 0.24, i * 0.13, "sine", 0.09));
   };
 
-  return { setMuted, isMuted, tap, pick, buy, coin, pour, till, ding, owe, treat, bin,
+  return { setMuted, isMuted, tap, pick, buy, coin, pour, till, ding, owe, treat, yum, bin,
            morning, goal, win };
 })();

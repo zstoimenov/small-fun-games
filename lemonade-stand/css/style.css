@@ -196,6 +196,10 @@ body.in-game{
 .purse-part b{display:block;font-size:17px;color:var(--ink);margin-top:1px}
 .purse-part.debt b{color:var(--bad)}
 .purse-part.lit{border-color:var(--accent);background:var(--chip)}
+/* The bank chip is a button. It has to still read as one of the three chips,
+   so it borrows the chip's look and only says "tappable" by pressing in. */
+.purse-part.tappable{font:inherit;font-weight:700;font-size:12.5px;cursor:pointer}
+.purse-part.tappable:active{transform:translateY(1px)}
 
 /* ── The goal bar ───────────────────────────────────────────────────────── */
 
@@ -242,6 +246,12 @@ body.in-game{
   display:flex;flex-direction:column;gap:8px;padding-bottom:2px;
 }
 .big-go{flex:0 0 auto;width:100%;font-size:17px}
+
+/* One beat of the evening. Only ever one of them on screen, which is what keeps
+   the night off the end of a scrollbar. */
+.beat{display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.evening-buttons{display:flex;gap:10px;flex:0 0 auto;margin-top:2px}
+.evening-buttons .btn-clear{flex:0 1 auto;white-space:nowrap}
 
 .card{
   background:var(--card);border:1px solid var(--line);border-radius:18px;
@@ -616,6 +626,10 @@ body.in-game{
 .book-row.total strong{font-size:25px;color:var(--accent)}
 #bankChart{margin:2px 0 4px}
 #bankChart svg{width:100%;height:auto;display:block}
+#bankBookChart{margin:2px 0 4px}
+#bankBookChart svg{width:100%;height:auto;display:block}
+
+#bankBook{margin-top:10px}
 
 /* ── Toast ──────────────────────────────────────────────────────────────── */
 
@@ -705,6 +719,23 @@ body.in-game{
   margin:8px 0 0;font-size:13.5px;font-weight:800;line-height:1.5;
   background:var(--chip);color:var(--chipink);border-radius:14px;padding:10px 12px;
 }
+
+/* ── The ice cream ──────────────────────────────────────────────────────── */
+
+/* No card, no sheet, no numbers. The whole screen goes to one ice cream for a
+   couple of seconds, because that is the entire thing you bought. */
+/* Darker than the other overlays on purpose: for two seconds there is nothing
+   else on the screen to look at, which is the whole gift. */
+.cheer{background:rgba(10,20,12,.88)}
+.cheer-inner{text-align:center;max-width:340px;padding:0 8px}
+.cheer .prize{min-height:170px}
+.cheer .prize-emoji{font-size:124px}
+.cheer-say{
+  margin:10px 0 0;font-size:26px;font-weight:900;color:#fff;
+  text-shadow:0 3px 12px rgba(0,0,0,.5);
+}
+.cheer-sub{margin:6px 0 18px;font-size:14.5px;font-weight:700;color:#e9f6ea;opacity:.92}
+.cheer .btn{min-width:150px}
 #chart{width:100%}
 #chart svg{width:100%;height:auto;display:block}
 .chart-key{

@@ -40,12 +40,19 @@ LS.Ui = (function () {
   // and "how much have I got?" is the first thing you need to know on every
   // screen that asks you to spend some of it — so every such sheet carries one.
   // Labelled here, unlike the topbar, because there is room to say it.
-  function purseInto(node, run) {
+  // `plain` is for the bank's own sheet, where a chip that opens the bank would
+  // be a button that does nothing.
+  function purseInto(node, run, plain) {
     if (!node) return;
+    // Tappable here too. A sheet covers the topbar, and the morning is mostly
+    // spent inside one — a bank you can only ask about between sheets is a bank
+    // nobody asks about.
+    const tag = plain ? "span" : "button";
     const bits = [
       '<span class="purse-part">👛 Purse<b>' + E.money(run.pocket) + "</b></span>",
-      '<span class="purse-part' + (lit(run) ? " lit" : "") + '">🏦 Bank<b>' +
-        E.money(run.bank) + "</b></span>"
+      "<" + tag + (plain ? "" : ' type="button"') + ' class="purse-part' +
+        (plain ? "" : " tappable") + (lit(run) ? " lit" : "") +
+        '">🏦 Bank<b>' + E.money(run.bank) + "</b></" + tag + ">"
     ];
     if (run.loan) {
       bits.push('<span class="purse-part debt">💳 You owe<b>' +
@@ -90,6 +97,17 @@ LS.Ui = (function () {
 
   function phase(name) {
     for (const id of ["morning", "selling", "evening"]) show($(id), id === name);
+    // Each phase owns its own scroller, and a hidden one keeps whatever offset
+    // it was left at. Without this the evening reopens every night exactly
+    // where it was abandoned — at the bottom, past the sums.
+    top(name);
+  }
+
+  // Put a phase's scroller back to the top. Anything that swaps what is inside
+  // one has to call this, or the new content arrives already scrolled.
+  function top(name) {
+    const sc = $(name) && $(name).querySelector(".scroller");
+    if (sc) sc.scrollTop = 0;
   }
 
   /* ── Morning ────────────────────────────────────────────────────────────── */
@@ -701,6 +719,52 @@ LS.Ui = (function () {
 
   /* ── Evening ────────────────────────────────────────────────────────────── */
 
+  /* The evening is walked, not scrolled. Each beat is one screen's worth and
+     one idea: what happened, who's coming back, where the money sleeps, what
+     the bank did with it overnight. The beat with the bank buttons on it can
+     only be reached through the beat with the sums on it, which is the whole
+     point — the buttons used to be the only part anybody read. */
+
+  let beats = [];     // ids of the beats in play tonight
+  let beatAt = 0;
+  let banked = false; // the night's choice is made, so the way forward is open
+
+  const ALL_BEATS = ["beatDay", "beatWhy", "beatRegulars", "beatBank", "beatNight"];
+
+  function beatList(run) {
+    const list = ["beatDay", "beatWhy"];
+    if (run.growth) list.push("beatRegulars");
+    return list.concat(["beatBank", "beatNight"]);
+  }
+
+  function drawBeats() {
+    for (const id of ALL_BEATS) {
+      show($(id), beats[beatAt] === id);
+    }
+    top("evening");
+
+    const dots = $("eveningDots");
+    dots.textContent = "";
+    for (let i = 0; i < beats.length; i++) {
+      const d = document.createElement("span");
+      d.className = "dot" + (i === beatAt ? " on" : "");
+      dots.appendChild(d);
+    }
+
+    const last = beatAt === beats.length - 1;
+    show($("eveBack"), beatAt > 0);
+    // On the bank beat there is nothing to go forward to until the money has
+    // been put somewhere. Everywhere else, forward is always available.
+    show($("eveNext"), !last && (beats[beatAt] !== "beatBank" || banked));
+    show($("nextBtn"), last && banked);
+  }
+
+  // Walk. Handed straight to the two buttons, so there is one way to move.
+  function beatStep(by) {
+    beatAt = Math.max(0, Math.min(beats.length - 1, beatAt + by));
+    drawBeats();
+  }
+
   function evening(run) {
     const r = run.result;
     phase("evening");
@@ -722,42 +786,20 @@ LS.Ui = (function () {
     show($("sumFeeLine"), run.feesToday > 0);
     text("sumFee", E.price(run.feesToday));
 
+    // The verdict lines under the causes card used to say the leftovers, the
+    // lost cups and the queue you turned away a second time, in shorter words.
+    // "What your choices did" already says all three with the reason attached,
+    // and the repeat was what pushed this screen past one screenful.
     causes(run);
-
-    // The till used to get its own line here. "What your choices did" already
-    // names it, with the reason attached, so the second line was just noise.
-    show($("tillLine"), false);
-
-    const lostLine = $("lostLine");
-    if (r.lost > 0) {
-      lostLine.textContent = run.today.event.emoji + " " + r.lost +
-        " cups were gone before you sold a single one. That money was already spent.";
-      lostLine.className = "verdict bad";
-      show(lostLine, true);
-    } else show(lostLine, false);
-
-    const waste = $("wasteLine");
-    if (r.wasted > 0 && run.treats.bucket) {
-      waste.textContent = "🧊 " + r.wasted + " cups left over — the ice bucket keeps them for tomorrow.";
-      waste.className = "verdict good";
-      show(waste, true);
-    } else if (r.wasted > 0) {
-      waste.textContent = "🗑️ " + r.wasted + " cups went in the bin. Lemonade doesn't keep.";
-      waste.className = "verdict bad";
-      show(waste, true);
-    } else show(waste, false);
-
-    const thirsty = $("thirstyLine");
-    if (r.turned > 0) {
-      thirsty.textContent = "😕 " + r.turned + " people wanted one and you'd run out. Make more tomorrow.";
-      thirsty.className = "verdict";
-      show(thirsty, true);
-    } else show(thirsty, false);
 
     grewCard(run);
     show($("nightCard"), false);
-    show($("nextBtn"), false);
     bankChoices(run);
+
+    beats = beatList(run);
+    beatAt = 0;
+    banked = false;
+    drawBeats();
   }
 
   // Word of mouth, laid out exactly like the bank book — because it is the same
@@ -895,11 +937,17 @@ LS.Ui = (function () {
       if (r.turned > 0) {
         rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
           so: "You sold every one — and <b class='bad'>" + r.turned +
-              " more</b> people wanted one you didn't have." });
+              " more</b> people wanted one you didn't have. Make more tomorrow." });
+      } else if (r.wasted > 0 && run.treats.bucket) {
+        // The bucket is the only thing that makes leftovers not a loss, so it
+        // has to be said here, on the line that would otherwise call them one.
+        rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
+          so: "You only sold " + r.sold + ", but the 🧊 ice bucket <b>keeps the other " +
+              r.wasted + "</b> for tomorrow." });
       } else if (r.wasted > 0) {
         rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
           so: "You only sold " + r.sold + ", so <b class='bad'>" + r.wasted +
-              "</b> went in the bin." });
+              "</b> went in the bin. Lemonade doesn't keep." });
       } else {
         rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
           so: "You sold <b>every one</b>, with none left over. Spot on." });
@@ -1003,9 +1051,15 @@ LS.Ui = (function () {
     } else show(loan, false);
 
     for (const id of ["bankNone", "bankHalf", "bankFloat", "bankAll"]) $(id).disabled = true;
-    show($("nextBtn"), true);
     $("nextBtn").textContent = run.day >= E.spec(run.difficulty).days
       ? "See how you did" : "Next morning";
+
+    // The choice has been made, so the way out of the evening opens — and the
+    // bank book is what you get taken to, rather than something appended below
+    // the fold of the screen you were already on.
+    banked = true;
+    beatAt = beats.length - 1;
+    drawBeats();
     purse(run); goal(run);
   }
 
@@ -1088,11 +1142,54 @@ LS.Ui = (function () {
   }
 
   function bankSheet(run, onTake) {
-    purseInto($("loanPurse"), run);
-    $("bankBlurb").textContent = "The bank pays you " + E.RATE +
-      "c a night for every dollar you leave with it, and charges you 6c a night for every dollar you borrow — twice as much. That gap is how a bank makes its money. Taking money out costs " +
-      E.price(E.WITHDRAW_FEE) + " a trip.";
+    purseInto($("loanPurse"), run, true);
+    // The borrowing half only — the paying half is the book above, and this
+    // used to repeat all of it.
+    $("bankBlurb").textContent = "Borrowing works the other way: the bank charges you 6c a night for every dollar you borrow, twice what it pays you. That gap is how a bank makes its money.";
+    bankBook(run);
     loansInto($("loanList"), run, onTake);
+  }
+
+  // What the bank is doing with your money, on demand rather than once a night
+  // as it flies past. Everything here is read out of the model — the rate, what
+  // tonight would add at that rate, and what it has added so far — so it can
+  // never quietly disagree with the bank book the evening shows.
+  function bankBook(run) {
+    const sp = E.spec(run.difficulty);
+    const int = E.interestOn(run.bank, sp);
+    const paid = E.totalInterest(run);
+
+    text("bankBookRate", int.rate + "c");
+    text("bankBookTonight", int.paid > 0 ? "+ " + E.price(int.paid) : "nothing");
+    text("bankBookPaid", paid > 0 ? E.price(paid) : "nothing");
+
+    // Why it's that rate, and — the useful half — what would change it. The
+    // bonus is the one lever in the game a child can plan several days ahead.
+    const bonus = sp.bonusRate;
+    text("bankBookRateWhy", !bonus
+      ? "It pays you " + int.rate + "c a night for every dollar"
+      : int.rate === E.RATE_BONUS
+        ? "The big rate, because you've got " + E.money(E.BONUS_AT) + " or more in there"
+        : "The everyday rate — get to " + E.money(E.BONUS_AT) + " and it becomes " +
+          E.RATE_BONUS + "c");
+
+    LS.Chart.bank($("bankBookChart"), run);
+
+    const note = $("bankBookNote");
+    if (paid > 0) {
+      note.textContent = "That's " + E.price(paid) + " you didn't have to sell a single cup for.";
+      note.className = "verdict good";
+    } else if (run.bank > 0) {
+      note.textContent = "Not quite enough in there to earn a whole 5c overnight yet. Keep adding to it.";
+      note.className = "verdict";
+    } else {
+      note.textContent = "There's nothing in the bank, so it's paying you nothing. Money in your purse doesn't grow.";
+      note.className = "verdict";
+    }
+
+    // The catch, in the same breath as the reward. Both halves or neither.
+    text("bankBookFee", "Taking money back out costs " + E.price(E.WITHDRAW_FEE) +
+      " a trip — once a day, however much you take.");
   }
 
   function treatSheet(run, onBuy) {
@@ -1166,8 +1263,8 @@ LS.Ui = (function () {
   // this is decoration, and decoration in this game is not allowed a random
   // number generator that could ever disagree with itself on a redraw.
   const CONFETTI = ["var(--accent)", "var(--accent2)", "var(--gold)", "var(--sun)", "var(--good)"];
-  function burst() {
-    const host = $("prizeBurst");
+  function burst(id) {
+    const host = $(id || "prizeBurst");
     if (!host) return;
     host.textContent = "";
     for (let i = 0; i < 18; i++) {
@@ -1181,6 +1278,38 @@ LS.Ui = (function () {
       bit.style.animationDelay = (i % 6) * 40 + "ms";
       host.appendChild(bit);
     }
+  }
+
+  /* ── The ice cream ──────────────────────────────────────────────────────── */
+
+  // The shop's one useless thing gets the game's biggest moment. Everything
+  // else you can buy is an investment with a payback you can work out; this is
+  // the one where the payback is that you enjoyed it, and a toast in the corner
+  // was not making that case.
+  const CREAM_SAY = [
+    "Worth every cent.",
+    "You have earned this.",
+    "Nobody else gets any.",
+    "Business is hard. Ice cream is not."
+  ];
+
+  function cheer(run, treat) {
+    // Fresh nodes, because prizePop is an entry animation and an entry
+    // animation on a node the browser has already laid out plays to nobody.
+    const host = $("cheerEmoji");
+    const fresh = document.createElement("div");
+    fresh.className = "prize-emoji";
+    fresh.textContent = treat.emoji;
+    fresh.id = "cheerEmoji";
+    host.replaceWith(fresh);
+
+    // Walks the list rather than picking at random: two ice creams in a row
+    // saying the same thing reads as the game not noticing.
+    const said = (run.treats.creamsOn.length - 1 + CREAM_SAY.length) % CREAM_SAY.length;
+    text("cheerSay", CREAM_SAY[said]);
+    text("cheerSub", "It does nothing at all for the stall. That's allowed.");
+    $("cheer").hidden = false;
+    burst("cheerBurst");
   }
 
   // "🚲 a bike" is one string in the level spec, because it reads as one thing
@@ -1252,5 +1381,6 @@ LS.Ui = (function () {
            morning, packs, prices, basket, hint, stepShow, stepHide,
            sellingScreen, sellStep, sellDone, dayDone, event,
            coinPad, changeAsk, changeTray, changeResult, changeHide,
-           evening, night, loansInto, shopInto, bankSheet, treatSheet, result };
+           evening, beatStep, night, cheer,
+           loansInto, shopInto, bankSheet, treatSheet, result };
 })();

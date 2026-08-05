@@ -554,9 +554,19 @@
   function buyTreat(id) {
     const bought = E.buyTreat(state.run, id);
     if (!bought) { Ui.toast("You can't afford that."); return; }
-    Audio.treat();
-    Ui.toast(bought.emoji + " " + bought.name + " — " + E.money(bought.cost) +
-      (bought.fee > 0 ? ", plus " + E.price(bought.fee) + " for the trip to the bank" : ""));
+
+    // The ice cream is the one purchase with no argument behind it, so it gets
+    // the moment instead of the receipt. Everything else keeps its quiet toast:
+    // a sign and a bucket are decisions, and decisions get told what they cost.
+    if (id === "cream") {
+      Audio.yum();
+      Ui.cheer(state.run, bought);
+    } else {
+      Audio.treat();
+      Ui.toast(bought.emoji + " " + bought.name + " — " + E.money(bought.cost) +
+        (bought.fee > 0 ? ", plus " + E.price(bought.fee) + " for the trip to the bank" : ""));
+    }
+
     if (!$("treatSheet").hidden) openShop();  // the sheet, if that's where we are
     redrawMorning();                          // ...and the morning behind it
   }
@@ -652,7 +662,30 @@
     $("bankHalf").addEventListener("click", () => bankIt("half"));
     $("bankFloat").addEventListener("click", () => bankIt("float"));
     $("bankAll").addEventListener("click", () => bankIt("all"));
+    $("eveNext").addEventListener("click", () => { Audio.tap(); Ui.beatStep(1); });
+    $("eveBack").addEventListener("click", () => { Audio.tap(); Ui.beatStep(-1); });
     $("nextBtn").addEventListener("click", () => { Audio.tap(); nextMorning(); });
+
+    // Every bank chip opens the bank — the one in the topbar and the copies the
+    // sheets draw for themselves. Delegated, because those copies are rewritten
+    // on every redraw and a listener bound to one of them wouldn't survive it.
+    // The money is on the chip; the story behind the money is one tap further in.
+    document.addEventListener("click", (ev) => {
+      const chip = ev.target.closest && ev.target.closest(".purse-part.tappable");
+      if (!chip || !state.playing || !state.run) return;
+      if (!$("loanSheet").hidden) return;   // already looking at it
+      Audio.tap();
+      // The shop gets out of the way first, the same as its Borrow button does.
+      $("treatSheet").hidden = true;
+      openBank();
+    });
+
+    $("cheerClose").addEventListener("click", () => { Audio.tap(); $("cheer").hidden = true; });
+    $("cheer").addEventListener("click", (ev) => {
+      // Tap anywhere. A child holding a tablet does not aim for the button.
+      if (ev.target.id === "cheerClose") return;
+      $("cheer").hidden = true;
+    });
 
     $("menuBtn").addEventListener("click", () => { Audio.tap(); $("menu").hidden = false; });
     $("menuResume").addEventListener("click", () => { Audio.tap(); $("menu").hidden = true; });
@@ -741,7 +774,8 @@
       if (first && t.pocket + t.bank !== before - spent) {
         console.warn("Lemonade Stand: money went missing on the way to the bank.");
       }
-      const missing = ["morning", "selling", "evening", "goalFill", "priceChooser", "chart"]
+      const missing = ["morning", "selling", "evening", "goalFill", "priceChooser", "chart",
+        "beatDay", "beatWhy", "beatRegulars", "beatBank", "beatNight", "cheer", "bankBook"]
         .filter((id) => !document.getElementById(id));
       if (missing.length) console.warn("Lemonade Stand: markup is missing " + missing.join(", "));
     } catch (e) {
