@@ -37,6 +37,17 @@
     </div>
     <p class="row-note" id="countNote"></p>
 
+    <!-- Two players only. One player against the computer has to take turns —
+         there is nobody to hand the tablet to. -->
+    <div class="row" id="modeRow" hidden>
+      <span class="row-label">How to play it</span>
+      <div class="seg" id="modeChooser">
+        <button class="opt" type="button" data-value="classic">Take turns</button>
+        <button class="opt" type="button" data-value="relay">One at a time</button>
+      </div>
+    </div>
+    <p class="row-note" id="modeNote" hidden></p>
+
     <div class="row" id="diffRow">
       <span class="row-label">How good?</span>
       <div class="seg" id="diffChooser">
@@ -57,13 +68,15 @@
     </div>
     <p class="row-note" id="presetNote"></p>
 
-    <div class="row">
+    <!-- Nothing to give another go to when you already have all of them, so
+         this whole row stands down in the one-at-a-time game. -->
+    <div class="row" id="extraRow">
       <span class="row-label">Another go after a hit</span>
       <button id="extraToggle" class="switch" type="button" role="switch" aria-checked="false">
         <span class="knob"></span>
       </button>
     </div>
-    <p class="row-note">
+    <p class="row-note" id="extraNote">
       Hit something and you keep firing until you miss. It makes for a much
       quicker, much wilder game — and a lucky run can end it very fast.
     </p>
@@ -182,6 +195,33 @@
   <div id="toast" class="toast" hidden></div>
 </main>
 
+<!-- ══ THE BATTLE, PLAYED BACK ══════════════════════════════════════════
+     The end of a one-at-a-time game. Both runs were fired blind against a sea
+     that never fired back, so neither player has any idea who did it faster.
+     Here the two runs are laid side by side and stepped through together, one
+     shot each per beat, until one of the fleets goes down. Nothing is decided
+     here — it happened already. It just hasn't been watched yet. -->
+<main id="replay" hidden>
+  <div class="topbar">
+    <button id="replayBack" class="icon-btn" type="button" title="Back">‹</button>
+    <div class="turn-info">
+      <strong id="replayTitle">The battle</strong>
+      <span id="replayMeta"></span>
+    </div>
+    <button id="replayMute" class="icon-btn" type="button" aria-pressed="true" title="Sound on/off">🔊</button>
+  </div>
+
+  <div id="replayCoach" class="coach"></div>
+
+  <div class="replay-seas" id="replaySeas"></div>
+
+  <div class="board-buttons">
+    <button id="replaySlow" class="ghost-btn" type="button">🐇 Normal</button>
+    <button id="replayPause" class="ghost-btn" type="button">⏸ Pause</button>
+    <button id="replaySkip" class="btn btn-go" type="button">Skip to the end ▶</button>
+  </div>
+</main>
+
 <!-- ══ PASS THE TABLET ══════════════════════════════════════════════════ -->
 <!-- Both game screens are hidden while this is up. Covering them with an
      overlay would not be enough: the point is that the other player's sea is
@@ -229,7 +269,7 @@
 <div id="howto" class="overlay" hidden>
   <div class="sheet sheet-sm howto-sheet">
     <div class="howto-top">
-      <span id="howtoStep" class="pill">1 / 7</span>
+      <span id="howtoStep" class="pill">1 / 8</span>
       <button id="howtoSkip" class="ghost-btn" type="button">Skip</button>
     </div>
     <div id="howtoBody" class="howto-body"></div>

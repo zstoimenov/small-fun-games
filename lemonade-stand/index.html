@@ -79,7 +79,10 @@
        and what you owe. -->
   <div class="purse" id="purse">
     <span class="purse-part" id="pocketChip">👛 <b>$10.00</b></span>
-    <span class="purse-part" id="bankChip">🏦 <b>$0.00</b></span>
+    <!-- A button, not a chip: the bank is the one number in this game with a
+         story behind it, and this is where you go to read it. -->
+    <button class="purse-part tappable" id="bankChip" type="button"
+            title="What the bank is doing with your money">🏦 <b>$0.00</b></button>
     <span class="purse-part debt" id="debtChip" hidden>💳 <b>$0.00</b></span>
   </div>
 
@@ -214,8 +217,14 @@
     </section>
 
     <!-- ── Evening: the sums, in words ─────────────────────────────────── -->
+    <!-- ── Evening ──────────────────────────────────────────────────────
+         One beat at a time, like the morning. The whole evening used to be a
+         single scroll, and a child who scrolled to the bank buttons at the
+         bottom never came back up to read the sums at the top — so the sums
+         are now a screen you have to walk through to reach the buttons. -->
     <section id="evening" class="phase" hidden>
       <div class="scroller">
+      <div class="beat" id="beatDay">
         <div class="card sums">
           <div class="sum-line out"><span>You spent on lemons</span><strong id="sumSpent">$4.80</strong></div>
           <div class="sum-line out" id="sumTreatLine" hidden>
@@ -230,20 +239,20 @@
           <div class="sum-rule"></div>
           <div class="sum-line total" id="sumTotalLine"><span id="sumTotalLabel">So you made</span><strong id="sumProfit">$6.45</strong></div>
         </div>
+      </div>
 
-        <!-- Every decision of the day, next to what it actually caused. This is
-             the whole point of the evening: not "you made $5" but "you charged
-             75c, and THAT is why you made $5". -->
+      <!-- Every decision of the day, next to what it actually caused. This is
+           the whole point of the evening: not "you made $5" but "you charged
+           75c, and THAT is why you made $5". Its own beat, because on a busy
+           day it is six rows long and it is the part worth reading. -->
+      <div class="beat" id="beatWhy" hidden>
         <div class="card causes" id="causes">
           <div class="card-head"><span>🔎 What your choices did</span></div>
           <div id="causeList"></div>
         </div>
+      </div>
 
-        <p class="verdict" id="tillLine" hidden></p>
-        <p class="verdict" id="lostLine" hidden></p>
-        <p class="verdict" id="wasteLine" hidden></p>
-        <p class="verdict" id="thirstyLine" hidden></p>
-
+      <div class="beat" id="beatRegulars" hidden>
         <div class="card grow" id="growCard" hidden>
           <div class="card-head"><span>😀 Your regulars</span><strong id="growCount">0</strong></div>
           <div class="book">
@@ -259,7 +268,9 @@
           </div>
           <p class="verdict" id="growNote"></p>
         </div>
+      </div>
 
+      <div class="beat" id="beatBank" hidden>
         <div class="card">
           <div class="card-head"><span>🏦 Where does it sleep tonight?</span></div>
           <p class="verdict" id="bankNote">Money in the bank grows overnight. Money in your purse doesn't.</p>
@@ -274,10 +285,12 @@
             <button class="ghost-btn" id="bankAll" type="button">Bank it all<i></i></button>
           </div>
         </div>
+      </div>
 
-        <!-- The bank book. The point of the whole savings lesson is that you can
-             watch it happen, so it gets a sum you can follow and a row of bars
-             that grows a little every night. -->
+      <!-- The bank book. The point of the whole savings lesson is that you can
+           watch it happen, so it gets a sum you can follow and a row of bars
+           that grows a little every night. -->
+      <div class="beat" id="beatNight" hidden>
         <div class="card night" id="nightCard" hidden>
           <div class="card-head"><span>🏦 Your bank book</span></div>
 
@@ -298,8 +311,18 @@
           <div class="night-line bad" id="loanLine" hidden></div>
         </div>
       </div>
+      </div>
 
-      <button class="btn btn-go big-go" id="nextBtn" type="button" hidden>Next morning</button>
+      <div class="dots" id="eveningDots"></div>
+
+      <!-- Two buttons, one slot. "Next" walks the evening; "Next morning" only
+           appears once the money has been put away, so it can never be the way
+           past a question that hasn't been answered. -->
+      <div class="evening-buttons">
+        <button class="btn btn-clear" id="eveBack" type="button" hidden>Back</button>
+        <button class="btn btn-go big-go" id="eveNext" type="button" hidden>Next</button>
+        <button class="btn btn-go big-go" id="nextBtn" type="button" hidden>Next morning</button>
+      </div>
     </section>
 
   </div>
@@ -395,11 +418,36 @@
   </div>
 </div>
 
-<!-- ══ THE BANK ═════════════════════════════════════════════════════════ -->
+<!-- ══ THE BANK ═════════════════════════════════════════════════════════
+     One sheet, both halves of what a bank is: what it pays you for leaving
+     money there, and what it charges you for taking some of theirs. They used
+     to be two different screens both called "the bank". -->
 <div id="loanSheet" class="overlay" hidden>
   <div class="sheet sheet-sm">
     <h2>🏦 The bank</h2>
     <div class="purse sheet-purse" id="loanPurse"></div>
+
+    <!-- The savings half. Hidden on the buying screen's borrow-me-now route,
+         where the question is only ever "can I have some money". -->
+    <!-- No "you have $25.00 in the bank" headline: the purse strip above says
+         that already, and saying it twice in two different type sizes is how a
+         sheet stops being read. This half is only about what it DOES. -->
+    <div id="bankBook">
+      <div class="book">
+        <div class="book-row"><span id="bankBookRateWhy">It pays you 3c a night for every dollar</span>
+          <strong id="bankBookRate">3c</strong></div>
+        <div class="book-row added"><span>So tonight it would add</span>
+          <strong id="bankBookTonight">nothing</strong></div>
+        <div class="book-rule"></div>
+        <div class="book-row total"><span>Paid you so far</span>
+          <strong id="bankBookPaid">nothing</strong></div>
+      </div>
+
+      <div id="bankBookChart"></div>
+      <p class="verdict" id="bankBookNote"></p>
+      <p class="verdict" id="bankBookFee"></p>
+    </div>
+
     <p class="sub" id="bankBlurb"></p>
     <div id="loanList"></div>
     <div class="sheet-buttons">
@@ -421,6 +469,22 @@
     <div class="sheet-buttons">
       <button class="btn btn-clear" id="treatClose" type="button">Back to the stall</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ THE ICE CREAM ════════════════════════════════════════════════════
+     The one thing in the shop that does nothing for the stall. It buys a
+     moment instead, and a moment has to actually happen on screen or the joke
+     doesn't land. Tap anywhere to carry on. -->
+<div id="cheer" class="overlay cheer" hidden>
+  <div class="cheer-inner">
+    <div class="prize">
+      <div class="prize-burst" id="cheerBurst"></div>
+      <div class="prize-emoji" id="cheerEmoji">🍦</div>
+    </div>
+    <p class="cheer-say" id="cheerSay">Worth every cent.</p>
+    <p class="cheer-sub" id="cheerSub">It does nothing at all for the stall.</p>
+    <button class="btn btn-go" id="cheerClose" type="button">Mmm</button>
   </div>
 </div>
 

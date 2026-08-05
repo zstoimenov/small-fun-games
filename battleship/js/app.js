@@ -26,6 +26,7 @@
 
   const state = {
     playerCount: 1,
+    mode: "classic",        // "classic" takes turns; "relay" is one player at a time
     difficulty: "medium",
     preset: "classic",
     extraOnHit: false,      // hit and you keep firing
@@ -49,12 +50,16 @@
     over: false,
     handGo: null,           // what the pass-the-tablet screen is waiting to do
     lastThink: null,
+    replay: null,           // the side-by-side play-back, while it is running
     gen: 0                  // bumped on every new game, so a stale timer can't fire into it
   };
 
   const spec = () => Rules.specOf(state.preset);
   const curSpec = () => (state.game ? state.game.spec : spec());
   const solo = () => state.playerCount === 1;
+  // Relay needs somebody to hand the tablet to, so it is a two-player thing
+  // only. Everything downstream of the start asks the *game* whether it is one,
+  // never the setup sheet — the sheet can be changed behind a game in progress.
   const nameOf = (seat) =>
     solo() ? (seat === 0 ? "You" : BOT_NAME)
            : ((state.names[seat] || "").trim() || "Player " + (seat + 1));
@@ -83,6 +88,7 @@
       savedGame = {
         g: Rules.snapshot(state.game),
         playerCount: state.playerCount,
+        mode: state.mode,
         difficulty: state.difficulty,
         names: state.names.slice(),
         flip: state.flip
@@ -105,7 +111,7 @@
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
       const s = JSON.parse(raw);
-      for (const k of ["playerCount", "difficulty", "preset", "extraOnHit",
+      for (const k of ["playerCount", "mode", "difficulty", "preset", "extraOnHit",
         "flip", "hints", "muted", "seenHowTo"]) {
         if (s[k] !== undefined) state[k] = s[k];
       }
@@ -164,13 +170,32 @@
       "most of them cross. About 44 shots. It is very hard to beat."
   };
 
+  const MODE_NOTES = {
+    classic: "You fire, they fire, and the first fleet to go down loses. The " +
+      "tablet changes hands after every go.",
+    relay: "One of you sinks the whole fleet while the other looks away, then " +
+      "you swap and the other does the same. Nobody is told how many shots it " +
+      "took until both of you have had your turn — and then you watch the two " +
+      "battles play out side by side to find out who was quicker."
+  };
+
   function renderSetup() {
     const isSolo = solo();
+    const isRelay = !isSolo && state.mode === "relay";
 
     $("countNote").textContent = isSolo
       ? "You against " + BOT_NAME + ". It hides its fleet while you hide yours."
       : "Two of you, one device. The screen is cleared in between so nobody can " +
         "see the other fleet.";
+
+    $("modeRow").hidden = isSolo;
+    $("modeNote").hidden = isSolo;
+    $("modeNote").textContent = MODE_NOTES[state.mode];
+    setChooser("modeChooser", state.mode);
+
+    // Nothing to hand another go to when nobody is waiting for one.
+    $("extraRow").hidden = isRelay;
+    $("extraNote").hidden = isRelay;
 
     $("diffRow").hidden = !isSolo;
     $("diffNote").hidden = !isSolo;
@@ -217,9 +242,11 @@
     $("place").hidden = which !== "place";
     $("game").hidden = which !== "game";
     $("handover").hidden = which !== "handover";
-    document.body.classList.toggle("in-game", which === "place" || which === "game");
+    $("replay").hidden = which !== "replay";
+    document.body.classList.toggle("in-game",
+      which === "place" || which === "game" || which === "replay");
     if (which !== "place" && which !== "game") document.body.classList.remove("flipped");
-    if (which === "place" || which === "game") {
+    if (which === "place" || which === "game" || which === "replay") {
       fit();
       // Once more after the browser has laid the new screen out — the first call
       // measures a box that is still the old screen's size.
@@ -234,6 +261,7 @@
       Ui.fitMini($("ownGrid"), n);
     }
     if (!$("place").hidden) Ui.fitBig("placeWrap", $("placeGrid"));
+    if (!$("replay").hidden) fitReplay();
   }
 
   /* ── Starting ──────────────────────────────────────────────────────────── */
@@ -247,6 +275,7 @@
 
   function startGame(fresh) {
     state.gen++;
+    stopReplay();
     if (fresh) state.tally = { wins: [0, 0], games: 0 };
     savedGame = null;
     state.playing = false;
@@ -288,6 +317,12 @@
     if (what === "place") {
       $("handSub").textContent = who + " — hide your fleet. Don't let anyone watch.";
       state.handGo = () => openPlace(seat);
+    } else if (what === "relay") {
+      // Never says how the other run went, not even "they finished" — the
+      // whole point is that the second player fires without a number to beat.
+      $("handSub").textContent = who + " — sink the whole fleet. Take as many " +
+        "shots as you need; nobody is counting out loud.";
+      state.handGo = () => enterBattle();
     } else if (what === "start") {
       $("handSub").textContent = "Both fleets are hidden. " + who + " fires first.";
       state.handGo = () => enterBattle();
@@ -421,15 +456,23 @@
 
   function beginBattle() {
     const sp = spec();
-    state.game = Rules.newGame(sp, state.boards, { extraOnHit: state.extraOnHit });
+    const isRelay = !solo() && state.mode === "relay";
+    state.game = Rules.newGame(sp, state.boards, {
+      // The extra-go rule needs a turn to hold onto, and relay hasn't got one.
+      extraOnHit: state.extraOnHit && !isRelay,
+      relay: isRelay
+    });
     state.playing = true;
     state.over = false;
     state.busy = false;
     state.aim = null;
     state.lastThink = null;
+    state.replay = null;
     buildBattle();
     if (solo()) enterBattle();
-    else handover(0, "start", "Whoever is not firing: no looking at the screen.");
+    else if (isRelay) {
+      handover(0, "relay", "Whoever is not firing: no looking, and no counting.");
+    } else handover(0, "start", "Whoever is not firing: no looking at the screen.");
   }
 
   function buildBattle() {
@@ -586,6 +629,17 @@
     const g = state.game;
     save();
     if (solo()) { beginTurn(); return; }
+
+    // Relay: you keep firing until the fleet is down. Then, if the other player
+    // hasn't had their run, the tablet changes hands — and if they have, the
+    // game is already over and finish() has taken it.
+    if (g.relay) {
+      if (g.done[res.seat] === null) { refresh(); showStatus(); return; }
+      Rules.relayNext(g);
+      handover(g.turn, "relay");
+      return;
+    }
+
     if (g.turn === res.seat) { refresh(); showStatus(); return; }   // another go after a hit
     handover(g.turn, "turn",
       nameOf(res.seat) + " fired at " + Rules.square(res.r, res.c) + " and " +
@@ -659,8 +713,14 @@
     const g = state.game;
     state.over = true;
     state.busy = false;
-    const winner = g.winner;
 
+    // A relay game is decided but not yet watched. Nothing is announced, no
+    // sound is played and the score isn't touched until the play-back has run —
+    // the second player has just this moment put the tablet down and still
+    // doesn't know how they did.
+    if (g.relay) { save(); startReplay(); return; }
+
+    const winner = g.winner;
     state.tally.wins[winner]++;
     state.tally.games++;
 
@@ -677,6 +737,228 @@
     save();
     setTimeout(showResult, 1300);
   }
+
+  /* ── The play-back ─────────────────────────────────────────────────────── */
+
+  /* Both runs, stepped through together: one shot each per beat against fresh
+     copies of the two seas. The runs really were independent, so this is the
+     first moment either player learns anything about the other's — and because
+     they are stepped in lock-step, the fleet that goes down first is the one
+     whose owner's opponent needed fewer shots. Nothing here can change the
+     result; it is read out of the log. */
+
+  const FRAME_MS = [520, 300, 170];   // slower, normal, faster — index into it
+
+  function cloneBoard(src) {
+    const b = Rules.newBoard(curSpec());
+    for (const s of src.ships) Rules.place(b, s.id, s.r, s.c, s.horiz);
+    return b;
+  }
+
+  function startReplay() {
+    const g = state.game;
+    state.replay = {
+      logs: [0, 1].map((seat) => g.log.filter((s) => s.seat === seat)),
+      // Copies, so the replay can sink ships that are already sunk on the real
+      // boards without the result screen's reveal ending up half-painted.
+      boards: [cloneBoard(state.boards[0]), cloneBoard(state.boards[1])],
+      panels: [],
+      at: 0,
+      speed: 1,
+      timer: null,
+      running: true,
+      over: false
+    };
+    for (const id of ["replaySlow", "replayPause", "replaySkip"]) $(id).disabled = false;
+
+    const host = $("replaySeas");
+    host.innerHTML = "";
+    for (let seat = 0; seat < 2; seat++) {
+      // Panel `seat` is the sea being fired AT, so its heading is that seat's
+      // name and the count under it belongs to the other player.
+      const panel = Ui.seaPanel(state.replay.boards[seat], whose(seat) + " sea");
+      state.replay.panels.push(panel);
+      host.appendChild(panel.card);
+    }
+
+    $("replayTitle").textContent = "The battle";
+    $("replayPause").textContent = "⏸ Pause";
+    showScreen("replay");
+    sayReplay("🎬", "Both of you fired at a sea that never fired back. Here they " +
+      "are together — the fleet that goes down first belongs to whoever was " +
+      "beaten quicker.", "calm");
+    drawReplay();
+    fitReplay();
+    replayTick();
+  }
+
+  // Both seas have to be on screen at once — that is the whole trick of the
+  // play-back — so each panel gets half of whichever direction they are laid out
+  // in. Which direction that is comes from the stylesheet, and how much of a
+  // panel is *not* board — heading, count, padding — is measured rather than
+  // guessed, because guessing it is what put the two boards on a scrollbar.
+  function fitReplay() {
+    const r = state.replay;
+    if (!r || !r.panels.length || $("replay").hidden) return;
+    const n = curSpec().size;
+    const host = $("replaySeas");
+    const box = host.getBoundingClientRect();
+    if (!box.width) return;
+    const side = getComputedStyle(host).flexDirection === "row";
+
+    const apply = (px) => {
+      const cell = Math.max(7, Math.min(46, Math.floor(px)));
+      for (const p of r.panels) p.el.style.setProperty("--cell", cell + "px");
+      return cell;
+    };
+
+    // Measure the chrome at a known size, then spend what's left on squares.
+    let cell = apply(20);
+    const card = r.panels[0].card.getBoundingClientRect();
+    const grid = r.panels[0].el.getBoundingClientRect();
+    const spareH = card.height - grid.height;
+    const spareW = card.width - grid.width;
+    const gap = 10;
+
+    const w = (box.width - (side ? gap : 0)) / (side ? 2 : 1) - spareW;
+    const h = (box.height - (side ? 0 : gap)) / (side ? 1 : 2) - spareH;
+    cell = apply(Math.min(w, h) / n);
+
+    // Then correct for what the arithmetic can't see — borders, shadows, the
+    // rounding in every one of those divisions. fitBig settles the big board
+    // the same way, and for the same reason: measuring beats predicting.
+    for (let pass = 0; pass < 2 && cell > 7; pass++) {
+      const overY = host.scrollHeight - host.clientHeight;
+      const overX = host.scrollWidth - host.clientWidth;
+      if (overY <= 0 && overX <= 0) break;
+      const shrink = Math.max(
+        overY > 0 ? overY / (side ? 1 : 2) : 0,
+        overX > 0 ? overX / (side ? 2 : 1) : 0
+      );
+      cell = apply(cell - Math.max(1, shrink / n));
+    }
+  }
+
+  function drawReplay() {
+    const r = state.replay;
+    for (let seat = 0; seat < 2; seat++) {
+      const board = r.boards[seat];
+      const shooter = 1 - seat;
+      const fired = Math.min(r.at, r.logs[shooter].length);
+      const left = Rules.afloat(board).length;
+      Ui.paintReveal(r.panels[seat].g, board);
+      r.panels[seat].meta.textContent = nameOf(shooter) + " — " + fired +
+        (fired === 1 ? " shot" : " shots") + " · " + left +
+        (left === 1 ? " ship left" : " ships left");
+    }
+    $("replayMeta").textContent = "Shot " + r.at;
+  }
+
+  // One beat: each player's next shot, fired at the same moment.
+  function replayStep() {
+    const r = state.replay;
+    let best = null;   // the most worth hearing of this beat's shots
+    const landed = [];
+    for (let shooter = 0; shooter < 2; shooter++) {
+      const shot = r.logs[shooter][r.at];
+      if (!shot) continue;
+      const res = Rules.fire(r.boards[1 - shooter], shot.r, shot.c);
+      if (!res) continue;
+      landed.push({ panel: r.panels[1 - shooter], shot, res });
+      if (!best || (res.sank && !best.sank) || (res.hit && !best.hit)) best = res;
+    }
+    r.at++;
+    drawReplay();
+    // Shells land *after* the repaint. paintOwn rewrites every square's class,
+    // so a pop set before it would be wiped before it could play — which is why
+    // the battle screen fires in this order too.
+    for (const l of landed) {
+      Ui.pop(l.panel.g, l.shot.r, l.shot.c, l.res.hit ? "boom" : "splash");
+    }
+    if (best) {
+      if (best.sank) Audio.sink();
+      else if (best.hit) Audio.boom();
+      else Audio.splash();
+    }
+    // Both logs end on the shot that finished a fleet, so a beaten board here
+    // means this beat was somebody's last.
+    return Rules.beaten(r.boards[0]) || Rules.beaten(r.boards[1]) ||
+      r.at >= Math.max(r.logs[0].length, r.logs[1].length);
+  }
+
+  function replayTick() {
+    const r = state.replay;
+    const gen = state.gen;
+    clearTimeout(r.timer);
+    r.timer = setTimeout(() => {
+      if (gen !== state.gen || !state.replay) return;
+      if (replayStep()) { endReplay(); return; }
+      replayTick();
+    }, FRAME_MS[r.speed]);
+  }
+
+  // One button for both, because there is only ever one thing it can do.
+  function toggleReplay() {
+    const r = state.replay;
+    if (!r || r.over) return;
+    if (r.running) {
+      clearTimeout(r.timer);
+      r.timer = null;
+      r.running = false;
+      $("replayPause").textContent = "▶ Play";
+    } else {
+      r.running = true;
+      $("replayPause").textContent = "⏸ Pause";
+      replayTick();
+    }
+  }
+
+  function skipReplay() {
+    const r = state.replay;
+    if (!r || r.over) return;
+    clearTimeout(r.timer);
+    let guard = 0;
+    while (!replayStep() && guard++ < 10000) { /* straight to the end */ }
+    endReplay();
+  }
+
+  function endReplay() {
+    const r = state.replay;
+    const g = state.game;
+    r.over = true;
+    clearTimeout(r.timer);
+    r.timer = null;
+    drawReplay();
+
+    for (const id of ["replaySlow", "replayPause", "replaySkip"]) $(id).disabled = true;
+
+    const winner = g.winner;
+    if (winner === -1) {
+      sayReplay("🤝", "Both fleets went down on the very same shot. There is " +
+        "nothing between you.", "warn");
+    } else {
+      sayReplay("🏆", "<b>" + whose(1 - winner) + " fleet</b> went down first — " +
+        nameOf(winner) + " needed " + g.done[winner] + " shots to " +
+        g.done[1 - winner] + ".", "good");
+    }
+
+    if (winner >= 0) { state.tally.wins[winner]++; Audio.win(); Ui.confetti(); }
+    else Audio.turn();
+    state.tally.games++;
+    save();
+    setTimeout(showResult, 1600);
+  }
+
+  // Walking away mid-play-back. The timer outlives the screen otherwise, and it
+  // would keep firing shells into a game that has been thrown away.
+  function stopReplay() {
+    if (!state.replay) return;
+    clearTimeout(state.replay.timer);
+    state.replay = null;
+  }
+
+  const sayReplay = (face, text, kind) =>
+    Ui.coach("replayCoach", '<span class="coach-face">' + face + "</span><span>" + text + "</span>", kind);
 
   function showResult() {
     const g = state.game;
@@ -701,6 +983,17 @@
           Rules.shotsBy(g, 0) + ". Have another go — hiding them apart is worth more " +
           "than hiding them in the corner.";
       }
+    } else if (g.relay && winner === -1) {
+      icon = "🤝";
+      title = "A dead heat";
+      text = "Both of you needed exactly " + g.done[0] + " shots. There is nothing " +
+        "to choose between you at all.";
+    } else if (g.relay) {
+      icon = "🏆";
+      title = nameOf(winner) + " wins!";
+      text = nameOf(winner) + " cleared the fleet in " + g.done[winner] + " shots. " +
+        nameOf(1 - winner) + " took " + g.done[1 - winner] + ". Neither of you knew " +
+        "that until just now.";
     } else {
       icon = "🏆";
       title = nameOf(winner) + " wins!";
@@ -753,6 +1046,7 @@
   // Resume button would offer a game the player has already left behind.
   function abandon() {
     state.gen++;
+    stopReplay();
     state.playing = false;
     state.over = false;
     state.game = null;
@@ -885,7 +1179,7 @@
   function setMuted(v) {
     state.muted = v;
     Audio.setMuted(v);
-    for (const id of ["muteBtn", "placeMute"]) {
+    for (const id of ["muteBtn", "placeMute", "replayMute"]) {
       $(id).textContent = v ? "🔇" : "🔊";
       $(id).setAttribute("aria-pressed", String(!v));
     }
@@ -901,6 +1195,7 @@
 
     state.gen++;
     state.playerCount = savedGame.playerCount || state.playerCount;
+    if (savedGame.mode) state.mode = savedGame.mode;
     if (savedGame.difficulty) state.difficulty = savedGame.difficulty;
     if (Array.isArray(savedGame.names)) state.names = savedGame.names;
     if (savedGame.flip !== undefined) state.flip = savedGame.flip;
@@ -917,11 +1212,12 @@
     state.lastThink = null;
     closeResult();
 
+    state.replay = null;
     buildBattle();
     // A saved two-player game comes back through the handover, because whoever
     // picks the device up next is not necessarily whoever put it down.
     if (solo()) enterBattle();
-    else handover(back.turn, "turn");
+    else handover(back.turn, back.relay ? "relay" : "turn");
   }
 
   /* ── Wiring ────────────────────────────────────────────────────────────── */
@@ -930,6 +1226,7 @@
     chooser("countChooser", state.playerCount, (v) => {
       state.playerCount = Number(v); renderSetup(); save();
     });
+    chooser("modeChooser", state.mode, (v) => { state.mode = v; renderSetup(); save(); });
     chooser("diffChooser", state.difficulty, (v) => { state.difficulty = v; renderSetup(); save(); });
     chooser("presetChooser", state.preset, (v) => { state.preset = v; renderSetup(); save(); });
 
@@ -992,6 +1289,21 @@
 
     $("peekBtn").addEventListener("click", peekBoard);
     $("peekPill").addEventListener("click", openResult);
+
+    $("replayPause").addEventListener("click", () => { Audio.tap(); toggleReplay(); });
+    $("replaySkip").addEventListener("click", () => { Audio.tap(); skipReplay(); });
+    $("replaySlow").addEventListener("click", () => {
+      const r = state.replay;
+      if (!r) return;
+      // Three speeds on one button, wrapping round — a child would rather tap
+      // the same button again than hunt for the other one.
+      r.speed = (r.speed + 2) % 3;
+      $("replaySlow").textContent = ["🐢 Slower", "🐇 Normal", "⚡ Faster"][r.speed];
+      Audio.tap();
+    });
+    $("replayBack").addEventListener("click", abandon);
+    $("replayMute").addEventListener("click", () => setMuted(!state.muted));
+
     Tutorial.wire();
     Ui.onResize(fit);
 
@@ -1030,6 +1342,36 @@
     save();
     Tutorial.open();
   }
+
+  // Debug hooks for the browser checks, the same ones lemonade-stand carries:
+  // measuring beats reading, and a play-back that takes two hundred real taps to
+  // reach is a play-back that never gets measured at more than one screen size.
+  window.BS.debug = {
+    state: () => state,
+    game: () => state.game,
+    // Drop straight into the play-back with both runs already fired, so the
+    // layout can be checked without playing two whole games first.
+    fakeRelay: (preset) => {
+      state.playerCount = 2;
+      state.mode = "relay";
+      state.preset = preset || state.preset;
+      startGame(true);
+      for (const b of state.boards) Rules.placeRandomly(b);
+      state.queue = [];
+      beginBattle();
+      const g = state.game;
+      for (let seat = 0; seat < 2; seat++) {
+        Rules.relayNext(g);
+        const n = g.spec.size;
+        for (let i = 0; i < n * n && g.done[seat] === null; i++) {
+          Rules.shoot(g, Math.floor(i / n), i % n);
+        }
+      }
+      state.over = true;
+      startReplay();
+      return { done: g.done.slice(), winner: g.winner };
+    }
+  };
 
   if ("serviceWorker" in navigator) {
     addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));

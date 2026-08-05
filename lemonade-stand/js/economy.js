@@ -1051,8 +1051,16 @@ LS.Economy = (function () {
   // The seed plus the ledger IS the run: every forecast, lemon price and thirsty
   // customer regenerates from (seed, day), so a resumed run cannot disagree with
   // what it showed before, and the blob stays small.
+  //
+  // Returns null for a phase that cannot be brought back, and the caller is
+  // expected to keep whatever record it already had rather than write the null
+  // down. "night" is the one that matters: by then the day is in the ledger and
+  // the interest is paid, but the counters have not been cleared and the day has
+  // not turned over — and restore() would hand that day straight back to be
+  // played a second time. The evening before it is a complete, honest picture,
+  // so that is what stays on disk.
   function snapshot(run) {
-    if (!run || run.phase === "over") return null;
+    if (!run || run.phase === "over" || run.phase === "night") return null;
     return {
       difficulty: run.difficulty, seed: run.seed, day: run.day, phase: run.phase,
       pocket: run.pocket, bank: run.bank, regulars: run.regulars,
@@ -1132,7 +1140,9 @@ LS.Economy = (function () {
       //              animation replays to the same number it was going to reach
       //   evening  — already paid into `pocket`; keep the result for the sums
       //              panel and never re-apply it
-      // "night" and "over" are never saved: night ends by moving to tomorrow.
+      // "night" and "over" are never saved — snapshot() refuses them, because a
+      // night that came back here would come back as the morning of a day the
+      // ledger already has, and get played again.
       const resumable = snap.phase === "selling" || snap.phase === "evening";
       run.phase = resumable && snap.result ? snap.phase : "morning";
       run.result = run.phase === "morning" ? null : Object.assign({}, snap.result);

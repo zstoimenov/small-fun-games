@@ -183,6 +183,17 @@ BS.Rules = (function () {
 
   /* ── A game ────────────────────────────────────────────────────────────── */
 
+  // Two ways to run a game, and they differ in exactly one place: whether
+  // sinking the last ship ends anything.
+  //
+  //   taking turns — you fire, they fire, and the first fleet to go down loses.
+  //   relay        — one player fires until the whole fleet is down, and then
+  //                  the other does the same against a sea that has never been
+  //                  touched. Both runs are complete games against a fixed
+  //                  target, so they can be played in either order, on the same
+  //                  device, without either player learning anything from the
+  //                  other. Fewest shots wins, which nobody finds out until the
+  //                  two runs are replayed side by side.
   function newGame(spec, boards, opts) {
     return {
       spec,
@@ -191,7 +202,12 @@ BS.Rules = (function () {
       over: false,
       winner: -1,
       log: [],                      // every shot, in order — the whole history
-      extraOnHit: !!(opts && opts.extraOnHit)
+      extraOnHit: !!(opts && opts.extraOnHit),
+      relay: !!(opts && opts.relay),
+      // Relay only: how many shots each seat needed, once they're finished.
+      // null while a seat is still firing, which is also the only "whose go is
+      // it" this mode has.
+      done: [null, null]
     };
   }
 
@@ -200,13 +216,44 @@ BS.Rules = (function () {
   function shoot(game, r, c) {
     if (game.over) return null;
     const seat = game.turn;
+    if (game.relay && game.done[seat] !== null) return null;   // that run is over
     const res = fire(game.boards[1 - seat], r, c);
     if (!res) return null;
     res.seat = seat;
     game.log.push({ seat, r, c });
-    if (beaten(game.boards[1 - seat])) { game.over = true; game.winner = seat; }
-    else if (!(game.extraOnHit && res.hit)) game.turn = 1 - seat;
+
+    if (beaten(game.boards[1 - seat])) {
+      if (!game.relay) { game.over = true; game.winner = seat; }
+      else {
+        game.done[seat] = shotsBy(game, seat);
+        // The game is only over when both runs are in. Neither player can be
+        // told who won before that, because until the second run is played
+        // there is nothing to compare against.
+        if (game.done[0] !== null && game.done[1] !== null) {
+          game.over = true;
+          game.winner = relayWinner(game);
+        }
+      }
+    } else if (!game.relay && !(game.extraOnHit && res.hit)) game.turn = 1 - seat;
     return res;
+  }
+
+  // Fewest shots. A dead heat is a real result here — both fleets are the same
+  // size and both players are shooting at one — so it gets said rather than
+  // broken by a rule nobody would agree with.
+  function relayWinner(game) {
+    const [a, b] = game.done;
+    if (a === null || b === null) return -1;
+    return a === b ? -1 : (a < b ? 0 : 1);
+  }
+
+  // Hand the device on: the seat that has finished stands down, and the one
+  // that hasn't starts. Returns the seat now firing, or -1 if both are done.
+  function relayNext(game) {
+    for (let i = 0; i < 2; i++) {
+      if (game.done[i] === null) { game.turn = i; return i; }
+    }
+    return -1;
   }
 
   const shotsBy = (game, seat) => game.log.filter((s) => s.seat === seat).length;
@@ -281,6 +328,7 @@ BS.Rules = (function () {
   const snapshot = (game) => ({
     preset: game.spec.id,
     extraOnHit: game.extraOnHit,
+    relay: game.relay,
     ships: game.boards.map((b) => b.ships.map((s) => [s.r, s.c, s.horiz ? 1 : 0])),
     log: game.log.map((s) => [s.seat, s.r, s.c])
   });
@@ -300,11 +348,24 @@ BS.Rules = (function () {
       }
     }
 
-    const game = newGame(spec, boards, { extraOnHit: snap.extraOnHit });
+    const game = newGame(spec, boards, { extraOnHit: snap.extraOnHit, relay: snap.relay });
     for (const s of (snap.log || [])) {
-      if (!Array.isArray(s) || s[0] !== game.turn) return null;   // out of order
+      if (!Array.isArray(s)) return null;
+      // A relay log is two blocks, not an alternation: the turn only moves on
+      // when the seat firing has finished its run. Anything else — a seat
+      // firing early, or firing on after it was done — fails here, the same as
+      // an out-of-order shot always has.
+      if (s[0] !== game.turn) {
+        if (!game.relay || game.done[game.turn] === null) return null;
+        relayNext(game);
+        if (s[0] !== game.turn) return null;
+      }
       if (!shoot(game, s[1], s[2])) return null;                   // illegal shot
     }
+    // A game comes back with the turn on somebody who can actually fire. A relay
+    // log that stops exactly on the shot which finished the first run would
+    // otherwise restore pointing at the seat that has just stood down.
+    if (game.relay && !game.over) relayNext(game);
     return game;
   }
 
@@ -314,7 +375,7 @@ BS.Rules = (function () {
     newBoard, at, inside, shipCells, isPlaced, sunk,
     canPlace, place, lift, allPlaced, placeRandomly,
     fire, afloat, beaten, hitsTaken,
-    newGame, shoot, shotsBy, publicView, liveHits,
+    newGame, shoot, shotsBy, publicView, liveHits, relayNext, relayWinner,
     randomInt, pick, snapshot, restore
   };
 })();

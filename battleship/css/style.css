@@ -192,7 +192,7 @@ body.in-game{
   padding-left:6px;padding-right:6px;
   padding-bottom:calc(8px + env(safe-area-inset-bottom));
 }
-#game,#place{
+#game,#place,#replay{
   max-width:900px;margin:0 auto;height:100%;
   display:flex;flex-direction:column;min-height:0;gap:8px;
   transition:transform .45s ease;
@@ -427,6 +427,29 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 #resultUndo{text-align:center;margin-top:10px}
 
 /* The reveal at the end: both seas, side by side, with nothing hidden. */
+/* ── The play-back ──────────────────────────────────────────────────────── */
+
+/* The two runs, side by side. Stacked on a narrow screen, which is why app.js
+   asks the computed flex-direction which way it went rather than repeating the
+   breakpoint in two places. */
+.replay-seas{
+  flex:1 1 auto;min-height:0;min-width:0;
+  display:flex;flex-direction:column;gap:10px;
+  align-items:center;justify-content:center;
+  overflow:auto;
+}
+/* Side by side as soon as there is width for it: comparing the two runs is the
+   point, and a comparison you have to scroll between isn't one. */
+@media (min-width:560px){
+  .replay-seas{flex-direction:row}
+}
+.sea-panel{flex:0 0 auto}
+.sea-meta{
+  margin-top:7px;text-align:center;
+  font-size:12px;font-weight:700;color:var(--muted);
+  font-variant-numeric:tabular-nums;
+}
+
 .reveal{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:2px 0 14px}
 .reveal .grid-card{box-shadow:none;padding:8px}
 .reveal .grid-head{font-size:11px}

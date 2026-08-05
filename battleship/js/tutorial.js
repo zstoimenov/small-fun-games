@@ -105,6 +105,18 @@ BS.Tutorial = (function () {
             "anybody else's sea.</p>" +
             "<p>Don't peek. That's the whole game.</p>",
       note: "On your own? The computer plays instead — Easy, Medium or Hard."
+    },
+    {
+      icon: "🎬",
+      title: "Or one of you at a time",
+      html: "<p>There's a second way to play a friend. Pick <b>one at a time</b> " +
+            "and you don't take turns at all: one of you sinks the whole fleet " +
+            "while the other looks away, then you swap over and the other one " +
+            "does the same.</p>" +
+            "<p>Nobody is told how many shots it took. When you have both had " +
+            "your go, the two battles play out <b>side by side</b> — and the " +
+            "fleet that goes down first belongs to whoever got beaten quicker.</p>",
+      note: "Fewest shots wins. You find out at the same moment as each other."
     }
   ];
 
