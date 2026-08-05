@@ -1133,3 +1133,145 @@ every last cent came back ahead by $0.70-$2.20, so the game would have been
 recommending a play that loses. At 75c the float is ahead by $3.15 again.
 **A tuned constant is only tuned against the numbers it was measured with —
 change the scale and every ratio in the game has to be re-run.**
+
+### Seventh pass: the ice bucket was eating the only decision in the game
+
+"Most days I just have to buy the maximum number of lemons. This is not a good
+gameplay." The sixth pass had raised the ceiling above the demand and declared
+the morning a real question. It wasn't, and the reason was a $4 shop item.
+
+**"Leftovers keep till tomorrow" quietly made overstocking free.** With the ice
+bucket bought — and every child buys it, it is cheap and obviously good — an
+unsold cup was not a loss, it was a cup bought early. So the sixth pass's peak
+in the middle flattened out completely:
+
+| stocked | without the bucket | with the bucket |
+| --- | --- | --- |
+| 0.8× the forecast | $116.55 | $118.15 |
+| **1.0× the forecast** | **$131.10** | $139.25 |
+| 1.5× the forecast | $108.80 | $148.45 |
+| fill the stall, every day | $88.05 | **$159.60** |
+
+Read the right-hand column: **filling the stall was the best play in the game,
+and it took the bike 44% of the time against a thoughtful player's 31%.** Every
+sentence the game says about not making more than you can sell was false, and
+the child was right to ignore it. That is the whole complaint, and it was one
+item.
+
+**A tuned constant is only tuned against the numbers it was measured with —
+and that applies to items as much as to rates.** The bucket was priced and
+written when waste was rare and the note in the sixth pass ("the ice bucket
+finally earns its keep") was the warning: an item that gets *better* as the
+economy gets harsher is an item that will eventually cancel the harshness.
+
+Five numbers moved, and the order matters — the first is the fix and the rest
+are the consequences of it:
+
+- **The bucket keeps half, and costs $2.50 instead of $4.00.** Insurance, not
+  immunity. Measured: it costs a tight stocker nothing (they have no waste to
+  save) and pays a generous one $8 across a fortnight, while generous-with-a-
+  bucket still finishes behind tight-without-one. Worth buying when you have
+  *chosen* to stock deep; never a reason to.
+- **Footfall down about a third, to `[5, 9, 14, 20, 25]`.** This is the
+  arithmetic the whole morning rests on: a cup costs about 36c and sells for
+  75c, so an extra cup pays for itself at a 48% chance of selling — which means
+  the profitable stock level sits just *below* the day you expect, and it can
+  only sit below it if the expected day is comfortably below what the stall
+  holds and what the purse can buy. At 29 passers-by against a 45-cup stall
+  neither was true.
+- **Lemons 40c → 45c, and the stall 45 → 40 cups.** The nickel is what moves
+  break-even sell-through from 43% to 48%, i.e. what moves the best answer from
+  a little *above* the expected day to a little below it. The clamp stays at
+  60c so the 5-cup pack still never costs more than the $3.00 you start with.
+- **Regulars 12 → 8.** A dozen guaranteed customers against a warm day's twelve
+  strangers is not a cushion, it is half the shop; the weather has to stay the
+  thing the morning is about.
+- **Grandma's floor $2.00 → $3.00.** Not a balance change — a bug the rebalance
+  exposed. The floor promises "you can always buy the 5-cup pack", that pack
+  costs five times the day's lemon price, and at $2.00 the promise silently
+  broke on any morning dearer than 40c a lemon. It now equals `START_CASH`,
+  which is the only value that can't drift out of true.
+
+What that buys, measured over 3,000 fortnights on Normal with the shop bought:
+
+| how the stall is stocked | sold out | binned something | finished |
+| --- | --- | --- | --- |
+| 0.6× the forecast | 87% of days | 8% | $54.00 |
+| 0.8× the forecast | 83% | 12% | $69.95 |
+| **1.0× the forecast** | 56% | 35% | **$82.30** |
+| 1.2× the forecast | 40% | 55% | $82.25 |
+| 1.5× the forecast | 31% | 65% | $74.80 |
+| fill the stall, every day | 29% | 68% | $61.60 |
+
+**The peak is back in the middle and filling the stall is now the worst play on
+the board** — $21 behind, binning a third of everything it makes. The optimum is
+deliberately broad (1.0× and 1.2× are within a nickel of each other), because a
+child should be rewarded for being roughly right rather than punished for
+missing an exact number; what matters is that both edges cost real money. That
+is the shape the sixth pass claimed and did not have.
+
+**The prize ladder was re-measured rather than re-guessed**, since the user's
+other complaint was that the bike came too easily. Normal and Tricky go
+$25 / $60 / $100 / **$150**; Easy goes $8 / $16 / $26 / $40.
+
+| how it is played | median | gets the bike |
+| --- | --- | --- |
+| best play — prices to the forecast, stocks just under, banks the surplus | $89.50 | **8%** |
+| stocks to the forecast at 75c | $82.30 | 3% |
+| fills the stall every morning | $61.60 | 4% |
+| steady 15 cups, never adapts | $71.80 | **0%** |
+| charges $1.00 for everything | $64.65 | 1% |
+| charges $1.50 for everything | $15.35 | 0% |
+| sells at 50c, barely over cost | $11.05 | 0% |
+
+The floor held while the ceiling came down, which is the half that is easy to
+lose: a run played to the forecast clears the first rung 95% of the time and the
+second 80%, so the fortnight still pays for something. A rare top rung reads as
+failure without that.
+
+Two knock-ons had to be chased down, and both are the sixth pass's own lesson
+repeating:
+
+- **$1.00 had quietly become the best price again.** Dearer lemons help a dear
+  price more than a fair one, because the margin is a bigger share of it —
+  measured, $1.00 came back $3 ahead of 75c, which is exactly the thing the
+  first build's sweep was written to catch. Its pull went 0.52 → **0.46**,
+  which puts 75c back on top — by $18 once the slower regulars are counted,
+  since a low-volume price wins fewer of them — and leaves $1.00 a respectable
+  second at $64.65. A fall-off teaches; a cliff just removes a button.
+- **The shop stopped paying for itself**, which is how the bucket's price got
+  measured rather than picked. The big sign is +$1.65 over its $3.00 and the
+  bucket at $2.50 is free-to-positive; at $4.00 it was a $4.40 loss, i.e. an
+  item that took your money and gave nothing back.
+
+Two things that were wrong before this pass and are worth recording as a class
+of bug on their own:
+
+- **The sign's blurb promised ten regulars and the constant gave five.** Both
+  strings are now built from `SIGN_REGULARS`, and `takeaway()`'s hardcoded
+  `regulars >= 12` is `>= MAX_REGULARS`. A game about money must not print a
+  number it does not honour, and the only reliable fix is to not have the number
+  written down twice.
+- **The how-to taught 40c lemons after the lemons became 45c**, and the evening
+  told a child with a bucket that it "keeps the other 6" when it keeps three.
+  Every worked example is now derived from the same constants the economy uses.
+
+**`tools/check.js` finally exists.** `economy.js` has claimed since the first
+build that it is pure so that "tools/check.js can load this file into plain node
+and play tens of thousands of days" — and the harness had never been committed,
+so every number in the comments was a measurement nobody could re-run. It plays
+policies (fill it / to the forecast / tight / never adapt / one price all
+fortnight / best play) across all three difficulties and prints the stocking
+curve, the rung-placement table, the shop's value, the float against the
+withdrawal fee, and demand by weather against the stall's capacity. `node
+tools/check.js` is now the thing to run before and after touching a constant.
+
+One more thing the pass turned up, which is a comment bug rather than a code
+one and still worth the entry: **the note on `MAX_REGULARS` claimed good play
+reaches the cap "right at the end of a fortnight", and it never did.** Measured,
+it lands on day 7 of 14, and 10% of runs never reach it. `GROW_AT` turns out to
+be a weak lever on that — 12 / 20 / 30 / 40 move the median only from day 6 to
+day 8, because `back` is what sets the pace — so the honest fix was to write
+down what the model does (first week the business growing, second week the
+business you built) rather than tune the model to match a sentence. **A comment
+that states a measurement is a claim, and claims go stale exactly like code.**

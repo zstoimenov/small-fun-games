@@ -47,12 +47,12 @@ LS.Economy = (function () {
   // The 5-cup pack stays affordable at every lemon price, so borrowing is a
   // choice and never a requirement.
   const START_CASH = 300;
-  // 45 — three big packs, and deliberately a little MORE than the busiest day
-  // can ask for. It used to be 40 against a scorcher that wanted 54, which meant
-  // the answer to "how many cups?" was "as many as you can" on every warm day or
-  // hotter, and the child had no way to buy their way out of a queue. A ceiling
-  // has to sit above the demand or the decision underneath it isn't one.
-  const STALL_LIMIT = 45;
+  // 40 cups, and it still sits above the busiest ordinary day (a scorcher asks
+  // for about 30) so a queue can always be bought out of. What it is no longer
+  // above is a parade, and it is no longer somewhere a fortnight's takings can
+  // comfortably reach every morning: filling it costs about $12 of lemons, so
+  // "buy the maximum" is a decision with a price on it rather than the default.
+  const STALL_LIMIT = 40;
 
   /* ── Regulars ──────────────────────────────────────────────────────────── */
 
@@ -71,18 +71,25 @@ LS.Economy = (function () {
   // become regulars. That is the honest shape of the loss, and it is what makes
   // a bigger stall grow faster than a small one.
   const REGULARS_START = 0;
-  // Twelve, and the ceiling is deliberately low — see below. A stall you can
-  // actually stock holds 20-30 cups on a good day, so a guaranteed dozen is a
-  // real cushion (about a fifth of a day's demand) without swamping the weather,
-  // which is the decision the whole morning is built around. At 25 the back half
-  // of a run stopped being about the forecast at all. Measured across 8 / 10 /
-  // 12 / 16 / 25 the money doesn't move ($122.45 to $122.50 median), so this is
-  // chosen for what it does to the DECISION, not to the balance. Good play
-  // reaches it right at the end of a fortnight, so the cap reads as an
-  // achievement rather than a wall.
-  const MAX_REGULARS = 12;
-  const GROW_AT = 10;        // serve this many cups for a full day's growth
-  const SIGN_REGULARS = 5;   // what the big sign brings in on the spot
+  // Eight. It was twelve, against a passing trade that has since come down by a
+  // third — and a dozen guaranteed customers against a warm day's twelve
+  // strangers is not a cushion, it is half the shop. The weather has to stay the
+  // thing the morning is about, so the regulars are worth roughly a third of an
+  // ordinary day rather than a half.
+  //
+  // Measured, good play reaches the cap on day 7 of 14 (p10 day 4, p90 day 11)
+  // and 10% of runs never get there at all. So the first week is the business
+  // growing and the second is the business you built — which is the right shape,
+  // and worth stating honestly rather than claiming the cap lands at the end.
+  const MAX_REGULARS = 8;
+  // Serve this many cups for a full day's growth. 25 is a genuinely big day
+  // against a 40-cup stall, so most days earn +1 regular and only the good ones
+  // earn +2 — which is the compounding the run is meant to show. It is a weak
+  // lever on when the cap arrives (12 / 20 / 30 / 40 move the median day only
+  // from 6 to 8, because `back` is what really sets the pace) and is chosen for
+  // the shape of the growth rather than for its timing.
+  const GROW_AT = 25;
+  const SIGN_REGULARS = 3;   // what the big sign brings in on the spot
 
   // Loyalty is not immunity — nobody wants lemonade in freezing rain — but it
   // has to be close enough to it that "they come whatever the weather" is a fair
@@ -102,7 +109,13 @@ LS.Economy = (function () {
   const RATE = 3;
   const RATE_BONUS = 5; // on $20+, so there is one reason to think about how much
   const BONUS_AT = 2000;
-  const GRANDMA = 200; // the soft floor; a child is never locked out of their own game
+  // The soft floor; a child is never locked out of their own game. It has to be
+  // START_CASH and not a penny less, because the promise it makes is "you can
+  // always buy the 5-cup pack" — and that pack costs the day's lemon price
+  // times five, which now tops out at the same $3.00 you began with. At $2.00
+  // it silently broke on any morning dearer than 40c a lemon, which is most of
+  // them, and a broke child got a gift that bought nothing.
+  const GRANDMA = 300;
 
   // What a trip to the bank costs. This is the number that makes the purse worth
   // having at all.
@@ -125,38 +138,45 @@ LS.Economy = (function () {
   //
   // At 25c, banking every last cent won outright and the mechanic was
   // decoration. 50c fixed that at the old footfall and stopped working at the
-  // new one — measured over 2,500 fortnights, banking the lot came back ahead by
-  // $0.70-$2.20, which would have left the game recommending a play that loses.
-  // At 75c the float is ahead by $3.15 and pays $5.81 in trips against banking
-  // everything's $9.75. Against a $130 fortnight that is a visible toll and an
-  // entirely avoidable one, which is the whole point.
+  // next one. 75c has now survived a third rebalance without moving: measured
+  // over 1,200 fortnights of good play, keeping the float finishes $2.95 ahead
+  // of banking every cent, and both finish about $20 ahead of never banking at
+  // all. That is the right order for the three plays to come in, and it is the
+  // only thing this number has to buy.
   const WITHDRAW_FEE = 75;
   // What a day's shopping costs, near enough: enough to cover most mornings
   // without leaving so much idle that the forgone interest outweighs the fee.
-  // Re-measured at $4 / $5 / $6 / $8 against the new footfall; $6 and $8 are
-  // within a nickel of each other and both beat the smaller floats, so this
-  // stays where it was.
+  // Re-measured at $4 / $6 / $8 / $10 against the new footfall. The curve is
+  // almost flat above $6 — $1.15, $3.05, $2.95, $3.75 ahead of banking the lot —
+  // so this stays where it was rather than chasing noise, and it still reads as
+  // "about a day's lemons" on the evening screen, which is the point of it.
   const FLOAT = 800;
 
-  // How many people walk past. These came down by about a quarter when the
-  // stall turned out to be permanently oversubscribed: at 22 passers-by on an
-  // ordinary warm day, plus a dozen regulars, a full 40-cup stall still sent
-  // people away, and a child stocking as hard as they could sold out on 91% of
-  // days and binned six cups in a fortnight. "Don't make more than you can
-  // sell" cannot be taught by a game in which you can never make enough.
+  // How many people walk past. Down by about a third from 6/10/16/23/29, and
+  // that cut is the answer to the plainest complaint the game has had: that
+  // buying the maximum was the right move most mornings, so there was no
+  // morning question left to ask.
   //
-  // At these numbers the busiest plausible day asks for about 45 and the stall
-  // holds 45, so meeting the queue is possible — and paying for cups nobody
-  // wanted is now a real risk rather than a theoretical one. Measured: stocking
-  // tight sells out on 82% of days, stocking to the forecast on 55%, stocking
-  // generously on 34% while binning something on 63%. Three different mistakes,
-  // all available, which is what makes the morning a question.
+  // The arithmetic behind it. A cup costs about 36c and sells for 75c, so an
+  // extra cup pays for itself if it has a better than 48% chance of selling.
+  // That means the profitable stock level sits just BELOW the day you expect —
+  // and it can only sit below it if the day you expect is comfortably below
+  // what the stall holds and what your purse can buy. At 29 passers-by against
+  // a 45-cup stall neither was true: a scorcher wanted 41 of 45, so "fill it"
+  // and "read the forecast" gave nearly the same answer, and the ice bucket
+  // made the difference free.
+  //
+  // At these numbers a warm day asks for about 20 and a scorcher about 30
+  // against a 40-cup stall. Measured over 1,500 fortnights on Normal: stocking
+  // to the forecast finishes ahead of filling the stall by $30, filling it
+  // bins a third of what it makes, and the gap between reading the sky and
+  // ignoring it is the widest it has been.
   const WEATHER = [
-    { id: "cold",     emoji: "🌧️", name: "Cold and rainy", footfall: 6 },
-    { id: "cloudy",   emoji: "⛅",  name: "Cloudy",         footfall: 10 },
-    { id: "warm",     emoji: "🌤️", name: "Warm",           footfall: 16 },
-    { id: "hot",      emoji: "☀️",  name: "Hot",            footfall: 23 },
-    { id: "scorcher", emoji: "🔥",  name: "A scorcher",     footfall: 29 }
+    { id: "cold",     emoji: "🌧️", name: "Cold and rainy", footfall: 5 },
+    { id: "cloudy",   emoji: "⛅",  name: "Cloudy",         footfall: 9 },
+    { id: "warm",     emoji: "🌤️", name: "Warm",           footfall: 14 },
+    { id: "hot",      emoji: "☀️",  name: "Hot",            footfall: 20 },
+    { id: "scorcher", emoji: "🔥",  name: "A scorcher",     footfall: 25 }
   ];
 
   // Five tiles, no typing. `pull` is what fraction of the passers-by would pay
@@ -164,23 +184,27 @@ LS.Economy = (function () {
   // serve a full stall's worth at that price.
   //
   // These are tuned against PROFIT per passer-by, not revenue, because that is
-  // what a run actually accumulates. At the average 40c cup:
+  // what a run actually accumulates. At the average 36c cup:
   //
-  //     25c   -15c margin x 1.70  =  -25   a busy stall losing money on every cup
-  //     50c    10c margin x 1.35  =   14
-  //     75c    35c margin x 1.00  =   35   <- the peak, and the answer
-  //     $1.00  60c margin x 0.52  =   31
-  //     $1.50 110c margin x 0.16  =   18
+  //     25c   -11c margin x 1.70  =  -19   a busy stall losing money on every cup
+  //     50c    14c margin x 1.35  =   19
+  //     75c    39c margin x 1.00  =   39   <- the peak, and the answer
+  //     $1.00  64c margin x 0.46  =   29
+  //     $1.50 114c margin x 0.16  =   18
   //
   // The first cut had $1.00 at 0.62, which made it quietly the best price and
   // the game would have taught "charge as much as you can get away with".
-  // Reputation then widens the 75c/$1.00 gap over a fortnight rather than
-  // creating it — one clear peak, and a visible fall-off on both sides.
+  // 0.52 was the fix, and dearer lemons quietly undid it: a bigger margin helps
+  // the dear price more than the fair one, and measured over 1,200 fortnights
+  // $1.00 came back $3 AHEAD. 0.46 puts 75c back on top by $9 while leaving
+  // $1.00 a respectable second — a fall-off, which teaches, rather than a cliff,
+  // which just removes a button. Regulars then widen that gap over a fortnight
+  // rather than creating it.
   const PRICES = [
     { cents: 25,  pull: 1.70, back: +3 },
     { cents: 50,  pull: 1.35, back: +3 },
     { cents: 75,  pull: 1.00, back: +2 },
-    { cents: 100, pull: 0.52, back: +1 },
+    { cents: 100, pull: 0.46, back: +1 },
     { cents: 150, pull: 0.16, back: -3 }
   ];
 
@@ -200,12 +224,34 @@ LS.Economy = (function () {
 
   // `short` is for the shelf on the buying screen, where there is room for one
   // line and no more; `blurb` is for the shop sheet, which can afford a sentence.
+  // Half, and the half is the whole point — this was the single biggest reason
+  // "buy the maximum" was the right move every morning.
+  //
+  // "Leftovers keep till tomorrow" meant an unsold cup was not a loss, just a
+  // cup bought early. So filling the stall stopped costing anything, and
+  // measured over 1,500 fortnights a child who did it finished $16 AHEAD of one
+  // who read the forecast, and took the bike 44% of the time. A game whose
+  // lesson is "don't make more than you can sell" cannot sell a $4 item that
+  // makes that lesson false.
+  //
+  // At half — and at $2.50 rather than $4 — the bucket is honest insurance
+  // instead. Measured: it costs a tight stocker nothing (they have no waste to
+  // save) and pays a generous one $8 over a fortnight, while generous-with-a-
+  // bucket still finishes behind tight-without-one. So it is worth buying when
+  // you have chosen to stock deep, and it never makes stocking deep the answer.
+  const BUCKET_KEEPS = 0.5;
+
   const TREATS = [
-    { id: "bucket", emoji: "🧊", name: "Ice bucket", short: "Leftover cups keep till tomorrow.",
-      blurb: "Cups you don't sell keep until tomorrow instead of being thrown out.",
-      cost: 400, once: true },
-    { id: "sign", emoji: "🪧", name: "A big sign", short: "Ten more regulars, for the whole run.",
-      blurb: "Ten more regulars right away, and everything you do for them counts double.",
+    { id: "bucket", emoji: "🧊", name: "Ice bucket", short: "Half your leftovers keep till tomorrow.",
+      blurb: "Half of the cups you don't sell keep until tomorrow. The rest still goes in the bin.",
+      cost: 250, once: true },
+    // The copy says the number the constant actually gives. It used to promise
+    // ten and hand over five, which is the one thing a game about money must
+    // never do.
+    { id: "sign", emoji: "🪧", name: "A big sign",
+      short: SIGN_REGULARS + " more regulars, then twice as fast.",
+      blurb: SIGN_REGULARS + " more regulars right away, and from then on everyone you win " +
+             "counts double — so your stall fills up with familiar faces much sooner.",
       cost: 300, once: true },
     { id: "cream", emoji: "🍦", name: "An ice cream, for you", short: "Does nothing at all. Very nice.",
       blurb: "It does nothing at all for the stall. It is just very nice.",
@@ -378,23 +424,29 @@ LS.Economy = (function () {
   ];
 
   const LEVELS = {
-    // The top rung is meant to be RARE. Measured over 2,000 runs apiece, a
-    // fortnight played really well — reading the forecast, stocking to it,
-    // banking, and getting the sums right at the till — reaches the bike about
-    // a third of the time. Playing steadily but never adapting the stock to the
-    // weather reaches it almost never, and so does an ice cream a day. The
-    // lower three rungs are what a decent run is actually for.
+    // The top rung is meant to be RARE, and it had stopped being rare. Against
+    // the old footfall a child who simply filled the stall every morning got
+    // the bike 44% of the time — better than a child who read the forecast —
+    // which is the balancing bug this whole file was re-measured to fix.
+    //
+    // Re-placed off the sweep in tools/check.js, 1,500 fortnights per row. On
+    // Normal the bike now goes to 13% of runs played really well (reading the
+    // forecast, stocking a shade under it, banking the surplus, getting the
+    // sums right), 8% of runs that just stock to the forecast, and 6% of runs
+    // that fill the stall regardless. Never adapting to the weather reaches it
+    // never. The lower three rungs are what a decent run is actually for, and
+    // the first one is within reach of anybody who trades at all.
     easy:   { id: "easy",   days: 7,  wobble: 8,  forecast: 1.00, drift: 1, bonusRate: false,
               eventRate: 0.16, badShare: 0.35, changes: 1, showTotal: true, bigLoan: false,
-              goal: [1000, 2000, 3000, 4200],
+              goal: [800, 1600, 2600, 4000],
               rungs: ["🪀 a yo-yo", "🎨 paints", "🎧 headphones", "🛴 a scooter"] },
     normal: { id: "normal", days: 14, wobble: 15, forecast: 0.72, drift: 1, bonusRate: true,
               eventRate: 0.3, badShare: 0.62, changes: 1, showTotal: true, bigLoan: true,
-              goal: [3000, 7000, 11000, 17000],
+              goal: [2500, 6000, 10000, 15000],
               rungs: ["🪀 a yo-yo", "🎧 headphones", "🛹 a skateboard", "🚲 a bike"] },
     tricky: { id: "tricky", days: 14, wobble: 22, forecast: 0.58, drift: 2, bonusRate: true,
               eventRate: 0.38, badShare: 0.7, changes: 1, showTotal: false, bigLoan: true,
-              goal: [3000, 7000, 11000, 17000],
+              goal: [2500, 6000, 10000, 15000],
               rungs: ["🪀 a yo-yo", "🎧 headphones", "🛹 a skateboard", "🚲 a bike"] }
   };
 
@@ -434,8 +486,15 @@ LS.Economy = (function () {
     const weather = weatherOn(seed, day);
 
     // Lemons cost what they cost today. Quantised to 5c so the shopping
-    // arithmetic stays mental — 40c a cup, not 37c a cup.
-    const unit = clamp(cents5(40 + Math.round((r.next() * 2 - 1) * sp.wobble)), 25, 60);
+    // arithmetic stays mental — 45c a cup, not 37c a cup.
+    //
+    // 45c, up from 40c, and the nickel is doing real work. It is the difference
+    // between an extra cup needing a 43% chance of selling to be worth buying
+    // and needing 48% — which is what moves the best stall from a little ABOVE
+    // the day you expect to a little below it. The clamp stays at 60c so the
+    // 5-cup pack never costs more than the $3.00 you start with; that is the
+    // promise that day one is always playable.
+    const unit = clamp(cents5(45 + Math.round((r.next() * 2 - 1) * sp.wobble)), 30, 60);
 
     // The forecast is a REPORT on the weather, and on the harder settings it is
     // sometimes a step out. Buying for a forecast that misses is the risk being
@@ -851,7 +910,7 @@ LS.Economy = (function () {
     // shows the same one rather than recomputing it against moved numbers.
     run.growth = nextRegulars(run, r);
     run.regulars = run.growth.after;
-    run.carry = run.treats.bucket ? r.wasted : 0;
+    run.carry = run.treats.bucket ? Math.floor(r.wasted * BUCKET_KEEPS) : 0;
     run.phase = "evening";
     return r;
   }
@@ -1021,7 +1080,7 @@ LS.Economy = (function () {
       return "You got every single sum at the till right, and people left you " +
         money(s.tips) + " in tips for it. Being careful pays.";
     }
-    if (s.regulars >= 12) {
+    if (s.regulars >= MAX_REGULARS) {
       return "You finished with " + s.regulars + " regulars — people who came to your stall " +
         "every single day because you looked after them. That is what a business is.";
     }
@@ -1158,7 +1217,7 @@ LS.Economy = (function () {
     cents5, money, price, clamp,
     // constants
     START_CASH, STALL_LIMIT, RATE, RATE_BONUS, BONUS_AT, GRANDMA,
-    WITHDRAW_FEE, FLOAT,
+    WITHDRAW_FEE, FLOAT, BUCKET_KEEPS,
     REGULARS_START, MAX_REGULARS, GROW_AT, SIGN_REGULARS,
     WEATHER, PRICES, PACKS, LOANS, TREATS, LEVELS,
     COINS, NOTES, EVENTS,

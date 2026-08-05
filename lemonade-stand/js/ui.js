@@ -112,12 +112,19 @@ LS.Ui = (function () {
 
   /* ── Morning ────────────────────────────────────────────────────────────── */
 
-  // How dear today's lemons are, said the way a person would say it.
+  // How dear today's lemons are, said the way a person would say it. The bands
+  // sit either side of the 45c a lemon usually costs, so "the usual sort of
+  // price" means the middle of the range and not a third of it.
+  //
+  // The cheap band no longer says "fill the stall". Cheap lemons genuinely are
+  // the day to stock deep — a 30c cup only has to sell one time in three to pay
+  // for itself — but the stall holds more than any ordinary day wants, so
+  // "fill it" is the wrong size of advice even when the direction is right.
   function unitVerdict(unit) {
-    if (unit <= 30) return { s: "That's cheap! A good day to fill the stall.", c: "good" };
-    if (unit <= 37) return { s: "A bit cheaper than usual.", c: "good" };
+    if (unit <= 35) return { s: "That's cheap! A good day to make a few extra.", c: "good" };
+    if (unit <= 40) return { s: "A bit cheaper than usual.", c: "good" };
     if (unit <= 45) return { s: "The usual sort of price.", c: "" };
-    if (unit <= 53) return { s: "Dearer than usual. Maybe buy a bit less.", c: "" };
+    if (unit <= 55) return { s: "Dearer than usual. Maybe buy a bit less.", c: "" };
     return { s: "Very dear today. Every cup costs you a lot to make.", c: "bad" };
   }
 
@@ -419,7 +426,10 @@ LS.Ui = (function () {
         return { s: "Hardly anyone will walk past, so your regulars are most of today. " +
           "Don't make many more cups than that." };
       }
-      if (info.forecast >= 3) return { s: "Busy day coming. A full stall could really pay off." };
+      // Not "a full stall": even a scorcher only asks for about three quarters
+      // of one, so pointing at the ceiling teaches the child to overbuy on
+      // exactly the days they have the money to overbuy badly.
+      if (info.forecast >= 3) return { s: "Busy day coming. Worth making more cups than usual." };
       if (info.forecast <= 1) return { s: "Hardly anyone will be about. Don't make more than you can sell.", c: "warn" };
       return { s: "An ordinary sort of day. Something in the middle is about right." };
     }
@@ -939,11 +949,17 @@ LS.Ui = (function () {
           so: "You sold every one — and <b class='bad'>" + r.turned +
               " more</b> people wanted one you didn't have. Make more tomorrow." });
       } else if (r.wasted > 0 && run.treats.bucket) {
-        // The bucket is the only thing that makes leftovers not a loss, so it
-        // has to be said here, on the line that would otherwise call them one.
+        // The bucket softens leftovers rather than cancelling them, so this line
+        // has to say BOTH halves — the cups saved and the cups still lost. It
+        // used to claim the lot was kept, which is how a child ended up
+        // believing that buying too much never costs anything.
+        const kept = Math.floor(r.wasted * E.BUCKET_KEEPS);
+        const binned = r.wasted - kept;
         rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
-          so: "You only sold " + r.sold + ", but the 🧊 ice bucket <b>keeps the other " +
-              r.wasted + "</b> for tomorrow." });
+          so: "You only sold " + r.sold + ". The 🧊 ice bucket keeps <b>" + kept +
+              "</b> for tomorrow" + (binned > 0
+                ? ", but the other <b class='bad'>" + binned + "</b> still went in the bin."
+                : ".") });
       } else if (r.wasted > 0) {
         rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
           so: "You only sold " + r.sold + ", so <b class='bad'>" + r.wasted +
