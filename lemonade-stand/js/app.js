@@ -36,11 +36,15 @@
   const SAVE_KEY = "lemonadeStandSave_v1";
 
   function save() {
-    // Only a live run refreshes the record. When nothing is being played,
-    // savedRun is left exactly as it is — a settings tap on the setup screen
-    // must never throw away the run sitting there waiting to be carried on.
-    if (state.playing && state.run && state.run.phase !== "over") {
-      savedRun = E.snapshot(state.run);
+    // Only a live run refreshes the record, and only from a phase that can
+    // actually be brought back — snapshot() says which by refusing the rest.
+    // A refusal keeps the record already on disk rather than blanking it: a
+    // settings tap on the setup screen, or putting the tablet down between
+    // banking the takings and tapping Next morning, must never throw away the
+    // run sitting there waiting to be carried on.
+    if (state.playing && state.run) {
+      const snap = E.snapshot(state.run);
+      if (snap) savedRun = snap;
     }
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
