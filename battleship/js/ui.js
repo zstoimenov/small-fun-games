@@ -267,6 +267,27 @@ BS.Ui = (function () {
     return card;
   }
 
+  // A sea for the play-back. Same card as the reveal, but the caller keeps the
+  // handles: it repaints this thing once a beat and rebuilding the grid every
+  // time would throw away the shell animation mid-flight.
+  function seaPanel(board, title) {
+    const card = document.createElement("div");
+    card.className = "grid-card sea-panel";
+
+    const head = document.createElement("div");
+    head.className = "grid-head";
+    head.textContent = title;
+
+    const el = document.createElement("div");
+    el.className = "grid mini";
+
+    const meta = document.createElement("div");
+    meta.className = "sea-meta";
+
+    card.append(head, el, meta);
+    return { card, el, meta, g: grid(el, board.size, { mini: true }) };
+  }
+
   // The heat map: the same numbers the computer shoots by, as brightness. Squares
   // already fired at are left as they are, so the picture still reads as a board.
   function heatCard(view, heat, title) {
@@ -372,6 +393,6 @@ BS.Ui = (function () {
   return {
     grid, paintEnemy, paintOwn, paintReveal, pop,
     fitBig, fitMini, sheetCell, fleetList, tray,
-    boardCard, heatCard, coach, toast, clearToast, confetti, onResize
+    boardCard, seaPanel, heatCard, coach, toast, clearToast, confetti, onResize
   };
 })();
