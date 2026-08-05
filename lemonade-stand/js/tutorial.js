@@ -32,7 +32,11 @@ LS.Tutorial = (function () {
   function pages(difficulty) {
     const sp = E.spec(difficulty);
     const g = growth(difficulty);
-    const unit = 40;
+    // A typical morning's lemon price, so every worked example on these pages
+    // uses money the child will actually see. It has to track the middle of the
+    // range in economy.js — teaching "keep 35c a cup" against a game that pays
+    // 30c is worse than teaching nothing.
+    const unit = 45;
     const small = E.packPrice(unit, E.PACKS[0]);
     const big = E.packPrice(unit, E.PACKS[1]);
     const loan = E.LOANS[0];
@@ -96,7 +100,8 @@ LS.Tutorial = (function () {
       { title: "Don't make too much",
         html: "<p>Lemonade doesn't keep. Any cups you don't sell go in the bin, and the money you spent on them is gone.</p>" +
           "<p>Watch the weather. On a hot day lots of people walk past. When it's raining, hardly anybody does — so don't fill the stall.</p>" +
-          "<p>You can buy an ice bucket at the shop. Then your leftovers keep until tomorrow.</p>" },
+          "<p>You can buy an ice bucket at the shop. Then <b>half</b> of what you don't sell keeps " +
+          "until tomorrow. The other half still goes in the bin — so it pays to guess well anyway.</p>" },
 
       { title: "The bank pays you",
         html: "<p>At the end of each day you choose: keep your money in your purse, or put it in the bank.</p>" +
