@@ -953,7 +953,7 @@ LS.Ui = (function () {
         // has to say BOTH halves — the cups saved and the cups still lost. It
         // used to claim the lot was kept, which is how a child ended up
         // believing that buying too much never costs anything.
-        const kept = Math.floor(r.wasted * E.BUCKET_KEEPS);
+        const kept = E.bucketKeeps(r.wasted);
         const binned = r.wasted - kept;
         rows.push({ e: "🥤", did: "You made " + made + " cups for " + E.money(run.spentToday) + ".",
           so: "You only sold " + r.sold + ". The 🧊 ice bucket keeps <b>" + kept +

@@ -1275,3 +1275,74 @@ day 8, because `back` is what sets the pace — so the honest fix was to write
 down what the model does (first week the business growing, second week the
 business you built) rather than tune the model to match a sentence. **A comment
 that states a measurement is a claim, and claims go stale exactly like code.**
+
+### Eighth pass: the business stopped growing on day seven
+
+Two reports, and they turned out to be the same report:
+
+> When there are odd number of cups left the bucket saves less than what gets
+> thrown away. Having 1 cup leftover and throwing it away while having a bucket
+> is not right.
+
+> Now it is too hard to get anything above 60-70 dollars in 14 days.
+
+**The bucket first, because it is a one-line bug.** `Math.floor(wasted * 0.5)`
+means one leftover cup keeps *none* and three keep one and bin two — a bucket
+that throws away more than it saves, on exactly the small numbers a careful
+stocker actually gets. Half of an odd number has to round somewhere, and the
+only defensible direction is *into the bucket*: `bucketKeeps()` is `ceil`, it
+is exported, and `ui.js` calls it instead of repeating the arithmetic, which is
+how the two had drifted apart in the first place. 1 → keeps 1, 3 → keeps 2.
+Worth at most half a cup a day, so it moves no balance; it just stops the item
+lying.
+
+**The money was the seventh pass's own footnote coming due.** That pass closed
+by recording that `MAX_REGULARS` was reached on day 7 of 14, decided `GROW_AT`
+was a weak lever on it, and wrote the observation down instead of acting on it.
+The observation was the whole bug. Regulars are the *only* thing a child can
+grow — footfall is the weather's and the stall's capacity is fixed — so when
+they stop climbing the business stops climbing. Measured day by day, holding
+75c and stocking to the forecast:
+
+| | day 1-7 | day 8-14 |
+| --- | --- | --- |
+| regulars | 0-0-2-4-6-7-7 | 7-8-8-8-8-8-8 |
+| cups sold | 5-8-11-13-15-17-18 | 18-19-19-19-19-19-19 |
+
+Eight days of a flat line. The last seven mornings were the same morning, cash
+piled up in the bank with nothing to spend it on ($82 by day 14 against a stall
+that wanted $7 of lemons), and the fortnight was pinned near $85 *however well
+it was played*. That is what "can't get past $60-70" is from inside a run: not
+a hard game, a game with nowhere left to go — and a ladder whose top two rungs
+no amount of playing well would move, at 8-10% for every policy on the board.
+
+**`MAX_REGULARS` 8 → 14, and `STALL_LIMIT` 40 → 52, and the second is not
+optional.** Regulars are demand, so lifting the ceiling on them lifts what an
+ordinary day asks for; measured at a 40-cup stall with 14 regulars, "fill it
+every morning" caught right back up with reading the forecast ($94 against
+$96) and the sixth pass's whole fight was undone. **The gap between the day you
+expect and what the stall holds IS the lesson**, so the two numbers have to
+move together. Held at 52, filling the stall bins 36% of what it buys and
+finishes $28 behind stocking to the forecast.
+
+What that buys, 1,500 fortnights per row on Normal:
+
+| | before | after |
+| --- | --- | --- |
+| stock to the forecast | $82.80 | $97.60 |
+| best play | $90.10 | $106.00 |
+| fill the stall every day | $61.90 | $69.25 |
+| never look at the sky | $72.50 | $75.35 |
+| reaches the bike | 8-10%, every policy | 26% forecast, 22% best, 0% flat |
+
+The lessons all still hold, which is the only thing that made the change
+allowed: 1.0× the forecast still beats 1.2× and 1.5× and filling it; 75c still
+beats $1.00 by $30; keeping the float back still beats banking every cent
+($106.00 vs $102.20) which still beats never banking ($83.80). Growth now runs
+0-0-2-4-7-9-11-12-12-13-13-13-14-14 and is still climbing on the last day,
+which is the shape the game always claimed: the first week is the business
+growing, the second is the business you built.
+
+**A footnote that explains a complaint is a bug report you have already
+written.** The seventh pass measured the plateau, described it accurately, and
+filed it as a comment fix. It was the top item on the next issue list.
