@@ -47,12 +47,20 @@ LS.Economy = (function () {
   // The 5-cup pack stays affordable at every lemon price, so borrowing is a
   // choice and never a requirement.
   const START_CASH = 300;
-  // 40 cups, and it still sits above the busiest ordinary day (a scorcher asks
-  // for about 30) so a queue can always be bought out of. What it is no longer
-  // above is a parade, and it is no longer somewhere a fortnight's takings can
-  // comfortably reach every morning: filling it costs about $12 of lemons, so
-  // "buy the maximum" is a decision with a price on it rather than the default.
-  const STALL_LIMIT = 40;
+  // 52 cups. This number's whole job is to sit far enough above the day you
+  // expect that filling it is visibly the wrong move — the gap between the two
+  // IS the "don't make more than you can sell" lesson, and it has to be paid
+  // for in lemons: filling a 52-cup stall costs about $19, against a day that
+  // usually asks for 20.
+  //
+  // It went up with MAX_REGULARS, and it had to. Regulars are demand, so raising
+  // the ceiling on them raises what an ordinary day asks for — and measured at a
+  // 40-cup stall with 14 regulars, "fill it every morning" caught right up with
+  // reading the forecast ($94 against $96) and the morning stopped being a
+  // question again. Held at 52 the gap comes back: filling the stall bins 36% of
+  // what it buys and finishes $28 behind stocking to the forecast. Raising the
+  // two together is what keeps the lesson while letting the business grow.
+  const STALL_LIMIT = 52;
 
   /* ── Regulars ──────────────────────────────────────────────────────────── */
 
@@ -71,23 +79,47 @@ LS.Economy = (function () {
   // become regulars. That is the honest shape of the loss, and it is what makes
   // a bigger stall grow faster than a small one.
   const REGULARS_START = 0;
-  // Eight. It was twelve, against a passing trade that has since come down by a
-  // third — and a dozen guaranteed customers against a warm day's twelve
-  // strangers is not a cushion, it is half the shop. The weather has to stay the
-  // thing the morning is about, so the regulars are worth roughly a third of an
-  // ordinary day rather than a half.
+  // Fourteen, and this is the number that sets the ceiling on the whole game.
   //
-  // Measured, good play reaches the cap on day 7 of 14 (p10 day 4, p90 day 11)
-  // and 10% of runs never get there at all. So the first week is the business
-  // growing and the second is the business you built — which is the right shape,
-  // and worth stating honestly rather than claiming the cap lands at the end.
-  const MAX_REGULARS = 8;
-  // Serve this many cups for a full day's growth. 25 is a genuinely big day
-  // against a 40-cup stall, so most days earn +1 regular and only the good ones
-  // earn +2 — which is the compounding the run is meant to show. It is a weak
-  // lever on when the cap arrives (12 / 20 / 30 / 40 move the median day only
-  // from 6 to 8, because `back` is what really sets the pace) and is chosen for
-  // the shape of the growth rather than for its timing.
+  // Regulars are the ONLY thing a child can grow. Passing trade is whatever the
+  // weather says and the stall can hold no more than it holds, so once the
+  // regulars stop climbing the business stops climbing, and every remaining day
+  // earns exactly what the last one did. At eight that happened in week one.
+  // Measured day by day over 1,200 fortnights, holding 75c and stocking to the
+  // forecast:
+  //
+  //   regulars   0-0-2-4-6-7-7-7-8-8-8-8-8-8
+  //   cups sold  5-8-11-13-15-17-18-18-19-19-19-19-19-19
+  //
+  // Eight days of a flat line. The stall was finished growing on day 7 and the
+  // last seven mornings were the same morning, so the fortnight was pinned near
+  // $85 however well it was played. That is what "you can't get past $60-70"
+  // actually was — not a hard game, a game with nowhere left to go.
+  //
+  // At fourteen the same fortnight runs:
+  //
+  //   regulars   0-0-2-4-7-9-11-12-12-13-13-13-14-14
+  //   cups sold  5-8-11-13-15-18-20-21-22-23-23-23-24-23
+  //
+  // Still climbing on the last day, which is the shape the game claims: the
+  // first week is the business growing and the second is the business you
+  // built, getting bigger because it is bigger. Measured over 1,500 fortnights
+  // on Normal, stocking to the forecast finishes at $98 against $83, and the
+  // top rung goes from 9% of well-played runs to 22%.
+  //
+  // The trade is that a full house is a bigger share of an ordinary day than it
+  // was — about half a warm one. That is the proportion the game ran at when
+  // this was twelve, and it is bought back by STALL_LIMIT going up with it. The
+  // weather is still what the morning is about: at a full house the day swings
+  // from 12 cups in the rain to 39 in a scorcher.
+  const MAX_REGULARS = 14;
+  // Serve this many cups for a full day's growth. 25 is comfortably more than an
+  // ordinary day sells, so most days earn +1 regular and only the good ones earn
+  // +2 — which is the compounding the run is meant to show. It stays at 25 now
+  // that the cap is 14 and the stall holds 52: it is a weak lever either way
+  // (22 is worth $3 over a fortnight and lands the cap half a day earlier,
+  // because `back` is what really sets the pace), so it is chosen for the shape
+  // of the growth rather than for its timing.
   const GROW_AT = 25;
   const SIGN_REGULARS = 3;   // what the big sign brings in on the spot
 
@@ -166,11 +198,11 @@ LS.Economy = (function () {
   // and "read the forecast" gave nearly the same answer, and the ice bucket
   // made the difference free.
   //
-  // At these numbers a warm day asks for about 20 and a scorcher about 30
-  // against a 40-cup stall. Measured over 1,500 fortnights on Normal: stocking
-  // to the forecast finishes ahead of filling the stall by $30, filling it
-  // bins a third of what it makes, and the gap between reading the sky and
-  // ignoring it is the widest it has been.
+  // At these numbers, and with a full house of regulars, a warm day asks for
+  // about 28 and a scorcher about 39 against a 52-cup stall. Measured over
+  // 1,500 fortnights on Normal: stocking to the forecast finishes ahead of
+  // filling the stall by $28, filling it bins 36% of what it buys, and a child
+  // who never looks at the sky at all tops out at $75 and never sees the bike.
   const WEATHER = [
     { id: "cold",     emoji: "🌧️", name: "Cold and rainy", footfall: 5 },
     { id: "cloudy",   emoji: "⛅",  name: "Cloudy",         footfall: 9 },
@@ -235,11 +267,23 @@ LS.Economy = (function () {
   // makes that lesson false.
   //
   // At half — and at $2.50 rather than $4 — the bucket is honest insurance
-  // instead. Measured: it costs a tight stocker nothing (they have no waste to
-  // save) and pays a generous one $8 over a fortnight, while generous-with-a-
-  // bucket still finishes behind tight-without-one. So it is worth buying when
-  // you have chosen to stock deep, and it never makes stocking deep the answer.
+  // instead. Measured over 6,000 fortnights: it pays a child who stocks 20% over
+  // the forecast $8 ($76.60 -> $84.55) and pays a child who stocks to it exactly
+  // nothing at all ($84.15 either way), because a tight stall has no leftovers
+  // to save. So it is worth buying once you have chosen to stock deep, and the
+  // best it can do is bring stocking deep LEVEL with stocking right — never
+  // ahead of it. That is the line this item has to stay on.
   const BUCKET_KEEPS = 0.5;
+
+  // The odd cup goes IN the bucket, never in the bin — hence ceil and not floor.
+  // Half of three is one and a half, and there is no half a cup, so somebody has
+  // to get the spare one. Rounding it down meant a child with one cup left over
+  // watched their $2.50 bucket save nothing at all, and a child with three
+  // watched it save one and bin two — a bucket that keeps less than it throws
+  // away, which is not what "half your leftovers keep" says and not what anyone
+  // would do with a real bucket. It is worth about half a cup a day at most, so
+  // it changes the shape of nothing; it just stops the item lying on odd numbers.
+  const bucketKeeps = (wasted) => Math.ceil(wasted * BUCKET_KEEPS);
 
   const TREATS = [
     { id: "bucket", emoji: "🧊", name: "Ice bucket", short: "Half your leftovers keep till tomorrow.",
@@ -429,13 +473,19 @@ LS.Economy = (function () {
     // the bike 44% of the time — better than a child who read the forecast —
     // which is the balancing bug this whole file was re-measured to fix.
     //
-    // Re-placed off the sweep in tools/check.js, 1,500 fortnights per row. On
-    // Normal the bike now goes to 13% of runs played really well (reading the
-    // forecast, stocking a shade under it, banking the surplus, getting the
-    // sums right), 8% of runs that just stock to the forecast, and 6% of runs
-    // that fill the stall regardless. Never adapting to the weather reaches it
-    // never. The lower three rungs are what a decent run is actually for, and
-    // the first one is within reach of anybody who trades at all.
+    // Re-placed off the sweep in tools/check.js, 1,500 fortnights per row. The
+    // goals themselves have not moved since; what moved was MAX_REGULARS, and
+    // with the business able to grow all fortnight the same ladder now reads
+    // the way it was always meant to. On Normal the bike goes to 26% of runs
+    // that read the forecast and hold 75c, 22% of runs played really well
+    // (pricing to the day, banking the surplus, getting the sums right), and
+    // 16% of runs that fill the stall regardless and get lucky. Never adapting
+    // to the weather reaches it never, and tops out at $75.
+    //
+    // It was 8-10% across the board before that, which is what the top of the
+    // ladder being unreachable looks like from inside a run: two rungs that no
+    // amount of playing well would move. The lower three are what a decent run
+    // is actually for, and the first is within reach of anybody who trades.
     easy:   { id: "easy",   days: 7,  wobble: 8,  forecast: 1.00, drift: 1, bonusRate: false,
               eventRate: 0.16, badShare: 0.35, changes: 1, showTotal: true, bigLoan: false,
               goal: [800, 1600, 2600, 4000],
@@ -910,7 +960,7 @@ LS.Economy = (function () {
     // shows the same one rather than recomputing it against moved numbers.
     run.growth = nextRegulars(run, r);
     run.regulars = run.growth.after;
-    run.carry = run.treats.bucket ? Math.floor(r.wasted * BUCKET_KEEPS) : 0;
+    run.carry = run.treats.bucket ? bucketKeeps(r.wasted) : 0;
     run.phase = "evening";
     return r;
   }
@@ -1217,7 +1267,7 @@ LS.Economy = (function () {
     cents5, money, price, clamp,
     // constants
     START_CASH, STALL_LIMIT, RATE, RATE_BONUS, BONUS_AT, GRANDMA,
-    WITHDRAW_FEE, FLOAT, BUCKET_KEEPS,
+    WITHDRAW_FEE, FLOAT, BUCKET_KEEPS, bucketKeeps,
     REGULARS_START, MAX_REGULARS, GROW_AT, SIGN_REGULARS,
     WEATHER, PRICES, PACKS, LOANS, TREATS, LEVELS,
     COINS, NOTES, EVENTS,
