@@ -66,13 +66,20 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 ### Planned
 
-Nothing outstanding. All four games on the original roadmap are built, and two
-more were added on top of them — Deal or No Deal and Lemonade Stand.
+🏦 **Bank Boss** — you run the bank instead of saving at one. People queue up to
+leave money with you or to borrow it, you set what you pay savers and what you
+charge borrowers, and the gap between those two is everything you earn. The vault
+sits on screen the whole time as three heaps of coins — the savers' money, the
+money that's out on loan, and the bit that's actually yours — so a kid can see
+where their money goes and why a bank pays them to leave it there. Brief in
+[`docs/GAME-ROADMAP.md` §7](docs/GAME-ROADMAP.md).
 
-[`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md) is still worth reading before
-starting a new one: it holds what each build actually cost against what it was
-estimated at, and the handful of things that turned out to be worth knowing in
-advance.
+Everything else is built: all four games on the original roadmap, plus Deal or No
+Deal and Lemonade Stand on top of them.
+
+[`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md) is worth reading before starting a
+new one: it holds what each build actually cost against what it was estimated at,
+and the handful of things that turned out to be worth knowing in advance.
 
 ## Run locally
 

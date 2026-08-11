@@ -4,9 +4,11 @@ Four games planned, **all four now built**, plus two added later that were never
 on the original list — Deal or No Deal (§5) and Lemonade Stand (§6). This file is
 the handover between sessions: it holds the briefs, the cost estimates and the
 decisions already made, so a fresh session can start building without re-deriving
-any of it. Nothing here is outstanding work any more — what it is now is the
-record of what each game cost against what it was estimated at, and of the
-handful of things that turned out to be worth knowing in advance.
+any of it. For §§1–6 it is the record of what each game cost against what it was
+estimated at, and of the handful of things that turned out to be worth knowing in
+advance.
+
+**One game is outstanding: Bank Boss (§7), a brief and nothing else yet.**
 
 Build conventions are in [`../CLAUDE.md`](../CLAUDE.md). Catalogue fields are in
 [`../README.md`](../README.md#add-a-new-game).
@@ -1346,3 +1348,154 @@ growing, the second is the business you built.
 **A footnote that explains a complaint is a bug report you have already
 written.** The seventh pass measured the plateau, described it accurately, and
 filed it as a comment fix. It was the top item on the next issue list.
+
+## 7. Bank Boss — `bank-boss/` 🔜 brief only
+
+Not built. The ask was *"a fun game that explains how the bank operates and what
+an interest rate is, for an 8-year-old"*.
+
+**The premise, and why it is not Lemonade Stand again.** Lemonade Stand teaches
+the *customer* side of a bank and teaches it well — money you leave alone grows,
+money you borrow costs twice as much, fetching it back has a fee. What it cannot
+answer is the question a child actually asks, which is **where the bank gets the
+money it pays you**. So this game puts the child behind the counter. You are the
+bank. People queue up: some want to leave money with you, some want to borrow it,
+and the coins are the same coins.
+
+If those two games ever feel like one game, this one has gone wrong. The test is
+the vault: Lemonade Stand never shows you one.
+
+### The picture the whole game rests on
+
+The vault, on screen the entire time, as three labelled heaps of coins:
+
+| 🟦 savers' coins | 🟧 out on loan | 🟩 yours |
+| --- | --- | --- |
+| you owe every one back | not in the room right now | what you have actually earned |
+
+Lending Tom $30 physically moves thirty coins out of the blue heap, through his
+hands, and into the orange one. Paying interest moves coins from green to blue.
+**That animation is the explanation of how a bank operates** — no sentence in the
+game has to carry it, and every screen after it can just be arithmetic.
+
+Build this before anything else, and if it does not read on a tablet at a
+glance, stop and fix it rather than writing more copy around it. It is this
+game's equivalent of Morris's board: the expensive part, and the part that has
+to be right.
+
+### The loop
+
+A day is a short queue, one customer card at a time — the pacing lesson from
+Lemonade Stand's third pass, taken as given rather than rediscovered.
+
+- **Morning.** Set two rates. Tiles, never typed numbers: *pay savers* 1c / 2c /
+  3c a night for every dollar, *charge borrowers* 4c / 6c / 8c. Both are quoted
+  to the cent as rates; every payable amount stays 5c-clean (§6's "a rate is not
+  a coin", which the money checks have to know about).
+- **The counter.** Four to six customers. A saver says how much and for how many
+  nights. A borrower says how much, what for, and shows a trust badge (⭐⭐⭐,
+  ⭐⭐, ⭐). You may say **no** to any loan — a bank that cannot refuse is not a
+  bank, and "no" must be a first-class button (`.btn-no`, per §6's fourth pass),
+  not a small link.
+- **Night.** Interest lands both ways, laid out as a sum on paper the way the
+  bank book is: what you were paid, what you paid out, what is left. Loans that
+  fall due today resolve here.
+- **The gap is the income, and it is drawn, not stated.** Two arrows — money
+  coming in from borrowers, money going out to savers — and the space between
+  them fills with your green coins. **That space is what an interest rate is
+  for**, and the game's one job is to make a child able to point at it.
+
+### The three teeth
+
+Without these it is a diagram with buttons.
+
+1. **The reserve.** You can only lend coins that are in the vault, and savers
+   turn up wanting their money back — some when their nights are up, some
+   unexpectedly. Lend the lot and you cannot pay. One failure costs trust; a
+   second brings a **bank run**, the whole street in the queue at once. The vault
+   carries a marked keep-back line and warns when you lend below it, so the rule
+   is visible before it bites.
+2. **Risky borrowers say yes to high rates.** Adverse selection, kid-sized: the
+   only person who accepts 8c a night is the person who probably will not pay you
+   back. A ⭐ borrower turns down 4c and jumps at 8c; a ⭐⭐⭐ borrower does the
+   opposite. This is the mechanic that stops "charge the maximum" from being the
+   answer, and it is the same shape as Lemonade Stand's price pull curve.
+3. **Time.** Same rate, eight nights against two, is very different money. The
+   loan book lists who owes what and when, and the bank book shows the child's
+   own green heap compounding — the second one drawn as an *area* between what
+   you have and what you would have had, which is the chart §6 already has.
+
+**A bank run is survivable, not a game over.** It costs most of your savers and
+most of your trust and you carry on with a small bank. §6's Grandma floor is the
+precedent: a child who feels the game is unwinnable learns nothing.
+
+### Two players, and it costs almost nothing
+
+Two rival banks on one street, one queue. Each morning both set rates in secret;
+each customer walks to whichever counter suits them and the rates are revealed at
+that moment. That is real hidden information for the price of two numbers — use
+Battleship's *view* pattern (`Rules.publicView`) so the opponent's rates are not
+in the page, and check it by counting elements in the browser rather than by
+reading the code.
+
+Solo, the rival bank is the Easy/Medium/Hard opponent. Per §5's second lesson,
+**difficulty touches the rival only — never the customers, never the rates you
+are allowed to set.** Easy prices badly in both directions; Hard prices to the
+customer in front of it.
+
+- Easy: fixed rates all game, and bad ones.
+- Medium: reacts to yesterday's queue.
+- Hard: prices each morning off the mix of customers due, and refuses ⭐ loans.
+
+### Growth, and the prize
+
+The bank itself is the score: shoebox on a kitchen table → a stall → a shopfront
+→ a marble floor. It is the same trick as Lemonade Stand's regulars — a thing you
+build that is visible on screen every day — and the same rule applies: **it must
+go UP for a child playing well.** §6's fifth pass shipped a growth stat that went
+down for good play, and nobody noticed until it was measured day by day.
+
+Start with **$5 of your own money** (the green heap — the bank's own coins,
+which is capital without the word). Twelve days.
+
+### What has to be measured before a button is wired
+
+This is an economy, so §6's rule applies unchanged: **build the model and the
+node sweep first.** `tools/check.js` is the pattern — a pure `bank.js` that plays
+thousands of runs under named policies and prints tables.
+
+The peak has to be in the middle on **both** dials, and neither edge may be free:
+
+| policy | must finish |
+| --- | --- |
+| pay savers nothing | poorly — no deposits, nothing to lend |
+| pay savers the most, charge the least | poorly — busy, and the gap does not cover a default |
+| charge 8c to everybody | poorly — only ⭐ borrowers say yes, and they don't pay |
+| refuse every loan | poorly — a vault full of coins earning nothing, still paying interest out |
+| lend every coin in the vault | a bank run, most runs |
+| keep a sensible reserve, price to the badge | **best** |
+
+Two acceptance tests fall out for free, and they are worth having because they
+are arithmetic rather than taste:
+
+- **The heaps must balance every single night**: savers' + yours = in the vault +
+  out on loan, to the cent, asserted after every event. §6's money invariant
+  (integer cents, multiples of 5c on anything payable) caught more bugs than
+  anything else in that game; this is the same idea with one more column.
+- **Interest computed twice.** Per night per loan, and again from the rate and
+  the elapsed nights at settlement. Every game in this repo that did this found
+  something.
+
+### Cost
+
+`lines ≈ 2,000 + the game's own logic`, which has held for six games. The own
+logic here is a customer model, a rate/acceptance curve, a loan book and a rival
+— call it 700–900, so **2,700–2,900 lines**, in the region of Lemonade Stand's
+first pass. The vault animation is the one thing that could blow that, which is
+why it is the first thing to build rather than the last.
+
+Catalogue: `category: "maths"`, `players: [1, 2]`, `age: 8`,
+`highlights: ["🏦 How banks work"]`.
+
+**Watch for**: the temptation to explain in words what the coins already show.
+Every extra sentence on the vault screen is a sign the picture is not working.
