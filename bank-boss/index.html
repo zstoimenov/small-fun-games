@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Bank Boss</title>
+<meta name="description" content="Run the bank. People leave their money with you and other people come to borrow it. You choose what to pay savers and what to charge borrowers — and the gap between those two is everything your bank earns.">
+<meta name="theme-color" content="#2f7fa8">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bank Boss">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet setup-sheet">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+    <h1>🏦 Bank Boss</h1>
+    <p class="sub">You run the bank. People leave their money with you, and other people come in wanting to borrow it. You decide what to pay savers and what to charge borrowers — and the gap between those two is everything your bank earns.</p>
+
+    <div class="row">
+      <span class="row-label">Who's playing?</span>
+      <div class="seg" id="modeChooser">
+        <button class="opt" type="button" data-value="solo">On my own</button>
+        <button class="opt" type="button" data-value="duo">Two banks</button>
+      </div>
+    </div>
+    <p class="row-note" id="modeNote"></p>
+
+    <div class="row" id="robotRow">
+      <span class="row-label">Robo Bank</span>
+      <div class="seg" id="robotChooser">
+        <button class="opt" type="button" data-value="easy">Easy</button>
+        <button class="opt" type="button" data-value="medium">Medium</button>
+        <button class="opt" type="button" data-value="hard">Hard</button>
+      </div>
+    </div>
+    <p class="row-note" id="robotNote"></p>
+
+    <div class="row">
+      <span class="row-label">How long?</span>
+      <div class="seg" id="levelChooser">
+        <button class="opt" type="button" data-value="easy">8 days</button>
+        <button class="opt" type="button" data-value="normal">12 days</button>
+        <button class="opt" type="button" data-value="tricky">Tricky</button>
+      </div>
+    </div>
+    <p class="row-note" id="levelNote"></p>
+
+    <p class="best-line" id="setupBest" hidden></p>
+
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="howtoBtn" type="button">How to play</button>
+      <button class="btn btn-go" id="startBtn" type="button">Open the bank</button>
+    </div>
+    <button class="ghost-btn wide" id="resumeBtn" type="button" hidden>↩︎ Carry on with the saved bank</button>
+  </div>
+</div>
+
+<!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
+<main id="game" hidden>
+
+  <div class="topbar">
+    <button class="icon-btn" id="menuBtn" type="button" title="Menu" aria-label="Menu">☰</button>
+    <div class="turn-info">
+      <strong id="dayLabel">Day 1</strong>
+      <span id="dayMeta">of 12</span>
+    </div>
+    <button class="icon-btn" id="muteBtn" type="button" title="Sound" aria-label="Sound" aria-pressed="false">🔊</button>
+  </div>
+
+  <!-- ══ THE VAULT ══════════════════════════════════════════════════════
+       On screen for the whole run, because it is the game. Two bars of the
+       same length: where the money came from, and where it is now. The top
+       one is mostly blue and the bottom one is mostly orange, and that single
+       fact is what a bank IS. -->
+  <div class="vault" id="vault">
+    <div class="vault-top">
+      <span class="vault-who" id="vaultWho">Your bank</span>
+      <span class="vault-mine">yours <b id="vaultOwn">$60.00</b></span>
+    </div>
+
+    <div class="bar-label">Whose money it is</div>
+    <div class="bar" id="barFrom">
+      <div class="seg-owed" id="segOwed"><i>savers</i><b id="valOwed">$0</b></div>
+      <div class="seg-own" id="segOwn"><i>yours</i><b id="valOwn">$60</b></div>
+    </div>
+
+    <div class="bar-label">Where it is right now <span id="keepSay"></span></div>
+    <div class="bar" id="barWhere">
+      <div class="seg-cash" id="segCash"><i>in the vault</i><b id="valCash">$60</b></div>
+      <div class="seg-out" id="segOut"><i>out on loan</i><b id="valOut">$0</b></div>
+      <!-- Only ever on screen when the bank owes more than it holds. The two
+           bars are the same length in every other state, and the missing piece
+           is the honest way to draw the state where they are not. -->
+      <div class="seg-short" id="segShort"><i>missing</i><b id="valShort">$0</b></div>
+      <!-- The keep-back line, drawn on the money rather than written in a rule.
+           The label lives up in the bar's heading rather than on the line: hung
+           off a zero-width div it was 90px of text sticking out of a box with
+           overflow:hidden, which measured as an overflow on every viewport. -->
+      <div class="keepline" id="keepLine"></div>
+    </div>
+
+    <div class="vault-note" id="vaultNote"></div>
+    <div class="coinfly" id="coinFly" aria-hidden="true"></div>
+  </div>
+
+  <div class="goal" id="goalBar">
+    <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+    <div class="goal-label" id="goalLabel"></div>
+  </div>
+
+  <div class="phases">
+
+    <!-- ── The morning: two dials ──────────────────────────────────────── -->
+    <section id="rates" class="phase">
+      <div class="scroller">
+        <div class="card news" id="ratesWho" hidden></div>
+
+        <div class="card dial">
+          <div class="card-head"><span>💰 What you pay savers</span><strong id="saveNow">2c</strong></div>
+          <div class="seg wide-seg" id="saveChooser"></div>
+          <p class="verdict" id="saveNote"></p>
+        </div>
+
+        <div class="card dial">
+          <div class="card-head"><span>🤝 What you charge borrowers</span><strong id="loanNow">8c</strong></div>
+          <div class="seg wide-seg" id="loanChooser"></div>
+          <p class="verdict" id="loanNote"></p>
+        </div>
+
+        <!-- The gap, drawn. Two arrows and the space between them: that space
+             is the whole of what a bank earns, and it has to cover the loans
+             that never come back. -->
+        <div class="card gapcard">
+          <div class="gap-row in"><span>Borrowers pay you</span><b id="gapIn">8c</b></div>
+          <div class="gap-mid" id="gapMid">
+            <span class="gap-size" id="gapSize">6c</span>
+            <span class="gap-say">a night, for every dollar you lend out</span>
+          </div>
+          <div class="gap-row out"><span>You pay savers</span><b id="gapOut">2c</b></div>
+        </div>
+
+        <div class="coach calm" id="coach" hidden>
+          <span class="coach-face">🏦</span>
+          <span id="coachText"></span>
+        </div>
+      </div>
+
+      <button class="btn btn-go big-go" id="openBtn" type="button">Open the doors</button>
+    </section>
+
+    <!-- ── The counter: one person at a time ───────────────────────────── -->
+    <section id="counter" class="phase" hidden>
+      <div class="queue-strip" id="queueStrip"></div>
+
+      <div class="scroller">
+        <div class="person-card" id="personCard">
+          <div class="person-top">
+            <span class="person-face" id="personFace">👵</span>
+            <div class="person-who">
+              <span class="person-name" id="personName">Nan</span>
+              <span class="stars" id="personStars" hidden></span>
+            </div>
+            <span class="counter-tag" id="counterTag" hidden></span>
+          </div>
+
+          <p class="person-say" id="personSay"></p>
+          <div class="deal" id="dealBox" hidden></div>
+          <p class="person-result" id="personResult" hidden></p>
+          <div class="fire" id="fireBox" hidden></div>
+        </div>
+      </div>
+
+      <div class="ask-buttons" id="askButtons">
+        <button class="btn btn-no" id="sayNo" type="button" hidden>No thanks</button>
+        <button class="btn btn-go" id="sayYes" type="button" hidden>Lend it</button>
+        <button class="btn btn-go big-go" id="cardNext" type="button" hidden>Next</button>
+      </div>
+    </section>
+
+    <!-- ── Night ───────────────────────────────────────────────────────── -->
+    <section id="night" class="phase" hidden>
+      <div class="scroller">
+
+        <div class="beat" id="beatPaid">
+          <div class="card night-card">
+            <div class="card-head"><span>🌙 What the night cost you</span></div>
+            <div class="book">
+              <div class="book-row"><span>You owed savers</span><strong id="paidBefore">$0.00</strong></div>
+              <div class="book-row gone">
+                <span>You paid them <i id="paidRate"></i></span><strong id="paidAdd">- 0c</strong>
+              </div>
+              <div class="book-rule"></div>
+              <div class="book-row total"><span>Now you owe them</span><strong id="paidAfter">$0.00</strong></div>
+            </div>
+            <p class="verdict" id="paidNote"></p>
+          </div>
+        </div>
+
+        <div class="beat" id="beatBack" hidden>
+          <div class="card">
+            <div class="card-head"><span>💸 Loans coming back</span><strong id="backTotal">$0.00</strong></div>
+            <div id="backList"></div>
+            <p class="verdict" id="backNote"></p>
+          </div>
+        </div>
+
+        <div class="beat" id="beatSavers" hidden>
+          <div class="card">
+            <div class="card-head"><span>👋 Savers taking their money</span></div>
+            <div id="saverList"></div>
+          </div>
+        </div>
+
+        <div class="beat" id="beatTrust" hidden>
+          <div class="card grow">
+            <div class="card-head"><span>🤝 The town</span><strong id="trustCount">6</strong></div>
+            <div class="book">
+              <div class="book-row"><span>Yesterday</span><strong id="trustBefore">6</strong></div>
+              <div class="book-row added" id="trustUpRow" hidden>
+                <span id="trustUpWhy">You looked after people</span><strong id="trustUp">+ 1</strong>
+              </div>
+              <div class="book-row gone" id="trustDownRow" hidden>
+                <span id="trustDownWhy">Word got round</span><strong id="trustDown">- 1</strong>
+              </div>
+              <div class="book-rule"></div>
+              <div class="book-row total"><span>Bank with you now</span><strong id="trustAfter">7</strong></div>
+            </div>
+            <div class="townfolk" id="townFolk"></div>
+            <p class="verdict" id="trustNote"></p>
+          </div>
+        </div>
+
+        <div class="beat" id="beatSum" hidden>
+          <div class="card sums">
+            <div class="sum-line in"><span>Borrowers paid you</span><strong id="sumIn">$0.00</strong></div>
+            <div class="sum-line out"><span>You paid savers</span><strong id="sumOut">$0.00</strong></div>
+            <div class="sum-line out" id="sumBadRow" hidden>
+              <span>Never came back</span><strong id="sumBad">$0.00</strong>
+            </div>
+            <div class="sum-line out" id="sumFireRow" hidden>
+              <span>Calling your loans in early</span><strong id="sumFire">$0.00</strong>
+            </div>
+            <div class="sum-rule"></div>
+            <div class="sum-line total" id="sumTotalRow">
+              <span>So your bank made</span><strong id="sumTotal">$0.00</strong>
+            </div>
+          </div>
+          <div class="card causes" id="causes" hidden>
+            <div class="card-head"><span>🔎 What your choices did</span></div>
+            <div id="causeList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dots" id="nightDots"></div>
+      <div class="evening-buttons">
+        <button class="btn btn-clear" id="nightBack" type="button" hidden>Back</button>
+        <button class="btn btn-go big-go" id="nightNext" type="button">Next</button>
+        <button class="btn btn-go big-go" id="nextDayBtn" type="button" hidden>Next morning</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+</main>
+
+<!-- ══ PASS THE TABLET ══════════════════════════════════════════════════
+     Two-player only. The rates are the only secret in the game, and they are
+     only secret for as long as this screen is up. -->
+<div id="handover" class="overlay" hidden>
+  <div class="sheet sheet-xs handover">
+    <div class="hand-emoji">🙈</div>
+    <h2 id="handTitle">Pass it to Player 2</h2>
+    <p class="sub" id="handSub">Don't peek at what the other bank chose.</p>
+    <button class="btn btn-go wide-btn" id="handGo" type="button">I'm Player 2</button>
+  </div>
+</div>
+
+<!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
+<div id="menu" class="overlay" hidden>
+  <div class="sheet sheet-xs">
+    <h2>Menu</h2>
+    <button class="ghost-btn wide" id="menuResume" type="button">↩︎ Back to the bank</button>
+    <button class="ghost-btn wide" id="menuHowto" type="button">📖 How to play</button>
+    <button class="ghost-btn wide" id="menuBook" type="button">📒 The books</button>
+    <button class="ghost-btn wide danger" id="menuQuit" type="button">✖ Give up and start again</button>
+  </div>
+</div>
+
+<!-- ══ THE BOOKS ════════════════════════════════════════════════════════
+     Who owes you what and when, and who you owe. A bank's memory, on a page,
+     because holding six loans and five savers in your head is not the puzzle
+     this game is about. -->
+<div id="book" class="overlay" hidden>
+  <div class="sheet sheet-sm">
+    <h2>📒 The books</h2>
+    <div class="shelf-head">🤝 Out on loan</div>
+    <div id="bookLoans"></div>
+    <div class="shelf-head">💰 Savers' money</div>
+    <div id="bookSavers"></div>
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="bookClose" type="button">Back to the bank</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HOW TO PLAY ══════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet">
+    <div class="howto-top">
+      <h2 id="howtoTitle">How to play</h2>
+      <span class="pill" id="howtoStep">1 / 9</span>
+    </div>
+    <div id="howtoBody"></div>
+    <div class="dots" id="howtoDots"></div>
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="howtoSkip" type="button">Skip</button>
+      <button class="btn btn-clear" id="howtoBack" type="button">Back</button>
+      <button class="btn btn-go" id="howtoNext" type="button">Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
+<div id="result" class="overlay" hidden>
+  <div class="sheet">
+    <div class="payoff">
+      <div class="payoff-say" id="payoffSay">Your bank is worth</div>
+      <div class="result-final" id="resultFinal">$0.00</div>
+      <div class="prize" id="prize">
+        <div class="prize-burst" id="prizeBurst" aria-hidden="true"></div>
+        <div class="prize-emoji" id="prizeEmoji">🏛️</div>
+      </div>
+      <h2 id="resultTitle"></h2>
+      <p class="sub" id="resultSub"></p>
+    </div>
+
+    <p class="versus" id="versus"></p>
+
+    <div class="shelf-head">🏆 What your bank grew into</div>
+    <div class="ladder" id="ladder"></div>
+
+    <div id="chart"></div>
+    <div class="chart-key">
+      <span><i class="key-swatch own"></i> Money that's yours</span>
+      <span><i class="key-swatch owed"></i> Money people trusted you with</span>
+    </div>
+
+    <p class="grew-line" id="grewLine"></p>
+    <p class="takeaway" id="takeaway"></p>
+    <div class="stickers" id="stickers"></div>
+    <p class="best-line" id="resultBest" hidden></p>
+
+    <div class="sheet-buttons">
+      <button class="btn btn-clear" id="resultMenu" type="button">Settings</button>
+      <button class="btn btn-go" id="againBtn" type="button">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/rng.js"></script>
+<script src="./js/bank.js"></script>
+<script src="./js/rival.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/chart.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/tutorial.js"></script>
+<script src="./js/app.js"></script>
+</body>
+</html>
