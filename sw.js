@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v20";
+const CACHE = "game-box-v21";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -29,6 +29,14 @@ const ASSETS = [
   "./footy-tactics-lab/js/blocks.js", "./footy-tactics-lab/js/app.js",
   "./footy-tactics-lab/icons/icon-192.png", "./footy-tactics-lab/icons/icon-512.png",
   "./footy-tactics-lab/icons/apple-touch-icon.png",
+
+  "./bank-boss/", "./bank-boss/index.html", "./bank-boss/manifest.webmanifest",
+  "./bank-boss/css/style.css",
+  "./bank-boss/js/rng.js", "./bank-boss/js/bank.js", "./bank-boss/js/rival.js",
+  "./bank-boss/js/audio.js", "./bank-boss/js/chart.js", "./bank-boss/js/ui.js",
+  "./bank-boss/js/tutorial.js", "./bank-boss/js/app.js",
+  "./bank-boss/icons/icon-192.png", "./bank-boss/icons/icon-512.png",
+  "./bank-boss/icons/apple-touch-icon.png",
 
   "./yatzy-dice/", "./yatzy-dice/index.html", "./yatzy-dice/manifest.webmanifest",
   "./yatzy-dice/css/style.css",

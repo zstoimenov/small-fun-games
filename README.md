@@ -55,6 +55,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 | Game | Folder | What it is |
 | --- | --- | --- |
+| 🏦 **Bank Boss** | [`bank-boss/`](bank-boss/) | You're the bank. All day people come to the counter — some want to leave their money with you, some want to borrow it — and you set two rates: what you pay savers, and what you charge borrowers. The gap between them is everything your bank earns, and it has to cover the loans that never come back. **The vault is on screen the whole time**, as two bars of the same length: whose the money is (savers / yours) and where it has actually got to (in the vault / out on loan). Nan's $25 doesn't sit in a box with her name on it — you watch it walk out of the door as somebody's new bike. Keep a quarter back or you'll have to call your loans in early at 75c in the dollar; charge the most you can and the only people who still borrow from you are the ones who never pay you back. 1–2 players: against Robo Bank on Easy/Medium/Hard, or two banks on one street sharing one town, each setting its rates in secret behind a pass-the-tablet screen. Twenty named townsfolk who always behave the same way, so you learn who's good for it — and on Tricky you only see somebody's stars once you've dealt with them (~age 8+). |
 | 🍋 **Lemonade Stand** | [`lemonade-stand/`](lemonade-stand/) | Run a lemonade stall for a fortnight. Each morning asks one thing at a time — what's the weather, how many cups, what price — and the evening shows every decision next to what it caused. Count out real change when somebody pays with a handful of coins, and sometimes they want two or three cups, so the sum is a multiply before it is a subtract. Serve people fairly and they come back: your **regulars** are a number you can watch grow, they turn up when other people don't, and you lose them by gouging or getting their change wrong. Money in the bank grows overnight and you watch it go up; money you borrow costs twice as much as it pays; and fetching money back out of the bank costs 75c a trip, so keeping tomorrow's lemon money in your purse and banking the rest is the answer rather than emptying one into the other. You start with $3.00, which is not enough for a full stall, so the bank is a real choice on day one — the lemon screen carries the loan offers, the ice bucket and the big sign, so nothing has to be found behind another menu. The fortnight ends at a shop counter: the total counts up and you walk out with the best thing your money reaches. Saving up for the bike takes a genuinely good fortnight (~age 8+). |
 | ⭐ **Times Table Blaster** | [`times-table-blaster/`](times-table-blaster/) | Practise your times tables. Ninja Belt mode ranks you up one table at a time; Classic mode adds timers, streaks and a leaderboard. |
 
@@ -66,13 +67,12 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 ### Planned
 
-Nothing outstanding. All four games on the original roadmap are built, and two
-more were added on top of them — Deal or No Deal and Lemonade Stand.
+Nothing outstanding. All four games on the original roadmap are built, and three
+more were added on top of them — Deal or No Deal, Lemonade Stand and Bank Boss.
 
-[`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md) is still worth reading before
-starting a new one: it holds what each build actually cost against what it was
-estimated at, and the handful of things that turned out to be worth knowing in
-advance.
+[`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md) is worth reading before starting a
+new one: it holds what each build actually cost against what it was estimated at,
+and the handful of things that turned out to be worth knowing in advance.
 
 ## Run locally
 
