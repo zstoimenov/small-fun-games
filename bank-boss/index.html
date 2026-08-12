@@ -23,7 +23,7 @@
     <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
 
     <h1>🏦 Bank Boss</h1>
-    <p class="sub">You run the bank. People leave their money with you, and other people come in wanting to borrow it. You decide what to pay savers and what to charge borrowers — and the gap between those two is everything your bank earns.</p>
+    <p class="sub">You run the bank. Some people leave their money with you. Others come in to borrow it. You choose what to pay savers and what to charge borrowers — and the gap between the two is everything your bank earns.</p>
 
     <div class="row">
       <span class="row-label">How long?</span>
@@ -116,28 +116,32 @@
           <div id="boardList"></div>
         </div>
 
-        <div class="card dial">
-          <div class="card-head"><span>💰 What you pay savers</span><strong id="saveNow">2c</strong></div>
-          <div class="seg wide-seg" id="saveChooser"></div>
-          <p class="verdict" id="saveNote"></p>
-        </div>
+        <!-- ONE card, not three. The two dials used to be separate cards with a
+             paragraph each, and the gap was a third card underneath restating
+             both of their numbers — so "$3.05" appeared three times on one
+             screen and the child had to hold two cards in their head to see why
+             the third one said what it said.
 
-        <div class="card dial">
-          <div class="card-head"><span>🤝 What you charge borrowers</span><strong id="loanNow">8c</strong></div>
+             Here the money coming IN is the top row, the money going OUT is the
+             bottom row, and the gap is drawn in the space between the two sets
+             of tiles that make it. Change a tile and the gap moves: that is the
+             whole lesson, and now it is one glance instead of three. -->
+        <div class="card ratecard">
+          <div class="rate-head"><span>🤝 What you charge borrowers</span><strong id="loanNow">8c</strong></div>
           <div class="seg wide-seg" id="loanChooser"></div>
-          <p class="verdict" id="loanNote"></p>
-        </div>
 
-        <!-- The gap, drawn, and priced in real money against the real books.
-             Two arrows and the space between them: that space is the whole of
-             what a bank earns. -->
-        <div class="card gapcard">
-          <div class="gap-row in"><span>Borrowers pay you tonight</span><b id="gapIn">$0.00</b></div>
+          <!-- The gap, with the two amounts it is made of underneath it. -->
           <div class="gap-mid" id="gapMid">
             <span class="gap-size" id="gapSize">$0.00</span>
-            <span class="gap-say" id="gapSay">is what your bank would keep tonight</span>
+            <span class="gap-body">
+              <span class="gap-say" id="gapSay">is what your bank keeps tonight</span>
+              <span class="gap-sum"><b class="in" id="gapIn">$0.00</b> comes in
+                · <b class="out" id="gapOut">$0.00</b> goes out</span>
+            </span>
           </div>
-          <div class="gap-row out"><span>You pay savers tonight</span><b id="gapOut">$0.00</b></div>
+
+          <div class="rate-head"><span>💰 What you pay savers</span><strong id="saveNow">2c</strong></div>
+          <div class="seg wide-seg" id="saveChooser"></div>
         </div>
 
         <div class="coach calm" id="coach" hidden>

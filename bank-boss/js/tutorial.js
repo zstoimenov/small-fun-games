@@ -40,59 +40,51 @@ BB.Tutorial = (function () {
 
     return [
       { title: "You're the bank",
-        html: "<p>This isn't your piggy bank. It's <b>the bank</b>, and you're in charge of it.</p>" +
-          "<p>All day people come to the counter. Some want to leave their money with you. " +
-          "Some want to borrow money for a scooter or a puppy or fixing their van.</p>" +
+        html: "<p>This isn't your piggy bank. It's <b>the bank</b>, and you're the boss of it.</p>" +
+          "<p>All day, people come to the counter. Some want to leave their money with you. " +
+          "Some want to borrow some.</p>" +
           "<div class='demo'>You start with <b>" + M(Bk.START_OWN) + "</b> of your own money, " +
-          "and " + sp.days + " days to make it grow.</div>" },
+          "and " + sp.days + " days to grow it.</div>" },
 
       { title: "Whose money is in the vault?",
-        html: "<p>Here's the bit grown-ups forget to tell you. When Nan leaves " + M(2500) +
-          " in your bank, those coins go in your vault — <b>but they're still hers</b>. " +
-          "You owe her every one of them back.</p>" +
+        html: "<p>When Nan leaves " + M(2500) + " with you, the coins go in your vault — " +
+          "<b>but they're still hers</b>. You owe her every one back.</p>" +
           minibar([["owed", 6000, "savers"], ["own", 6000, "yours"]]) +
-          "<p>And here's the surprising part: <b>you lend other people's money to somebody " +
-          "else</b>. That's the whole job.</p>" +
+          "<p>Here's the surprising bit: <b>you lend her coins to somebody else</b>. " +
+          "That's the job.</p>" +
           minibar([["silver", 3500, "in the vault"], ["out", 8500, "out on loan"]]) +
-          "<p>Both bars are the same length, because it's the same money. The top one says " +
-          "<i>whose</i> it is. The bottom one says <i>where</i> it is right now.</p>" },
+          "<p>Same money, so both bars are the same length. The top one says <i>whose</i> it " +
+          "is. The bottom one says <i>where</i> it is.</p>" },
 
       { title: "The gap is the whole game",
-        html: "<p>Every night, two things happen. <b>Borrowers pay you</b> a little for every " +
-          "dollar they've got of yours. And <b>you pay savers</b> a little for every dollar " +
-          "they've left with you.</p>" +
-          "<div class='demo'>Lend " + M(loan) + " at <b>" + r + "c</b> a night → they pay you " +
-          "<b>" + M(perNight) + "</b> every night, and give the " + M(loan) + " back after " +
-          nights + " nights. You keep <b>" + M(total) + "</b>.<br><br>" +
+        html: "<p>Every night, borrowers pay you a bit — and you pay savers a bit.</p>" +
+          "<div class='demo'>Lend " + M(loan) + " at <b>" + r + "c</b> a night, and they pay " +
+          "you <b>" + M(perNight) + "</b> a night for " + nights + " nights. You keep <b>" +
+          M(total) + "</b>.<br><br>" +
           "But " + M(book) + " of savings at <b>" + s + "c</b> a night costs you <b>" +
-          M(Bk.nightlyOn(book, s)) + "</b> every night — on <i>all</i> of it, even the coins " +
-          "still sitting in your vault doing nothing.</div>" +
+          M(Bk.nightlyOn(book, s)) + "</b> a night — even the coins asleep in your vault.</div>" +
           "<p>The space between those two numbers is <b>everything your bank earns</b>. " +
           "That's what an interest rate is for.</p>" },
 
-      { title: "Two things will catch you out",
-        html: "<p><b>1. Not everybody pays you back.</b> Look at the stars before you say yes.</p>" +
+      { title: "Two things catch you out",
+        html: "<p><b>1. Not everybody pays you back.</b> Check the stars first.</p>" +
           "<div class='demo'>★★★ nearly always pays you back<br>" +
           "★★ usually pays you back<br>★ often doesn't</div>" +
-          "<p>And here's the trap: <b>charge the most you can and the careful people stop " +
-          "coming</b>. Only " + Math.round(Bk.ACCEPT[3][10] * 100) + " out of 100 ★★★ people " +
-          "will borrow at 10c — but " + Math.round(Bk.ACCEPT[1][10] * 100) + " out of 100 of " +
-          "the risky ones still will. No rate is high enough to make that a good deal.</p>" +
-          "<p><b>2. You can't lend money you've promised.</b> Savers say which day they want " +
-          "theirs back, and the vault shows you that number as <b>🔒 promised to savers</b>. " +
-          "Lend past it and you'll have to ask a borrower to pay early — they'll only give you " +
-          "<b>75c in the dollar</b>, and the town hears about it.</p>" },
+          "<p>And the trap: <b>charge too much and the careful people stop coming</b>. At 10c " +
+          "only " + Math.round(Bk.ACCEPT[3][10] * 100) + " in 100 ★★★ people still borrow — " +
+          "but " + Math.round(Bk.ACCEPT[1][10] * 100) + " in 100 of the risky ones do.</p>" +
+          "<p><b>2. You can't lend money you've promised.</b> The vault shows that as " +
+          "<b>🔒 promised</b>. Lend past it and you'll have to ask a borrower to pay early — " +
+          "they only give back <b>75c in the dollar</b>.</p>" },
 
       { title: "Ready?",
-        html: "<p>Every morning the board tells you who's coming in today. Then you pick your " +
-          "two rates — <b>each tile shows what it costs or earns tonight</b>, in real money — " +
-          "and open the doors.</p>" +
-          "<p>The only question at the counter is <b>lend it, or don't</b>.</p>" +
-          "<div class='demo'>Get your bank up to <b>" + M(target) + "</b> in " + sp.days +
+        html: "<p>Each morning the board says who's coming in. You pick your two rates, and " +
+          "open the doors.</p>" +
+          "<p>At the counter there's one question: <b>lend it, or don't</b>.</p>" +
+          "<div class='demo'>Grow your bank to <b>" + M(target) + "</b> in " + sp.days +
           " days and it becomes " + sp.rungs[sp.rungs.length - 1].replace(/^\S+\s/, "") +
-          ". There are three smaller things to grow into on the way.</div>" +
-          "<p>Stuck? The <b>📒 books</b> in the menu remember everything — who owes you what, " +
-          "who let you down before, and what each pair of rates has actually earned you.</p>" }
+          ". There are three smaller things to grow into first.</div>" +
+          "<p>Stuck? The <b>📒 books</b> in the menu remember everything.</p>" }
     ];
   }
 

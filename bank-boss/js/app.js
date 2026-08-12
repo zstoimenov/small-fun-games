@@ -167,30 +167,26 @@
   // A tip about THIS morning, from what the books actually say. Never a
   // general-purpose hint: the two dials are the only decision on this screen, so
   // a tip that isn't about them is decoration. Ordered by what it is costing.
+  //
+  // Two of these used to say what the screen already says. The vault turns red
+  // by itself when you have lent out promised money, and the gap card prints
+  // "-$1.20 is what tonight COSTS you" in red — so a coach box repeating either
+  // of them in longer words was the same warning twice, 100px apart, which
+  // teaches a child to stop reading the box. What is left is only ever
+  // something the screen does NOT already show.
   function morningTip(run) {
     const bank = run.bank;
     const idle = K.spare(run, bank);
-    const t = K.tonightAt(run);
-    if (bank.cash < K.reserveNeeded(run, bank)) {
-      return "You've lent out money you promised savers. Don't lend any more today — if " +
-        "somebody comes for theirs you'll be calling your loans in at a loss.";
-    }
-    if (t.kept < 0) {
-      return "At these rates tonight COSTS you " + K.money(-t.kept) + ". Either lend more of " +
-        "the vault out, or pay savers less for money you can't use.";
-    }
     if (idle > 10000) {
-      return K.money(idle) + " is sitting in the vault doing nothing, and you're paying " +
-        bank.saveRate + "c a night for every dollar of it. Lending it out is what makes it " +
-        "earn — or drop what you pay savers and stop buying more of it.";
+      return K.money(idle) + " is sitting in the vault doing nothing — and you still pay " +
+        bank.saveRate + "c a night on every dollar of it. Lend it out, or pay savers less.";
     }
     if (bank.deposits <= 0) {
-      return "Nobody much has money with you yet. Paying savers a bit more is how you get " +
-        "some coins to lend out.";
+      return "Nobody has money with you yet. Pay savers more and they'll bring you coins to lend.";
     }
     if (bank.fires > 0) {
-      return "You've had to call loans in " + bank.fires + (bank.fires === 1 ? " time" : " times") +
-        " so far. That's the dearest thing in the game — never lend money you've promised.";
+      return "You've had to call loans in early " + bank.fires +
+        (bank.fires === 1 ? " time" : " times") + ". It's the dearest thing in the game.";
     }
     return null;
   }

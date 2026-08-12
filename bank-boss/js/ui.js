@@ -86,15 +86,17 @@ BB.Ui = (function () {
     const short = bank.cash < keep;
     $("purse").classList.toggle("short", short);
 
+    // Only ever a warning. The line used to read "$153.25 of the money in this
+    // bank belongs to other people" the rest of the time, which is the blue bar
+    // spelled out in words directly underneath the blue bar — and a line that is
+    // usually furniture is a line nobody reads on the day it turns red.
     const note = $("vaultNote");
-    note.classList.toggle("warn", short || missing > 0);
+    show("vaultNote", short || missing > 0);
+    note.classList.add("warn");
     if (missing > 0) {
       note.textContent = "⚠️ Your bank owes " + money(missing) + " more than it has got.";
     } else if (short) {
-      note.textContent = "⚠️ You've lent out money you promised somebody. If they turn up " +
-        "you'll have to call your loans in early.";
-    } else {
-      note.textContent = money(h.owed) + " of the money in this bank belongs to other people.";
+      note.textContent = "⚠️ You've lent out money you promised somebody. Don't lend any more today.";
     }
   }
 
@@ -148,26 +150,48 @@ BB.Ui = (function () {
     const t = bank.today || { back: [], bad: [] };
     const rows = [];
 
-    for (const l of t.back) {
-      rows.push(["💸", Bk.person(l.id).name + " brought back " + money(l.amount),
+    // One row per KIND of news, not one per person. Three loans coming home on
+    // the same morning used to be three rows all ending "that money is in your
+    // vault again", which on a phone pushed the two dials — the only decision on
+    // the screen — clean below the fold.
+    if (t.back.length === 1) {
+      rows.push(["💸", Bk.person(t.back[0].id).name + " brought back " + money(t.back[0].amount),
         "that money is in your vault again", false]);
+    } else if (t.back.length > 1) {
+      const total = t.back.reduce((a, l) => a + l.amount, 0);
+      rows.push(["💸", t.back.length + " loans came back",
+        money(total) + " is in your vault again", false]);
     }
-    for (const l of t.bad) {
+
+    if (t.bad.length === 1) {
+      const l = t.bad[0];
       rows.push(["💔", Bk.person(l.id).name + (l.back > 0
         ? " could only pay back " + money(l.back) + " of " + money(l.amount)
         : " never paid back " + money(l.amount)),
         "you lost " + money(l.lost), true]);
+    } else if (t.bad.length > 1) {
+      const lost = t.bad.reduce((a, l) => a + l.lost, 0);
+      rows.push(["💔", t.bad.length + " loans weren't paid back",
+        "you lost " + money(lost), true]);
     }
     if (f.leaving > 0) {
       rows.push(["🔙", plural(f.leaving, "person wants", "people want") + " their savings back",
         money(f.leavingAmount) + " has to be in the vault for them", true]);
     }
-    if (f.borrowers > 0) {
-      rows.push(["🤝", plural(f.borrowers, "person is", "people are") + " coming to borrow",
+    // One row for the queue, not two. The counts are the news; "you say yes or
+    // no to each one" and "you pay for it every night" are rules the child meets
+    // at the counter and on the night screen, where they bite.
+    const coming = f.borrowers + f.savers;
+    if (f.borrowers && f.savers) {
+      rows.push(["🚶", plural(coming, "person is", "people are") + " coming in",
+        f.borrowers + " to borrow · " + f.savers + " to leave money with you", false]);
+    } else if (f.borrowers) {
+      // Only one kind today, so the split would just say the count again — the
+      // line underneath is free to say what the day actually asks of you.
+      rows.push(["🤝", plural(coming, "person is", "people are") + " coming to borrow",
         "you say yes or no to each one", false]);
-    }
-    if (f.savers > 0) {
-      rows.push(["💰", plural(f.savers, "person has", "people have") + " money to leave with you",
+    } else if (f.savers) {
+      rows.push(["💰", plural(coming, "person has", "people have") + " money to leave with you",
         "you pay for it every night, lent out or not", false]);
     }
     if (!rows.length) rows.push(["🌤️", "A quiet day", "nobody much is coming in", false]);
@@ -189,15 +213,23 @@ BB.Ui = (function () {
   // A rate tile carries the rate AND what that rate costs or earns tonight, on
   // the money actually in the books. Three tiles, three real numbers, and the
   // decision makes itself visible.
+  //
+  // Except on day one, when nothing is out on loan and all three loan tiles
+  // price at $0.00. Three identical zeros at the very moment the child picks a
+  // loan rate for the first time say the choice does not matter, which is the
+  // opposite of true — so when there is nothing to price the money line is left
+  // off and the tile is the rate and who it brings through the door.
   function rateTiles(id, values, current, priceOf, hintOf) {
     const host = $(id);
+    const priced = values.some((v) => priceOf(v) > 0);
     host.textContent = "";
     for (const v of values) {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "opt" + (v === current ? " on" : "");
       b.dataset.value = v;
-      b.innerHTML = rate(v) + "<em>" + money(priceOf(v)) + "</em><small>" + hintOf(v) + "</small>";
+      b.innerHTML = rate(v) + (priced ? "<em>" + money(priceOf(v)) + "</em>" : "") +
+        "<small>" + hintOf(v) + "</small>";
       host.appendChild(b);
     }
   }
@@ -228,23 +260,18 @@ BB.Ui = (function () {
     rateTiles("loanChooser", Bk.LOAN_RATES, bank.loanRate,
       (v) => Bk.nightlyOn(bank.loansOut, v), loanHint);
 
+    // The two totals and the gap between them, and nowhere else. Each dial used
+    // to carry a two-line paragraph saying what its own tiles already said, and
+    // then this said it a third time.
     const t = Bk.tonightAt(run);
-    set("saveNote", bank.deposits > 0
-      ? "Savers have left " + money(bank.deposits) + " with you, so tonight costs you " +
-        money(t.out) + " — on all of it, whether you managed to lend it out or not."
-      : "Nobody has money with you yet. Pay a bit more and more of the town will bring theirs in.");
-    set("loanNote", bank.loansOut > 0
-      ? "You've got " + money(bank.loansOut) + " out on loan, so tonight that pays you " +
-        money(t.in) + ". Only money that is out working earns anything."
-      : "You haven't lent anything yet, so tonight earns you nothing. Money asleep in the " +
-        "vault still costs you.");
-
     set("gapIn", money(t.in));
     set("gapOut", money(t.out));
     set("gapSize", money(t.kept));
+    // No "because you pay out more than you take in" tail: the line underneath
+    // is the two amounts side by side, which says it better and in fewer words.
     set("gapSay", t.kept >= 0
-      ? "is what your bank would keep tonight"
-      : "is what tonight would COST you — you're paying out more than you're taking in");
+      ? "is what your bank keeps tonight"
+      : "is what tonight COSTS you");
     $("gapMid").parentNode.classList.toggle("thin", t.kept < 0);
 
     show("coach", !!o.tip);
@@ -263,28 +290,27 @@ BB.Ui = (function () {
     });
   }
 
-  const row = (label, value, cls) =>
+  const row = (label, value, cls, sub) =>
     '<div class="deal-line ' + (cls || "") + '"><span>' + label +
-    "</span><strong>" + value + "</strong></div>";
+    (sub ? "<i>" + sub + "</i>" : "") + "</span><strong>" + value + "</strong></div>";
 
-  // What you know about this person, in one line. Stars never change, so this is
-  // knowledge worth having rather than a dice roll wearing a badge — and the
-  // tally next to them is the child's own evidence for it.
+  // What you know about this person, in one short line. Stars never change, so
+  // this is knowledge worth having rather than a dice roll wearing a badge — and
+  // the tally next to them is the child's own evidence for it.
+  //
+  // Only what bears on saying yes. The full tally — what a let-down cost, how
+  // much they have saved with you — is a sentence long enough to be skipped, and
+  // it is all in 📒 the books for anyone who wants it.
   function history(bank, p) {
     const r = bank.record[p.id];
-    if (!r || (!r.lent && !r.saved)) return "You've never dealt with " + p.name + " before.";
-    const bits = [];
-    if (r.lent) {
-      const out = r.lent - r.repaid - r.broke;
-      const done = [];
-      if (r.repaid) done.push("paid you back " + r.repaid + "×");
-      if (r.broke) done.push("let you down " + r.broke + "× (cost you " + money(r.cost) + ")");
-      if (out > 0) done.push(out + " still out with them");
-      bits.push("You've lent to " + p.name + " " + plural(r.lent, "time", "times") +
-        (done.length ? " — " + done.join(", ") : ""));
-    }
-    if (r.saved) bits.push("They've brought you " + money(r.saved) + " to look after");
-    return bits.join(". ") + ".";
+    if (!r || !r.lent) return "You've never lent to " + p.name + " before.";
+    const done = [];
+    if (r.repaid) done.push("paid you back " + r.repaid + "×");
+    if (r.broke) done.push("let you down " + r.broke + "×");
+    const out = r.lent - r.repaid - r.broke;
+    if (out > 0) done.push(out + " still out with them");
+    return "You've lent to " + p.name + " " + plural(r.lent, "time", "times") +
+      (done.length ? ": " + done.join(", ") : "") + ".";
   }
 
   // One card, one person, everything the decision needs on it at once. The first
@@ -335,14 +361,14 @@ BB.Ui = (function () {
     if (c.kind === "withdraw") {
       if (out.short) {
         res.classList.add("bad");
-        res.textContent = "You couldn't find " + p.name + "'s money. That is the worst thing " +
-          "a bank can do, and the whole town hears about it.";
+        res.textContent = "You couldn't find " + p.name + "'s money. That's the worst thing a " +
+          "bank can do, and the whole town hears about it.";
         set("personSay", p.name + " came for their savings — " + money(c.amount) + ".");
       } else {
         res.classList.add("took");
         res.textContent = "You handed over " + money(out.paidOut) + "." +
           (out.interest > 0
-            ? " " + money(out.interest) + " of that is interest you paid them for leaving it with you."
+            ? " " + money(out.interest) + " of that was interest for letting you look after it."
             : "");
         set("personSay", p.name + " came for their savings back.");
         coins("out");
@@ -357,15 +383,15 @@ BB.Ui = (function () {
       res.classList.add("took");
       set("personSay", p.name + " is leaving " + money(out.took) + " with you for " +
         plural(out.nights, "night", "nights") + ".");
-      res.textContent = "You now owe " + p.name + " " + money(out.took) + " — and you can lend " +
-        "it to somebody else. It costs you " + money(out.costsNightly) + " a night either way.";
+      res.textContent = "You owe " + p.name + " that " + money(out.took) + " back — but you can " +
+        "lend it out first. It costs you " + money(out.costsNightly) + " a night either way.";
       coins("in");
     } else if (out.lent) {
       res.classList.add("lent");
       set("personSay", p.name + " is borrowing " + money(out.lent) + " for " + c.why + ".");
       res.textContent = money(out.lent) + " walks out of the vault. " + p.name + " pays you " +
-        money(out.nightly) + " every night and brings the " + money(out.lent) +
-        " itself back on day " + out.due + ".";
+        money(out.nightly) + " a night, and brings the " + money(out.lent) + " back on day " +
+        out.due + ".";
       coins("out");
     } else if (out.refused) {
       res.classList.add("meh");
@@ -377,9 +403,17 @@ BB.Ui = (function () {
     }
   }
 
-  // The decision. Five numbers, and they are the whole of it: what it earns a
-  // night, what it earns in all, when the money comes home, and what would be
-  // left in the vault against what has already been promised.
+  // The decision, in two lines: what saying yes earns, and when the money comes
+  // home. That is the whole of it.
+  //
+  // This was a seven-row table. "They want $62.50" repeated the sentence right
+  // above it; "They'd pay you $5.00 every night" and "For 5 nights" were the
+  // working for "So you'd earn $25.00" and now sit under it as the working;
+  // "Left in the vault after this" and "…and you've promised savers" were two
+  // numbers a child had to subtract to reach a conclusion the line underneath
+  // already states in words. Seven rows for a yes-or-no question is an
+  // accountant's screen, and none of the four that went taught anything the
+  // remaining three don't.
   function ask(run, out) {
     const c = out.customer;
     const p = out.person;
@@ -388,16 +422,9 @@ BB.Ui = (function () {
 
     set("personSay", p.name + " wants to borrow " + money(c.amount) + " for " + c.why + ".");
     box.innerHTML =
-      row("They want", money(c.amount), "big") +
-      row("They'd pay you every night", money(out.nightly), "good") +
-      row("For", plural(c.nights, "night", "nights")) +
-      row("So you'd earn", money(out.interest), "good") +
-      row("They bring the " + money(c.amount) + " back on", "day " + out.due) +
-      '<div class="deal-rule"></div>' +
-      row("Left in the vault after this", money(Math.max(0, out.leaves)),
-        out.belowLine ? "warn" : "") +
-      row(out.belowLine ? "…but you've promised savers" : "…and you've promised savers",
-        money(out.keep), out.belowLine ? "warn" : "");
+      row("You'd earn", money(out.interest), "earn",
+        money(out.nightly) + " a night for " + plural(c.nights, "night", "nights")) +
+      row("You get the " + money(c.amount) + " back on", "day " + out.due);
 
     show("dealBox", true);
     show("personResult", true);
@@ -407,11 +434,15 @@ BB.Ui = (function () {
       res.textContent = "You've only got " + money(run.bank.cash) + " in the vault. You can't " +
         "lend coins you haven't got.";
     } else if (out.belowLine) {
-      res.textContent = "⚠️ Lending this leaves you " + money(-clear) + " short of what you've " +
-        "already promised savers. If they turn up you'll have to call your loans in early.";
-    } else {
-      res.textContent = "That still leaves " + money(clear) + " spare after everything you've " +
+      res.textContent = "⚠️ You've promised savers " + money(out.keep) + ". Lend this and you're " +
+        money(-clear) + " short of it.";
+    } else if (out.keep > 0) {
+      res.textContent = "You'd still have " + money(clear) + " spare after everything you've " +
         "promised savers.";
+    } else {
+      // Nothing promised in the next couple of days, so naming savers here would
+      // be answering a question the board has not asked yet.
+      res.textContent = "You'd still have " + money(clear) + " left in the vault.";
     }
 
     $("sayYes").textContent = out.belowLine ? "Lend it anyway" : "Lend " + money(c.amount);
@@ -478,11 +509,9 @@ BB.Ui = (function () {
     townFolk(rep.trustAfter);
     const moved = rep.trustAfter - rep.trustBefore;
     set("trustNote", moved > 0
-      ? "You looked after people today, so one more of the town moved their money to you. " +
-        "The more they leave with you, the more you have to lend."
+      ? "You looked after people today, so one more of the town joined your bank."
       : moved < 0
-      ? "You let somebody down, and " + Math.abs(moved) + " of the town took their business " +
-        "elsewhere. Word gets round fast."
+      ? "You let somebody down, so " + Math.abs(moved) + " of the town left. Word gets round fast."
       : "Nobody changed their mind about you today.");
 
     causes(run, bank, rep);
@@ -518,12 +547,11 @@ BB.Ui = (function () {
     const idle = Bk.spare(run, bank);
     if (t.lent > 0) {
       list.push(["🤝", "You lent out " + money(t.lent) + " at " + rate(bank.loanRate) + " a night",
-        "that money is working for you instead of sitting there", false]);
+        "that money is working instead of sitting there", false]);
     }
     if (idle > 8000) {
       list.push(["😴", money(idle) + " sat in the vault doing nothing",
-        "and you still paid " + rate(bank.saveRate) + " a night for every dollar of it — " +
-        "pay savers less, or lend more of it out", true]);
+        "you still paid " + rate(bank.saveRate) + " a night on every dollar of it", true]);
     }
     if (t.refused > 0) {
       list.push(["🙅", "You said no to " + plural(t.refused, "borrower", "borrowers"),
@@ -531,7 +559,7 @@ BB.Ui = (function () {
     }
     if (rep.bad.length) {
       list.push(["💔", plural(rep.bad.length, "loan", "loans") + " went wrong",
-        "that cost you " + money(rep.badDebt) + " — check the stars before you say yes", true]);
+        "that cost you " + money(rep.badDebt) + " — check the stars first", true]);
     }
     if (t.fire > 0) {
       list.push(["🔥", "You ran out of coins and called loans in",
@@ -670,20 +698,20 @@ BB.Ui = (function () {
       : rung > 0 ? "You grew it into " + sp.rungs[rung - 1].replace(/^\S+\s/, "")
       : s.grew >= 0 ? "You kept the doors open" : "Your bank lost money");
     set("resultSub", s.grew >= 0
-      ? "You started with " + money(Bk.START_OWN) + " of your own money and finished with " +
-        money(s.own) + ". Every cent of the difference came out of the gap between what " +
-        "you paid savers and what borrowers paid you."
+      ? "You started with " + money(Bk.START_OWN) + " and finished with " + money(s.own) +
+        ". Every cent of the difference came out of the gap between what you paid savers " +
+        "and what borrowers paid you."
       : "You started with " + money(Bk.START_OWN) + " and finished with " + money(s.own) +
-        ". A bank that lends money can lose money — that is exactly why it charges more " +
+        ". A bank that lends money can lose money — that's exactly why it charges more " +
         "than it pays.");
 
     ladder(sp, s.own);
     BB.Chart.render($("chart"), run);
 
     set("grewLine", "You started with " + Bk.START_TRUST + " people banking with you and " +
-      "finished with " + s.trust + " of the " + Bk.TOWNSFOLK + " in town. At the busiest " +
-      "you were looking after " + money(peakDeposits(run)) + " of other people's money, and " +
-      "borrowers paid you " + money(s.earned) + " for the use of it.");
+      "finished with " + s.trust + " of the " + Bk.TOWNSFOLK + " in town. At your busiest you " +
+      "looked after " + money(peakDeposits(run)) + " of their money, and borrowers paid you " +
+      money(s.earned) + " to use it.");
     set("takeaway", Bk.takeaway(run));
 
     const st = [];
