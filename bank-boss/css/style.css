@@ -579,6 +579,12 @@ body.in-game{
 /* ── Narrow phones ──────────────────────────────────────────────────────── */
 
 @media (max-width:400px){
+  /* On a phone the two purse labels do not fit beside their amounts and get
+     ellipsised to "🔒 pro…" and "💰 fr…", which reads as a broken page rather
+     than as a tight one. The padlock and the money bag say the same thing in
+     the space available, and the line under the bars spells both out. */
+  .purse-half span{font-size:0}
+  .purse-half span::first-letter{font-size:13px}
   .wide-seg .opt{font-size:13.5px}
   .person-face{font-size:36px}
   .person-name{font-size:17px}

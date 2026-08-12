@@ -112,13 +112,22 @@ BB.Bank = (function () {
   //
   //   what a star is really worth, per dollar per night = r - default*(1-recovery)*100/n
   //
-  // At n = 4.5 nights that loss works out at 0.9c, 2.0c and 10.7c a night. Set
-  // against the middle 8c loan rate and 2c paid to savers that is +5.1c, +4.0c
+  // At n = 4.5 nights that loss works out at 0.9c, 1.6c and 10.7c a night. Set
+  // against the middle 8c loan rate and 2c paid to savers that is +5.1c, +4.4c
   // and -4.7c — so the ladder is legible and, more importantly, NO rate on the
   // dial makes a one-star loan worth taking: at the dearest 10c it is still
   // -2.7c a night. Dodgy Dave is not a gamble that pays if you charge enough,
   // and the harness asserts exactly that.
-  const DEFAULT_RATE = { 3: 0.08, 2: 0.18, 1: 0.48 };
+  //
+  // Two stars went from 18% to 14%, and unlike everything else in this file that
+  // is a DELIBERATE SOFTENING rather than a discovery. It is worth three points
+  // off the share of well-played runs that finish behind where they started, and
+  // it costs the sharpness of the gap between two stars and three — now 0.9c a
+  // night against 1.6c, a real difference that no child will feel. It was taken
+  // because the floor is something a child feels and that gap is not, and
+  // because the decision the game actually asks (lend to two and three stars,
+  // never to one) is untouched by it.
+  const DEFAULT_RATE = { 3: 0.08, 2: 0.14, 1: 0.48 };
 
   // What comes back when a loan goes wrong. Somebody reliable who hits trouble
   // pays back what they can; somebody who was never going to pay you simply
@@ -190,13 +199,23 @@ BB.Bank = (function () {
 
   const LEVELS = {
     short: {
-      days: 7, queue: [4, 6],
-      goal: [6700, 7600, 8800, 10600],
+      // Same daily rhythm as the long game, just fewer days. It used to send a
+      // queue of 4-6 against 5-7, which made SHORT the harder setting to get a
+      // rung on: less business a day means fewer loans, and at seven loans one
+      // bad debt decides the run. Measured, it cleared its first rung 75% of the
+      // time against the long game's 84%, which is the wrong way round for the
+      // gentler setting. Fewer days should be the only thing that makes a short
+      // game short.
+      days: 7, queue: [5, 7],
+      // Re-cut when the queue changed. A bigger queue is more business, so the
+      // old rungs came up 50% of the time instead of 31% — a top prize half of
+      // all good runs walk away with is not a top prize.
+      goal: [6900, 8000, 9500, 11600],
       rungs: ["🪙 a money box", "💼 a proper cash desk", "🏪 a shop on the corner", "🏛️ a real bank"]
     },
     normal: {
       days: 10, queue: [5, 7],
-      goal: [6900, 8600, 10800, 14000],
+      goal: [7000, 8900, 11400, 14700],
       rungs: ["🪙 a money box", "💼 a proper cash desk", "🏪 a shop on the corner", "🏛️ a real bank"]
     }
   };
