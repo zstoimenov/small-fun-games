@@ -1633,3 +1633,89 @@ named townsfolk drawn as a row of faces that light up as they join, a queue stri
 so a child can see how much of the day is left, and a rate tile that says in
 words how much of the town likes it — generated from the model's own tables, so
 a tuning change cannot leave the label behind.
+
+### Second pass — "too repetitive, complicated and uninteresting"
+
+The complaint that started it was three complaints, and taking them one at a time
+was the mistake to avoid: *the interface is confusing*, *it is hard even for an
+adult to follow the gameplay logic*, and **there is no data you can follow to
+make decisions**. The third one is the root, and the first two are what it looks
+like from the outside.
+
+**What a driven playthrough showed, before a line was changed.** On day one the
+vault picture silently retitled itself **Robo Bank** and carried on showing
+numbers, because the customer had walked to the rival's counter — and then the
+button said *"Watch them cross the street"*. One customer could cost four taps
+across three screens, half of them at a bank the child does not control. That
+single screenshot is the whole bug report.
+
+**The rival was the most expensive thing in the game and the least of the
+lesson.** It went, and with it two-player, the pass-the-tablet screen, the three
+robot difficulties, the walk-across-the-street beat, and the whole `appeal`
+calculation deciding whose counter somebody picks. Nothing pedagogical was lost:
+`DEPOSIT_CHANCE` already answers *why does a bank pay you anything?* with "or
+they keep it under the mattress", which is a better answer for an 8-year-old than
+"they go to the shop next door". `rival.js` is deleted.
+
+**The score moved in the opposite direction to the play, and nobody had
+measured it.** Savers were paid nightly; loans only paid at maturity. So a child
+playing *well* watched their own money fall for the first six of twelve nights
+and then jump on the last day when the books closed. The fix is one rule —
+**interest lands every night in both directions** — and borrowers now pay their
+interest in coins each night and hand the borrowed money back on the day it falls
+due. The star economics are untouched by this (the harness prints the same
+`r - default*(1-recovery)*100/n` table), because it changes *when* money lands,
+not how much. Measured: nights where a well-played run's own money goes up went
+**79% → 81%**, runs already ahead at halfway **→ 99%**, went-backwards for good
+play **26% → 8%**.
+
+> **A score that falls while the child is playing well teaches the opposite of
+> the lesson.** Assert the shape of a good run day by day, not just its end.
+> `tools/bank-check.js` now has a whole section for it.
+
+**"Keep back a quarter" was a rule that did not work when obeyed.** A bank
+following it to the letter still had a fire sale in a third of runs, for two
+reasons that only showed up once they were looked for: withdrawals were sprung at
+random, and **loans settled at night while savers were paid during the day**, so
+a loan due today paid out hours after the saver it was meant to cover had been
+turned away. Now every dollar leaving today is printed on the morning board
+before the doors open, the keep-back number is *what you have actually promised
+in the next two nights*, and loans settle at the **start** of the day. Fire sales
+for a line-keeping bank: **12% → 2%**. For a bank that lends every coin: **40%**.
+
+**Every rate on screen is now priced in real money against the real books.**
+`2c a night for every dollar` is a fact an 8-year-old can read and cannot act on.
+Each tile carries what it comes to *tonight* — `1c $2.80 · 2c $5.60 · 3c $8.40`
+— so the dial is a comparison rather than a guess. This turned out to be the
+whole of the "no data" complaint, and it made a decision that was previously
+invisible into a measurable one: a policy that uses the save dial as a **tap**
+(pay less when the vault is full of money it cannot lend) beats leaving it alone
+by **$124 to $111**, and the harness now asserts that, because if setting a dial
+once were as good as using it then one of the game's two decisions is a label.
+
+**What else went, and the count.** The saver accept/refuse question (two
+counterintuitive decisions on one screen is one more than an 8-year-old should
+hold); the five-card night carousel, now **one screen with one sum in the same
+shape every day**; the two-beat customer with the stars on the *second* beat, so
+the question arrived before the facts; the hidden-stars Tricky level; the dashed
+keep-back line drawn across the bar, which read as a rendering fault and is now
+two named numbers side by side. The how-to went from **nine pages to five** — four
+of them were rules the game itself now states at the moment they bite, and a rule
+explained where it bites does not need a page up front.
+
+**What arrived, and it is all the same idea.** A morning board naming who is
+coming today and what already happened this morning; a loan card carrying the
+stars, your own history with that person, the nightly earning, the total, the due
+day, and what the vault holds against what is promised — all in one frame; and a
+books sheet that grew two pages, **People** (everyone you have dealt with and how
+it went) and **Your rates** (every pair you have tried and what it kept).
+
+`3,610 → 3,355 lines`, and the shrink is the point rather than a saving: the game
+does less, says more, and can be reasoned about. **Two-player went with the
+rival, so the catalogue entry is `players: [1, 1]`** — a chip that is generated
+from the field rather than hand-written, which is why nothing else had to change.
+
+> **A game with no memory has no data to decide from.** Every "which should I
+> pick?" the first pass asked had a right answer the child had no way to reach,
+> because nothing on screen remembered what the last choice came to. The three
+> books pages and the priced rate tiles are the same fix applied three times.

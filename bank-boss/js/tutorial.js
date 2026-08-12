@@ -1,10 +1,16 @@
 /* Bank Boss — the how-to lesson.                                               */
 /*                                                                              */
-/* Nine short pages. Every figure on them is computed by calling the real model  */
-/* rather than typed in, so the lesson cannot drift away from the game when a    */
-/* number is tuned. The vault on page two is drawn from the same heaps() the     */
-/* real vault uses — if the picture in the lesson and the picture in the game    */
-/* ever disagreed, the lesson would be the thing teaching the wrong lesson.      */
+/* FIVE short pages, down from nine. Every figure on them is computed by calling */
+/* the real model rather than typed in, so the lesson cannot drift away from the */
+/* game when a number is tuned.                                                  */
+/*                                                                              */
+/* What the nine pages got wrong is worth writing down, because it is a trap any */
+/* teaching game walks into: the lesson had grown a page for every mechanic, and */
+/* an 8-year-old met nine screens of reading before touching a single button.    */
+/* Four of those pages are now things the game itself says at the moment they    */
+/* matter — the vault chip names the keep-back number, the loan card carries the */
+/* stars and the history, the morning board prices both dials in real dollars.   */
+/* A rule explained where it bites does not need a page up front.                */
 "use strict";
 window.BB = window.BB || {};
 
@@ -26,97 +32,67 @@ BB.Tutorial = (function () {
     const M = Bk.money;
     const target = sp.goal[sp.goal.length - 1];
 
-    // A worked loan, from the real arithmetic.
-    const amount = 4000, nights = 5, r = 8, s = 2;
-    const repay = Bk.repayFor(amount, r, nights);
-
-    // What a night costs on a book of $200 at each rate.
-    const book = 20000;
-    const nightly = (v) => M(Bk.interestOn(book, v));
+    // A worked example, from the real arithmetic. $40 lent for 4 nights at the
+    // middle rate, against $200 of savings at the middle rate.
+    const loan = 4000, nights = 4, r = 8, s = 2, book = 20000;
+    const perNight = Bk.nightlyOn(loan, r);
+    const total = Bk.interestOver(loan, r, nights);
 
     return [
       { title: "You're the bank",
         html: "<p>This isn't your piggy bank. It's <b>the bank</b>, and you're in charge of it.</p>" +
-          "<p>All day people come to the counter. Some want to leave their money with you. Some " +
-          "want to borrow money for a scooter or a puppy or fixing their van.</p>" +
-          "<div class='demo'>You start with <b>" + M(Bk.START_OWN) + "</b> of your own money, and " +
-          sp.days + " days to make it grow.</div>" },
+          "<p>All day people come to the counter. Some want to leave their money with you. " +
+          "Some want to borrow money for a scooter or a puppy or fixing their van.</p>" +
+          "<div class='demo'>You start with <b>" + M(Bk.START_OWN) + "</b> of your own money, " +
+          "and " + sp.days + " days to make it grow.</div>" },
 
       { title: "Whose money is in the vault?",
         html: "<p>Here's the bit grown-ups forget to tell you. When Nan leaves " + M(2500) +
           " in your bank, those coins go in your vault — <b>but they're still hers</b>. " +
           "You owe her every one of them back.</p>" +
           minibar([["owed", 6000, "savers"], ["own", 6000, "yours"]]) +
-          "<p>So the vault has two sorts of coins in it, and the picture at the top of the " +
-          "screen shows you which is which, all game long.</p>" },
-
-      { title: "And then you lend it out",
-        html: "<p>Here's the surprising part: <b>you lend other people's money to somebody " +
+          "<p>And here's the surprising part: <b>you lend other people's money to somebody " +
           "else</b>. That's the whole job.</p>" +
           minibar([["silver", 3500, "in the vault"], ["out", 8500, "out on loan"]]) +
-          "<p>Both bars are the same length, because it's the same money. The top bar says " +
-          "<i>whose</i> it is. The bottom bar says <i>where</i> it is right now.</p>" +
-          "<div class='demo'>Nan's " + M(2500) + " isn't sitting in a little box with her name " +
-          "on it. It's out there being somebody's new bike.</div>" },
-
-      { title: "Why does a bank pay you?",
-        html: "<p>Because it wants your coins. If it didn't pay you, you'd keep them under " +
-          "your mattress — and then it would have nothing to lend.</p>" +
-          "<div class='demo'>You choose what to pay. Every night you pay that much for " +
-          "<i>every dollar</i> anyone has left with you:<br>" +
-          "<b>1c</b> a night → on " + M(book) + " that's " + nightly(1) + " a night<br>" +
-          "<b>2c</b> a night → " + nightly(2) + "<br>" +
-          "<b>3c</b> a night → " + nightly(3) + "</div>" +
-          "<p>That's an <b>interest rate</b>. Pay too little and people go to the bank across " +
-          "the street. Pay too much and it eats you alive.</p>" },
+          "<p>Both bars are the same length, because it's the same money. The top one says " +
+          "<i>whose</i> it is. The bottom one says <i>where</i> it is right now.</p>" },
 
       { title: "The gap is the whole game",
-        html: "<p>You also choose what to <i>charge</i> people who borrow. It's always more " +
-          "than you pay savers, and the space in between is everything your bank earns.</p>" +
-          "<div class='demo'>Charge borrowers <b>" + r + "c</b> a night<br>" +
-          "Pay savers <b>" + s + "c</b> a night<br>" +
-          "The gap is <span class='big-num'>" + (r - s) + "c</span>a night for every dollar " +
-          "you've lent out.</div>" +
-          "<p>Borrow " + M(amount) + " for " + nights + " nights at " + r + "c and you pay back " +
-          "<b>" + M(repay) + "</b>. The bank keeps " + M(repay - amount) + " of that.</p>" },
+        html: "<p>Every night, two things happen. <b>Borrowers pay you</b> a little for every " +
+          "dollar they've got of yours. And <b>you pay savers</b> a little for every dollar " +
+          "they've left with you.</p>" +
+          "<div class='demo'>Lend " + M(loan) + " at <b>" + r + "c</b> a night → they pay you " +
+          "<b>" + M(perNight) + "</b> every night, and give the " + M(loan) + " back after " +
+          nights + " nights. You keep <b>" + M(total) + "</b>.<br><br>" +
+          "But " + M(book) + " of savings at <b>" + s + "c</b> a night costs you <b>" +
+          M(Bk.nightlyOn(book, s)) + "</b> every night — on <i>all</i> of it, even the coins " +
+          "still sitting in your vault doing nothing.</div>" +
+          "<p>The space between those two numbers is <b>everything your bank earns</b>. " +
+          "That's what an interest rate is for.</p>" },
 
-      { title: "Money asleep costs you",
-        html: "<p>You pay savers every night on <b>every dollar they've left with you</b> — " +
-          "even the dollars still sitting in your vault doing nothing.</p>" +
-          "<div class='demo'>So a vault full of coins isn't a good thing. It's a bill.</div>" +
-          "<p>That's why a bank sometimes says <b>“no thank you”</b> to somebody's " +
-          "money. If you can't lend it out, you don't want it.</p>" },
-
-      { title: "Not everybody pays you back",
-        html: "<p>Every borrower has stars. Look at them before you say yes.</p>" +
+      { title: "Two things will catch you out",
+        html: "<p><b>1. Not everybody pays you back.</b> Look at the stars before you say yes.</p>" +
           "<div class='demo'>★★★ nearly always pays you back<br>" +
-          "★★ usually pays you back<br>" +
-          "★ often doesn't</div>" +
-          "<p>Here's the trap. <b>Charge the most you can, and the careful people stop " +
-          "coming.</b> Only " + Math.round(Bk.ACCEPT[3][10] * 100) + " out of 100 star-star-star " +
-          "people will borrow at 10c — but " + Math.round(Bk.ACCEPT[1][10] * 100) +
-          " out of 100 of the risky ones still will.</p>" +
-          "<p>So your queue fills up with exactly the people who won't pay you back. No rate " +
-          "is high enough to make that a good deal.</p>" },
-
-      { title: "Keep some coins back",
-        html: "<p>Savers turn up wanting their money, and it has to be there.</p>" +
-          "<div class='demo'>Keep <b>a quarter</b> of the savers' money in the vault. There's " +
-          "a red line on the picture showing you where that is.</div>" +
-          "<p>If you lend past it and somebody wants their money, you have to ask a borrower " +
-          "to pay you back early — and they'll only give you <b>75c in the dollar</b> for that. " +
-          "The rest comes straight out of your own pile, and the town hears about it.</p>" },
+          "★★ usually pays you back<br>★ often doesn't</div>" +
+          "<p>And here's the trap: <b>charge the most you can and the careful people stop " +
+          "coming</b>. Only " + Math.round(Bk.ACCEPT[3][10] * 100) + " out of 100 ★★★ people " +
+          "will borrow at 10c — but " + Math.round(Bk.ACCEPT[1][10] * 100) + " out of 100 of " +
+          "the risky ones still will. No rate is high enough to make that a good deal.</p>" +
+          "<p><b>2. You can't lend money you've promised.</b> Savers say which day they want " +
+          "theirs back, and the vault shows you that number as <b>🔒 promised to savers</b>. " +
+          "Lend past it and you'll have to ask a borrower to pay early — they'll only give you " +
+          "<b>75c in the dollar</b>, and the town hears about it.</p>" },
 
       { title: "Ready?",
-        html: "<p>Every morning: pick your two rates. Then open the doors and deal with " +
-          "whoever walks in.</p>" +
+        html: "<p>Every morning the board tells you who's coming in today. Then you pick your " +
+          "two rates — <b>each tile shows what it costs or earns tonight</b>, in real money — " +
+          "and open the doors.</p>" +
+          "<p>The only question at the counter is <b>lend it, or don't</b>.</p>" +
           "<div class='demo'>Get your bank up to <b>" + M(target) + "</b> in " + sp.days +
           " days and it becomes " + sp.rungs[sp.rungs.length - 1].replace(/^\S+\s/, "") +
-          ".</div>" +
-          "<p>Look after people and more of the town will bank with you — and the more of " +
-          "their money you're holding, the more you can lend.</p>" +
-          "<p><b>Most banks won't get to the top</b>, and that's meant to be true. There are " +
-          "three smaller things to grow into on the way.</p>" }
+          ". There are three smaller things to grow into on the way.</div>" +
+          "<p>Stuck? The <b>📒 books</b> in the menu remember everything — who owes you what, " +
+          "who let you down before, and what each pair of rates has actually earned you.</p>" }
     ];
   }
 

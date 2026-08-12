@@ -4,25 +4,23 @@
 /* bank.js. It decides WHEN things happen; bank.js decides WHAT they come to,    */
 /* and ui.js decides how they look.                                             */
 /*                                                                              */
-/* The one thing worth reading twice is the counter. Every customer is TWO       */
-/* beats — who walked in and what they want, then which counter they chose and   */
-/* what happened there — and the model is not asked to resolve anything until    */
-/* the second beat. Deal or No Deal had to learn this the expensive way: if the  */
-/* answer is already in the state when the question appears on screen, there is  */
-/* no moment for the suspense to live in and no amount of delay creates one.     */
+/* The counter is ONE beat per customer now. The first pass split it into two —  */
+/* who walked in, then what happened — with a 900ms pause between them, on the   */
+/* theory that suspense needs somewhere to live. What it actually bought was     */
+/* three taps for a customer the child had no decision about, and it put the     */
+/* stars on the second beat, so the question arrived before the facts. A game    */
+/* an adult could not follow was made out of that pause.                         */
 "use strict";
 (function () {
-  const { Bank: K, Ui, Audio, Tutorial, Rng, Rival } = window.BB;
+  const { Bank: K, Ui, Audio, Tutorial, Rng } = window.BB;
   const $ = (id) => document.getElementById(id);
 
   /* ── State ─────────────────────────────────────────────────────────────── */
 
   const state = {
-    mode: "solo",
-    robot: "medium",
     difficulty: "normal",
     seenHowTo: false,
-    best: { easy: 0, normal: 0, tricky: 0 },
+    best: { short: 0, normal: 0 },
     run: null,
     playing: false
   };
@@ -32,7 +30,7 @@
   // reason: boot calls setMuted() before any run exists, and a derived save
   // would write `run: null` straight over the file.
   let savedRun = null;
-  const SAVE_KEY = "bankBossSave_v1";
+  const SAVE_KEY = "bankBossSave_v2";
 
   function save() {
     if (state.playing && state.run) {
@@ -41,8 +39,8 @@
     }
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
-        mode: state.mode, robot: state.robot, difficulty: state.difficulty,
-        muted: Audio.isMuted(), seenHowTo: state.seenHowTo, best: state.best, run: savedRun
+        difficulty: state.difficulty, muted: Audio.isMuted(),
+        seenHowTo: state.seenHowTo, best: state.best, run: savedRun
       }));
     } catch (e) { /* private browsing can make localStorage throw */ }
   }
@@ -54,13 +52,11 @@
     let d = null;
     try { d = JSON.parse(raw); } catch (e) { return; }
     if (!d || typeof d !== "object") return;
-    if (d.mode === "solo" || d.mode === "duo") state.mode = d.mode;
-    if (["easy", "medium", "hard"].indexOf(d.robot) >= 0) state.robot = d.robot;
     if (K.LEVELS[d.difficulty]) state.difficulty = d.difficulty;
     if (typeof d.seenHowTo === "boolean") state.seenHowTo = d.seenHowTo;
     Audio.setMuted(!!d.muted);
     if (d.best && typeof d.best === "object") {
-      for (const k of ["easy", "normal", "tricky"]) {
+      for (const k of Object.keys(state.best)) {
         if (Number.isInteger(d.best[k]) && d.best[k] >= 0) state.best[k] = d.best[k];
       }
     }
@@ -97,23 +93,9 @@
   function setupNotes() {
     const sp = K.spec(state.difficulty);
     const top = sp.goal[sp.goal.length - 1];
-    $("modeNote").textContent = state.mode === "duo"
-      ? "Two banks on one street, sharing one town. You each pick your rates in secret, " +
-        "then find out who the customers walk up to."
-      : "You against Robo Bank, across the street. Every customer picks one of you.";
-    $("robotNote").textContent = {
-      easy: "Pays savers as little as it can, charges borrowers as much as it can, and lends " +
-        "to anybody who asks. It does not end well for them.",
-      medium: "Fair rates, and it knows better than to lend to a one-star borrower.",
-      hard: "Fair rates, refuses the risky, always keeps its quarter back — and turns away " +
-        "money it has nothing to do with."
-    }[state.robot];
-    $("robotRow").hidden = state.mode === "duo";
-    $("robotNote").hidden = state.mode === "duo";
-    $("levelNote").textContent = sp.days + " days · grow " + K.money(K.START_OWN) + " into " +
-      K.money(top) + " for " + sp.rungs[sp.rungs.length - 1].replace(/^\S+\s/, "") +
-      (sp.showStars ? " · everyone's stars are on show"
-        : " · you only see somebody's stars once you've dealt with them");
+    $("levelNote").textContent = sp.days + " days to grow " + K.money(K.START_OWN) +
+      " of your own money. Get it to " + K.money(top) + " and your bank becomes " +
+      sp.rungs[sp.rungs.length - 1].replace(/^\S+\s/, "") + ".";
 
     const best = state.best[state.difficulty];
     const line = $("setupBest");
@@ -129,9 +111,6 @@
     $("game").hidden = true;
     $("setup").hidden = false;
     $("result").hidden = true;
-    $("handover").hidden = true;
-    setChooser("modeChooser", state.mode);
-    setChooser("robotChooser", state.robot);
     setChooser("levelChooser", state.difficulty);
     setupNotes();
     $("resumeBtn").hidden = !resumable();
@@ -151,8 +130,7 @@
   }
 
   function newRun() {
-    const run = K.newRun(state.difficulty, Rng.newSeed(), state.mode);
-    run.robotLevel = state.robot;
+    const run = K.newRun(state.difficulty, Rng.newSeed());
     K.startDay(run);
     startRun(run);
     Audio.morning();
@@ -175,48 +153,44 @@
 
   /* ── The morning ───────────────────────────────────────────────────────── */
 
-  // Which human seat is setting its rates. Always 0 in solo; in two-player it
-  // walks 0 then 1, with the pass-the-tablet screen in between, because the
-  // rates are the only secret this game has.
-  let rateSeat = 0;
-
   function openMorning() {
-    const run = state.run;
-    run.phase = "rates";
-    rateSeat = 0;
+    state.run.phase = "rates";
     Ui.phase("rates");
     drawMorning();
   }
 
   function drawMorning() {
     const run = state.run;
-    Ui.rates(run, rateSeat, { hints: true, tip: morningTip(run, rateSeat) });
-    $("openBtn").textContent = run.mode === "duo" && rateSeat === 0
-      ? "Done — pass it on" : "Open the doors";
+    Ui.rates(run, { tip: morningTip(run) });
   }
 
   // A tip about THIS morning, from what the books actually say. Never a
   // general-purpose hint: the two dials are the only decision on this screen, so
-  // a tip that isn't about them is decoration.
-  function morningTip(run, seat) {
-    const bank = run.banks[seat];
-    const spare = K.spare(bank);
+  // a tip that isn't about them is decoration. Ordered by what it is costing.
+  function morningTip(run) {
+    const bank = run.bank;
+    const idle = K.spare(run, bank);
+    const t = K.tonightAt(run);
+    if (bank.cash < K.reserveNeeded(run, bank)) {
+      return "You've lent out money you promised savers. Don't lend any more today — if " +
+        "somebody comes for theirs you'll be calling your loans in at a loss.";
+    }
+    if (t.kept < 0) {
+      return "At these rates tonight COSTS you " + K.money(-t.kept) + ". Either lend more of " +
+        "the vault out, or pay savers less for money you can't use.";
+    }
+    if (idle > 10000) {
+      return K.money(idle) + " is sitting in the vault doing nothing, and you're paying " +
+        bank.saveRate + "c a night for every dollar of it. Lending it out is what makes it " +
+        "earn — or drop what you pay savers and stop buying more of it.";
+    }
     if (bank.deposits <= 0) {
       return "Nobody much has money with you yet. Paying savers a bit more is how you get " +
-        "some coins to lend.";
-    }
-    if (spare > 8000) {
-      return K.money(spare) + " is sitting in your vault doing nothing, and you're paying " +
-        bank.saveRate + "c a night for it. Either lend more of it out today, or stop buying " +
-        "money you can't use.";
-    }
-    if (spare < 0) {
-      return "You're below the keep-back line. Go easy on the lending today — if somebody " +
-        "wants their money back you'll have to call your loans in.";
+        "some coins to lend out.";
     }
     if (bank.fires > 0) {
       return "You've had to call loans in " + bank.fires + (bank.fires === 1 ? " time" : " times") +
-        " so far. That's the dearest thing in the game — keep a quarter back.";
+        " so far. That's the dearest thing in the game — never lend money you've promised.";
     }
     return null;
   }
@@ -224,11 +198,6 @@
   function morningDone() {
     const run = state.run;
     Audio.tap();
-    if (run.mode === "duo" && rateSeat === 0) {
-      handover(run.banks[1].name, () => { rateSeat = 1; drawMorning(); });
-      return;
-    }
-    Rival.takeMorning(run);
     K.openCounter(run);
     Ui.phase("counter");
     Audio.vault();
@@ -236,79 +205,41 @@
     nextCustomer();
   }
 
-  function handover(who, then) {
-    $("handTitle").textContent = "Pass it to " + who;
-    $("handSub").textContent = "Don't peek at what the other bank chose.";
-    $("handGo").textContent = "I'm " + who;
-    $("handover").hidden = false;
-    handover.then = then;
-  }
-
   /* ── The counter ───────────────────────────────────────────────────────── */
 
-  let askTimer = null;
-  let seenCustomer = null;
-
-  const reduceMotion = () =>
-    window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const seatFor = (run) => (run.mode === "duo" ? -1 : 0);
-
+  // One beat. serve() with no choice either resolves the customer outright or
+  // comes back `asking`, which is the loan card with its buttons — and either
+  // way everything the child needs is on screen in the same frame.
   function nextCustomer() {
-    clearTimeout(askTimer);
     const run = state.run;
-    const c = K.current(run);
-    if (!c) { doNight(); return; }
-
-    // Somebody who has just been turned down and is walking across the street
-    // does not get introduced again — they get resolved at the other counter.
-    if (c === seenCustomer && c.stage === 1) { resolveCustomer(); return; }
-
-    seenCustomer = c;
-    Ui.vault(run, 0);
-    Ui.topbar(run);
-    Ui.personAsk(run, c);
-    Audio.step();
-    if (reduceMotion() || window.BB.debug.instant) resolveCustomer();
-    else askTimer = setTimeout(resolveCustomer, 900);
-  }
-
-  function resolveCustomer() {
-    clearTimeout(askTimer);
-    const run = state.run;
-    if (run.phase !== "counter") return;
+    if (!K.current(run)) { doNight(); return; }
     const out = K.serve(run);
     if (!out) { doNight(); return; }
     render(out);
+    if (!out.asking) Audio.step();
   }
 
   function answer(choice) {
-    const run = state.run;
-    const out = K.serve(run, choice);
+    const out = K.serve(state.run, choice);
     if (!out) { doNight(); return; }
-    if (choice === "lend") Audio.lend();
-    else if (choice === "take") Audio.take();
-    else Audio.no();
     render(out);
     save();
   }
 
   function render(out) {
     const run = state.run;
-    Ui.personResolve(run, out, { seat: seatFor(run) });
+    Ui.person(run, out);
     Ui.queueStrip(run);
-    Ui.goal(run);
     if (out.fire) Audio.fire();
+    else if (out.short) Audio.bad();
     else if (out.took) Audio.take();
     else if (out.lent) Audio.lend();
+    else if (out.refused) Audio.no();
     if (run.phase === "night") save();
   }
 
-  /* ── Night ─────────────────────────────────────────────────────────────── */
+  /* ── The end of the day ────────────────────────────────────────────────── */
 
-  // Which bank's night is on screen. Solo shows yours and nobody else's; two
-  // players each get their own, with a handover in between.
-  let nightSeat = 0;
   let report = null;
 
   function doNight() {
@@ -317,48 +248,29 @@
       run.phase = "night";
       report = K.night(run);
       Audio.vault();
-      const paid = report.banks[0].interestIn > 0;
-      if (paid) setTimeout(() => Audio.back(), 300);
-      if (report.banks[0].bad.length) setTimeout(() => Audio.bad(), 620);
+      if (report.interestIn > 0) setTimeout(() => Audio.back(), 300);
+      if (report.bad.length) setTimeout(() => Audio.bad(), 620);
     } else if (!report) {
       // Resumed straight into the evening: the night has already been worked
-      // out, so rebuild the report's shape rather than running it again, which
-      // would pay every loan twice.
-      report = { day: run.day, banks: run.banks.map(emptyReport) };
+      // out, so read the report back off the ledger rather than running it
+      // again, which would pay every loan twice.
+      report = run.ledger[run.ledger.length - 1] || null;
+      if (!report) { openMorning(); return; }
     }
-    nightSeat = 0;
-    showNight();
+    Ui.night(run, report);
+    $("nextDayBtn").textContent = run.day >= run.days ? "Close up the bank" : "Next morning";
     save();
-  }
-
-  // A night that has already happened, seen from the books. Only ever used by a
-  // resume, and it says so on screen rather than pretending it saw it happen.
-  function emptyReport(bank) {
-    return { name: bank.name, interestOut: bank.today ? bank.today.interestOut : 0,
-      interestIn: bank.today ? bank.today.interestIn : 0, back: [], bad: [], matured: [],
-      fire: null, trustBefore: bank.trust, trustAfter: bank.trust, missed: 0 };
-  }
-
-  function showNight() {
-    const run = state.run;
-    Ui.night(run, report, nightSeat);
-    const more = run.mode === "duo" && nightSeat === 0;
-    $("nextDayBtn").textContent = more ? "Pass to " + run.banks[1].name : "Next morning";
   }
 
   function afterNight() {
     const run = state.run;
     Audio.tap();
-    if (run.mode === "duo" && nightSeat === 0) {
-      handover(run.banks[1].name, () => { nightSeat = 1; showNight(); });
-      return;
-    }
-    const before = K.rungReached(run.banks[0].own, K.spec(run.difficulty).goal);
+    const before = K.rungReached(run.bank.own, K.spec(run.difficulty).goal);
     report = null;
     if (K.nextDay(run)) {
       openMorning();
       Audio.morning();
-      const after = K.rungReached(run.banks[0].own, K.spec(run.difficulty).goal);
+      const after = K.rungReached(run.bank.own, K.spec(run.difficulty).goal);
       if (after > before) {
         const sp = K.spec(run.difficulty);
         Ui.toast("🎉 " + sp.rungs[after - 1] + " — your bank grew!");
@@ -387,8 +299,6 @@
   /* ── Wiring ────────────────────────────────────────────────────────────── */
 
   function wire() {
-    chooser("modeChooser", state.mode, (v) => { state.mode = v; setupNotes(); save(); });
-    chooser("robotChooser", state.robot, (v) => { state.robot = v; setupNotes(); save(); });
     chooser("levelChooser", state.difficulty, (v) => { state.difficulty = v; setupNotes(); save(); });
 
     $("startBtn").addEventListener("click", () => {
@@ -411,7 +321,7 @@
     $("saveChooser").addEventListener("click", (ev) => {
       const b = ev.target.closest(".opt");
       if (!b) return;
-      K.setRates(state.run, rateSeat, Number(b.dataset.value), state.run.banks[rateSeat].loanRate);
+      K.setRates(state.run, Number(b.dataset.value), state.run.bank.loanRate);
       Audio.pick();
       drawMorning();
       save();
@@ -419,30 +329,17 @@
     $("loanChooser").addEventListener("click", (ev) => {
       const b = ev.target.closest(".opt");
       if (!b) return;
-      K.setRates(state.run, rateSeat, state.run.banks[rateSeat].saveRate, Number(b.dataset.value));
+      K.setRates(state.run, state.run.bank.saveRate, Number(b.dataset.value));
       Audio.pick();
       drawMorning();
       save();
     });
 
     $("openBtn").addEventListener("click", morningDone);
-    $("sayYes").addEventListener("click", () => {
-      answer(K.current(state.run).kind === "save" ? "take" : "lend");
-    });
+    $("sayYes").addEventListener("click", () => answer("lend"));
     $("sayNo").addEventListener("click", () => answer("no"));
     $("cardNext").addEventListener("click", () => { Audio.tap(); nextCustomer(); });
-
-    $("nightNext").addEventListener("click", () => { Audio.tap(); Ui.beatStep(1); });
-    $("nightBack").addEventListener("click", () => { Audio.tap(); Ui.beatStep(-1); });
     $("nextDayBtn").addEventListener("click", afterNight);
-
-    $("handGo").addEventListener("click", () => {
-      Audio.tap();
-      $("handover").hidden = true;
-      const then = handover.then;
-      handover.then = null;
-      if (then) then();
-    });
 
     $("menuBtn").addEventListener("click", () => { Audio.tap(); $("menu").hidden = false; });
     $("menuResume").addEventListener("click", () => { Audio.tap(); $("menu").hidden = true; });
@@ -454,13 +351,19 @@
     $("menuBook").addEventListener("click", () => {
       Audio.tap();
       $("menu").hidden = true;
-      Ui.books(state.run, state.run.mode === "duo" ? Math.max(0, rateSeat) : 0);
+      Ui.books(state.run);
+      Ui.bookTab("now");
       $("book").hidden = false;
+    });
+    $("bookTabs").addEventListener("click", (ev) => {
+      const b = ev.target.closest(".opt");
+      if (!b) return;
+      Audio.tap();
+      Ui.bookTab(b.dataset.value);
     });
     $("bookClose").addEventListener("click", () => { Audio.tap(); $("book").hidden = true; });
     $("menuQuit").addEventListener("click", () => {
       Audio.tap();
-      clearTimeout(askTimer);
       $("menu").hidden = true;
       showSetup();
     });
@@ -480,12 +383,6 @@
 
     $("againBtn").addEventListener("click", () => { Audio.tap(); newRun(); });
     $("resultMenu").addEventListener("click", () => { Audio.tap(); showSetup(); });
-
-    // A tablet going to sleep mid-beat must not leave a timer running that fires
-    // into a run the child has walked away from.
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) clearTimeout(askTimer);
-    });
   }
 
   /* ── Boot-time sanity check ────────────────────────────────────────────── */
@@ -496,30 +393,23 @@
   // than drawing a vault that does not add up.
   function sanity() {
     try {
-      const run = K.newRun("normal", 12345, "solo");
-      run.robotLevel = "medium";
+      const run = K.newRun("normal", 12345);
       K.startDay(run);
       for (let d = 0; d < 3; d++) {
-        K.setRates(run, 0, 2, 8);
-        Rival.takeMorning(run);
+        K.setRates(run, 2, 8);
         K.openCounter(run);
         let guard = 0;
         for (;;) {
-          const c = K.current(run);
-          if (!c || ++guard > 200) break;
+          if (!K.current(run) || ++guard > 200) break;
           let out = K.serve(run);
-          while (out && out.asking) {
-            out = K.serve(run, out.kind === "save" ? "take" : (out.canPay ? "lend" : "no"));
-          }
-          for (const bank of run.banks) {
-            const bad = K.check(bank);
-            if (bad) { console.warn("Bank Boss: the books don't balance — " + bad); return; }
-          }
+          while (out && out.asking) out = K.serve(run, out.canPay ? "lend" : "no");
+          const bad = K.check(run.bank);
+          if (bad) { console.warn("Bank Boss: the books don't balance — " + bad); return; }
         }
         K.night(run);
         K.nextDay(run);
       }
-      const missing = ["vault", "barFrom", "barWhere", "keepLine", "rates", "counter",
+      const missing = ["vault", "barFrom", "barWhere", "purse", "board", "rates", "counter",
         "night", "saveChooser", "loanChooser", "personCard", "ladder", "chart"]
         .filter((id) => !document.getElementById(id));
       if (missing.length) console.warn("Bank Boss: markup is missing " + missing.join(", "));
@@ -539,15 +429,12 @@
 
   // Debug hooks for the browser checks — measuring beats reading.
   window.BB.debug = {
-    instant: false,
     state: () => state,
     run: () => state.run,
     summary: () => (state.run ? K.summary(state.run) : null),
-    check: () => (state.run ? state.run.banks.map((b) => K.check(b)) : null),
-    // Skip the reveal delay so a driver can walk a whole run in a few seconds.
-    fast: () => { window.BB.debug.instant = true; },
-    resolve: () => resolveCustomer(),
-    answer: (c) => answer(c)
+    check: () => (state.run ? K.check(state.run.bank) : null),
+    answer: (c) => answer(c),
+    next: () => nextCustomer()
   };
 
   addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
