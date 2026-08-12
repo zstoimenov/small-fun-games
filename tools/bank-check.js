@@ -374,8 +374,41 @@ for (const d of Object.keys(B.LEVELS)) {
     "  |  careless " + rpad(money(s.median), 9) +
     " top rung " + (s.top * 100).toFixed(0) + "%");
   ok(r.median > s.median, d + ": playing well should beat playing carelessly");
-  ok(r.any >= 0.6, d + ": a good run should usually reach the first rung, got " +
+  // The floor, asserted per difficulty rather than trusted. Both settings used
+  // to sit under this: the long game cleared its first rung 90% of the time and
+  // the SHORT one only 82%, which is the wrong way round for the gentler
+  // setting. It was given away once by nobody measuring it; the guard is here so
+  // it cannot go quietly a second time.
+  ok(r.any >= 0.85, d + ": a good run should nearly always reach the first rung, got " +
     (r.any * 100).toFixed(0) + "%");
+  ok(r.top >= 0.2 && r.top <= 0.45,
+    d + ": the top rung should land in 20-45% of good runs, got " +
+    (r.top * 100).toFixed(0) + "%");
+}
+
+/* ── A short game must not be the hard one ─────────────────────────────────── */
+
+// The bug this guard exists for: SHORT sent a smaller queue as well as having
+// fewer days, so it made 6.9 loans against the long game's 10.8, and at seven
+// loans one bad debt decides the run. Fewer days should be the only thing that
+// makes a short game short.
+console.log("\nA short game should be the gentler one\n" + "-".repeat(78));
+{
+  const rows = {};
+  for (const d of Object.keys(B.LEVELS)) {
+    const r = sweep("tap", d, Math.min(RUNS, 800));
+    rows[d] = r;
+    console.log("  " + pad(d, 9) + rpad(B.spec(d).days + " days", 9) +
+      "  first rung " + rpad((r.any * 100).toFixed(0) + "%", 5) +
+      "  finishes behind " + rpad((r.broke * 100).toFixed(0) + "%", 5) +
+      "  queue " + B.spec(d).queue.join("-"));
+  }
+  ok(rows.short.any >= rows.normal.any - 0.06,
+    "the short game should not be the harder one to get a rung on (" +
+    (rows.short.any * 100).toFixed(0) + "% vs " + (rows.normal.any * 100).toFixed(0) + "%)");
+  const q = (d) => B.spec(d).queue.join("-");
+  ok(q("short") === q("normal"),
+    "both lengths should send the same business a day, got " + q("short") + " and " + q("normal"));
 }
 
 /* ── One run played fairly, day by day ─────────────────────────────────────── */

@@ -1719,3 +1719,95 @@ from the field rather than hand-written, which is why nothing else had to change
 > pick?" the first pass asked had a right answer the child had no way to reach,
 > because nothing on screen remembered what the last choice came to. The three
 > books pages and the priced rate tiles are the same fix applied three times.
+
+
+### Third pass: the goal ladder's floor, and a branch thrown away
+
+Two things happened here and the second is the more useful note.
+
+**The work was done twice, and the first version was binned.** A pass built
+against the pre-simplification model — smaller loans, more borrowers, bigger
+deposits — measured well on the model it was written for (well-played runs
+finishing behind went 26% → 16%) and was **completely superseded** before it
+could merge, because the simplification pass removed the rival. Every customer
+now walks to your counter instead of half of them crossing the street, which
+doubled the loan count on its own: the long game already makes 10.8 loans a run,
+which was exactly the number the binned rebalance was chasing.
+
+Nothing was salvaged by rebasing it. Each piece was re-measured against the new
+model **as if it were a fresh proposal**, and three of the four were rejected on
+their numbers:
+
+| the old fix | on the new model |
+| --- | --- |
+| loans two thirds the size | **rejected** — median $110.95 → $95.95, top rung 20% → 7% |
+| deposits a quarter bigger | **rejected** — worst tenth $56.55 → $47.95, behind 12% → 15% |
+| 70% of the queue borrowing | **rejected** — helps the floor, but a bank that hoards goes from losing $50 to losing $40 |
+| two-star risk 18% → 14% | **kept** |
+
+> **A fix is a claim about a model, not a property of the code.** All four had
+> real measurements behind them a week earlier. Rebasing the branch would have
+> re-tuned a balance that no longer needed tuning, in the name of a problem that
+> had already been solved another way.
+
+**What the tail actually was.** Sorting 3,000 well-played runs into bands and
+printing the averages of each settles it in one table, and it was worth doing
+before touching anything:
+
+| | worst 10% | middle | best 25% |
+| --- | --- | --- | --- |
+| finished with | -$0.12 | $87.52 | $129.83 |
+| loans made | 6.7 | 7.3 | 8.1 |
+| **bad debts** | **$66.76** | **$17.54** | **$2.17** |
+
+$49 of the $88 gap is bad debts and most of the rest is the interest those same
+loans did not live to pay. A bad run was **not** one that failed to find
+business — it made 6.7 loans against the middle's 7.3. It was a run that got
+unlucky over seven coin flips at a 9% loss rate. Four earlier attempts at the
+floor (cheaper funding, a bigger queue, shorter deposit terms, more opening
+trust) each moved it about a point, because none of them was aimed at that.
+
+**The short game was the harder one to get a rung on, and nobody had noticed.**
+It sent a queue of 4-6 against the long game's 5-7 *as well as* having fewer
+days, so it made 6.9 loans against 10.8 — the same too-small-a-sample problem,
+hiding in the difficulty table. Its first rung came up 82% of the time against
+the long game's 90%, which is the wrong way round for the gentler setting.
+**Fewer days should be the only thing that makes a short game short**, so both
+lengths now send the same business a day, and the harness asserts that they do.
+
+**Two stars went from an 18% chance of trouble to 14%, and that is a deliberate
+softening rather than a discovery.** It is worth three points off the share of
+well-played runs that finish behind. It costs the sharpness of the gap between
+two stars and three — 0.9c a night against 1.6c — which is a real difference
+that no child will feel. Taken because the floor is a thing a child feels and
+that gap is not, and because the decision the game actually asks (lend to two
+and three stars, never to one) is untouched by it.
+
+**Both ladders were re-cut, and this is the part that is easy to forget.** A
+bigger queue is more business, so the short game's old rungs came up 50% of the
+time instead of 31% — a top prize that half of all good runs walk away with is
+not a top prize. Short is now $69 / $80 / $95 / $116 and the long game $70 / $89
+/ $114 / $147, which puts both top rungs back where they were.
+
+| | before | after |
+| --- | --- | --- |
+| short: first rung / top rung | 82% / 31% | **89% / 33%** |
+| long: first rung / top rung | 90% / 32% | **94% / 32%** |
+| good play finishes behind (long) | 12% | **5%** |
+| good play finishes behind (short) | 19% | **8%** |
+| loans a run (short) | 6.9 | **8.1** |
+
+**Three guards went in with it**, because the floor had already been given away
+once by nobody measuring it: every difficulty must clear its first rung 85% of
+the time, every difficulty's top rung must land in 20-45%, and the short game
+must not be the harder one to get a rung on. The last of those compares the two
+queue settings directly, so the specific bug cannot come back.
+
+> **A mean-preserving spread of the bad debts is not mean-preserving.** Splitting
+> the same expected loss into more frequent, smaller failures should cut the
+> variance and leave the middle alone. Measured, it moved the floor the wrong way
+> (20% → 30%) and cost $11 of median, because of a term that was not in the
+> arithmetic: **a loan that goes wrong forfeits its interest as well**, so raising
+> how often one goes wrong costs real money however far the recovery rises to
+> meet it. Paying back a share of what is *owed* rather than of the principal
+> fixes that term and was still behind on the middle.
