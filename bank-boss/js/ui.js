@@ -86,10 +86,13 @@ BB.Ui = (function () {
     const pct = (value / total) * 100;
     n.classList.toggle("gone", value <= 0);
     n.classList.toggle("tiny", pct < 22);
-    n.classList.toggle("min", pct < 14);
-    n.classList.toggle("nano", pct < 9);
+    n.classList.toggle("min", pct < 20);
+    n.classList.toggle("nano", pct < 10);
     n.style.width = Math.max(0, pct) + "%";
-    set(valId, money(value));
+    // A narrow segment drops the cents rather than the number. "$12" in 30px of
+    // orange still says how much is out on loan; "$12.5" clipped in half says
+    // the page is broken. The exact figure is in the line under the bars.
+    set(valId, pct < 20 ? "$" + Math.round(value / 100) : money(value));
   }
 
   // Coins actually leaving the vault and going out of the door. Without this the

@@ -1633,3 +1633,99 @@ named townsfolk drawn as a row of faces that light up as they join, a queue stri
 so a child can see how much of the day is left, and a rate tile that says in
 words how much of the town likes it — generated from the model's own tables, so
 a tuning change cannot leave the label behind.
+
+### Second pass: the goal ladder's floor
+
+The build shipped with a weak spot written into this file rather than fixed —
+about a quarter of well-played runs finished below the $60 they started with, so
+the first rung was cleared 70% of the time against Lemonade Stand's 95%. Four
+attempts to lift it during the build (cheaper funding, a bigger queue, shorter
+deposit terms, a bigger opening trust) moved it two points between them, and the
+entry closed by calling it honest. It was honest. It was also fixable, and the
+reason the four attempts failed is that **none of them was aimed at the actual
+cause**, which nobody had measured.
+
+**Measuring it took one table and settled the question in a minute.** Sorting
+3,000 well-played runs by how they finished and printing the averages of each
+band, next to each other:
+
+| | worst 10% | middle | best 25% |
+| --- | --- | --- | --- |
+| finished with | -$0.12 | $87.52 | $129.83 |
+| loans made | 6.7 | 7.3 | 8.1 |
+| interest earned | $50.60 | $84.56 | $117.05 |
+| interest paid | $42.26 | $38.16 | $44.59 |
+| **bad debts** | **$66.76** | **$17.54** | **$2.17** |
+| fire-sale loss | $1.70 | $1.34 | $0.45 |
+
+$49 of the $88 gap is bad debts, and most of the rest is the interest those same
+loans did not live to pay. A bad run was not a run that failed to find business —
+it made 6.7 loans against the middle's 7.3 — it was a run that **got unlucky over
+seven coin flips**. At a 9% loss rate, seven loans is nowhere near enough for the
+average to behave, so the run was decided by whether Mo's van repair went wrong.
+
+**Which makes the fix the lesson.** A real bank survives bad debts by making
+thousands of loans; a child's bank was making seven. Three numbers moved together
+and only work together:
+
+- **Loans are two thirds the size** — `BORROWS` down to $20-$65.
+- **Seven in ten of the queue wants to borrow**, up from 55%. On its own,
+  shrinking loans measured *worse* (median $87.65 → $76.70): loans arrive at a
+  rate the queue sets, so smaller loans just mean a smaller book. The pair keeps
+  the book the same size and spreads it over more borrowers.
+- **Deposits went up a quarter** to $25-$85. Without this the balance sheet
+  shrank with the loans, and a smaller balance sheet forgives every mistake — a
+  bank that took every deposit and lent to nobody went from losing $59 to losing
+  $40, which is "money asleep costs you" going soft.
+
+That took a well-played run from 7.4 loans to 10.7, the worst tenth from $25.15
+to $43.00, and runs finishing behind from 27% to 20% — **with the median
+unchanged and 0.4 more cards a day to tap through.**
+
+**Two stars went from an 18% chance of trouble to 14%, and that one is a straight
+softening, not a discovery.** It buys another four points of floor. It costs the
+sharpness of the gap between two stars and three, which is now 0.9c a night
+against 1.6c — a real difference that no child will feel. It was worth it because
+the floor is a thing a child feels and that gap is not, and because the decision
+the game actually asks (lend to two and three stars, never to one) is untouched.
+
+**Easy was the harder setting to get a rung on, which nobody had noticed.** It
+sent a queue of 4-6 against Normal's 6-8, so it made half the loans, so one bad
+debt swung a whole run — the same bug as the main one, hiding in the difficulty
+table. Easy now has Normal's daily rhythm and only its shorter length: 8 days,
+same queue. Best play on Easy went from a $71.90 median to $81.20.
+
+**Where it landed**, 1,500 runs a policy on Normal, against the shipped numbers:
+
+| | shipped | now |
+| --- | --- | --- |
+| good play finishes | $89.65 | **$95.45** |
+| ...clears the first rung | 72% | **83%** |
+| ...reaches the top rung | 24% | 24% |
+| ...finishes behind where it started | 26% | **16%** |
+| playing it safe finishes behind | 19% | **15%** |
+| lending to anybody finishes behind | 76% | 76% |
+| a well-played run makes | 7.4 loans | **10.7 loans** |
+
+Ladders re-cut to match: Normal and Tricky $63 / $80 / $100 / $115, Easy $62 /
+$70 / $78 / $86. Easy's top rung is reached 39% of the time against Normal's
+23%, which is the way round it should have been all along.
+
+**Three things worth not repeating.**
+
+- **A mean-preserving spread of the bad debts is not mean-preserving.** Splitting
+  the same expected loss into more frequent, smaller failures should cut the
+  variance and leave the middle alone; measured, it moved the floor the wrong way
+  (20% → 30%) and cost $11 of median. The reason is a term that was not in the
+  arithmetic: **a loan that goes wrong forfeits its interest too**, so raising how
+  often one goes wrong costs real money however far the recovery rises to meet
+  it. Paying back a share of what is *owed* rather than of the principal fixes
+  that term, and was still behind on the middle. The simple change won.
+- **Both floor assertions are now in the harness**, along with "a run needs about
+  ten loans for one bad debt not to decide it". The floor was given away once by
+  nobody measuring it; it should not be possible to give it away quietly twice.
+- **The fire sale has gone quiet for careful players** — 27% of runs have one and
+  it costs $2.00 against $88.77 earned, about 2% of income. That is a warning
+  shot rather than a punishment, which is the right size for somebody who is
+  mostly respecting the line; lending every coin still triggers one in 83% of
+  runs and still loses.

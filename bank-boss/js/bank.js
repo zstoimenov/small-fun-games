@@ -101,13 +101,28 @@ BB.Bank = (function () {
   //
   //   what a star is really worth, per dollar per night = r - default*100/n
   //
-  // At n = 4.5 nights the expected loss works out at 0.9c, 2.0c and 10.7c a
+  // At n = 4.5 nights the expected loss works out at 0.9c, 1.6c and 10.7c a
   // night. Set against the middle 8c loan rate and 2c paid to savers that is
-  // +5.1c, +4.0c and -4.7c — so the ladder is legible and, more importantly, NO
+  // +5.1c, +4.4c and -4.7c — so the ladder is legible and, more importantly, NO
   // rate on the dial makes a one-star loan worth taking: at the dearest 10c it
   // is still -2.7c a night. Dodgy Dave is not a gamble that pays if you charge
   // enough, and the harness asserts exactly that.
-  const DEFAULT_RATE = { 3: 0.08, 2: 0.18, 1: 0.48 };
+  //
+  // Two stars went from 18% to 14%, and that is a straight softening rather than
+  // a discovery: it buys four points off the share of well-played runs that
+  // finish behind, and it costs the sharpness of the gap between two stars and
+  // three. It was worth it because the floor is what a child feels and the
+  // difference between a 0.9c risk and a 1.6c one is not. The decision the game
+  // actually asks — lend to two and three stars, never to one — is untouched.
+  //
+  // Two things were tried first and MEASURED WORSE, both worth not repeating.
+  // Splitting the same expected loss into more frequent, smaller failures made
+  // the spread wider, not narrower, because a loan that goes wrong forfeits all
+  // its INTEREST as well: raising how often one goes wrong can never be
+  // mean-preserving however far the recovery rises with it. Paying back a share
+  // of what is owed rather than of the principal fixes that term, and still came
+  // out behind on the middle.
+  const DEFAULT_RATE = { 3: 0.08, 2: 0.14, 1: 0.48 };
 
   // What comes back when a loan goes wrong. Somebody reliable who hits trouble
   // pays back what they can; somebody who was never going to pay you simply
@@ -143,12 +158,30 @@ BB.Bank = (function () {
   // and Postie Pete's $30 are what Mo's $60 van repair is actually made of, and
   // the vault animation shows exactly that.
   //
-  // Shrinking loans to spread the risk was tried and measured, and it went the
-  // wrong way: loans arrive at a rate the queue sets, so halving their size
-  // halves what is out on loan and halves what the bank earns. Volume comes from
-  // the queue, never from the amounts.
-  const DEPOSITS = [2000, 2500, 3000, 4000, 5000, 7000];
-  const BORROWS = [3000, 4000, 5000, 6000, 8000, 10000];
+  // Loans are two thirds the size they first were, and MORE of the queue wants
+  // to borrow, and the two changes only work together. Shrinking loans on their
+  // own was tried and measured worse: loans arrive at a rate the queue sets, so
+  // making them smaller without sending more borrowers just shrinks the book and
+  // the earnings with it.
+  //
+  // What the pair buys is the thing a real bank has and a child's bank did not:
+  // ENOUGH LOANS FOR THE AVERAGE TO WORK. At seven loans a run, one bad debt is
+  // a seventh of the book and the run is decided by whether Mo's van repair went
+  // wrong; the worst tenth of well-played runs lost $67 to bad debts against $18
+  // in the middle. At ten loans the same expected loss rate lands far more
+  // evenly — measured, the worst tenth went from $25.15 to $43.00 and the share
+  // of good runs finishing below where they started fell from 27% to 20%,
+  // while the median did not move at all. Spreading your money over more
+  // borrowers IS the lesson, so the game had to be big enough to contain it.
+  // Deposits went UP a quarter when loans came down a third, and that pairing is
+  // deliberate too. Shrinking the loans on its own shrank the whole balance
+  // sheet, and a smaller balance sheet quietly forgives every mistake — a bank
+  // that took every deposit and lent to nobody went from losing $59 to losing
+  // $40, which is the "money asleep costs you" lesson going soft. Bigger
+  // deposits against smaller loans keeps the book the size it was AND spreads it
+  // over more borrowers, which is the whole point.
+  const DEPOSITS = [2500, 3000, 4000, 5000, 6500, 8500];
+  const BORROWS = [2000, 2500, 3500, 4000, 5000, 6500];
 
   const REASONS = ["a scooter", "a puppy", "a new bike", "a guitar", "fixing the van",
     "a birthday party", "footy boots", "a greenhouse", "a surfboard", "a holiday",
@@ -191,8 +224,13 @@ BB.Bank = (function () {
 
   const LEVELS = {
     easy: {
-      days: 8, queue: [4, 5], surprise: 0.12, showStars: true,
-      goal: [6200, 6800, 7400, 8000],
+      // Same daily rhythm as Normal, just fewer days. It used to send a smaller
+      // queue as well, which made Easy the HARDER setting to get a rung on: half
+      // the business a day means half the loans, and half the loans means one
+      // bad debt swings the whole run. Fewer days is the only thing that should
+      // make a short game short.
+      days: 8, queue: [6, 8], surprise: 0.12, showStars: true,
+      goal: [6200, 7000, 7800, 8600],
       rungs: ["🪙 a money box", "💼 a proper cash desk", "🏪 a shop on the corner", "🏛️ a real bank"]
     },
     normal: {
@@ -382,7 +420,11 @@ BB.Bank = (function () {
       // only the very last day is loan-free — at `left >= 2` the last two days
       // were savers-only and the run limped to a stop.
       const canBorrow = left >= 1;
-      const kind = canBorrow && rng.chance(0.55) ? "borrow" : "save";
+      // Seven in ten of the town's business is somebody wanting to borrow. Read
+      // on its own that looks like a thumb on the scale; it is half of the
+      // diversification fix above, and the deposit side does not suffer for it
+      // because a deposit is nearly twice the size of a loan.
+      const kind = canBorrow && rng.chance(0.7) ? "borrow" : "save";
 
       if (kind === "save") {
         const nights = Math.min(rng.between(5, 9), Math.max(1, left));

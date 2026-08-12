@@ -224,19 +224,21 @@ ok(by.lendAll.fires > by.sensible.fires,
 ok(by.best.top >= 0.18 && by.best.top <= 0.45,
   "the top rung should land in 18-45% of really good runs, got " +
   (by.best.top * 100).toFixed(0) + "%");
-ok(by.best.any >= 0.65,
-  "a well-played run should usually clear the first rung, got " +
+ok(by.best.any >= 0.78,
+  "a well-played run should nearly always clear the first rung, got " +
   (by.best.any * 100).toFixed(0) + "%");
 
 // A bank that lends money can lose money, and this game does not pretend
-// otherwise — but the two things it must get right are that the CAUTIOUS
-// strategy protects you and that carelessness is far worse than either.
-// Lending only to three-star people finishes behind where it started about one
-// run in six; lending to anybody who asks, about seven in ten.
-ok(by.only3.broke < 0.25,
-  "playing it safe should usually keep your money, went backwards " +
+// otherwise. But these two numbers are the floor the game was rebalanced to
+// reach, and they are asserted so a later change cannot quietly hand it back:
+// good play finished behind where it started 26% of the time before loans were
+// made smaller and more numerous, and 16% after.
+ok(by.best.broke < 0.2,
+  "good play should hardly ever finish behind where it started, went backwards " +
+  (by.best.broke * 100).toFixed(0) + "% of the time");
+ok(by.only3.broke < 0.2,
+  "playing it safe should hardly ever finish behind either, went backwards " +
   (by.only3.broke * 100).toFixed(0) + "% of the time");
-ok(by.best.broke < 0.35, "even the greedier good strategy should usually keep its money");
 ok(by.lendAll.broke > by.best.broke * 2,
   "lending to anybody should go backwards far more often than being picky (" +
   (by.lendAll.broke * 100).toFixed(0) + "% vs " + (by.best.broke * 100).toFixed(0) + "%)");
@@ -287,6 +289,48 @@ for (const r of B.LOAN_RATES) {
     (share(6) * 100).toFixed(0) + "% -> " + (share(10) * 100).toFixed(0) + "%)");
 }
 
+/* ── Enough loans for the average to work ──────────────────────────────────── */
+
+// The whole reason a bad run was a bad run used to be default luck over about
+// seven loans, which is far too small a sample for a 9%-ish loss rate to behave.
+// This is the guard on the fix: if loans ever get big enough (or borrowers rare
+// enough) that a run only makes a handful, the floor goes with it.
+console.log("\nSpreading the money about\n" + "-".repeat(78));
+{
+  let loans = 0, runs = 0;
+  for (let i = 0; i < 400; i++) {
+    const run = B.newRun("normal", 90000 + i * 7717, "solo");
+    run.robotLevel = "medium";
+    B.startDay(run);
+    for (;;) {
+      const r = POLICIES.best.rates(run, run.banks[0]);
+      B.setRates(run, 0, r.save, r.loan);
+      Rival.takeMorning(run);
+      B.openCounter(run);
+      let guard = 0;
+      for (;;) {
+        const c = B.current(run);
+        if (!c || ++guard > 300) break;
+        let out = B.serve(run);
+        while (out && out.asking) {
+          out = out.kind === "save"
+            ? B.serve(run, POLICIES.best.take(run, run.banks[out.bank], c) ? "take" : "no")
+            : B.serve(run, out.canPay && POLICIES.best.lend(run, run.banks[out.bank], c)
+                ? "lend" : "no");
+          if (out && out.lent && out.bank === 0) loans++;
+        }
+      }
+      B.night(run);
+      if (!B.nextDay(run)) break;
+    }
+    runs++;
+  }
+  const per = loans / runs;
+  console.log("  a well-played run makes " + per.toFixed(1) + " loans");
+  ok(per >= 9, "a run needs about ten loans for one bad debt not to decide it, got " +
+    per.toFixed(1));
+}
+
 /* ── The keep-back line ────────────────────────────────────────────────────── */
 
 console.log("\nThe keep-back line\n" + "-".repeat(78));
@@ -333,7 +377,8 @@ for (const d of ["easy", "normal", "tricky"]) {
     "  |  careless " + rpad(money(s.median), 9) + " top rung " +
     (s.top * 100).toFixed(0) + "%");
   ok(r.median > s.median, d + ": playing well should beat playing carelessly");
-  ok(r.any > 0.65, d + ": a well-played run should usually clear the first rung");
+  ok(r.any > 0.72, d + ": a well-played run should usually clear the first rung, got " +
+    (r.any * 100).toFixed(0) + "%");
 }
 
 /* ── One run, day by day ───────────────────────────────────────────────────── */
