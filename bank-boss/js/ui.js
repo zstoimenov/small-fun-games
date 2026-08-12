@@ -5,6 +5,12 @@
 /* vault(): every number it draws comes out of Bank.heaps(), so the picture and  */
 /* the model cannot disagree about whose money is where — which matters more     */
 /* here than anywhere else, because that picture IS the explanation.             */
+/*                                                                              */
+/* The rule this file was rewritten under: NOTHING ON SCREEN IS A RATE ALONE.    */
+/* Every rate is shown next to what it comes to tonight, in dollars, against the */
+/* books as they actually stand. "2c a night for every dollar" is a fact an      */
+/* 8-year-old can read and cannot act on; "$3.38 tonight, and $1.69 if you drop  */
+/* to 1c" is a decision. The first pass had the first kind everywhere.           */
 "use strict";
 window.BB = window.BB || {};
 
@@ -16,6 +22,7 @@ BB.Ui = (function () {
 
   const set = (id, text) => { const n = $(id); if (n) n.textContent = text; };
   const show = (id, on) => { const n = $(id); if (n) n.hidden = !on; };
+  const plural = (n, one, many) => n + " " + (n === 1 ? one : many);
 
   /* ── Phases ────────────────────────────────────────────────────────────── */
 
@@ -41,17 +48,27 @@ BB.Ui = (function () {
   // segment too narrow for its label drops the label and keeps the number — a
   // stripe with nothing readable in it looks like a rendering bug, which is the
   // last thing the most important picture in the game should look like.
-  function vault(run, which) {
+  function vault(run) {
     const Bk = B();
-    const bank = run.banks[which === undefined ? 0 : which];
+    const bank = run.bank;
     const h = Bk.heaps(bank);
     const posOwn = Math.max(0, h.own);
     const missing = Math.max(0, -h.own);
     const total = Math.max(1, h.owed + posOwn);
 
-    set("vaultWho", run.mode === "duo" || which ? bank.name : "Your bank");
     set("vaultOwn", money(h.own));
     $("vaultOwn").style.color = h.own < 0 ? "var(--bad)" : "";
+
+    // Last night's change, so the one number the child is scored on always says
+    // which way it is going. A score with no direction on it is a number to
+    // glance at; a score with an arrow is a thing to play towards.
+    const last = run.ledger.length ? run.ledger[run.ledger.length - 1].kept : null;
+    const move = $("vaultMove");
+    if (last === null) { move.textContent = ""; move.className = ""; }
+    else {
+      move.textContent = (last >= 0 ? "▲ " : "▼ ") + money(Math.abs(last)) + " last night";
+      move.className = last >= 0 ? "up" : "down";
+    }
 
     seg("segOwed", "valOwed", h.owed, total);
     seg("segOwn", "valOwn", posOwn, total);
@@ -59,23 +76,23 @@ BB.Ui = (function () {
     seg("segOut", "valOut", h.out, total);
     seg("segShort", "valShort", missing, total);
 
-    // The keep-back line sits at a quarter of the savers' money, measured from
-    // the left of the where-it-is bar — which is where the vault segment starts.
-    const reserve = Bk.reserveNeeded(bank);
-    const at = Math.min(100, (reserve / total) * 100);
-    $("keepLine").style.left = at + "%";
-    $("keepLine").hidden = h.owed <= 0;
-    set("keepSay", h.owed > 0 ? "· keep back " + money(reserve) : "");
+    // The purse: promised money on the left, lendable money on the right. This
+    // replaced a dashed line drawn across the bar, which was a rule the child
+    // could see and still not read a number off.
+    const keep = Bk.reserveNeeded(run, bank);
+    const free = Math.max(0, bank.cash - keep);
+    set("purseKeep", money(keep));
+    set("purseFree", money(free));
+    const short = bank.cash < keep;
+    $("purse").classList.toggle("short", short);
 
-    const below = h.cash < reserve;
-    $("vault").classList.toggle("below", below);
     const note = $("vaultNote");
-    note.classList.toggle("warn", below || missing > 0);
+    note.classList.toggle("warn", short || missing > 0);
     if (missing > 0) {
       note.textContent = "⚠️ Your bank owes " + money(missing) + " more than it has got.";
-    } else if (below) {
-      note.textContent = "⚠️ Below the line. If somebody wants their money you'll have to " +
-        "call your loans in early.";
+    } else if (short) {
+      note.textContent = "⚠️ You've lent out money you promised somebody. If they turn up " +
+        "you'll have to call your loans in early.";
     } else {
       note.textContent = money(h.owed) + " of the money in this bank belongs to other people.";
     }
@@ -103,7 +120,7 @@ BB.Ui = (function () {
       const c = document.createElement("i");
       c.textContent = "🪙";
       c.style.left = (out ? 18 : 74) + i * 3 + "%";
-      c.style.top = "62%";
+      c.style.top = "50%";
       c.style.setProperty("--dx", (out ? 1 : -1) * (90 + i * 14) + "px");
       c.style.setProperty("--dy", (i % 2 ? -8 : 6) + "px");
       c.style.animationDelay = i * 0.05 + "s";
@@ -112,38 +129,64 @@ BB.Ui = (function () {
     setTimeout(() => { host.textContent = ""; }, 1000);
   }
 
-  /* ── Topbar and goal ───────────────────────────────────────────────────── */
-
   function topbar(run) {
     set("dayLabel", "Day " + run.day);
-    set("dayMeta", "of " + run.days);
+    set("dayMeta", run.day >= run.days ? "the last day" : "of " + run.days);
   }
 
-  function goal(run) {
+  /* ── The morning ───────────────────────────────────────────────────────── */
+
+  // What today holds, printed before a single decision is made. Two halves: what
+  // already happened this morning, and who is on their way in.
+  function board(run) {
     const Bk = B();
-    const sp = Bk.spec(run.difficulty);
-    const own = run.banks[0].own;
-    const top = sp.goal[sp.goal.length - 1];
-    const rung = Bk.rungReached(own, sp.goal);
-    // Measured from where you STARTED, not from zero. From zero the bar is
-    // three quarters full before the doors open on day one, which makes the
-    // first rung look like a formality — it is not, it is the run's whole first
-    // week of work.
-    const from = Bk.START_OWN;
-    const pct = ((own - from) / Math.max(1, top - from)) * 100;
-    $("goalFill").style.width = Math.max(0, Math.min(100, pct)) + "%";
-    if (rung >= sp.goal.length) {
-      set("goalLabel", "🏛️ " + sp.rungs[sp.rungs.length - 1] + " — you got there!");
-    } else {
-      const next = sp.goal[rung];
-      set("goalLabel", sp.rungs[rung] + " at " + money(next) +
-        " — " + money(Math.max(0, next - own)) + " to go");
+    const bank = run.bank;
+    const f = Bk.forecast(run);
+    const t = bank.today || { back: [], bad: [] };
+    const rows = [];
+
+    for (const l of t.back) {
+      rows.push(["💸", Bk.person(l.id).name + " brought back " + money(l.amount),
+        "that money is in your vault again", false]);
+    }
+    for (const l of t.bad) {
+      rows.push(["💔", Bk.person(l.id).name + (l.back > 0
+        ? " could only pay back " + money(l.back) + " of " + money(l.amount)
+        : " never paid back " + money(l.amount)),
+        "you lost " + money(l.lost), true]);
+    }
+    if (f.leaving > 0) {
+      rows.push(["🔙", plural(f.leaving, "person wants", "people want") + " their savings back",
+        money(f.leavingAmount) + " has to be in the vault for them", true]);
+    }
+    if (f.borrowers > 0) {
+      rows.push(["🤝", plural(f.borrowers, "person is", "people are") + " coming to borrow",
+        "you say yes or no to each one", false]);
+    }
+    if (f.savers > 0) {
+      rows.push(["💰", plural(f.savers, "person has", "people have") + " money to leave with you",
+        "you pay for it every night, lent out or not", false]);
+    }
+    if (!rows.length) rows.push(["🌤️", "A quiet day", "nobody much is coming in", false]);
+
+    set("boardTitle", run.day >= run.days
+      ? "📋 The last day — no more borrowing" : "📋 Today at the bank");
+    const host = $("boardList");
+    host.textContent = "";
+    for (const [emoji, what, why, bad] of rows) {
+      const n = document.createElement("div");
+      n.className = "cause";
+      n.innerHTML = '<span class="cause-emoji">' + emoji + "</span>" +
+        '<span class="cause-body"><span class="cause-did">' + what + "</span>" +
+        '<span class="cause-so"><b' + (bad ? ' class="bad"' : "") + ">" + why + "</b></span></span>";
+      host.appendChild(n);
     }
   }
 
-  /* ── The morning: two dials ────────────────────────────────────────────── */
-
-  function rateTiles(id, values, current, hint) {
+  // A rate tile carries the rate AND what that rate costs or earns tonight, on
+  // the money actually in the books. Three tiles, three real numbers, and the
+  // decision makes itself visible.
+  function rateTiles(id, values, current, priceOf, hintOf) {
     const host = $(id);
     host.textContent = "";
     for (const v of values) {
@@ -151,58 +194,57 @@ BB.Ui = (function () {
       b.type = "button";
       b.className = "opt" + (v === current ? " on" : "");
       b.dataset.value = v;
-      b.innerHTML = rate(v) + "<small>" + hint(v) + "</small>";
+      b.innerHTML = rate(v) + "<em>" + money(priceOf(v)) + "</em><small>" + hintOf(v) + "</small>";
       host.appendChild(b);
     }
   }
 
-  // How the town reads each rung of the dial. Both lines are generated from the
-  // model's own tables, so a tuning change cannot leave the words behind.
+  // How the town reads each rung of the dial. Generated from the model's own
+  // tables, so a tuning change cannot leave the words behind.
   function saveHint(v) {
     const p = B().DEPOSIT_CHANCE[v];
-    return p >= 0.9 ? "most will" : p >= 0.6 ? "some will" : "few will";
+    return p >= 0.9 ? "most bring it" : p >= 0.6 ? "some bring it" : "few bring it";
   }
   function loanHint(v) {
     const a = B().ACCEPT[3][v];
-    return a >= 0.85 ? "everyone" : a >= 0.6 ? "most" : "risky ones";
+    return a >= 0.85 ? "everyone asks" : a >= 0.6 ? "careful folk ask" : "only risky folk";
   }
 
-  function rates(run, which, opts) {
+  function rates(run, opts) {
     const Bk = B();
-    const bank = run.banks[which];
+    const bank = run.bank;
     const o = opts || {};
     topbar(run);
-    vault(run, which);
-    goal(run);
-
-    const two = run.mode === "duo";
-    show("ratesWho", two);
-    if (two) $("ratesWho").innerHTML = "<b>" + bank.name + "</b>Set your two rates. " +
-      "The other bank can't see them until somebody walks up to a counter.";
+    vault(run);
+    board(run);
 
     set("saveNow", rate(bank.saveRate));
     set("loanNow", rate(bank.loanRate));
-    rateTiles("saveChooser", Bk.SAVE_RATES, bank.saveRate, saveHint);
-    rateTiles("loanChooser", Bk.LOAN_RATES, bank.loanRate, loanHint);
+    rateTiles("saveChooser", Bk.SAVE_RATES, bank.saveRate,
+      (v) => Bk.nightlyOn(bank.deposits, v), saveHint);
+    rateTiles("loanChooser", Bk.LOAN_RATES, bank.loanRate,
+      (v) => Bk.nightlyOn(bank.loansOut, v), loanHint);
 
-    const dc = Math.round(Bk.DEPOSIT_CHANCE[bank.saveRate] * 100);
-    set("saveNote", "Every night you pay " + rate(bank.saveRate) +
-      " for every dollar anybody has left with you — whether you managed to lend it " +
-      "out or not. About " + dc + " out of every 100 savers like this rate.");
+    const t = Bk.tonightAt(run);
+    set("saveNote", bank.deposits > 0
+      ? "Savers have left " + money(bank.deposits) + " with you, so tonight costs you " +
+        money(t.out) + " — on all of it, whether you managed to lend it out or not."
+      : "Nobody has money with you yet. Pay a bit more and more of the town will bring theirs in.");
+    set("loanNote", bank.loansOut > 0
+      ? "You've got " + money(bank.loansOut) + " out on loan, so tonight that pays you " +
+        money(t.in) + ". Only money that is out working earns anything."
+      : "You haven't lent anything yet, so tonight earns you nothing. Money asleep in the " +
+        "vault still costs you.");
 
-    const ac = Math.round(Bk.ACCEPT[3][bank.loanRate] * 100);
-    const risky = Math.round(Bk.ACCEPT[1][bank.loanRate] * 100);
-    set("loanNote", "Charge " + rate(bank.loanRate) + " a night and about " + ac +
-      " out of 100 careful people will still borrow from you — but " + risky +
-      " out of 100 of the risky ones will.");
+    set("gapIn", money(t.in));
+    set("gapOut", money(t.out));
+    set("gapSize", money(t.kept));
+    set("gapSay", t.kept >= 0
+      ? "is what your bank would keep tonight"
+      : "is what tonight would COST you — you're paying out more than you're taking in");
+    $("gapMid").parentNode.classList.toggle("thin", t.kept < 0);
 
-    const gap = bank.loanRate - bank.saveRate;
-    set("gapIn", rate(bank.loanRate));
-    set("gapOut", rate(bank.saveRate));
-    set("gapSize", rate(gap));
-    $("gapMid").parentNode.classList.toggle("thin", gap <= 3);
-
-    show("coach", !!o.hints && !!o.tip);
+    show("coach", !!o.tip);
     if (o.tip) set("coachText", o.tip);
   }
 
@@ -218,169 +260,161 @@ BB.Ui = (function () {
     });
   }
 
-  // What a person's stars say, in words. On Tricky you are not told until you
-  // have dealt with them — the number never changes, only whether you can see it.
-  function starLine(run, which, p) {
-    const Bk = B();
-    const sp = Bk.spec(run.difficulty);
-    const known = !!run.banks[which].known[p.id];
-    if (!sp.showStars && !known) {
-      return { text: "? ? ?", note: "you've never dealt with them" };
-    }
-    const words = { 3: "nearly always pays you back", 2: "usually pays you back",
-      1: "often doesn't pay you back" };
-    return { text: "★".repeat(p.star) + "☆".repeat(3 - p.star), note: words[p.star] };
-  }
-
-  // Beat one: who has walked in and what they want. Deliberately says nothing
-  // about which counter they will choose — that is the next beat, and it is the
-  // only suspense the counter has.
-  function personAsk(run, c) {
-    const Bk = B();
-    const p = Bk.person(c.id);
-    queueStrip(run);
-    $("personCard").classList.remove("mine");
-    set("personFace", p.emoji);
-    set("personName", p.name);
-    show("personStars", false);
-    show("counterTag", false);
-    show("personResult", false);
-    show("fireBox", false);
-    show("dealBox", true);
-
-    const box = $("dealBox");
-    if (c.kind === "withdraw") {
-      set("personSay", p.name + " wants some of their savings back today.");
-      box.innerHTML = row("They want", money(c.amount), "big");
-    } else if (c.kind === "save") {
-      set("personSay", p.name + " has some money and is looking for a bank.");
-      box.innerHTML = row("To leave with you", money(c.amount), "big") +
-        row("For", c.nights + (c.nights === 1 ? " night" : " nights"));
-    } else {
-      set("personSay", p.name + " wants to borrow some money for " + c.why + ".");
-      box.innerHTML = row("They want to borrow", money(c.amount), "big") +
-        row("Paying it back in", c.nights + (c.nights === 1 ? " night" : " nights"));
-    }
-    show("sayYes", false);
-    show("sayNo", false);
-    show("cardNext", false);
-  }
-
   const row = (label, value, cls) =>
     '<div class="deal-line ' + (cls || "") + '"><span>' + label +
     "</span><strong>" + value + "</strong></div>";
 
-  // Beat two: which counter, and what happened there. Everything the child needs
-  // to decide is on screen at the moment the buttons appear.
-  function personResolve(run, out, opts) {
+  // What you know about this person, in one line. Stars never change, so this is
+  // knowledge worth having rather than a dice roll wearing a badge — and the
+  // tally next to them is the child's own evidence for it.
+  function history(bank, p) {
+    const r = bank.record[p.id];
+    if (!r || (!r.lent && !r.saved)) return "You've never dealt with " + p.name + " before.";
+    const bits = [];
+    if (r.lent) {
+      const out = r.lent - r.repaid - r.broke;
+      const done = [];
+      if (r.repaid) done.push("paid you back " + r.repaid + "×");
+      if (r.broke) done.push("let you down " + r.broke + "× (cost you " + money(r.cost) + ")");
+      if (out > 0) done.push(out + " still out with them");
+      bits.push("You've lent to " + p.name + " " + plural(r.lent, "time", "times") +
+        (done.length ? " — " + done.join(", ") : ""));
+    }
+    if (r.saved) bits.push("They've brought you " + money(r.saved) + " to look after");
+    return bits.join(". ") + ".";
+  }
+
+  // One card, one person, everything the decision needs on it at once. The first
+  // pass split this over two or three beats and put the stars on the second one,
+  // so the question arrived before the facts did.
+  function person(run, out, opts) {
     const Bk = B();
     const o = opts || {};
     const c = out.customer;
-    const mine = out.bank === o.seat;
-    const bank = run.banks[out.bank];
     const p = out.person;
+    const bank = run.bank;
 
-    vault(run, out.bank);
-    $("personCard").classList.toggle("mine", mine && !!out.asking);
-
-    const tag = $("counterTag");
-    tag.hidden = false;
-    tag.classList.toggle("mine", mine);
-    tag.textContent = out.walked && out.crossed === undefined && c.kind === "save"
-      ? "went home" : (mine ? "your counter" : bank.name);
+    queueStrip(run);
+    vault(run);
+    $("personCard").classList.toggle("mine", !!out.asking);
+    set("personFace", p.emoji);
+    set("personName", p.name);
+    show("fireBox", false);
 
     // Stars only matter for lending, so they only appear when lending is on the
     // table. On a saver's card three stars would be answering a question nobody
     // asked.
     if (c.kind === "borrow") {
-      const s = starLine(run, out.bank, p);
-      $("personStars").innerHTML = s.text + "<small>" + s.note + "</small>";
+      const words = { 3: "nearly always pays you back", 2: "usually pays you back",
+        1: "often doesn't pay you back" };
+      $("personStars").innerHTML = "★".repeat(p.star) + "☆".repeat(3 - p.star) +
+        "<small>" + words[p.star] + "</small>";
       show("personStars", true);
+      set("personHistory", history(bank, p));
+      show("personHistory", true);
+    } else {
+      show("personStars", false);
+      show("personHistory", false);
     }
+
+    if (out.asking) return ask(run, out);
+
+    show("dealBox", false);
+    show("sayYes", false);
+    show("sayNo", false);
+    show("cardNext", true);
+    if (out.fire) fireNote(out.fire);
 
     const res = $("personResult");
     res.hidden = false;
     res.className = "person-result";
-    show("fireBox", false);
-
-    if (out.fire) fireNote(out.fire);
 
     if (c.kind === "withdraw") {
-      res.classList.add(out.leaves ? "meh" : "took");
-      res.textContent = mine
-        ? "You handed over " + money(out.paidOut) + "." +
-          (out.leaves ? " That's their account closed." : " The rest stays with you.")
-        : bank.name + " handed over " + money(out.paidOut) + ".";
-      coins("out");
+      if (out.short) {
+        res.classList.add("bad");
+        res.textContent = "You couldn't find " + p.name + "'s money. That is the worst thing " +
+          "a bank can do, and the whole town hears about it.";
+        set("personSay", p.name + " came for their savings — " + money(c.amount) + ".");
+      } else {
+        res.classList.add("took");
+        res.textContent = "You handed over " + money(out.paidOut) + "." +
+          (out.interest > 0
+            ? " " + money(out.interest) + " of that is interest you paid them for leaving it with you."
+            : "");
+        set("personSay", p.name + " came for their savings back.");
+        coins("out");
+      }
     } else if (out.walked) {
       res.classList.add("meh");
-      res.textContent = c.kind === "save"
-        ? p.name + " didn't like either bank's rate and took the money home."
-        : p.name + " thought that was too dear and went without.";
-    } else if (out.asking) {
-      res.hidden = true;
-      askFor(run, out);
-      return;
-    } else if (out.turnedAway) {
-      res.classList.add("meh");
-      res.textContent = (mine ? "You" : bank.name) + " said no thanks. " + p.name +
-        " keeps the money.";
+      set("personSay", c.kind === "save"
+        ? p.name + " has " + money(c.amount) + " and is looking for a bank."
+        : p.name + " wanted to borrow " + money(c.amount) + " for " + c.why + ".");
+      res.textContent = p.name + " " + out.why + " and went home.";
     } else if (out.took) {
       res.classList.add("took");
-      res.textContent = (mine ? "You now owe " : bank.name + " now owes ") + p.name + " " +
-        money(out.took) + " — and " + (mine ? "you" : "they") + " can lend it to somebody else.";
-      if (mine) coins("in");
+      set("personSay", p.name + " is leaving " + money(out.took) + " with you for " +
+        plural(out.nights, "night", "nights") + ".");
+      res.textContent = "You now owe " + p.name + " " + money(out.took) + " — and you can lend " +
+        "it to somebody else. It costs you " + money(out.costsNightly) + " a night either way.";
+      coins("in");
     } else if (out.lent) {
       res.classList.add("lent");
-      res.textContent = money(out.lent) + " walks out of the vault. " + p.name +
-        " brings back " + money(out.repay) + " on day " + out.due + ".";
-      if (mine) coins("out");
+      set("personSay", p.name + " is borrowing " + money(out.lent) + " for " + c.why + ".");
+      res.textContent = money(out.lent) + " walks out of the vault. " + p.name + " pays you " +
+        money(out.nightly) + " every night and brings the " + money(out.lent) +
+        " itself back on day " + out.due + ".";
+      coins("out");
     } else if (out.refused) {
       res.classList.add("meh");
-      res.textContent = (mine ? "You" : bank.name) + " said no." +
-        (out.sentOn ? " " + p.name + " is crossing the street to try " + out.sentOn + "." : "");
+      set("personSay", p.name + " wanted to borrow " + money(c.amount) + " for " + c.why + ".");
+      res.textContent = "You said no. " + p.name + " went away without it.";
     } else {
       res.classList.add("meh");
       res.textContent = "Nothing came of it.";
     }
-
-    show("sayYes", false);
-    show("sayNo", false);
-    show("cardNext", true);
-    $("cardNext").textContent = out.sentOn ? "Watch them cross the street" : "Next";
   }
 
-  // The decision. A loan card carries the whole deal — what comes back, when,
-  // and what they are like — because those three things are the decision.
-  function askFor(run, out) {
+  // The decision. Five numbers, and they are the whole of it: what it earns a
+  // night, what it earns in all, when the money comes home, and what would be
+  // left in the vault against what has already been promised.
+  function ask(run, out) {
     const c = out.customer;
     const p = out.person;
-    const bank = run.banks[out.bank];
     const box = $("dealBox");
+    const clear = out.leaves - out.keep;
 
-    if (c.kind === "save") {
-      const nightly = B().interestOn(c.amount, bank.saveRate);
-      box.innerHTML = row("They'd leave you", money(c.amount), "big") +
-        row("For", c.nights + (c.nights === 1 ? " night" : " nights")) +
-        row("Costs you every night", money(nightly));
-      set("personSay", p.name + " wants to leave " + money(c.amount) +
-        " with you. You can lend it out — but you pay for it every night either way.");
-      $("sayYes").textContent = "Take it";
-      $("sayNo").textContent = "No thanks";
+    set("personSay", p.name + " wants to borrow " + money(c.amount) + " for " + c.why + ".");
+    box.innerHTML =
+      row("They want", money(c.amount), "big") +
+      row("They'd pay you every night", money(out.nightly), "good") +
+      row("For", plural(c.nights, "night", "nights")) +
+      row("So you'd earn", money(out.interest), "good") +
+      row("They bring the " + money(c.amount) + " back on", "day " + out.due) +
+      '<div class="deal-rule"></div>' +
+      row("Left in the vault after this", money(Math.max(0, out.leaves)),
+        out.belowLine ? "warn" : "") +
+      row(out.belowLine ? "…but you've promised savers" : "…and you've promised savers",
+        money(out.keep), out.belowLine ? "warn" : "");
+
+    show("dealBox", true);
+    show("personResult", true);
+    const res = $("personResult");
+    res.className = "person-result " + (out.belowLine || !out.canPay ? "bad" : "meh");
+    if (!out.canPay) {
+      res.textContent = "You've only got " + money(run.bank.cash) + " in the vault. You can't " +
+        "lend coins you haven't got.";
+    } else if (out.belowLine) {
+      res.textContent = "⚠️ Lending this leaves you " + money(-clear) + " short of what you've " +
+        "already promised savers. If they turn up you'll have to call your loans in early.";
     } else {
-      box.innerHTML = row("They want", money(c.amount), "big") +
-        row("They'd bring back", money(out.repay), "good") +
-        row("On day", String(out.due)) +
-        row("You'd make", money(out.repay - c.amount), "good");
-      set("personSay", out.canPay
-        ? p.name + " wants " + money(c.amount) + " for " + c.why + "."
-        : "You've only got " + money(bank.cash) + " in the vault — not enough to lend " +
-          money(c.amount) + ".");
-      $("sayYes").textContent = "Lend it";
-      $("sayNo").textContent = "No";
+      res.textContent = "That still leaves " + money(clear) + " spare after everything you've " +
+        "promised savers.";
     }
 
-    $("sayYes").disabled = c.kind === "borrow" && !out.canPay;
+    $("sayYes").textContent = out.belowLine ? "Lend it anyway" : "Lend " + money(c.amount);
+    $("sayYes").classList.toggle("btn-risky", out.belowLine);
+    $("sayNo").textContent = "No thanks";
+    $("sayYes").disabled = !out.canPay;
     show("sayYes", true);
     show("sayNo", true);
     show("cardNext", false);
@@ -390,104 +424,65 @@ BB.Ui = (function () {
     const box = $("fireBox");
     box.hidden = false;
     box.innerHTML = "<b>🔥 You had to call your loans in early</b>" +
-      "The coins weren't there, so you asked for " + money(fire.raised) +
+      "The coins weren't there, so you asked borrowers for " + money(fire.raised) +
       " back before it was due. People only give you 75c in the dollar for that — " +
       "it cost you <b style='display:inline'>" + money(fire.lost) + "</b>.";
   }
 
-  /* ── Night ─────────────────────────────────────────────────────────────── */
+  /* ── The end of the day ────────────────────────────────────────────────── */
 
-  let beats = [];
-  let beatAt = 0;
-
-  function night(run, rep, seat) {
+  // One screen and one sum, the same shape every single day: what came in, what
+  // went out, what is left. The first pass walked five cards with a dot strip,
+  // and four of them were narration around this one.
+  function night(run, rep) {
     const Bk = B();
-    const bank = run.banks[seat || 0];
-    const b = rep.banks[seat || 0];
+    const bank = run.bank;
     phase("night");
     topbar(run);
-    vault(run, seat || 0);
-    goal(run);
+    vault(run);
 
-    // 1. What the night cost.
-    const before = bank.deposits - b.interestOut;
-    set("paidBefore", money(before));
-    set("paidRate", rate(bank.saveRate) + " a night for every dollar");
-    set("paidAdd", "- " + money(b.interestOut));
-    set("paidAfter", money(bank.deposits));
-    set("paidNote", b.interestOut > 0
-      ? "That money came out of your own pile and joined theirs. It happens every " +
-        "night, on every dollar, whether you lent it out or not."
-      : "Nobody had any money with you tonight, so there was nothing to pay.");
-
-    // 2. Loans settling.
-    const any = b.back.length + b.bad.length;
-    show("beatBack", any > 0);
-    if (any) {
-      const host = $("backList");
+    const settled = rep.back.length + rep.bad.length;
+    show("settledCard", settled > 0);
+    if (settled) {
+      const host = $("settledList");
       host.textContent = "";
-      for (const l of b.back) {
-        host.appendChild(settle(Bk.person(l.id), "paid",
-          "paid you back", "you made " + money(l.profit), "+ " + money(l.repay)));
+      for (const l of rep.back) {
+        host.appendChild(settle(Bk.person(l.id), "paid", "brought your money back",
+          "you kept every night's interest they paid", "+ " + money(l.amount)));
       }
-      for (const l of b.bad) {
+      for (const l of rep.bad) {
         host.appendChild(settle(Bk.person(l.id), "bad",
-          l.back > 0 ? "could only pay back " + money(l.back) : "didn't pay you back",
+          l.back > 0 ? "could only pay back " + money(l.back) : "never paid you back",
           "you lost " + money(l.lost), "- " + money(l.lost)));
       }
-      set("backTotal", money(b.interestIn));
-      set("backNote", b.bad.length
-        ? "Money that doesn't come back is what the gap between your two rates has to cover."
-        : "Every one of them paid. That's what your stars are for.");
     }
 
-    // 3. Savers cashing out.
-    show("beatSavers", b.matured.length > 0);
-    if (b.matured.length) {
-      const host = $("saverList");
-      host.textContent = "";
-      for (const s of b.matured) {
-        host.appendChild(settle(Bk.person(s.id), "out", "took their money back",
-          "including " + money(s.interest) + " you paid them", "- " + money(s.owed)));
-      }
-    }
+    set("sumsHead", "🌙 What your bank made on day " + rep.day);
+    set("sumInWhy", rep.lentOut > 0
+      ? rate(rep.loan) + " a night on " + money(rep.lentOut) + " out on loan" : "nothing was out on loan");
+    set("sumOutWhy", rep.held > 0
+      ? rate(rep.save) + " a night on " + money(rep.held) + " they've left with you" : "nobody had money with you");
+    set("sumIn", "+ " + money(rep.interestIn));
+    set("sumOut", "- " + money(rep.interestOut));
+    show("sumBadRow", rep.badDebt > 0);
+    set("sumBad", "- " + money(rep.badDebt));
+    show("sumFireRow", rep.fire > 0);
+    set("sumFire", "- " + money(rep.fire));
+    set("sumTotal", (rep.kept < 0 ? "- " : "+ ") + money(Math.abs(rep.kept)));
+    $("sumTotalRow").classList.toggle("loss", rep.kept < 0);
 
-    // 4. The town.
-    set("trustBefore", String(b.trustBefore));
-    set("trustAfter", String(b.trustAfter));
-    set("trustCount", String(b.trustAfter));
-    const up = b.trustAfter - b.trustBefore;
-    show("trustUpRow", up > 0);
-    show("trustDownRow", up < 0);
-    if (up > 0) { set("trustUp", "+ " + up); set("trustUpWhy", "You looked after people today"); }
-    if (up < 0) {
-      set("trustDown", "- " + Math.abs(up));
-      set("trustDownWhy", b.missed ? "You couldn't pay somebody"
-        : b.fire ? "Word got round that you ran short"
-        : "You turned somebody away");
-    }
-    townFolk(b.trustAfter);
-    set("trustNote", "The more of the town that banks with you, the more money you have " +
-      "to lend — and the bigger the amounts people trust you with.");
+    set("trustCount", rep.trustAfter + " of " + Bk.TOWNSFOLK);
+    townFolk(rep.trustAfter);
+    const moved = rep.trustAfter - rep.trustBefore;
+    set("trustNote", moved > 0
+      ? "You looked after people today, so one more of the town moved their money to you. " +
+        "The more they leave with you, the more you have to lend."
+      : moved < 0
+      ? "You let somebody down, and " + Math.abs(moved) + " of the town took their business " +
+        "elsewhere. Word gets round fast."
+      : "Nobody changed their mind about you today.");
 
-    // 5. The day's sums.
-    const fire = bank.today.fire;
-    set("sumIn", money(b.interestIn));
-    set("sumOut", money(b.interestOut));
-    show("sumBadRow", bank.today.badDebt > 0);
-    set("sumBad", money(bank.today.badDebt));
-    show("sumFireRow", fire > 0);
-    set("sumFire", money(fire));
-    const made = b.interestIn - b.interestOut - bank.today.badDebt - fire;
-    set("sumTotal", money(made));
-    $("sumTotalRow").classList.toggle("loss", made < 0);
-    causes(run, bank, b, made);
-
-    beats = ["beatPaid", "beatBack", "beatSavers", "beatTrust", "beatSum"]
-      .filter((id) => id === "beatPaid" || id === "beatTrust" || id === "beatSum" ||
-        !$(id).hidden);
-    beatAt = 0;
-    drawBeats();
+    causes(run, bank, rep);
   }
 
   function settle(p, cls, what, why, amt) {
@@ -510,36 +505,38 @@ BB.Ui = (function () {
     });
   }
 
-  // Every decision next to what it actually caused. The night used to report
-  // outcomes without naming the choice that produced them, which is the
-  // difference between a scoreboard and a lesson.
-  function causes(run, bank, b, made) {
+  // Every decision next to what it actually caused. A night that reports
+  // outcomes without naming the choice that produced them is a scoreboard, not
+  // a lesson.
+  function causes(run, bank, rep) {
+    const Bk = B();
     const list = [];
     const t = bank.today;
+    const idle = Bk.spare(run, bank);
     if (t.lent > 0) {
       list.push(["🤝", "You lent out " + money(t.lent) + " at " + rate(bank.loanRate) + " a night",
         "that money is working for you instead of sitting there", false]);
     }
-    if (B().spare(bank) > 6000) {
-      list.push(["😴", money(B().spare(bank)) + " sat in the vault doing nothing",
-        "and you paid " + rate(bank.saveRate) + " a night for every dollar of it", true]);
+    if (idle > 8000) {
+      list.push(["😴", money(idle) + " sat in the vault doing nothing",
+        "and you still paid " + rate(bank.saveRate) + " a night for every dollar of it — " +
+        "pay savers less, or lend more of it out", true]);
     }
     if (t.refused > 0) {
-      list.push(["🙅", "You said no to " + t.refused + (t.refused === 1 ? " borrower" : " borrowers"),
+      list.push(["🙅", "You said no to " + plural(t.refused, "borrower", "borrowers"),
         "no loan is better than one that never comes back", false]);
     }
-    if (t.turnedAway > 0) {
-      list.push(["🚪", "You turned away " + t.turnedAway +
-        (t.turnedAway === 1 ? " saver" : " savers"),
-        "one person in town liked you a little less for it", true]);
-    }
-    if (b.bad.length) {
-      list.push(["💔", b.bad.length + (b.bad.length === 1 ? " loan" : " loans") + " went wrong",
-        "that cost you " + money(t.badDebt), true]);
+    if (rep.bad.length) {
+      list.push(["💔", plural(rep.bad.length, "loan", "loans") + " went wrong",
+        "that cost you " + money(rep.badDebt) + " — check the stars before you say yes", true]);
     }
     if (t.fire > 0) {
       list.push(["🔥", "You ran out of coins and called loans in",
-        "it cost " + money(t.fire) + " — keeping a quarter back is cheaper", true]);
+        "it cost " + money(t.fire) + " — never lend money you've promised somebody", true]);
+    }
+    if (t.missed > 0) {
+      list.push(["🚨", "Somebody asked for their money and you hadn't got it",
+        "five of the town closed their accounts", true]);
     }
     show("causes", list.length > 0);
     const host = $("causeList");
@@ -554,42 +551,24 @@ BB.Ui = (function () {
     }
   }
 
-  function drawBeats() {
-    beats.forEach((id, i) => { $(id).hidden = i !== beatAt; });
-    const dots = $("nightDots");
-    dots.textContent = "";
-    beats.forEach((_, i) => {
-      const d = document.createElement("span");
-      d.className = "dot" + (i === beatAt ? " on" : "");
-      dots.appendChild(d);
-    });
-    const last = beatAt >= beats.length - 1;
-    show("nightBack", beatAt > 0);
-    show("nightNext", !last);
-    show("nextDayBtn", last);
-  }
-
-  function beatStep(d) {
-    beatAt = Math.max(0, Math.min(beats.length - 1, beatAt + d));
-    drawBeats();
-    const host = $("night").querySelector(".scroller");
-    if (host) host.scrollTop = 0;
-  }
-
   /* ── The books ─────────────────────────────────────────────────────────── */
 
-  function books(run, seat) {
+  function books(run) {
     const Bk = B();
-    const bank = run.banks[seat || 0];
+    const bank = run.bank;
+
     const loans = $("bookLoans");
     loans.textContent = "";
     if (!bank.loans.length) {
-      loans.innerHTML = '<p class="empty-note">Nothing out on loan. Every coin is in the vault.</p>';
+      loans.innerHTML = '<p class="empty-note">Nothing out on loan. Every coin is in the vault ' +
+        '— and every coin in the vault is costing you.</p>';
     }
     for (const l of bank.loans.slice().sort((a, b2) => a.due - b2.due)) {
       loans.appendChild(entry("loan", Bk.person(l.id), money(l.amount) + " for " + l.why,
-        "back on day " + l.due + " as " + money(l.repay), money(l.repay), l.due <= run.day));
+        "pays you " + money(Bk.nightlyOn(l.amount, bank.loanRate)) +
+        " a night · back on day " + l.due, money(l.amount), l.due <= run.day + 1));
     }
+
     const savers = $("bookSavers");
     savers.textContent = "";
     if (!bank.savers.length) {
@@ -597,8 +576,49 @@ BB.Ui = (function () {
     }
     for (const s of bank.savers.slice().sort((a, b2) => a.due - b2.due)) {
       savers.appendChild(entry("saver", Bk.person(s.id), money(s.amount) + " saved",
-        "wants it on day " + s.due + " · you've paid " + money(s.paid),
+        (s.due > run.days ? "staying till you close" : "wants it on day " + s.due) +
+        " · you've paid them " + money(s.paid),
         money(s.amount + s.paid), s.due <= run.day + 1));
+    }
+
+    // Everybody you have dealt with. The stars are the fact; the tally beside
+    // them is the child's own evidence for it, which is the bit that turns a
+    // badge into knowledge.
+    const people = $("bookPeopleList");
+    people.textContent = "";
+    const known = Bk.TOWN.filter((p) => bank.record[p.id]);
+    if (!known.length) {
+      people.innerHTML = '<p class="empty-note">You haven\'t dealt with anybody yet.</p>';
+    }
+    for (const p of known.sort((a, b2) => b2.star - a.star)) {
+      const r = bank.record[p.id];
+      const bits = [];
+      if (r.lent) {
+        const out = r.lent - r.repaid - r.broke;
+        bits.push("lent " + r.lent + "× · paid back " + r.repaid + " · let you down " + r.broke +
+          (out > 0 ? " · " + out + " still out" : ""));
+      }
+      if (r.saved) bits.push("brought you " + money(r.saved));
+      people.appendChild(entry("who", p, "★".repeat(p.star) + "☆".repeat(3 - p.star),
+        bits.join(" · "), r.cost > 0 ? "-" + money(r.cost) : "", false));
+    }
+
+    // What each pair of rates actually came to. This is the screen that makes
+    // the morning dials a decision with a memory behind it.
+    const rateList = $("bookRatesList");
+    rateList.textContent = "";
+    const hist = Bk.rateHistory(run);
+    if (!hist.length) {
+      rateList.innerHTML = '<p class="empty-note">Play a night and your rates will show up here.</p>';
+    }
+    for (const h of hist) {
+      const n = document.createElement("div");
+      n.className = "entry rate" + (h.kept < 0 ? " bad" : "");
+      n.innerHTML = '<span class="entry-face">' + (h.kept >= 0 ? "📈" : "📉") + "</span>" +
+        '<span class="entry-what">pay ' + rate(h.save) + " · charge " + rate(h.loan) +
+        "<small>" + plural(h.nights, "night", "nights") + " at these rates</small></span>" +
+        '<span class="entry-amt">' + (h.kept < 0 ? "-" : "+") + money(Math.abs(h.kept)) + "</span>";
+      rateList.appendChild(n);
     }
   }
 
@@ -611,13 +631,21 @@ BB.Ui = (function () {
     return n;
   }
 
+  function bookTab(which) {
+    show("bookNow", which === "now");
+    show("bookPeople", which === "people");
+    show("bookRates", which === "rates");
+    for (const b of $("bookTabs").querySelectorAll(".opt")) {
+      b.classList.toggle("on", b.dataset.value === which);
+    }
+  }
+
   /* ── Result ────────────────────────────────────────────────────────────── */
 
   function result(run, best) {
     const Bk = B();
     const s = Bk.summary(run);
     const sp = Bk.spec(run.difficulty);
-    const grew = s.own - Bk.START_OWN;
 
     set("payoffSay", "Your bank is worth");
     set("resultFinal", money(s.own));
@@ -637,8 +665,8 @@ BB.Ui = (function () {
 
     set("resultTitle", rung >= sp.goal.length ? "A real bank!"
       : rung > 0 ? "You grew it into " + sp.rungs[rung - 1].replace(/^\S+\s/, "")
-      : grew >= 0 ? "You kept the doors open" : "Your bank lost money");
-    set("resultSub", grew >= 0
+      : s.grew >= 0 ? "You kept the doors open" : "Your bank lost money");
+    set("resultSub", s.grew >= 0
       ? "You started with " + money(Bk.START_OWN) + " of your own money and finished with " +
         money(s.own) + ". Every cent of the difference came out of the gap between what " +
         "you paid savers and what borrowers paid you."
@@ -646,23 +674,19 @@ BB.Ui = (function () {
         ". A bank that lends money can lose money — that is exactly why it charges more " +
         "than it pays.");
 
-    const rival = run.banks[1];
-    set("versus", (s.won ? "🏆 You beat " : "🥈 ") + rival.name +
-      (s.won ? " — " : " came out on top — ") + money(s.own) + " against " + money(rival.own) + ".");
-
     ladder(sp, s.own);
     BB.Chart.render($("chart"), run);
 
     set("grewLine", "You started with " + Bk.START_TRUST + " people banking with you and " +
       "finished with " + s.trust + " of the " + Bk.TOWNSFOLK + " in town. At the busiest " +
-      "you were looking after " + money(peakDeposits(run)) + " of other people's money.");
+      "you were looking after " + money(peakDeposits(run)) + " of other people's money, and " +
+      "borrowers paid you " + money(s.earned) + " for the use of it.");
     set("takeaway", Bk.takeaway(run));
 
     const st = [];
     if (s.fires === 0) st.push("🧊");
     if (s.badDebts === 0) st.push("🎯");
     if (s.trust >= Bk.TOWNSFOLK - 3) st.push("🤝");
-    if (s.won) st.push("🏆");
     if (rung >= sp.goal.length) st.push("🏛️");
     $("stickers").textContent = st.join(" ");
 
@@ -674,7 +698,7 @@ BB.Ui = (function () {
   }
 
   const peakDeposits = (run) =>
-    run.ledger.reduce((m, r) => Math.max(m, r.deposits[0]), 0);
+    run.ledger.reduce((m, r) => Math.max(m, r.deposits), 0);
 
   function ladder(sp, own) {
     const host = $("ladder");
@@ -710,6 +734,6 @@ BB.Ui = (function () {
     }
   }
 
-  return { phase, toast, vault, coins, topbar, goal, rates, rateTiles,
-           personAsk, personResolve, queueStrip, night, beatStep, books, result };
+  return { phase, toast, vault, coins, topbar, board, rates, rateTiles,
+           person, queueStrip, night, books, bookTab, result };
 })();

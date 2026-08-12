@@ -100,6 +100,9 @@ body{
 /* Saying no. Blue is the colour of going ahead in this game, so turning
    somebody away must not be blue or a child taps it thinking it is onwards. */
 .btn-no{background:linear-gradient(145deg,var(--no),var(--no2))}
+/* Going ahead with something the game has just warned about. Still a go button —
+   the child is allowed to do it — but never the same blue as a safe one. */
+.btn-risky{background:linear-gradient(145deg,var(--accent2),#b8860b);color:#2a1e05}
 .ghost-btn{
   font:inherit;font-weight:700;border:1px solid var(--line);border-radius:14px;
   background:var(--card);color:var(--ink);padding:11px 16px;min-height:48px;cursor:pointer;
@@ -184,8 +187,13 @@ body.in-game{
 }
 .vault-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:5px}
 .vault-who{font-size:12.5px;font-weight:800;color:var(--muted)}
-.vault-mine{font-size:11.5px;font-weight:700;color:var(--muted)}
-.vault-mine b{font-size:17px;color:var(--own);margin-left:4px;font-variant-numeric:tabular-nums}
+.vault-mine{font-size:11.5px;font-weight:700;color:var(--muted);text-align:right}
+.vault-mine b{font-size:19px;color:var(--own);font-variant-numeric:tabular-nums}
+/* A score with no direction on it is a number to glance at; a score with an
+   arrow is a thing to play towards. */
+.vault-mine i{display:block;font-style:normal;font-size:11px;font-weight:800;margin-top:-1px}
+.vault-mine i.up{color:var(--good)}
+.vault-mine i.down{color:var(--bad)}
 .bar-label{font-size:10.5px;font-weight:800;color:var(--muted);
   text-transform:uppercase;letter-spacing:.4px;margin:4px 0 3px}
 
@@ -221,13 +229,22 @@ body.in-game{
 .bar > div:not(.gone){min-width:5px}
 @media (prefers-reduced-motion:reduce){ .bar > div{transition:none} }
 
-/* Keep back a quarter of the savers' money. Drawn on the money it applies to. */
-.keepline{
-  position:absolute;top:0;bottom:0;width:0;
-  border-left:3px dashed var(--bad);pointer-events:none;transition:left .45s ease;
+/* The purse. Two numbers side by side: what you have already promised somebody,
+   and what is actually free to lend. This replaced a dashed line drawn across
+   the bar — a rule a child could see and still not read a number off, and which
+   looked like a rendering fault into the bargain. */
+.purse{display:flex;gap:6px;margin-top:7px}
+.purse-half{
+  flex:1 1 0;min-width:0;display:flex;align-items:baseline;justify-content:space-between;
+  gap:6px;padding:6px 9px;border-radius:11px;background:var(--bg2);border:1px solid var(--line);
 }
-.bar-label #keepSay{color:var(--bad)}
-.vault.below .keepline{border-left-style:solid}
+.purse-half span{font-size:10.5px;font-weight:700;color:var(--muted);min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.purse-half b{font-size:15px;font-weight:900;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.purse-half.free b{color:var(--own)}
+.purse.short .purse-half.free{border-color:var(--bad);background:rgba(207,70,54,.12)}
+.purse.short .purse-half.free b{color:var(--bad)}
+
 .vault-note{margin-top:6px;font-size:12px;font-weight:700;line-height:1.4;color:var(--muted)}
 .vault-note.warn{color:var(--bad)}
 
@@ -245,17 +262,6 @@ body.in-game{
 }
 @media (prefers-reduced-motion:reduce){ .coinfly{display:none} }
 
-/* ── The goal bar ───────────────────────────────────────────────────────── */
-
-.goal{flex:0 0 auto}
-.goal-track{position:relative;height:12px;border-radius:999px;overflow:hidden;
-  background:var(--chip);border:1px solid var(--line)}
-.goal-fill{height:100%;width:0;border-radius:999px;
-  background:linear-gradient(90deg,var(--accent2),var(--own));transition:width .5s ease}
-.goal-label{margin-top:4px;font-size:12.5px;font-weight:700;color:var(--muted);
-  text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@media (prefers-reduced-motion:reduce){ .goal-fill{transition:none} }
-
 /* ── Phases ─────────────────────────────────────────────────────────────── */
 
 .phases{flex:1 1 auto;min-height:0;display:flex}
@@ -264,8 +270,14 @@ body.in-game{
   display:flex;flex-direction:column;gap:8px;padding-bottom:2px}
 .big-go{flex:0 0 auto;width:100%;font-size:17px}
 /* One card at a time on these two screens, so it sits in the middle of the room
-   rather than clinging to the top of a tall tablet with nothing under it. */
+   rather than clinging to the top of a tall tablet with nothing under it.
+   `safe center` rather than plain `center`, because a flex box that centres
+   overflowing content clips it at the TOP, where the scrollbar cannot reach —
+   the end-of-day card lost its own heading that way. `safe` centres when there
+   is room and falls back to the start when there is not. The plain value goes
+   first so a browser that does not know `safe` keeps the old behaviour. */
 #counter .scroller,#night .scroller{justify-content:center}
+#counter .scroller,#night .scroller{justify-content:safe center}
 .beat{display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
 .evening-buttons{display:flex;gap:10px;flex:0 0 auto;margin-top:2px}
 .evening-buttons .btn-clear{flex:0 1 auto;white-space:nowrap}
@@ -293,9 +305,19 @@ body.in-game{
 /* ── The two dials ──────────────────────────────────────────────────────── */
 
 .wide-seg{display:flex;width:100%;gap:4px}
-.wide-seg .opt{flex:1 1 0;min-height:var(--tap);font-size:15px;font-weight:900;padding:10px 4px}
-.wide-seg .opt small{display:block;font-size:10px;font-weight:700;opacity:.75;margin-top:2px}
+.wide-seg .opt{flex:1 1 0;min-height:var(--tap);font-size:15px;font-weight:900;padding:9px 4px}
+/* Three lines per tile, and the middle one does the teaching: the rate, what it
+   comes to TONIGHT on the real books, and how the town reads it. A rate on its
+   own is a fact an 8-year-old can read and cannot act on. */
+.wide-seg .opt em{display:block;font-style:normal;font-size:13px;font-weight:900;
+  margin-top:2px;color:var(--ink);font-variant-numeric:tabular-nums}
+.wide-seg .opt.on em{color:var(--accent)}
+.wide-seg .opt small{display:block;font-size:9.5px;font-weight:700;opacity:.7;margin-top:1px}
 .dial .card-head strong{font-size:22px}
+
+/* ── The morning board ──────────────────────────────────────────────────── */
+
+.board{border-left:5px solid var(--accent)}
 
 /* The gap. Money coming in at the top, money going out at the bottom, and the
    space between them lit up — because that space is the answer to "what is an
@@ -303,7 +325,7 @@ body.in-game{
 .gapcard{padding:10px 13px 12px;border-left:5px solid var(--accent2)}
 .gap-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   font-size:13px;font-weight:700;color:var(--muted)}
-.gap-row b{font-size:19px;font-variant-numeric:tabular-nums}
+.gap-row b{font-size:17px;font-variant-numeric:tabular-nums;flex:0 0 auto}
 .gap-row.in b{color:var(--good)}
 .gap-row.out b{color:var(--bad)}
 .gap-mid{
@@ -311,7 +333,8 @@ body.in-game{
   border-radius:13px;background:var(--chip);
   border-left:4px solid var(--own);border-right:4px solid var(--own);
 }
-.gap-size{font-size:27px;font-weight:900;color:var(--own);line-height:1;font-variant-numeric:tabular-nums}
+.gap-size{font-size:24px;font-weight:900;color:var(--own);line-height:1.05;
+  font-variant-numeric:tabular-nums;flex:0 0 auto}
 .gap-say{font-size:12.5px;font-weight:700;color:var(--chipink);line-height:1.35}
 .gapcard.thin .gap-mid{background:rgba(207,70,54,.12);border-color:var(--bad)}
 .gapcard.thin .gap-size{color:var(--bad)}
@@ -340,13 +363,14 @@ body.in-game{
 .person-name{display:block;font-size:19px;font-weight:900}
 .stars{display:block;font-size:14px;color:var(--gold);letter-spacing:1px}
 .stars small{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:0;margin-left:5px}
-.counter-tag{
-  flex:0 0 auto;font-size:11px;font-weight:800;padding:6px 10px;border-radius:999px;
-  background:var(--chip);color:var(--chipink);text-align:center;line-height:1.3;
-}
-.counter-tag.mine{background:var(--accent);color:#fff}
 .person-say{margin:11px 0 0;font-size:15.5px;line-height:1.5;font-weight:600}
 .person-say b{font-weight:900}
+/* Your own history with this person. The stars are the fact; this is the child's
+   evidence for it, which is the bit that turns a badge into knowledge. */
+.person-history{
+  margin:7px 0 0;font-size:12px;font-weight:700;line-height:1.45;color:var(--chipink);
+  background:var(--chip);border-radius:11px;padding:8px 10px;
+}
 
 .deal{
   margin-top:10px;border-radius:14px;background:var(--bg2);
@@ -357,6 +381,9 @@ body.in-game{
 .deal-line strong{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
 .deal-line.good strong{color:var(--good)}
 .deal-line.big strong{font-size:21px;color:var(--accent)}
+.deal-line.warn strong{color:var(--bad)}
+.deal-line.warn span{color:var(--bad)}
+.deal-rule{height:1px;background:var(--line);margin:6px 0}
 
 .person-result{
   margin:11px 0 0;font-size:14.5px;font-weight:700;line-height:1.5;
@@ -419,7 +446,10 @@ body.in-game{
 .sums{padding:14px}
 .sum-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
   font-size:14px;font-weight:700;padding:5px 0}
-.sum-line strong{font-size:19px;font-variant-numeric:tabular-nums}
+.sum-line strong{font-size:19px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.sum-line span{min-width:0}
+.sum-line i{display:block;font-style:normal;font-size:11.5px;font-weight:600;
+  color:var(--muted);margin-top:1px}
 .sum-line.out strong{color:var(--bad)}
 .sum-line.in strong{color:var(--good)}
 .sum-rule{height:2px;background:var(--line);margin:5px 0;border-radius:2px}
@@ -438,12 +468,6 @@ body.in-game{
 .cause-so b{color:var(--good)}
 .cause-so b.bad{color:var(--bad)}
 
-/* ── Handover ───────────────────────────────────────────────────────────── */
-
-.handover{text-align:center}
-.hand-emoji{font-size:58px;line-height:1;margin-bottom:6px}
-.handover .sub{margin-bottom:18px}
-
 /* ── The books ──────────────────────────────────────────────────────────── */
 
 .shelf-head{font-size:12.5px;font-weight:800;color:var(--muted);margin:12px 0 6px}
@@ -455,7 +479,16 @@ body.in-game{
 .entry-amt{font-weight:900;font-variant-numeric:tabular-nums;flex:0 0 auto}
 .entry.loan{border-left:4px solid var(--out)}
 .entry.saver{border-left:4px solid var(--owed)}
+.entry.who{border-left:4px solid var(--silver)}
+.entry.rate{border-left:4px solid var(--own)}
+.entry.rate.bad{border-left-color:var(--bad)}
+.entry.rate .entry-amt{color:var(--own)}
+.entry.rate.bad .entry-amt{color:var(--bad)}
 .entry.due{background:var(--chip)}
+.book-tabs{width:100%;margin:2px 0 12px}
+.book-tabs .opt{flex:1 1 0}
+.book-pane{min-height:120px}
+.pane-note{margin:0 0 10px;font-size:12.5px;line-height:1.5;color:var(--muted);font-weight:600}
 .empty-note{font-size:13px;color:var(--muted);font-weight:600;padding:4px 0 8px}
 
 /* ── Toast ──────────────────────────────────────────────────────────────── */
@@ -514,8 +547,6 @@ body.in-game{
   .prize-emoji{animation:none}
   .prize-burst{display:none}
 }
-.versus{margin:0 0 14px;font-size:14px;font-weight:800;line-height:1.5;text-align:center;
-  background:var(--chip);color:var(--chipink);border-radius:14px;padding:11px 12px}
 .ladder{display:flex;flex-direction:column;gap:6px;margin:0 0 14px}
 .rung{display:flex;align-items:center;gap:11px;font-size:14px;font-weight:800;
   padding:9px 12px;border-radius:14px;background:none;color:var(--muted);

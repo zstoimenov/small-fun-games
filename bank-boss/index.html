@@ -26,30 +26,10 @@
     <p class="sub">You run the bank. People leave their money with you, and other people come in wanting to borrow it. You decide what to pay savers and what to charge borrowers — and the gap between those two is everything your bank earns.</p>
 
     <div class="row">
-      <span class="row-label">Who's playing?</span>
-      <div class="seg" id="modeChooser">
-        <button class="opt" type="button" data-value="solo">On my own</button>
-        <button class="opt" type="button" data-value="duo">Two banks</button>
-      </div>
-    </div>
-    <p class="row-note" id="modeNote"></p>
-
-    <div class="row" id="robotRow">
-      <span class="row-label">Robo Bank</span>
-      <div class="seg" id="robotChooser">
-        <button class="opt" type="button" data-value="easy">Easy</button>
-        <button class="opt" type="button" data-value="medium">Medium</button>
-        <button class="opt" type="button" data-value="hard">Hard</button>
-      </div>
-    </div>
-    <p class="row-note" id="robotNote"></p>
-
-    <div class="row">
       <span class="row-label">How long?</span>
       <div class="seg" id="levelChooser">
-        <button class="opt" type="button" data-value="easy">8 days</button>
-        <button class="opt" type="button" data-value="normal">12 days</button>
-        <button class="opt" type="button" data-value="tricky">Tricky</button>
+        <button class="opt" type="button" data-value="short">7 days</button>
+        <button class="opt" type="button" data-value="normal">10 days</button>
       </div>
     </div>
     <p class="row-note" id="levelNote"></p>
@@ -71,7 +51,7 @@
     <button class="icon-btn" id="menuBtn" type="button" title="Menu" aria-label="Menu">☰</button>
     <div class="turn-info">
       <strong id="dayLabel">Day 1</strong>
-      <span id="dayMeta">of 12</span>
+      <span id="dayMeta">of 10</span>
     </div>
     <button class="icon-btn" id="muteBtn" type="button" title="Sound" aria-label="Sound" aria-pressed="false">🔊</button>
   </div>
@@ -80,11 +60,16 @@
        On screen for the whole run, because it is the game. Two bars of the
        same length: where the money came from, and where it is now. The top
        one is mostly blue and the bottom one is mostly orange, and that single
-       fact is what a bank IS. -->
+       fact is what a bank IS.
+
+       The keep-back amount used to be a dashed line drawn across the bar,
+       which read as a rendering fault rather than a rule. It is a number with
+       a name on it now, in the strip underneath, next to the number it is
+       actually weighed against — what is left to lend. -->
   <div class="vault" id="vault">
     <div class="vault-top">
-      <span class="vault-who" id="vaultWho">Your bank</span>
-      <span class="vault-mine">yours <b id="vaultOwn">$60.00</b></span>
+      <span class="vault-who">Your bank is worth</span>
+      <span class="vault-mine"><b id="vaultOwn">$60.00</b><i id="vaultMove"></i></span>
     </div>
 
     <div class="bar-label">Whose money it is</div>
@@ -93,7 +78,7 @@
       <div class="seg-own" id="segOwn"><i>yours</i><b id="valOwn">$60</b></div>
     </div>
 
-    <div class="bar-label">Where it is right now <span id="keepSay"></span></div>
+    <div class="bar-label">Where it is right now</div>
     <div class="bar" id="barWhere">
       <div class="seg-cash" id="segCash"><i>in the vault</i><b id="valCash">$60</b></div>
       <div class="seg-out" id="segOut"><i>out on loan</i><b id="valOut">$0</b></div>
@@ -101,28 +86,35 @@
            bars are the same length in every other state, and the missing piece
            is the honest way to draw the state where they are not. -->
       <div class="seg-short" id="segShort"><i>missing</i><b id="valShort">$0</b></div>
-      <!-- The keep-back line, drawn on the money rather than written in a rule.
-           The label lives up in the bar's heading rather than on the line: hung
-           off a zero-width div it was 90px of text sticking out of a box with
-           overflow:hidden, which measured as an overflow on every viewport. -->
-      <div class="keepline" id="keepLine"></div>
     </div>
 
+    <!-- The two numbers every lending decision is made against, side by side
+         so the child can compare them without doing a subtraction. -->
+    <div class="purse" id="purse">
+      <div class="purse-half">
+        <span>🔒 promised</span><b id="purseKeep">$0.00</b>
+      </div>
+      <div class="purse-half free">
+        <span>💰 free to lend</span><b id="purseFree">$60.00</b>
+      </div>
+    </div>
     <div class="vault-note" id="vaultNote"></div>
     <div class="coinfly" id="coinFly" aria-hidden="true"></div>
   </div>
 
-  <div class="goal" id="goalBar">
-    <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
-    <div class="goal-label" id="goalLabel"></div>
-  </div>
-
   <div class="phases">
 
-    <!-- ── The morning: two dials ──────────────────────────────────────── -->
+    <!-- ── The morning: the board, then the two dials ──────────────────── -->
     <section id="rates" class="phase">
       <div class="scroller">
-        <div class="card news" id="ratesWho" hidden></div>
+
+        <!-- What today holds, before a single decision is made. The first pass
+             sprang the day on the child one customer at a time, which made
+             keeping coins back a superstition instead of a sum. -->
+        <div class="card board" id="board">
+          <div class="card-head"><span id="boardTitle">📋 Today at the bank</span></div>
+          <div id="boardList"></div>
+        </div>
 
         <div class="card dial">
           <div class="card-head"><span>💰 What you pay savers</span><strong id="saveNow">2c</strong></div>
@@ -136,16 +128,16 @@
           <p class="verdict" id="loanNote"></p>
         </div>
 
-        <!-- The gap, drawn. Two arrows and the space between them: that space
-             is the whole of what a bank earns, and it has to cover the loans
-             that never come back. -->
+        <!-- The gap, drawn, and priced in real money against the real books.
+             Two arrows and the space between them: that space is the whole of
+             what a bank earns. -->
         <div class="card gapcard">
-          <div class="gap-row in"><span>Borrowers pay you</span><b id="gapIn">8c</b></div>
+          <div class="gap-row in"><span>Borrowers pay you tonight</span><b id="gapIn">$0.00</b></div>
           <div class="gap-mid" id="gapMid">
-            <span class="gap-size" id="gapSize">6c</span>
-            <span class="gap-say">a night, for every dollar you lend out</span>
+            <span class="gap-size" id="gapSize">$0.00</span>
+            <span class="gap-say" id="gapSay">is what your bank would keep tonight</span>
           </div>
-          <div class="gap-row out"><span>You pay savers</span><b id="gapOut">2c</b></div>
+          <div class="gap-row out"><span>You pay savers tonight</span><b id="gapOut">$0.00</b></div>
         </div>
 
         <div class="coach calm" id="coach" hidden>
@@ -157,7 +149,7 @@
       <button class="btn btn-go big-go" id="openBtn" type="button">Open the doors</button>
     </section>
 
-    <!-- ── The counter: one person at a time ───────────────────────────── -->
+    <!-- ── The counter: one person, everything at once ─────────────────── -->
     <section id="counter" class="phase" hidden>
       <div class="queue-strip" id="queueStrip"></div>
 
@@ -169,10 +161,10 @@
               <span class="person-name" id="personName">Nan</span>
               <span class="stars" id="personStars" hidden></span>
             </div>
-            <span class="counter-tag" id="counterTag" hidden></span>
           </div>
 
           <p class="person-say" id="personSay"></p>
+          <p class="person-history" id="personHistory" hidden></p>
           <div class="deal" id="dealBox" hidden></div>
           <p class="person-result" id="personResult" hidden></p>
           <div class="fire" id="fireBox" hidden></div>
@@ -186,104 +178,52 @@
       </div>
     </section>
 
-    <!-- ── Night ───────────────────────────────────────────────────────── -->
+    <!-- ── The end of the day: one sum, and always the same shape ──────── -->
     <section id="night" class="phase" hidden>
       <div class="scroller">
+        <div class="card settled" id="settledCard" hidden>
+          <div class="card-head"><span>💸 Loans that came home today</span></div>
+          <div id="settledList"></div>
+        </div>
 
-        <div class="beat" id="beatPaid">
-          <div class="card night-card">
-            <div class="card-head"><span>🌙 What the night cost you</span></div>
-            <div class="book">
-              <div class="book-row"><span>You owed savers</span><strong id="paidBefore">$0.00</strong></div>
-              <div class="book-row gone">
-                <span>You paid them <i id="paidRate"></i></span><strong id="paidAdd">- 0c</strong>
-              </div>
-              <div class="book-rule"></div>
-              <div class="book-row total"><span>Now you owe them</span><strong id="paidAfter">$0.00</strong></div>
-            </div>
-            <p class="verdict" id="paidNote"></p>
+        <div class="card sums">
+          <div class="card-head"><span id="sumsHead">🌙 What your bank made today</span></div>
+          <div class="sum-line in">
+            <span>Borrowers paid you <i id="sumInWhy"></i></span><strong id="sumIn">$0.00</strong>
+          </div>
+          <div class="sum-line out">
+            <span>You paid savers <i id="sumOutWhy"></i></span><strong id="sumOut">$0.00</strong>
+          </div>
+          <div class="sum-line out" id="sumBadRow" hidden>
+            <span>Loans nobody paid back</span><strong id="sumBad">$0.00</strong>
+          </div>
+          <div class="sum-line out" id="sumFireRow" hidden>
+            <span>Calling your loans in early</span><strong id="sumFire">$0.00</strong>
+          </div>
+          <div class="sum-rule"></div>
+          <div class="sum-line total" id="sumTotalRow">
+            <span>So your bank kept</span><strong id="sumTotal">$0.00</strong>
           </div>
         </div>
 
-        <div class="beat" id="beatBack" hidden>
-          <div class="card">
-            <div class="card-head"><span>💸 Loans coming back</span><strong id="backTotal">$0.00</strong></div>
-            <div id="backList"></div>
-            <p class="verdict" id="backNote"></p>
-          </div>
+        <div class="card grow">
+          <div class="card-head"><span>🤝 The town</span><strong id="trustCount">6</strong></div>
+          <div class="townfolk" id="townFolk"></div>
+          <p class="verdict" id="trustNote"></p>
         </div>
 
-        <div class="beat" id="beatSavers" hidden>
-          <div class="card">
-            <div class="card-head"><span>👋 Savers taking their money</span></div>
-            <div id="saverList"></div>
-          </div>
-        </div>
-
-        <div class="beat" id="beatTrust" hidden>
-          <div class="card grow">
-            <div class="card-head"><span>🤝 The town</span><strong id="trustCount">6</strong></div>
-            <div class="book">
-              <div class="book-row"><span>Yesterday</span><strong id="trustBefore">6</strong></div>
-              <div class="book-row added" id="trustUpRow" hidden>
-                <span id="trustUpWhy">You looked after people</span><strong id="trustUp">+ 1</strong>
-              </div>
-              <div class="book-row gone" id="trustDownRow" hidden>
-                <span id="trustDownWhy">Word got round</span><strong id="trustDown">- 1</strong>
-              </div>
-              <div class="book-rule"></div>
-              <div class="book-row total"><span>Bank with you now</span><strong id="trustAfter">7</strong></div>
-            </div>
-            <div class="townfolk" id="townFolk"></div>
-            <p class="verdict" id="trustNote"></p>
-          </div>
-        </div>
-
-        <div class="beat" id="beatSum" hidden>
-          <div class="card sums">
-            <div class="sum-line in"><span>Borrowers paid you</span><strong id="sumIn">$0.00</strong></div>
-            <div class="sum-line out"><span>You paid savers</span><strong id="sumOut">$0.00</strong></div>
-            <div class="sum-line out" id="sumBadRow" hidden>
-              <span>Never came back</span><strong id="sumBad">$0.00</strong>
-            </div>
-            <div class="sum-line out" id="sumFireRow" hidden>
-              <span>Calling your loans in early</span><strong id="sumFire">$0.00</strong>
-            </div>
-            <div class="sum-rule"></div>
-            <div class="sum-line total" id="sumTotalRow">
-              <span>So your bank made</span><strong id="sumTotal">$0.00</strong>
-            </div>
-          </div>
-          <div class="card causes" id="causes" hidden>
-            <div class="card-head"><span>🔎 What your choices did</span></div>
-            <div id="causeList"></div>
-          </div>
+        <div class="card causes" id="causes" hidden>
+          <div class="card-head"><span>🔎 What your choices did</span></div>
+          <div id="causeList"></div>
         </div>
       </div>
 
-      <div class="dots" id="nightDots"></div>
-      <div class="evening-buttons">
-        <button class="btn btn-clear" id="nightBack" type="button" hidden>Back</button>
-        <button class="btn btn-go big-go" id="nightNext" type="button">Next</button>
-        <button class="btn btn-go big-go" id="nextDayBtn" type="button" hidden>Next morning</button>
-      </div>
+      <button class="btn btn-go big-go" id="nextDayBtn" type="button">Next morning</button>
     </section>
   </div>
 
   <div class="toast" id="toast" hidden></div>
 </main>
-
-<!-- ══ PASS THE TABLET ══════════════════════════════════════════════════
-     Two-player only. The rates are the only secret in the game, and they are
-     only secret for as long as this screen is up. -->
-<div id="handover" class="overlay" hidden>
-  <div class="sheet sheet-xs handover">
-    <div class="hand-emoji">🙈</div>
-    <h2 id="handTitle">Pass it to Player 2</h2>
-    <p class="sub" id="handSub">Don't peek at what the other bank chose.</p>
-    <button class="btn btn-go wide-btn" id="handGo" type="button">I'm Player 2</button>
-  </div>
-</div>
 
 <!-- ══ MENU ═════════════════════════════════════════════════════════════ -->
 <div id="menu" class="overlay" hidden>
@@ -297,16 +237,39 @@
 </div>
 
 <!-- ══ THE BOOKS ════════════════════════════════════════════════════════
-     Who owes you what and when, and who you owe. A bank's memory, on a page,
-     because holding six loans and five savers in your head is not the puzzle
-     this game is about. -->
+     Who owes you what and when, who you owe, what you know about everybody
+     you have dealt with, and what each pair of rates actually came to. The
+     first pass had the first two and none of the rest, which is why there was
+     nothing on screen a decision could be reasoned from. -->
 <div id="book" class="overlay" hidden>
   <div class="sheet sheet-sm">
     <h2>📒 The books</h2>
-    <div class="shelf-head">🤝 Out on loan</div>
-    <div id="bookLoans"></div>
-    <div class="shelf-head">💰 Savers' money</div>
-    <div id="bookSavers"></div>
+
+    <div class="seg book-tabs" id="bookTabs">
+      <button class="opt on" type="button" data-value="now">Right now</button>
+      <button class="opt" type="button" data-value="people">People</button>
+      <button class="opt" type="button" data-value="rates">Your rates</button>
+    </div>
+
+    <div id="bookNow" class="book-pane">
+      <div class="shelf-head">🤝 Out on loan</div>
+      <div id="bookLoans"></div>
+      <div class="shelf-head">💰 Savers' money</div>
+      <div id="bookSavers"></div>
+    </div>
+
+    <div id="bookPeople" class="book-pane" hidden>
+      <p class="pane-note">Everybody you have dealt with, and how it went. Stars never
+        change, so this is worth remembering.</p>
+      <div id="bookPeopleList"></div>
+    </div>
+
+    <div id="bookRates" class="book-pane" hidden>
+      <p class="pane-note">Every pair of rates you have tried, and what your bank kept
+        on the nights you used them.</p>
+      <div id="bookRatesList"></div>
+    </div>
+
     <div class="sheet-buttons">
       <button class="btn btn-clear" id="bookClose" type="button">Back to the bank</button>
     </div>
@@ -318,7 +281,7 @@
   <div class="sheet">
     <div class="howto-top">
       <h2 id="howtoTitle">How to play</h2>
-      <span class="pill" id="howtoStep">1 / 9</span>
+      <span class="pill" id="howtoStep">1 / 5</span>
     </div>
     <div id="howtoBody"></div>
     <div class="dots" id="howtoDots"></div>
@@ -344,8 +307,6 @@
       <p class="sub" id="resultSub"></p>
     </div>
 
-    <p class="versus" id="versus"></p>
-
     <div class="shelf-head">🏆 What your bank grew into</div>
     <div class="ladder" id="ladder"></div>
 
@@ -369,7 +330,6 @@
 
 <script src="./js/rng.js"></script>
 <script src="./js/bank.js"></script>
-<script src="./js/rival.js"></script>
 <script src="./js/audio.js"></script>
 <script src="./js/chart.js"></script>
 <script src="./js/ui.js"></script>
