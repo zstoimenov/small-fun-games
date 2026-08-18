@@ -42,6 +42,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 | Game | Folder | What it is |
 | --- | --- | --- |
+| ⏱️ **Cube Timer** | [`cube-timer/`](cube-timer/) | Time your cube solves. It hands you a scramble — with a **picture of the cube it makes**, so you can check you did it right before the clock starts — then it's hold the big pad until it goes green, let go, solve, tap to stop. 2×2, 3×3 and 4×4, each keeping its own times. +2 and DNF on the last solve, best time, average of the last five (dropping the best and the worst, the way a competition counts it), a chart of the last twenty and the whole list to scroll back through. Optional 15-second inspection with the 8- and 12-second calls. Up to four people in the house each have their own times and their own personal bests, and two of them can race: the **same scramble each round**, taking turns with one cube, first to win two rounds of three or three of five (~age 7+). |
 | 🎯 **Mastermind** | [`mastermind/`](mastermind/) | Somebody hides a row of colours; you work it out from the pegs. 1–2 players — crack the computer's code, set one for it to break, or take turns with a friend and see who needs fewest goes. Three puzzle sizes (3, 4 or 5 slots), an Easy/Medium/Hard breaker whose Hard setting is Knuth's minimax and provably never needs more than five goes, a live count of how many codes still fit, hints that name the reason, undo, and a shape on every peg so colour isn't the only clue (~age 6+). |
 
 ### 🧠 Coding
@@ -67,8 +68,9 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 ### Planned
 
-Nothing outstanding. All four games on the original roadmap are built, and three
-more were added on top of them — Deal or No Deal, Lemonade Stand and Bank Boss.
+Nothing outstanding. All four games on the original roadmap are built, and four
+more were added on top of them — Deal or No Deal, Lemonade Stand, Bank Boss and
+Cube Timer.
 
 [`docs/GAME-ROADMAP.md`](docs/GAME-ROADMAP.md) is worth reading before starting a
 new one: it holds what each build actually cost against what it was estimated at,
