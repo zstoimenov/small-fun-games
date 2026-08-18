@@ -46,7 +46,7 @@ game needs.
 For scale, the games measure: Lemonade Stand 4,089 (comfortably the largest in
 the repo), Yatzy 3,098, Battleship 3,072, Deal or No Deal 3,063, Nine Men's
 Morris 2,928, Mastermind 2,817, Connect Four 2,202, Footy Tactics Lab 2,048,
-Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
+Cube Timer 2,038, Times Table Blaster 1,186, AFL Goal Kick 1,058, Robo Rules 913.
 
 **Deal or No Deal is a fifth data point for `lines ≈ 2,000 + the game's own
 logic`, and it lands on it.** Its rules and Banker together are 545 lines; the
@@ -1811,3 +1811,91 @@ queue settings directly, so the specific bug cannot come back.
 > how often one goes wrong costs real money however far the recovery rises to
 > meet it. Paying back a share of what is *owed* rather than of the principal
 > fixes that term and was still behind on the middle.
+
+---
+
+## 8. Cube Timer — `cube-timer/` ✅ built
+
+The ask was *"a simple Rubik's cube timer for an 8-year-old and family use,
+with 1v1 solving"*. Built in one session, browser-verified, **2,038 lines**
+plus a 220-line checker in `tools/cube-check.js`.
+
+**It is a tool, and the race mode is what makes it a game.** Everything else on
+the shelf is played; a timer is used. Two cubers alternating on the *same*
+scramble, first to two rounds of three, is what earns it `players: [1, 2]` and a
+place in the catalogue — and it cost about 150 lines on top of the solo timer,
+because the timer already knew how to record a solve against a name.
+
+### The line estimate, and the one number that surprised
+
+`lines ≈ 2,000 + the game's own logic` holds, and this is the cleanest test of
+it yet: **the game's own logic is 343 lines** (`scramble.js` 216 + `stats.js`
+127) and the whole thing is 2,038. Not 2,343 — *below* the floor plus its logic,
+because this game skips three things every other game pays for: there is no
+opponent to search, no tutorial file, and no second screen. The furniture is the
+cost, and the way to come in under it is to need less furniture, not to write
+less game.
+
+### The cube model is stickers in space, not six grids
+
+A sticker knows which cubie it is on `(x, y, z)` and which way it faces, and a
+turn is one rotation applied to both. That is why twenty lines cover 2×2, 3×3,
+4×4 *and* the wide moves — a bigger cube only changes how many cubies a turn
+sweeps up. The alternative, six 2D face arrays with an adjacency table per face,
+is the version that has a transcription bug in it somewhere you will not find.
+
+**The picture is the feature, not the decoration.** A kid who cannot read
+notation at speed scrambles the cube and then checks it against the unfolded net
+before starting the clock. It falls out of the model for free, and it is the
+thing that makes the app usable a year earlier than it otherwise would be.
+
+### What the checker caught, and what it could not
+
+`node tools/cube-check.js` runs **177 assertions** in well under a second: every
+face turned four times comes home, every algorithm cancels its own inverse,
+`(R U R' U')` six times is solved, `U` moves the right stickers to the right
+faces, colour counts never change, no scramble repeats a face, and the averages
+follow the competition's trimming rules. Two of those assertions were wrong when
+first written — the ao5 expectations — and the code was right. **Write the
+average-of-five test before trusting your own arithmetic about it.**
+
+What the checker could not see was the layout, and both real bugs lived there:
+
+- **Numbered grid rows break when a row can hide.** `grid-template-rows: auto
+  auto auto 1fr auto…` gave the spare height to the pad only while the race bar
+  was on screen; hidden, everything shuffled up a row and the `1fr` landed on
+  the three little penalty buttons, which grew to 400px tall. A flex column with
+  `flex:1` on the pad cannot have this bug. **Prefer flex to positional grid
+  rows anywhere a child can be hidden.**
+- **A scramble in fixed rows of five cannot reflow.** Forty 4×4 moves pushed the
+  clock 101px off the bottom of a phone on its side. Rendering one wrapping row,
+  with a wider *gap* after every fifth move rather than a row break, keeps the
+  grouping that makes a scramble readable and lets it reflow.
+
+Both were found by measuring — `scrollHeight - innerHeight` at five viewport
+sizes, and comparing the pad's bounding box before and after a solve starts —
+not by looking at screenshots. The screenshots then confirmed they looked right.
+That ordering is the cheap one.
+
+### Details that are load-bearing
+
+- **The clock starts on release and stops on press.** Every cubing timer does
+  this and hands expect it. The press that stops the clock must not be able to
+  begin the next hold, or one keen tap ends a solve and starts another.
+- **Nothing that comes and goes may use `display`.** Everything else hides with
+  `visibility` while a solve runs, and the +2 / DNF / bin row keeps its 46px
+  even before the first solve — the pad must not move or resize under a finger
+  already on its way down. Three assertions pin its bounding box identical at
+  idle, mid-solve and after the penalty buttons appear; the last of those caught
+  a 54px jump after every solve.
+- **400ms of hold before the green light.** Long enough that a brush of the
+  screen cannot start a solve, short enough not to feel like a wait.
+- **Times are written after every single solve.** A tablet closed mid-average
+  must not cost anybody their best time.
+
+### Deliberately left out
+
+Random-*state* scrambles (they need a solver), cross/F2L splitting, Bluetooth
+cubes, cloud sync, algorithm trainers, session export, and any puzzle that is
+not a cube. Each is a session on its own, and none of them is what a family
+timer is for.

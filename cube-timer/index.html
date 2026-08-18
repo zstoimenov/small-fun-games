@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Cube Timer</title>
+<meta name="description" content="Time your cube solves. Hold, let go, solve, tap. Scrambles with a picture, your best times kept for you, and a race mode for two.">
+<meta name="theme-color" content="#1f9d55">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cube Timer">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+<!-- ══ SETUP ════════════════════════════════════════════════════════════ -->
+<div id="setup" class="overlay">
+  <div class="sheet setup-sheet">
+
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+
+    <h1>⏱️ Cube Timer</h1>
+    <p class="sub">Hold the big button until it goes green, let go, and solve. Tap it to stop.</p>
+
+    <div class="row">
+      <span class="row-label">Cube</span>
+      <div class="seg" id="puzzleChooser">
+        <button class="opt" type="button" data-value="2x2">2×2</button>
+        <button class="opt" type="button" data-value="3x3">3×3</button>
+        <button class="opt" type="button" data-value="4x4">4×4</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="row-label">Playing</span>
+      <div class="seg" id="modeChooser">
+        <button class="opt" type="button" data-value="solo">🧍 On my own</button>
+        <button class="opt" type="button" data-value="race">🏁 Race a friend</button>
+      </div>
+    </div>
+
+    <div class="row stack">
+      <span class="row-label" id="whoLabel">Who's cubing?</span>
+      <div class="chips" id="whoChips"></div>
+    </div>
+
+    <div class="row stack" id="who2Row" hidden>
+      <span class="row-label">Racing against</span>
+      <div class="chips" id="who2Chips"></div>
+    </div>
+    <p class="row-note" id="who2Note" hidden>Two people, one cube, taking turns on the same scramble.</p>
+
+    <div class="row" id="bestOfRow" hidden>
+      <span class="row-label">How long</span>
+      <div class="seg" id="bestOfChooser">
+        <button class="opt" type="button" data-value="3">Best of 3</button>
+        <button class="opt" type="button" data-value="5">Best of 5</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="row-label">Look first</span>
+      <button id="inspectToggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">15 seconds to look at the cube before the clock starts, the way it works at a competition.</p>
+
+    <div class="row">
+      <span class="row-label">Sounds</span>
+      <button id="soundToggle" class="switch" type="button" role="switch" aria-checked="true">
+        <span class="knob"></span>
+      </button>
+    </div>
+
+    <button id="startBtn" class="btn btn-go wide-btn" type="button">Start timing</button>
+    <button id="howBtn" class="ghost-btn wide" type="button">❓ How it works</button>
+  </div>
+</div>
+
+<!-- ══ HOW IT WORKS ═════════════════════════════════════════════════════ -->
+<div id="howto" class="overlay" hidden>
+  <div class="sheet">
+    <h2>How it works</h2>
+    <ol class="steps">
+      <li><b>Mix the cube up</b> using the moves at the top. The picture shows what it should look like when you've done it right.</li>
+      <li><b>Hold the big button.</b> It turns orange, then green when it's ready.</li>
+      <li><b>Let go and solve.</b> The clock starts the moment your fingers leave the screen.</li>
+      <li><b>Tap anywhere to stop.</b> Your time gets saved, and a new mix-up is ready for the next go.</li>
+    </ol>
+    <p class="note">If a corner was left a little bit turned, tap <b>+2</b>. If you gave up, tap <b>Didn't solve</b>. Tapped it by accident? <b>🗑</b> throws that one away.</p>
+    <button class="btn" id="howClose" type="button">Got it</button>
+  </div>
+</div>
+
+<!-- ══ THE TIMER ════════════════════════════════════════════════════════ -->
+<div id="app" class="app" hidden>
+
+  <header class="topbar">
+    <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
+    <div class="whoami">
+      <span id="whoName" class="whoami-name">Me</span>
+      <span id="puzzleName" class="whoami-puzzle">3×3</span>
+    </div>
+    <button id="listBtn" class="icon-btn" type="button" title="My times">📋</button>
+  </header>
+
+  <!-- Race only: the score, and whose go it is. -->
+  <div id="raceBar" class="race-bar" hidden>
+    <div class="race-side" id="raceSideA">
+      <span class="race-name"></span><span class="race-score">0</span>
+    </div>
+    <div class="race-mid" id="raceRound">Round 1 of 3</div>
+    <div class="race-side" id="raceSideB">
+      <span class="race-score">0</span><span class="race-name"></span>
+    </div>
+  </div>
+
+  <section class="scramble-wrap" id="scrambleWrap">
+    <div id="scramble" class="scramble" aria-live="polite"></div>
+    <div class="scramble-tools">
+      <button id="newScrambleBtn" class="ghost-btn small" type="button">🔄 Different mix-up</button>
+    </div>
+    <div class="net-wrap"><svg id="net" class="net" viewBox="0 0 120 90" aria-label="What the cube should look like"></svg></div>
+  </section>
+
+  <div id="pad" class="pad" role="button" tabindex="0" aria-label="Hold to start the timer">
+    <div id="time" class="time">0.00</div>
+    <div id="padHint" class="pad-hint">Hold to start</div>
+  </div>
+
+  <!-- Always in the layout, `gone` only takes it out of sight: if this row
+       came and went the pad would change size after every single solve. -->
+  <section id="afterRow" class="after-row gone">
+    <button id="plusTwoBtn" class="tag-btn" type="button">+2</button>
+    <button id="dnfBtn" class="tag-btn" type="button">Didn't solve</button>
+    <button id="binBtn" class="tag-btn bin" type="button" title="Throw this one away">🗑</button>
+    <button id="nextBtn" class="btn btn-go" type="button" hidden>Next →</button>
+  </section>
+
+  <section class="stats-row" id="statsRow">
+    <div class="stat"><span class="stat-label">Best</span><span class="stat-value" id="statBest">–</span></div>
+    <div class="stat"><span class="stat-label">Last 5</span><span class="stat-value" id="statAo5">–</span></div>
+    <div class="stat"><span class="stat-label">Solves</span><span class="stat-value" id="statCount">0</span></div>
+  </section>
+
+  <div class="spark-wrap"><svg id="spark" class="spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg></div>
+
+  <!-- Shouted at, briefly, for a personal best. -->
+  <div id="toast" class="toast" hidden></div>
+</div>
+
+<!-- ══ MY TIMES ═════════════════════════════════════════════════════════ -->
+<div id="times" class="overlay" hidden>
+  <div class="sheet times-sheet">
+    <div class="sheet-head">
+      <h2 id="timesTitle">My times</h2>
+      <button id="timesClose" class="icon-btn" type="button" title="Close">✕</button>
+    </div>
+    <div id="timesList" class="times-list"></div>
+    <div class="sheet-foot">
+      <button id="clearBtn" class="ghost-btn" type="button">Clear these times</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ONE SOLVE ════════════════════════════════════════════════════════ -->
+<div id="detail" class="overlay" hidden>
+  <div class="sheet">
+    <div class="sheet-head">
+      <h2 id="detailTime">12.34</h2>
+      <button id="detailClose" class="icon-btn" type="button" title="Close">✕</button>
+    </div>
+    <p class="note" id="detailWhen"></p>
+    <div class="scramble small" id="detailScramble"></div>
+    <div class="detail-actions">
+      <button id="detailPlusTwo" class="tag-btn" type="button">+2</button>
+      <button id="detailDnf" class="tag-btn" type="button">Didn't solve</button>
+      <button id="detailClean" class="tag-btn" type="button">✓ It was clean</button>
+      <button id="detailBin" class="tag-btn bin" type="button">🗑 Throw away</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PASS THE CUBE ════════════════════════════════════════════════════ -->
+<div id="handover" class="overlay" hidden>
+  <div class="sheet centred">
+    <div class="big-emoji">🤝</div>
+    <h2 id="handoverName">Mia's go</h2>
+    <p class="sub" id="handoverNote">Mix the cube up the same way, then hand it over.</p>
+    <div class="scramble small" id="handoverScramble"></div>
+    <button id="handoverGo" class="btn btn-go wide-btn" type="button">Ready</button>
+  </div>
+</div>
+
+<!-- ══ ROUND RESULT ═════════════════════════════════════════════════════ -->
+<div id="round" class="overlay" hidden>
+  <div class="sheet centred">
+    <h2 id="roundTitle">Round 1</h2>
+    <div class="round-times" id="roundTimes"></div>
+    <p class="sub" id="roundNote"></p>
+    <button id="roundGo" class="btn btn-go wide-btn" type="button">Next round</button>
+  </div>
+</div>
+
+<!-- ══ RACE OVER ════════════════════════════════════════════════════════ -->
+<div id="over" class="overlay" hidden>
+  <div class="sheet centred">
+    <div class="big-emoji" id="overEmoji">🏆</div>
+    <h2 id="overTitle">Mia wins!</h2>
+    <div class="round-times" id="overTimes"></div>
+    <p class="sub" id="overNote"></p>
+    <button id="overAgain" class="btn btn-go wide-btn" type="button">Race again</button>
+    <button id="overMenu" class="ghost-btn wide" type="button">Back to the menu</button>
+  </div>
+</div>
+
+<!-- ══ ADD A NAME ═══════════════════════════════════════════════════════ -->
+<div id="namer" class="overlay" hidden>
+  <div class="sheet">
+    <h2>Who's cubing?</h2>
+    <input id="namerInput" class="name-input" type="text" maxlength="12" autocomplete="off"
+           placeholder="Their name" aria-label="Name">
+    <div class="sheet-foot">
+      <button id="namerCancel" class="ghost-btn" type="button">Cancel</button>
+      <button id="namerOk" class="btn" type="button">Add</button>
+    </div>
+  </div>
+</div>
+
+<script src="./js/scramble.js"></script>
+<script src="./js/stats.js"></script>
+<script src="./js/store.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "Cube Timer",
+  "short_name": "Cube Timer",
+  "description": "Time your cube solves. Hold, let go, solve, tap. Scrambles with a picture of the cube, your best times kept for you, and a race mode for two.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef7f1",
+  "theme_color": "#1f9d55",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
