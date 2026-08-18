@@ -320,6 +320,26 @@ body.solving .after-row{visibility:hidden}
 .empty-note{color:var(--muted);text-align:center;padding:26px 0;font-size:15px}
 .detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 
+/* ── Best times ─────────────────────────────────────────────────────────── */
+
+.seg.full{margin:6px 0 12px}
+.seg.full .opt{flex:1;text-align:center}
+.rank-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.rank-row{
+  display:flex;align-items:center;gap:12px;
+  background:var(--bg1);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+}
+.rank-row.top{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 12%,var(--bg1))}
+.rank-row.none{opacity:.6}
+.rank-place{font-size:21px;font-weight:900;min-width:34px;text-align:center}
+.rank-mid{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.rank-name{font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-sub{font-size:12.5px;color:var(--muted)}
+.rank-time{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;
+}
+
 /* ── Race sheets ────────────────────────────────────────────────────────── */
 
 .round-times{display:flex;flex-direction:column;gap:8px;margin:12px 0}

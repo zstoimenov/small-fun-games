@@ -78,6 +78,7 @@
     </div>
 
     <button id="startBtn" class="btn btn-go wide-btn" type="button">Start timing</button>
+    <button id="setupRankBtn" class="ghost-btn wide" type="button">🏆 Best times</button>
     <button id="howBtn" class="ghost-btn wide" type="button">❓ How it works</button>
   </div>
 </div>
@@ -106,6 +107,7 @@
       <span id="whoName" class="whoami-name">Me</span>
       <span id="puzzleName" class="whoami-puzzle">3×3</span>
     </div>
+    <button id="rankBtn" class="icon-btn" type="button" title="Best times">🏆</button>
     <button id="listBtn" class="icon-btn" type="button" title="My times">📋</button>
   </header>
 
@@ -165,6 +167,25 @@
     <div class="sheet-foot">
       <button id="clearBtn" class="ghost-btn" type="button">Clear these times</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ BEST TIMES ═══════════════════════════════════════════════════════ -->
+<div id="rank" class="overlay" hidden>
+  <div class="sheet rank-sheet">
+    <div class="sheet-head">
+      <h2>🏆 Best times</h2>
+      <button id="rankClose" class="icon-btn" type="button" title="Close">✕</button>
+    </div>
+    <div class="seg full" id="rankPuzzle">
+      <button class="opt" type="button" data-value="2x2">2×2</button>
+      <button class="opt" type="button" data-value="3x3">3×3</button>
+      <button class="opt" type="button" data-value="4x4">4×4</button>
+    </div>
+    <div id="rankList" class="rank-list"></div>
+    <p class="note">Everyone's fastest time on this cube, and the day and time they did it.
+      Beat yours and this changes. Times live on this device and stay until somebody clears
+      the browser's data for the site.</p>
   </div>
 </div>
 

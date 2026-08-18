@@ -198,17 +198,63 @@ CT.Ui = (function () {
     }
   }
 
-  // "Today, 4:12pm" beats a date stamp for something you did ten minutes ago.
+  // "Today, 4:12pm" beats a date stamp for something you did ten minutes ago —
+  // but a best time can be a year old, and then the year is the useful part.
   function when(at) {
+    if (!at) return "";
     const d = new Date(at);
     const now = new Date();
     const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-    const sameDay = d.toDateString() === now.toDateString();
-    return sameDay ? "Today, " + time : d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }) + ", " + time;
+    if (d.toDateString() === now.toDateString()) return "Today, " + time;
+    const yesterday = new Date(now.getTime() - 86400000);
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday, " + time;
+    const opts = { weekday: "short", day: "numeric", month: "short" };
+    if (d.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+    return d.toLocaleDateString([], opts) + ", " + time;
+  }
+
+  /* ── The ranking ───────────────────────────────────────────────────────── */
+  /* One row per person: their fastest time on this cube and the moment they
+   * set it. Everyone appears, including whoever has not been on this cube yet,
+   * because a family leaderboard that hides people is an invitation nobody
+   * sees. */
+
+  const MEDALS = ["🥇", "🥈", "🥉"];
+
+  function renderRanking(box, rows) {
+    box.textContent = "";
+    rows.forEach((r, i) => {
+      const row = document.createElement("div");
+      row.className = "rank-row" + (r.ms === null ? " none" : "") + (i === 0 && r.ms !== null ? " top" : "");
+
+      const place = document.createElement("span");
+      place.className = "rank-place";
+      place.textContent = r.ms === null ? "–" : (MEDALS[i] || String(i + 1));
+
+      const mid = document.createElement("span");
+      mid.className = "rank-mid";
+      const name = document.createElement("span");
+      name.className = "rank-name";
+      name.textContent = r.name;
+      const sub = document.createElement("span");
+      sub.className = "rank-sub";
+      sub.textContent = r.ms === null
+        ? "no times on this cube yet"
+        : when(r.at) + " · " + r.count + (r.count === 1 ? " solve" : " solves");
+      mid.appendChild(name); mid.appendChild(sub);
+
+      const time = document.createElement("span");
+      time.className = "rank-time";
+      time.textContent = r.ms === null ? "–" : Stats.format(r.ms);
+
+      row.appendChild(place); row.appendChild(mid); row.appendChild(time);
+      box.appendChild(row);
+    });
   }
 
   return {
     $, svgEl, chooser, setChooser, setSwitch,
-    renderChips, renderScramble, renderNet, renderStats, renderSpark, renderTimes, when
+    renderChips, renderScramble, renderNet, renderStats, renderSpark, renderTimes,
+    renderRanking, when
   };
 })();

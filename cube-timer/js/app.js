@@ -44,6 +44,7 @@
     inspectPips: 0,    // which inspection calls have already sounded
     inspectPenalty: "",
     last: null,        // { who, puzzle, index } — what the +2 / DNF buttons act on
+    awake: false,      // whether the screen should be being held awake
     race: null,        // { round, scores, turn, times, log, target }
     wakeLock: null
   };
@@ -74,15 +75,30 @@
     }, 1900);
   }
 
-  // A tablet that dims halfway through a solve is a ruined solve. Best effort:
-  // where the browser has no wake lock, nothing here breaks.
+  /* A tablet that dims while you are mid-solve — or mid-scramble, or reading
+   * the moves off the screen with both hands full — is a ruined go. So the lock
+   * is held for as long as the timer screen is up, not just while the clock is
+   * running: the long wait in this app is the scramble, and that is exactly
+   * when nobody is touching the glass.
+   *
+   * The browser drops a screen lock whenever the page is hidden and never gives
+   * it back on its own, so it has to be taken again every time the app comes
+   * back to the front. Best effort throughout: where there is no wake lock,
+   * nothing here breaks. */
   function keepAwake(on) {
+    state.awake = on;
     try {
-      if (on && navigator.wakeLock && !state.wakeLock) {
-        navigator.wakeLock.request("screen").then((l) => { state.wakeLock = l; }).catch(() => {});
+      if (on && navigator.wakeLock) {
+        if (state.wakeLock) return;
+        navigator.wakeLock.request("screen").then((lock) => {
+          state.wakeLock = lock;
+          // Chrome fires this on release, including the automatic one.
+          lock.addEventListener("release", () => { state.wakeLock = null; });
+        }).catch(() => {});
       } else if (!on && state.wakeLock) {
-        state.wakeLock.release().catch(() => {});
+        const lock = state.wakeLock;
         state.wakeLock = null;
+        lock.release().catch(() => {});
       }
     } catch (e) { /* not available — carry on */ }
   }
@@ -155,7 +171,6 @@
     state.startAt = performance.now();
     state.shown = -1;
     setPhase("run");
-    keepAwake(true);
     $("time").textContent = "0.0";
     state.raf = requestAnimationFrame(paintRunning);
   }
@@ -164,7 +179,6 @@
     cancelAnimationFrame(state.raf);
     const ms = performance.now() - state.startAt;
     setPhase("done");
-    keepAwake(false);
     Audio.stop();
     record(ms, state.inspectPenalty);
     state.inspectPenalty = "";
@@ -476,6 +490,7 @@
   function startTiming() {
     show("setup", false);
     show("app", true);
+    keepAwake(true);
     showAfterRow(false);
     $("time").textContent = "0.00";
     state.last = null;
@@ -488,6 +503,37 @@
       drawStats();
       setPhase("idle");
     }
+  }
+
+  /* Everybody's fastest time on one cube, quickest first, with the moment it
+   * was set. Whoever has no time on that cube still gets a row — the point of
+   * a family board is that it shows who is missing from it. */
+  function rankingRows(pz) {
+    const rows = Store.cubers().map((c) => {
+      const list = Store.solves(c.id, pz);
+      let ms = null, at = 0;
+      list.forEach((s) => {
+        const t = Stats.effective(s);
+        if (t !== null && (ms === null || t < ms)) { ms = t; at = s.at; }
+      });
+      return { id: c.id, name: c.name, ms: ms, at: at, count: list.length };
+    });
+    // Fastest first; anyone without a time on this cube sits at the bottom.
+    rows.sort((a, b) => {
+      if (a.ms === null && b.ms === null) return 0;
+      if (a.ms === null) return 1;
+      if (b.ms === null) return -1;
+      return a.ms - b.ms;
+    });
+    return rows;
+  }
+
+  let rankPuzzle = "";
+  function openRanking(pz) {
+    rankPuzzle = pz || puzzle();
+    Ui.setChooser("rankPuzzle", rankPuzzle);
+    Ui.renderRanking($("rankList"), rankingRows(rankPuzzle));
+    show("rank", true);
   }
 
   function openTimes() {
@@ -544,6 +590,7 @@
       if (data.sound) Audio.ready();
     });
     $("startBtn").addEventListener("click", startTiming);
+    $("setupRankBtn").addEventListener("click", () => openRanking(data.puzzle));
     $("howBtn").addEventListener("click", () => show("howto", true));
     $("howClose").addEventListener("click", () => show("howto", false));
 
@@ -554,6 +601,9 @@
     // The timer screen
     $("menuBtn").addEventListener("click", openSetup);
     $("listBtn").addEventListener("click", openTimes);
+    $("rankBtn").addEventListener("click", () => openRanking(puzzle()));
+    $("rankClose").addEventListener("click", () => show("rank", false));
+    Ui.chooser("rankPuzzle", (v) => openRanking(v));
     $("newScrambleBtn").addEventListener("click", () => { newScramble(); Audio.tap(); });
     $("plusTwoBtn").addEventListener("click", () => penalise("+2"));
     $("dnfBtn").addEventListener("click", () => penalise("dnf"));
@@ -614,7 +664,8 @@
   }
 
   const openOverlay = () =>
-    ["setup", "howto", "times", "detail", "handover", "round", "over", "namer"].some((id) => !$(id).hidden);
+    ["setup", "howto", "times", "detail", "handover", "round", "over", "namer", "rank"]
+      .some((id) => !$(id).hidden);
 
   let namingFor = "who";
   function chipClick(e, field) {
@@ -643,7 +694,33 @@
 
   /* ── Go ────────────────────────────────────────────────────────────────── */
 
+  /* Times are the one thing in this app nobody can recreate, so ask the browser
+   * to treat them as worth keeping. Without this, a phone short of space is
+   * free to throw the site's storage away in the background; with it, the times
+   * survive until somebody actually clears the browser's data for the site.
+   * Asked once and remembered, because Firefox turns it into a prompt. */
+  function keepTimesForGood() {
+    try {
+      if (!navigator.storage || !navigator.storage.persist) return;
+      navigator.storage.persisted().then((already) => {
+        if (already || data.askedPersist) return;
+        Store.set("askedPersist", true);
+        navigator.storage.persist().catch(() => {});
+      }).catch(() => {});
+    } catch (e) { /* not available — the times are still saved, just evictable */ }
+  }
+
+  /* A screen lock dies whenever the app goes to the background. Forget ours on
+   * the way out rather than waiting to be told it was released — not every
+   * browser fires that event, and a stale reference would make the app think
+   * it still had a lock and never ask for another one. */
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") { state.wakeLock = null; return; }
+    if (state.awake) keepAwake(true);
+  });
+
   Audio.setMuted(!data.sound);
+  keepTimesForGood();
   wire();
   drawSetup();
   // A first-timer gets the four steps without having to go looking for them.

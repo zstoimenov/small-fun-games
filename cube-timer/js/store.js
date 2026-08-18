@@ -27,6 +27,7 @@ CT.Store = (function () {
     inspection: false,
     sound: true,
     seenHowTo: false,
+    askedPersist: false,   // the browser has been asked to keep this for good
     // One list per person per cube: "c1|3x3".
     solves: {}
   });
