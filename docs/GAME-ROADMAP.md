@@ -1893,6 +1893,32 @@ That ordering is the cheap one.
 - **Times are written after every single solve.** A tablet closed mid-average
   must not cost anybody their best time.
 
+### Asked for straight after it shipped
+
+Three things, all of them about a timer being used rather than played:
+
+- **The screen has to stay on for as long as the timer is open**, not just while
+  the clock runs. The long wait in this app is the *scramble* — twenty moves
+  read off the screen with both hands full — and that is exactly when nobody is
+  touching the glass. The lock is now taken when the timer screen opens and
+  given back at the menu.
+- **A ranking, with names and the moment each time was set.** One row per person
+  per cube, quickest first, medals for the top three, and "Today, 4:12pm" under
+  the name. Everybody gets a row even with no times yet, because a family board
+  that hides people is an invitation nobody sees. Reachable from the trophy in
+  the timer's top bar and from the menu.
+- **Times that survive.** `localStorage` already outlives the app being closed,
+  but a phone short of space may evict it in the background, so the app now
+  calls `navigator.storage.persist()` — once, remembered in the store, because
+  Firefox turns it into a prompt.
+
+> **A screen wake lock dies whenever the page is backgrounded, and the browser
+> never gives it back.** Re-taking it on `visibilitychange` is the known half.
+> The half that bites: if you only null your reference when the lock's own
+> `release` event fires, a browser that does not fire it leaves the app holding
+> a dead lock and convinced it is still awake. Drop the reference on the way
+> *out* — when the page goes hidden — rather than waiting to be told.
+
 ### Deliberately left out
 
 Random-*state* scrambles (they need a solver), cross/F2L splitting, Bluetooth
