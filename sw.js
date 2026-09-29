@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v31";
+const CACHE = "game-box-v32";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -113,6 +113,14 @@ const ASSETS = [
   "./enigma/js/rules.js", "./enigma/js/audio.js", "./enigma/js/ui.js", "./enigma/js/app.js",
   "./enigma/icons/icon-192.png", "./enigma/icons/icon-512.png",
   "./enigma/icons/apple-touch-icon.png",
+
+  "./newtons-laws/", "./newtons-laws/index.html", "./newtons-laws/manifest.webmanifest",
+  "./newtons-laws/css/style.css",
+  "./newtons-laws/js/physics.js", "./newtons-laws/js/levels.js", "./newtons-laws/js/audio.js",
+  "./newtons-laws/js/scenes.js", "./newtons-laws/js/draw.js", "./newtons-laws/js/ui.js",
+  "./newtons-laws/js/app.js",
+  "./newtons-laws/icons/icon-192.png", "./newtons-laws/icons/icon-512.png",
+  "./newtons-laws/icons/apple-touch-icon.png",
 ];
 
 // Precache fresh copies — cache:"reload" bypasses the HTTP cache so the offline

@@ -166,7 +166,8 @@ const CATEGORIES = [
   { id: "coding", label: "Coding",           emoji: "🧠" },
   { id: "puzzle", label: "Puzzles",          emoji: "🧩" },
   { id: "maths",  label: "Maths",            emoji: "🔢" },
-  { id: "sport",  label: "Sport",            emoji: "⚽" }
+  { id: "sport",  label: "Sport",            emoji: "⚽" },
+  { id: "science", label: "Science",         emoji: "🔬" }
 ];
 
 // ---- The catalogue. Add a new game = add one entry here. ----
@@ -175,6 +176,18 @@ const CATEGORIES = [
 // The chips on each card are generated from `category`, `players`, `age` and
 // `highlights` — don't hand-write them, or they drift from the real thing.
 const GAMES = [
+  {
+    title: "Newton's Playground",
+    folder: "newtons-laws",
+    emoji: "🍎",
+    added: "2026-09-29",
+    category: "science",
+    players: [1, 1],
+    age: 8,
+    blurb: "Isaac Newton found three rules that everything that moves follows. Flick a puck over ice, grass and sand. Push a cart with a teddy on it, then an elephant. Throw balls off a skateboard and roll the other way. Play with each law first, then beat the levels and take the quiz!",
+    colors: ["#2b59c3", "#e0752b"],
+    highlights: ["🥌 Flick, push & throw", "🎓 Quiz"]
+  },
   {
     title: "Morse Agent",
     folder: "morse",

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Newton's Playground</title>
+<meta name="description" content="Learn Newton's three laws of motion by flicking pucks, pushing carts and throwing balls off a skateboard.">
+<meta name="theme-color" content="#2b59c3">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Newton">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Back</button>
+    <h1 id="title">Newton's Playground</h1>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+  </header>
+
+  <!-- Home: meet Newton, pick a law. Chapter cards are filled in by ui.js. -->
+  <section id="home" class="screen">
+    <div class="card hero">
+      <span class="hero-emoji" aria-hidden="true">&#127822;</span>
+      <div>
+        <h2>Meet Isaac Newton</h2>
+        <p>Newton lived in England more than 300 years ago. The story goes that he saw an apple fall from a tree and started to wonder <b>why things move</b>.</p>
+        <p>He worked out three rules that everything follows. Play with each one and see it for yourself!</p>
+      </div>
+    </div>
+    <div id="chapters" class="chapters"></div>
+    <button id="quizBtn" class="wide-btn" type="button">&#127891; Newton Quiz <small id="quizInfo">3 quick questions</small></button>
+  </section>
+
+  <!-- A chapter: what the law says, the sandbox, then the levels. -->
+  <section id="chapter" class="screen" hidden>
+    <div class="card law-card">
+      <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
+      <p class="kicker" id="lawKicker"></p>
+      <h2 id="lawName"></h2>
+      <p class="law-big" id="lawSays"></p>
+      <div id="lawMore"></div>
+      <details class="grown-up">
+        <summary>In grown-up words</summary>
+        <p id="lawGrown"></p>
+      </details>
+    </div>
+    <button id="sandBtn" class="wide-btn play" type="button">&#128400; Try it <small id="sandInfo">Play around first, no rules</small></button>
+    <div id="levels" class="levels"></div>
+  </section>
+
+  <!-- Where the sandbox and every level are played. Controls come from ui.js. -->
+  <section id="play" class="screen" hidden>
+    <div class="goal">
+      <span class="goal-name" id="goalName"></span>
+      <span class="goal-stars" id="goalStars"></span>
+      <p id="goalText"></p>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="world" aria-label="Play area"></canvas>
+    </div>
+    <p class="say" id="say" aria-live="polite"></p>
+    <div class="controls" id="controls"></div>
+  </section>
+
+  <!-- The quiz: one question at a time. -->
+  <section id="quiz" class="screen" hidden>
+    <div class="card quiz-card">
+      <p class="kicker" id="qCount"></p>
+      <span class="q-emoji" id="qEmoji" aria-hidden="true"></span>
+      <h2 id="qText"></h2>
+      <div class="answers" id="qAnswers"></div>
+      <p class="q-why" id="qWhy" aria-live="polite"></p>
+      <div class="actions"><button id="qNext" class="btn" type="button" hidden>Next &rsaquo;</button></div>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="winDialog" class="sheet" aria-labelledby="winTitle">
+  <div class="big-stars" id="winStars" aria-hidden="true"></div>
+  <h2 id="winTitle">You did it!</h2>
+  <p id="winText"></p>
+  <div class="actions">
+    <button id="winAgain" class="btn ghost" type="button">Play again</button>
+    <button id="winNext" class="btn" type="button">Next &rsaquo;</button>
+  </div>
+</dialog>
+
+<dialog id="lessonDialog" class="sheet lesson" aria-labelledby="lessonTitle">
+  <span class="lesson-emoji" id="lessonEmoji" aria-hidden="true"></span>
+  <h2 id="lessonTitle"></h2>
+  <p class="law-big" id="lessonSays"></p>
+  <p id="lessonLife"></p>
+  <div class="actions"><button class="btn" type="button" id="lessonOk">Back to the laws</button></div>
+</dialog>
+
+<dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
+  <div class="sheet-head">
+    <h2 id="helpTitle">How to play</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <ol class="how">
+    <li><b>Pick a law.</b> Each one is a rule about how things move.</li>
+    <li><b>Try it first.</b> The play area has no rules. Just have fun and watch.</li>
+    <li><b>Then beat the levels.</b> Get the thing to stop on the <b>green flag</b>.</li>
+    <li><b>Stars:</b> 3 if you get it first go, 2 in a few goes, 1 if it takes longer.</li>
+    <li><b>Arrows</b> show pushes. A bigger arrow means a bigger push.</li>
+    <li><b>Finish all three laws,</b> then try the quiz!</li>
+  </ol>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/physics.js"></script>
+<script src="./js/levels.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/scenes.js"></script>
+<script src="./js/draw.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>
