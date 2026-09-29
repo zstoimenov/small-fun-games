@@ -227,7 +227,8 @@
     // Rhythms that are not letters yet still need to be played: build them here.
     if (!R.DECODE[p]) {
       let t = 0; s.segs = [];
-      p.split("").forEach((c, i) => { if (i) t += R.DIT; const d = c === "." ? R.DIT : 3 * R.DIT; s.segs.push({ at: t, dur: d }); t += d; });
+      const gap = R.gaps(level || 0).beep;
+      p.split("").forEach((c, i) => { if (i) t += gap; const d = c === "." ? R.DIT : 3 * R.DIT; s.segs.push({ at: t, dur: d }); t += d; });
       s.total = t;
     }
     return A.play(s.segs, s.total, UI.lamp);

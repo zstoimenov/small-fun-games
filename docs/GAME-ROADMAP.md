@@ -1940,7 +1940,7 @@ decisions that shaped it were made up front:
 - **Spy missions** for one player; **Field Agents** for two (pass the tablet).
 - **A difficulty lever** (Rookie / Agent / Ace) on HQ only, locked during a
   mission. It changes three things and never the letter speed: Farnsworth
-  spacing (5 / 8 / 12 wpm overall), how many dots and dashes are shown
+  spacing (5 / 8 / 12 wpm overall, with every Rookie gap, even between the beeps of one letter, a further 25% longer), how many dots and dashes are shown
   (every button / only when sending / only after a mistake), and the longest
   word (3 / 4 / 5 letters).
 - **Boot Camp** before Mission 1, for a kid who has never heard Morse: dot vs

@@ -27,12 +27,15 @@ ok(R.ORDER.split("").every((c) => R.CODE[c]), "ORDER only uses known characters"
 // Timing: 12 wpm is a 100 ms dit; Ace is textbook spacing; Rookie is wider.
 ok(R.DIT === 100, "dit is 100 ms");
 const g = R.LEVELS.map((_, i) => R.gaps(i));
-ok(g[2].letter === 300 && g[2].word === 700, "Ace gaps are 3 and 7 dits");
+ok(g[2].beep === 100 && g[2].letter === 300 && g[2].word === 700, "Ace gaps are 1, 3 and 7 dits");
+ok(g[0].beep === 125, "Rookie beep gap is 25% longer");
+{ const ta = ((60 * 12 - 37.2 * 5) / 60) * 1000; ok(Math.abs(g[0].letter - 1.25 * 3 * ta / 19) < 1e-9, "Rookie letter gap is 25% longer"); }
+ok(R.schedule("S", 0).total === 3 * 100 + 2 * 125, "Rookie S is three dits and two 125 ms gaps");
 ok(g[0].letter > g[1].letter && g[1].letter > g[2].letter, "gaps shrink up the lever");
 // PARIS is the standard word: 50 dits including the word gap after it.
 const paris = R.schedule("PARIS", 2);
 ok(paris.total === 4300, "PARIS is 43 dits without the trailing word gap (" + paris.total + ")");
-ok(R.schedule("K", 0).segs.map((s) => s.dur).join() === "300,100,300", "K is dah dit dah");
+ok(R.schedule("K", 0).segs.map((s) => s.dur).join() === "300,100,300", "K is dah dit dah, beeps not stretched");
 
 // Lessons: mission 1 teaches K and M; every mission adds exactly one.
 ok(R.lettersFor(1).join("") === "KM" && R.newFor(1).join("") === "KM", "mission 1 is K and M");
