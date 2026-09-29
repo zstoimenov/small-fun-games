@@ -303,6 +303,29 @@ button{-webkit-tap-highlight-color:transparent; touch-action:manipulation; curso
 .duo-end .player.top{border-color:var(--brass); box-shadow:0 0 0 3px color-mix(in srgb,var(--brass) 40%,transparent)}
 .duo-end b{font-size:48px}
 
+/* ── The story ───────────────────────────────────────────────────────────── */
+/* pan-y: the page still scrolls up and down, and sideways moves reach the
+   swipe handler instead of the browser's back gesture. */
+.pages{touch-action:pan-y}
+.page-card{
+  display:flex; flex-direction:column; gap:4px; min-height:52dvh; padding:20px 20px 16px;
+  background:var(--card); border:1px solid var(--line); border-radius:22px; box-shadow:0 2px 10px var(--shadow);
+  font-size:19px; line-height:1.5;
+}
+.page-card h2{margin:4px 0 6px; font-size:26px}
+.page-card p{margin:0 0 10px}
+.page-card ul{margin:0 0 10px; padding-left:1.2em}
+.page-card li{margin:0 0 8px}
+.page-emoji{font-size:54px; line-height:1}
+.hear-row{display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:auto; padding-top:8px}
+.lamp.small{width:36px; height:36px; border-width:2px}
+.page-nav{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.page-nav .btn{min-width:130px}
+.page-nav .small-btn:disabled{opacity:.35}
+.page-dots{display:flex; gap:8px}
+.page-dots i{width:10px; height:10px; border-radius:50%; background:var(--line)}
+.page-dots i.on{background:var(--accent); transform:scale(1.25)}
+
 /* ── Two-player setup ────────────────────────────────────────────────────── */
 .field{display:flex; align-items:center; gap:10px; margin:8px 0; font-weight:600}
 .field input,.new-agent input{

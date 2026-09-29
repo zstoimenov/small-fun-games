@@ -165,6 +165,56 @@
     hq();
   }
 
+  // ── The story of Morse code ───────────────────────────────────────────────
+  // A picture book: one page at a time, Back/Next or a swipe. The Hear buttons
+  // play at Ace spacing - these are real messages, sent the way they were.
+  let page = 0;
+  function story() {
+    leave();
+    inDuo = false;
+    m = null;
+    UI.screen("story", "The story of Morse");
+    showPage(0);
+  }
+  function showPage(n) {
+    const cards = document.querySelectorAll("#pages .page-card");
+    A.stop();
+    UI.lamp(false);
+    page = Math.max(0, Math.min(cards.length - 1, n));
+    cards.forEach((c, i) => { c.hidden = i !== page; });
+    $("pageDots").innerHTML = Array.from(cards, (_, i) => '<i class="' + (i === page ? "on" : "") + '"></i>').join("");
+    $("pgBack").disabled = page === 0;
+    // visibility, not hidden: the button keeps its space so the dots stay put.
+    $("pgNext").style.visibility = page === cards.length - 1 ? "hidden" : "";
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll("#pages .hear").forEach((b) => b.addEventListener("click", () => {
+    const text = b.dataset.say;
+    const host = b.closest(".page-card");
+    // A little lamp on the page itself: the radio panel lives on another screen.
+    let lamp = host.querySelector(".lamp");
+    if (!lamp) { lamp = document.createElement("div"); lamp.className = "lamp small"; b.parentNode.prepend(lamp); }
+    const s = R.schedule(text, 2);
+    A.play(s.segs, s.total, (on) => lamp.classList.toggle("on", on));
+  }));
+  $("pgBack").addEventListener("click", () => showPage(page - 1));
+  $("pgNext").addEventListener("click", () => showPage(page + 1));
+  $("storyGo").addEventListener("click", () => (needsBoot(agent()) ? bootCamp() : startMission()));
+  // Swipe left/right on the page. Only a mostly-sideways move counts, so
+  // scrolling a long page on a phone never turns it by accident.
+  (() => {
+    let x0 = null, y0 = 0;
+    const el = $("pages");
+    el.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse") { x0 = e.clientX; y0 = e.clientY; } });
+    el.addEventListener("pointerup", (e) => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0, dy = e.clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) > 60 && Math.abs(dx) > 2 * Math.abs(dy)) showPage(page + (dx < 0 ? 1 : -1));
+    });
+    el.addEventListener("pointercancel", () => { x0 = null; });
+  })();
+
   // ── Boot Camp ─────────────────────────────────────────────────────────────
   // For somebody who has never heard Morse. Before any letters: what a dot and a
   // dash sound like, how to make each on the key, and copying a few rhythms.
@@ -782,6 +832,7 @@
   $("newName").addEventListener("keydown", (e) => { if (e.key === "Enter") addAgent(); });
   $("missionBtn").addEventListener("click", () => (needsBoot(agent()) ? bootCamp() : startMission()));
   $("bootBtn").addEventListener("click", bootCamp);
+  $("storyBtn").addEventListener("click", story);
   $("bookBtn").addEventListener("click", () => { inDuo = false; book(); });
   $("duoBtn").addEventListener("click", duoSetup);
   $("duoStart").addEventListener("click", duoStart);

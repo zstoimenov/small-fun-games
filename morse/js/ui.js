@@ -21,7 +21,7 @@ MO.UI = (function () {
   }
 
   function screen(id, title) {
-    ["hq", "play", "duo"].forEach((s) => { $(s).hidden = s !== id; });
+    ["hq", "play", "duo", "story"].forEach((s) => { $(s).hidden = s !== id; });
     $("back").hidden = id !== "hq";
     $("toHq").hidden = id === "hq";
     $("title").textContent = title || "Morse Agent";

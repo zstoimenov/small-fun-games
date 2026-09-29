@@ -65,6 +65,7 @@
 
     <button id="bootBtn" class="wide-btn" type="button">&#127891; Boot Camp <small>Learn dots and dashes from the start</small></button>
     <button id="duoBtn" class="wide-btn" type="button">&#128101; Field Agents <small>2 players: send a secret word to a friend</small></button>
+    <button id="storyBtn" class="wide-btn" type="button">&#128220; The story of Morse code <small>Who made it, where it was used, and why it still matters</small></button>
   </section>
 
   <!-- Where missions and two-player turns are played. Filled in by ui.js. -->
@@ -76,6 +77,83 @@
       <div id="signal" class="signal" aria-live="polite"></div>
     </div>
     <div id="stage" class="stage"></div>
+  </section>
+
+  <!-- The story of Morse code: one page at a time, like a picture book. -->
+  <!-- Swipe, or use Back/Next. The Hear buttons play on the lamp too.   -->
+  <section id="story" class="screen" hidden>
+    <div class="pages" id="pages">
+
+      <article class="page-card">
+        <span class="page-emoji" aria-hidden="true">&#127912;</span>
+        <h2>Who invented it?</h2>
+        <p>Samuel Morse was a painter in America.</p>
+        <p>The story goes that in 1825 his wife got very sick while he was far away. The letter telling him took days to arrive, so he got home too late. He wanted news to travel faster.</p>
+        <p>In the 1830s he worked with his friend <b>Alfred Vail</b> to send messages down a wire, using electricity.</p>
+      </article>
+
+      <article class="page-card">
+        <span class="page-emoji" aria-hidden="true">&#9889;</span>
+        <h2>How did they make the code?</h2>
+        <p>Electricity in a wire can only be <b>on</b> or <b>off</b>. So every letter became a pattern of short beeps (dots) and long beeps (dashes).</p>
+        <p>The story goes that Vail counted which letters printers used most. The most common letter, <b>E</b>, got the shortest code: just one dot. Rare letters like <b>Q</b> got long ones.</p>
+        <div class="hear-row">
+          <button class="small-btn hear" type="button" data-say="E">&#128266; Hear E</button>
+          <button class="small-btn hear" type="button" data-say="Q">&#128266; Hear Q</button>
+        </div>
+      </article>
+
+      <article class="page-card">
+        <span class="page-emoji" aria-hidden="true">&#128225;</span>
+        <h2>The first message</h2>
+        <p>On 24 May 1844, Morse sent a message from Washington to Baltimore, about 60 km away.</p>
+        <p>It said: <b>"What hath God wrought"</b>. That means "Look what God has done!"</p>
+        <div class="hear-row"><button class="small-btn hear" type="button" data-say="WHAT HATH GOD WROUGHT">&#128266; Hear it</button></div>
+      </article>
+
+      <article class="page-card">
+        <span class="page-emoji" aria-hidden="true">&#128674;</span>
+        <h2>Where was it used?</h2>
+        <ul>
+          <li><b>Telegraph wires</b> crossed whole countries. Later, cables ran under the ocean.</li>
+          <li><b>Ships</b> used it by radio. In 1912 the <i>Titanic</i> sent <b>SOS</b> to call for help.</li>
+          <li><b>Soldiers and spies</b> used it in both World Wars.</li>
+        </ul>
+        <p>SOS is easy to remember: three dots, three dashes, three dots.</p>
+        <div class="hear-row"><button class="small-btn hear" type="button" data-say="SOS">&#128266; Hear SOS</button></div>
+      </article>
+
+      <article class="page-card">
+        <span class="page-emoji" aria-hidden="true">&#9992;&#65039;</span>
+        <h2>Is it still used today?</h2>
+        <ul>
+          <li><b>Planes:</b> radio beacons near airports beep their short name in Morse, over and over, so pilots know they have the right one.</li>
+          <li><b>Radio fans</b> (called "hams") all over the world still chat in Morse.</li>
+          <li><b>Navy ships</b> flash messages to each other with big signal lamps.</li>
+          <li><b>Helping people:</b> someone who can only move one finger, or blink, can type on a phone with Morse code.</li>
+        </ul>
+        <div class="hear-row"><button class="small-btn hear" type="button" data-say="ABC">&#128266; A beacon called ABC</button></div>
+      </article>
+
+      <article class="page-card">
+        <span class="page-emoji" aria-hidden="true">&#127775;</span>
+        <h2>Why learn it?</h2>
+        <ul>
+          <li>It works when nothing else does: with a torch, a whistle, tapping on a wall, or a very weak radio.</li>
+          <li>Anyone who knows <b>SOS</b> can call for help.</li>
+          <li>Learning by ear trains your listening and your memory.</li>
+          <li>It's a secret code for you and your friends!</li>
+          <li>Computers use two signals too, 0 and 1. Morse is a great first step into codes.</li>
+        </ul>
+        <div class="actions"><button class="btn primary" type="button" id="storyGo">Start training &rsaquo;</button></div>
+      </article>
+
+    </div>
+    <nav class="page-nav" aria-label="Story pages">
+      <button id="pgBack" class="small-btn" type="button">&lsaquo; Back</button>
+      <div class="page-dots" id="pageDots"></div>
+      <button id="pgNext" class="btn" type="button">Next &rsaquo;</button>
+    </nav>
   </section>
 
   <!-- Two players: names and how many turns. -->
