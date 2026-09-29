@@ -1,0 +1,225 @@
+/* Enigma - one stylesheet, no framework.                                        */
+/*                                                                              */
+/* The machine is a dark metal panel in a wooden case in BOTH themes: an Enigma  */
+/* that goes pale in light mode stops looking like one. The theme only changes   */
+/* the room around it (page, cards, paper) and how deep the wood is.             */
+
+:root{
+  --bg:#efe6d6; --ink:#2b1f14; --muted:#6d5a47;
+  --card:#fbf6ea; --line:#dccfb8; --shadow:rgba(60,35,10,.25);
+  --wood1:#b07a44; --wood2:#7c4b22; --wood-edge:#4e2c12;
+  --panel:#2b2b2e; --panel2:#1e1e21; --panel-line:#0f0f11;
+  --win-bg:#0d0d0f; --win-ink:#f2ead2;
+  --lamp-off:#3b3b3f; --lamp-off-ink:#77777d; --lamp-on:#ffe07a; --lamp-on-ink:#3a2700; --glow:rgba(255,205,70,.85);
+  --key:#151517; --key-ink:#f3ecd8; --key-ring:#b9b9bf;
+  --paper:#f6eed5; --paper-ink:#2b241a; --paper-line:#d8cba6;
+  --accent:#c9822a; --accent-ink:#fff; --chip:#efe2c8;
+  --tap:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15100b; --ink:#f0e6d4; --muted:#a8967f;
+    --card:#211a13; --line:#3a2e22; --shadow:rgba(0,0,0,.6);
+    --wood1:#6b4523; --wood2:#442a13; --wood-edge:#24140a;
+    --panel:#232326; --panel2:#18181a;
+    --paper:#ddd2ae; --paper-ink:#221c12; --paper-line:#b8ab86;
+    --accent:#d8923a; --accent-ink:#1c1108; --chip:#33281b;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15100b; --ink:#f0e6d4; --muted:#a8967f;
+  --card:#211a13; --line:#3a2e22; --shadow:rgba(0,0,0,.6);
+  --wood1:#6b4523; --wood2:#442a13; --wood-edge:#24140a;
+  --panel:#232326; --panel2:#18181a;
+  --paper:#ddd2ae; --paper-ink:#221c12; --paper-line:#b8ab86;
+  --accent:#d8923a; --accent-ink:#1c1108; --chip:#33281b;
+}
+:root[data-theme="light"]{
+  --bg:#efe6d6; --ink:#2b1f14; --muted:#6d5a47;
+  --card:#fbf6ea; --line:#dccfb8; --shadow:rgba(60,35,10,.25);
+  --wood1:#b07a44; --wood2:#7c4b22; --wood-edge:#4e2c12;
+  --panel:#2b2b2e; --panel2:#1e1e21;
+  --paper:#f6eed5; --paper-ink:#2b241a; --paper-line:#d8cba6;
+  --accent:#c9822a; --accent-ink:#fff; --chip:#efe2c8;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+button{font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; cursor:pointer}
+
+.page{max-width:720px; margin:0 auto; padding:12px 16px 32px}
+
+.top{display:flex; align-items:center; gap:12px}
+.top h1{margin:0; flex:1; text-align:center; font-size:28px; letter-spacing:.12em; text-transform:uppercase}
+#back{
+  white-space:nowrap;
+  display:inline-flex; align-items:center; min-height:var(--tap); padding:0 6px;
+  color:var(--ink); font-weight:600; text-decoration:none;
+}
+.pill{
+  white-space:nowrap;
+  min-height:44px; padding:0 14px; border-radius:22px; border:1px solid var(--line);
+  background:var(--card); font-size:14px;
+}
+.sub{margin:0 0 14px; text-align:center; color:var(--muted)}
+
+/* ── The machine ─────────────────────────────────────────────────────────── */
+.machine{
+  padding:10px; border-radius:18px;
+  background:linear-gradient(135deg,var(--wood1),var(--wood2));
+  border:2px solid var(--wood-edge);
+  box-shadow:0 10px 24px var(--shadow), inset 0 2px 0 rgba(255,255,255,.18);
+}
+.panel{
+  /* Key size is worked out from the width so nine keys always fit in one row,
+     from a phone to a tablet. The tablet cap is what keeps the keys finger-sized
+     rather than dinner plates. */
+  --gap:6px;
+  --k:min(60px, calc((100vw - 32px - 24px - 28px - 8 * var(--gap)) / 9));
+  padding:14px 12px 16px; border-radius:10px;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));
+  border:2px solid var(--panel-line);
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.6);
+  display:flex; flex-direction:column; align-items:center; gap:14px;
+}
+
+/* Rotors: a window showing a little wheel of three letters, thumb buttons
+   above and below. */
+.rotors{display:flex; justify-content:center; gap:clamp(10px,4vw,28px)}
+.rotor{display:flex; flex-direction:column; align-items:center; gap:4px}
+.rotor .up,.rotor .down{
+  width:clamp(64px,20vw,84px); height:var(--tap); border-radius:12px;
+  border:1px solid #55555c; background:linear-gradient(180deg,#48484e,#2f2f34);
+  color:#e9e2cf; font-size:22px; box-shadow:0 2px 0 #0b0b0c;
+}
+.rotor .up:active,.rotor .down:active{transform:translateY(2px); box-shadow:none}
+.window{
+  --h:clamp(26px,7.5vw,34px);
+  position:relative; width:clamp(64px,20vw,84px); height:calc(var(--h) * 3);
+  overflow:hidden; border-radius:8px;
+  background:var(--win-bg); border:3px solid #8a8a92;
+  box-shadow:inset 0 0 12px #000;
+}
+/* Fade the wheel away above and below the centre letter. */
+.window::after{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.75),transparent 34%,transparent 66%,rgba(0,0,0,.75));
+}
+.drum{display:flex; flex-direction:column}
+.drum span{
+  height:var(--h); line-height:var(--h); text-align:center;
+  font:700 calc(var(--h) * .8)/var(--h) ui-monospace,"Courier New",monospace; color:var(--win-ink); opacity:.55;
+}
+.drum span:nth-child(2){opacity:1; font-size:calc(var(--h) * 1.05); text-shadow:0 0 8px rgba(255,235,170,.5)}
+/* Rolling up: the old centre letter slides up into the top slot. */
+.drum.roll-up{animation:rollUp .16s ease-out}
+.drum.roll-down{animation:rollDown .16s ease-out}
+@keyframes rollUp{from{transform:translateY(var(--h))}to{transform:none}}
+@keyframes rollDown{from{transform:translateY(calc(var(--h) * -1))}to{transform:none}}
+.plate{
+  margin-top:2px; padding:0 10px; border-radius:6px; background:#c9c2ad; color:#2a2620;
+  font:700 13px/20px ui-monospace,"Courier New",monospace; letter-spacing:.1em;
+}
+
+/* Lampboard and keyboard share one shape (the QWERTZ rows) and one size. */
+.lamps,.keys{display:flex; flex-direction:column; align-items:center; gap:6px; width:100%}
+.lamps{padding:12px 0 10px; border-top:1px solid #3d3d42; border-bottom:1px solid #3d3d42}
+.row{display:flex; justify-content:center; gap:var(--gap)}
+.lamp{
+  width:var(--k); height:var(--k); border-radius:50%;
+  display:grid; place-items:center;
+  background:var(--lamp-off); color:var(--lamp-off-ink);
+  border:2px solid #0d0d0f;
+  font:700 calc(var(--k) * .45)/1 ui-monospace,"Courier New",monospace;
+  transition:background .25s, color .25s, box-shadow .25s;
+  user-select:none;
+}
+/* Lit: no transition on the way ON (the glow should snap), a slow fade off. */
+.lamp.lit{
+  background:var(--lamp-on); color:var(--lamp-on-ink);
+  box-shadow:0 0 14px 4px var(--glow), 0 0 32px 8px rgba(255,190,50,.45);
+  transition:none;
+}
+.key{
+  width:var(--k); height:calc(var(--k) * 1.12); padding:0; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3a3a3f,var(--key) 70%);
+  color:var(--key-ink); border:calc(var(--k) * .07) solid var(--key-ring);
+  font:700 calc(var(--k) * .42)/1 ui-monospace,"Courier New",monospace;
+  box-shadow:0 4px 0 #050506, 0 5px 6px rgba(0,0,0,.5);
+  user-select:none; -webkit-user-select:none; touch-action:manipulation;
+  transition:transform .05s, box-shadow .05s;
+}
+.key.down{transform:translateY(3px); box-shadow:0 1px 0 #050506; background:radial-gradient(circle at 35% 30%,#4c4c52,#222226 70%)}
+
+/* ── Cards below the machine ─────────────────────────────────────────────── */
+.card{
+  margin-top:14px; padding:14px; border-radius:14px;
+  background:var(--card); border:1px solid var(--line);
+  box-shadow:0 2px 8px var(--shadow);
+}
+.card h2{margin:0 0 8px; font-size:18px}
+.start-card{display:flex; flex-direction:column; gap:12px}
+.start-show{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap}
+.start-show .k{font-weight:600; color:var(--muted)}
+.start-show .letters{
+  padding:4px 16px; border-radius:10px; background:var(--panel2); color:var(--win-ink);
+  font:700 28px/1.3 ui-monospace,"Courier New",monospace; letter-spacing:.1em;
+  border:2px solid #8a8a92;
+}
+.btns{display:flex; flex-wrap:wrap; gap:8px}
+.btn{
+  flex:1 1 150px; min-height:var(--tap); padding:0 14px; border-radius:12px;
+  border:1px solid transparent; background:var(--accent); color:var(--accent-ink); font-weight:700;
+  box-shadow:0 3px 0 rgba(0,0,0,.25);
+}
+.btn:active{transform:translateY(2px); box-shadow:none}
+.btn.ghost{background:var(--chip); color:var(--ink); border-color:var(--line)}
+
+/* The paper strip. */
+.tape{
+  max-height:260px; overflow:auto; padding:10px 12px; border-radius:6px;
+  background:var(--paper); color:var(--paper-ink);
+  font:600 18px/1.5 ui-monospace,"Courier New",monospace;
+  box-shadow:inset 0 0 0 1px var(--paper-line);
+}
+.tape:empty{display:none}
+.round + .round{margin-top:10px; padding-top:10px; border-top:2px dashed var(--paper-line)}
+.round:not(.now){opacity:.55}
+.start-tag{font-size:13px; letter-spacing:.08em; text-transform:uppercase; opacity:.7}
+.line{display:flex; flex-wrap:wrap; align-items:baseline; gap:0 12px}
+.line .lab{flex:0 0 100%; font:600 12px/1.6 system-ui,sans-serif; text-transform:uppercase; letter-spacing:.06em; opacity:.6}
+.line .grp{letter-spacing:.12em}
+.line.code .grp{font-weight:800}
+.tape-empty{margin:0; color:var(--muted)}
+
+.how ol{margin:0; padding-left:1.3em}
+.how li{margin:6px 0}
+.tip{margin:10px 0 0; padding:8px 12px; border-radius:10px; background:var(--chip)}
+
+.toast{
+  position:fixed; left:50%; bottom:calc(20px + env(safe-area-inset-bottom));
+  transform:translate(-50%,20px); opacity:0; pointer-events:none;
+  padding:10px 18px; border-radius:22px; background:#2b2b2e; color:#fff; font-weight:600;
+  transition:opacity .2s, transform .2s; max-width:90vw; text-align:center;
+}
+.toast.show{opacity:1; transform:translate(-50%,0)}
+
+/* Phones: give the keys every pixel that the frame does not need. */
+@media (max-width:480px){
+  .page{padding-inline:10px}
+  .machine{padding:6px}
+  .panel{--gap:4px; padding-inline:6px}
+  .panel{--k:min(60px, calc((100vw - 20px - 12px - 16px - 4px - 8 * var(--gap)) / 9))}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .drum.roll-up,.drum.roll-down{animation:none}
+  .lamp,.key{transition:none}
+}

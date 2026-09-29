@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Enigma</title>
+<meta name="description" content="Write secret messages with a see-through copy of the famous Enigma code machine. Set three spinning rings, type, and the lamps show your secret code.">
+<meta name="theme-color" content="#3a2a1c">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Enigma">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <h1>Enigma</h1>
+    <button id="mute" class="pill" type="button" aria-pressed="false">Sound on</button>
+  </header>
+  <p class="sub">The secret code machine from long ago. Type a letter and a different one lights up!</p>
+
+  <!-- The machine: wooden case, dark front panel. -->
+  <section class="machine" aria-label="Enigma machine">
+    <div class="panel">
+
+      <div class="rotors" role="group" aria-label="The three rotors">
+        <div class="rotor" data-rotor="0">
+          <button class="up" type="button" aria-label="Rotor 1 up"><span>&#9650;</span></button>
+          <div class="window" aria-live="off"><div class="drum"></div></div>
+          <button class="down" type="button" aria-label="Rotor 1 down"><span>&#9660;</span></button>
+          <div class="plate">I</div>
+        </div>
+        <div class="rotor" data-rotor="1">
+          <button class="up" type="button" aria-label="Rotor 2 up"><span>&#9650;</span></button>
+          <div class="window"><div class="drum"></div></div>
+          <button class="down" type="button" aria-label="Rotor 2 down"><span>&#9660;</span></button>
+          <div class="plate">II</div>
+        </div>
+        <div class="rotor" data-rotor="2">
+          <button class="up" type="button" aria-label="Rotor 3 up"><span>&#9650;</span></button>
+          <div class="window"><div class="drum"></div></div>
+          <button class="down" type="button" aria-label="Rotor 3 down"><span>&#9660;</span></button>
+          <div class="plate">III</div>
+        </div>
+      </div>
+
+      <div class="lamps" id="lamps" aria-label="Lamps: the coded letter lights up here"></div>
+      <div class="keys" id="keys" aria-label="Keyboard"></div>
+
+    </div>
+  </section>
+
+  <section class="card start-card">
+    <div class="start-show">
+      <span class="k">Secret start</span>
+      <span class="letters" id="startLetters" aria-live="polite">A A A</span>
+    </div>
+    <div class="btns">
+      <button id="random" class="btn" type="button">&#127922; Random secret start</button>
+      <button id="reset" class="btn" type="button">&#8634; Reset rotors</button>
+      <button id="copy" class="btn" type="button">&#128203; Copy code</button>
+      <button id="clear" class="btn ghost" type="button">Clear</button>
+    </div>
+  </section>
+
+  <section class="card tape-card" aria-label="Paper tape">
+    <h2>The paper strip</h2>
+    <div id="tape" class="tape"></div>
+    <p id="tapeEmpty" class="tape-empty">Nothing yet. Tap a key, or type on your keyboard!</p>
+  </section>
+
+  <section class="card how">
+    <h2>How to send a secret</h2>
+    <ol>
+      <li><b>Pick a secret start.</b> Use the arrows to spin the 3 rings to any 3 letters. Or press the dice button.</li>
+      <li><b>Type your message.</b> Every letter you press lights up a different letter. Those are your code letters.</li>
+      <li><b>Send the code</b> and the 3 start letters to a friend.</li>
+      <li><b>Your friend sets the same start</b> and types the code. Out pops your message!</li>
+    </ol>
+    <p class="tip">Try it yourself: type a word, press <b>Reset rotors</b>, then type the code. Your word comes back! A letter never turns into itself.</p>
+  </section>
+
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/rules.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>
