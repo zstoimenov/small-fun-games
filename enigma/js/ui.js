@@ -63,7 +63,14 @@ EN.UI = (function () {
 
     $("reset").addEventListener("click", handlers.reset);
     $("clear").addEventListener("click", handlers.clear);
-    $("copy").addEventListener("click", handlers.copy);
+    $("help").addEventListener("click", () => open("helpDialog"));
+    $("codeLine").addEventListener("click", () => open("paperDialog"));
+    document.querySelectorAll("dialog").forEach((d) => {
+      d.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", () => d.close()));
+      // A tap on the dimmed backdrop closes it too: the dialog element itself
+      // only receives clicks outside its content box.
+      d.addEventListener("click", (e) => { if (e.target === d) d.close(); });
+    });
     $("undo").addEventListener("click", handlers.undo);
     $("share").addEventListener("click", handlers.share);
     $("random").addEventListener("click", handlers.random);
@@ -89,7 +96,16 @@ EN.UI = (function () {
   }
 
   function showStart(text) {
-    $("startLetters").textContent = text.split("").join(" ");
+    $("startLetters").textContent = "Start " + text.split("").join(" ");
+  }
+
+  // The pop-ups. showModal where it exists; the `open` attribute where it does
+  // not, so an old tablet still shows the text rather than nothing.
+  function open(id) {
+    const d = $(id);
+    if (d.open) return;
+    if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+    if (id === "paperDialog") { const t = $("tape"); t.scrollTop = t.scrollHeight; }
   }
 
   function lamp(letter, on) {
@@ -136,6 +152,23 @@ EN.UI = (function () {
       box.appendChild(round);
     });
     box.scrollTop = box.scrollHeight;
+
+    // The one-line version on the machine: the code of the current round only.
+    const line = $("codeText");
+    const now = rounds[rounds.length - 1];
+    line.textContent = "";
+    if (!now.coded) {
+      const ph = document.createElement("span");
+      ph.className = "placeholder";
+      ph.textContent = "Your code shows up here";
+      line.appendChild(ph);
+    } else {
+      R.groups(now.coded).forEach((g) => {
+        const span = document.createElement("span");
+        span.textContent = g;
+        line.appendChild(span);
+      });
+    }
   }
 
   function toast(msg) {
@@ -148,9 +181,10 @@ EN.UI = (function () {
 
   function muteState(muted) {
     const b = $("mute");
-    b.textContent = muted ? "🔇 Sound off" : "🔊 Sound on";
+    b.textContent = muted ? "🔇" : "🔊";
+    b.setAttribute("aria-label", muted ? "Sound off" : "Sound on");
     b.setAttribute("aria-pressed", muted ? "true" : "false");
   }
 
-  return { build, showRotors, showStart, lamp, keyDown, lampsOff, tape, toast, muteState };
+  return { build, open, showRotors, showStart, lamp, keyDown, lampsOff, tape, toast, muteState };
 })();

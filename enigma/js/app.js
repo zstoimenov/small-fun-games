@@ -117,12 +117,13 @@
     EN.Audio.rotor();
   }
 
-  // What a friend needs to read the message: the start, the code, and where the
-  // machine is.
+  // The code only. The start letters are the key, and a key sent in the same
+  // message as the code is no secret: anybody who sees the message can read it.
+  // The help pop-up tells kids to pass the start on another way.
   function message() {
     const r = rounds.filter((x) => x.typed).pop();
     if (!r) return null;
-    return "Secret start: " + r.start + "\nCode: " + R.groups(r.coded).join(" ");
+    return R.groups(r.coded).join(" ");
   }
 
   // The phone's own share sheet (Messages, WhatsApp, email...). Where there is
@@ -134,7 +135,7 @@
     const url = new URL("./", location.href).href;
     navigator.share({
       title: "A secret Enigma message",
-      text: "I sent you a secret message! Set the rings to the secret start and type the code.\n\n" + text + "\n\nDecode it here:",
+      text: "I sent you a secret message! Ask me for the 3 secret start letters, set the rings, then type this code:\n\n" + text + "\n\nThe machine is here:",
       url
     }).catch((e) => {
       // Closing the share sheet is not an error worth a message.
@@ -145,7 +146,7 @@
   function copy() {
     const text = message();
     if (!text) { UI.toast("Type something first!"); return; }
-    const ok = () => UI.toast("Copied! Send it to a friend.");
+    const ok = () => UI.toast("Code copied! Tell your friend the start letters.");
     const fallback = () => {
       const ta = document.createElement("textarea");
       ta.value = text;
@@ -156,7 +157,7 @@
       let done = false;
       try { done = document.execCommand("copy"); } catch (e) { /* ignore */ }
       ta.remove();
-      UI.toast(done ? "Copied! Send it to a friend." : "Could not copy - write the code down.");
+      UI.toast(done ? "Code copied! Tell your friend the start letters." : "Could not copy - write the code down.");
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(ok, fallback);
@@ -172,16 +173,27 @@
     UI.muteState(muted);
   }
 
-  UI.build({ keyDown, keyUp, turn, reset, clear, copy, undo, share, random, mute });
+  UI.build({ keyDown, keyUp, turn, reset, clear, undo, share, random, mute });
   UI.muteState(muted);
   UI.showRotors(pos);
   UI.showStart(cur().start);
   UI.tape(rounds);
 
+  // The how-to opens by itself once, on the very first visit. After that it is
+  // behind the ? button, so the machine gets the whole screen.
+  try {
+    if (!localStorage.getItem("enigma-seen-help")) {
+      localStorage.setItem("enigma-seen-help", "1");
+      UI.open("helpDialog");
+    }
+  } catch (e) { /* private mode: no pop-up, the ? button still works */ }
+
   // Physical keyboard. Only plain letters: Ctrl/Cmd+C must still copy, and
   // ignoring repeats stops a held key from typing a whole row of letters.
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    // A pop-up is on top of the machine; typing should not code letters unseen.
+    if (document.querySelector("dialog[open]")) return;
     if (e.key === "Backspace") { e.preventDefault(); undo(); return; }
     if (e.key.length === 1 && /[a-z]/i.test(e.key)) {
       e.preventDefault();
