@@ -171,6 +171,7 @@ button:disabled{opacity:.45; cursor:default}
 .say{min-height:1.45em; margin:0; font-weight:700; font-size:17px; text-align:center}
 .controls{display:flex; flex-direction:column; gap:10px}
 .hint{margin:0; text-align:center; color:var(--muted)}
+.weigh{margin:0; text-align:center; font-size:30px; letter-spacing:.08em}
 .question{margin:0; font-weight:700; text-align:center; font-size:18px}
 .row-set{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center}
 .row-label{font-weight:700; min-width:48px}

@@ -109,7 +109,7 @@ NL.UI = (function () {
         box.appendChild(seg("Ground", cfg.surfaces.map((t) => ({ v: t, html: NL.Physics.SURF[t].emoji + " " + NL.Physics.SURF[t].label })),
           s.surface, (v) => act("surface", v)));
       }
-      box.appendChild(el("p", "hint", "\u{1F449} Put your finger on the play area, <b>pull back to the left</b>, then let go."));
+      box.appendChild(el("p", "hint", "\u{1F449} Put your finger on the play area, <b>pull it away</b> (any way you like), then let go. A longer pull is a bigger flick."));
       if (cfg.sandbox) row().appendChild(button("btn ghost", "↺ Reset", () => act("reset")));
       return;
     }
@@ -119,6 +119,12 @@ NL.UI = (function () {
       if (picks.indexOf("load") >= 0) {
         box.appendChild(seg("Load", Object.keys(NL.LOADS).map((k) => ({ v: k, html: NL.LOADS[k].emoji + " " + NL.LOADS[k].label })),
           s.choice.load, (v) => act("load", v), busy));
+      }
+      if (cfg.weigh) {
+        const w = el("p", "weigh", cfg.weigh);
+        w.setAttribute("role", "img");
+        w.setAttribute("aria-label", cfg.weighSays);
+        box.appendChild(w);
       }
       if (picks.indexOf("push") >= 0) {
         box.appendChild(seg("Push", [1, 2, 3, 4, 5].map((n) => ({ v: n, html: "\u{270B} " + n, aria: n + (n === 1 ? " hand" : " hands") })),

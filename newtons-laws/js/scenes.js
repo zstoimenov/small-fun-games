@@ -15,7 +15,7 @@ NL.Scenes = (function () {
   const P = NL.Physics;
   const L = P.TRACK;
 
-  const VMAX = 8.5;          // hardest flick, m/s. Every Law 1 zone is reachable under it.
+  const VMAX = 10;           // hardest flick, m/s. Headroom so no level needs a near-full pull.
   const PUSH_TIME = 0.5;     // how long the hand stays on the cart
   const THROW_SPEED = 12;    // every ball leaves the hand at the same speed
   const SKATER_M = 10;
@@ -118,7 +118,7 @@ NL.Scenes = (function () {
             ? "The ice is slippery. Only a little friction, so it slid a long way."
             : "The " + nm + " rubbed on the puck and slowed it down. That rubbing is friction.");
         } else if (inZone(pk.x, this.zone)) hooks.end(true, "Right on the flag!");
-        else if (pk.x < this.zone[0]) hooks.end(false, "Not far enough. Pull back a bit more.");
+        else if (pk.x < this.zone[0]) hooks.end(false, "Not far enough. Pull a bit further.");
         else hooks.end(false, "Too far! Try a gentler flick.");
       }
     };
@@ -135,14 +135,16 @@ NL.Scenes = (function () {
     if (cfg.pick && cfg.pick.indexOf("push") >= 0 && !cfg.sandbox) s.choice.push = 0;
     if (cfg.pick && cfg.pick.indexOf("load") >= 0 && !cfg.sandbox) s.choice.load = null;
     s.carts = [];
+    s.tries = 0;           // survives reset(), so hints can get more helpful
+    s.teddyMark = null;    // where Teddy stopped last time, drawn as a guide line
 
     s.build = function () {
       const list = [];
       if (cfg.kind === "race") {
         cfg.loads.forEach((ld, i) => list.push({ load: ld, push: cfg.push, lane: i }));
       } else if (cfg.kind === "match") {
-        list.push({ load: cfg.other.load, push: cfg.other.push, lane: 0, ghost: true });
-        list.push({ load: cfg.load, push: this.choice.push, lane: 1, mine: true });
+        list.push({ load: cfg.other.load, push: cfg.other.push, lane: 0, name: "Teddy's cart" });
+        list.push({ load: cfg.load, push: this.choice.push, lane: 1, mine: true, name: "Your cart" });
       } else {
         list.push({ load: this.choice.load || "box", push: this.choice.push, lane: 0, mine: true });
       }
@@ -208,9 +210,17 @@ NL.Scenes = (function () {
         else hooks.end(false, "Not quite. " + cfg.why);
         return;
       }
+      this.tries++;
       if (mine.bonked) { hooks.end(false, "Crash! Too much push. Try a smaller one."); return; }
-      if (inZone(mine.x, this.zone)) { hooks.end(true, cfg.kind === "match" ? "Side by side! 4 times the weight needed 4 times the push." : "Right on the flag!"); return; }
       const short = mine.x < this.zone[0];
+      if (cfg.kind === "match") {
+        this.teddyMark = this.carts[0].x;
+        if (inZone(mine.x, this.zone)) hooks.end(true, "Side by side! The elephant is as heavy as 4 teddies, so it needed 4 pushes.");
+        else if (this.tries < 2) hooks.end(false, (short ? "Too short!" : "Too far!") + " Watch where Teddy stopped.");
+        else hooks.end(false, (short ? "Too short! " : "Too far! ") + "Tip: 1 teddy needs 1 push. So 4 teddies need...");
+        return;
+      }
+      if (inZone(mine.x, this.zone)) { hooks.end(true, "Right on the flag!"); return; }
       if (cfg.pick[0] === "load") hooks.end(false, short ? "Too heavy! It didn't get far enough. Try a lighter load." : "Too far!");
       else hooks.end(false, short ? "Not far enough. Try a bigger push." : "Too far! Try a smaller push.");
     };

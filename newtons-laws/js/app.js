@@ -139,15 +139,17 @@ window.NL = window.NL || {};
   });
 
   // ── The finger on the canvas (Law 1's slingshot) ───────────────────────────
-  // Pull left from wherever the finger lands; how far is the power. Anywhere
-  // on the canvas works, because aiming at a small puck is hard on a tablet.
+  // Pull from wherever the finger lands, in any direction; how far is the
+  // power. Anywhere on the canvas, any way, because a finger that lands near
+  // the left edge has no room left to pull back into.
   const cv = $("world");
   NL.Draw.attach(cv);
   let pull = null;
+  const fullPull = () => Math.min(240, NL.Draw.width() * 0.55);
   cv.addEventListener("pointerdown", (e) => {
     if (!scene || scene.kind !== "flick" || !scene.canAim()) return;
     NL.Audio.ready();
-    pull = { x: e.clientX, id: e.pointerId };
+    pull = { x: e.clientX, y: e.clientY, id: e.pointerId };
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* old Safari */ }
     scene.setAim(0);
     hooks.say("");
@@ -155,7 +157,7 @@ window.NL = window.NL || {};
   });
   cv.addEventListener("pointermove", (e) => {
     if (!pull || e.pointerId !== pull.id || !scene) return;
-    scene.setAim((pull.x - e.clientX) / (NL.Draw.width() * 0.45));
+    scene.setAim(Math.hypot(e.clientX - pull.x, e.clientY - pull.y) / fullPull());
   });
   const letGo = (e) => {
     if (!pull || e.pointerId !== pull.id) return;
@@ -163,7 +165,7 @@ window.NL = window.NL || {};
     if (scene && scene.kind === "flick") {
       const p = scene.aim;
       scene.release();
-      if (p != null && p < 0.04 && !scene.moving) hooks.say("Pull back further to the left, then let go.");
+      if (p != null && p < 0.04 && !scene.moving) hooks.say("Pull your finger further away, then let go.");
       NL.UI.controls(scene, act);
     }
   };

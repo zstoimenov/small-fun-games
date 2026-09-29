@@ -34,10 +34,10 @@ NL.CHAPTERS = [
     ],
     grown: "An object at rest stays at rest, and an object in motion stays in motion at the same speed and direction, unless a force acts on it. This is also called inertia.",
     sandbox: { kind: "flick", sandbox: true, surfaces: ["ice", "grass", "sand", "space"],
-      goal: "Pull back on the puck, then let go. Try every ground. What happens in space?" },
+      goal: "Pull your finger away, then let go. Try every ground. What happens in space?" },
     levels: [
       { name: "Ice rink", kind: "flick", strips: [{ from: 0, to: 20, type: "ice" }], zone: [10, 19],
-        goal: "Pull back and let go. Make the puck stop on the green flag." },
+        goal: "Pull your finger away and let go. Make the puck stop on the green flag." },
       { name: "Bumpy grass", kind: "flick", strips: [{ from: 0, to: 20, type: "grass" }], zone: [6, 8],
         goal: "Grass rubs on the puck and slows it down fast. You'll need a bigger flick!" },
       { name: "Ice, then sand", kind: "flick", strips: [{ from: 0, to: 10, type: "ice" }, { from: 10, to: 20, type: "sand" }], zone: [12, 14],
@@ -80,9 +80,11 @@ NL.CHAPTERS = [
         right: "teddy",
         why: "The teddy is light, so the same push speeds it up much more.",
         goal: "Guess first, then watch the race!" },
-      { name: "Keep up!", kind: "match", load: "elephant", pick: ["push"], zone: [5.8, 7.2],
+      { name: "Keep up with Teddy", kind: "match", load: "elephant", pick: ["push"], zone: [5.8, 7.2],
         other: { load: "teddy", push: 1 },
-        goal: "The teddy cart gets 1 push. The elephant is 4 times as heavy. Make it stop next to the teddy!" }
+        weigh: "\u{1F418} = \u{1F9F8}\u{1F9F8}\u{1F9F8}\u{1F9F8}",
+        weighSays: "The elephant is as heavy as 4 teddies",
+        goal: "Teddy's cart always gets 1 push. Your cart has an elephant on it. The elephant is as heavy as 4 teddies! How many pushes does it need to stop next to Teddy?" }
     ],
     lesson: {
       title: "You learned Law 2!",

@@ -254,9 +254,18 @@ NL.Draw = (function () {
         arrow(c.x - 0.8, y - S * 2.9, 1, 0.5 + c.push * 0.6, "Push " + c.push, col.push, 1);
       }
       if (s.lanes === 2) {
-        text(ld.label + (c.push ? " · push " + c.push : ""), 8, y - S * 2.6, Math.max(12, S * 0.45), col.ink, "left");
+        const pushes = c.push ? c.push + (c.push === 1 ? " push" : " pushes") : "? pushes";
+        text((c.name || ld.label) + " · " + pushes, 8, y - S * 2.6, Math.max(12, S * 0.45), col.ink, "left");
       }
     });
+    // Once Teddy has rolled, a dashed line joins his stop to the flag below,
+    // so "stop next to Teddy" is something you can see, not just read.
+    if (s.teddyMark != null) {
+      ctx.save();
+      ctx.strokeStyle = col.flag; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+      ctx.beginPath(); ctx.moveTo(X(s.teddyMark), groundY(0, 2) - S * 1.6); ctx.lineTo(X(s.teddyMark), groundY(1, 2)); ctx.stroke();
+      ctx.restore();
+    }
   }
 
   function drawSkate(s) {
