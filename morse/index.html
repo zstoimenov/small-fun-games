@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Morse Agent</title>
+<meta name="description" content="Learn Morse code by ear, one letter at a time. Spy missions for one agent, or send secret messages to a friend with a real telegraph key.">
+<meta name="theme-color" content="#16233a">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Morse Agent">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="toHq" class="link-btn" type="button" hidden>&lsaquo; HQ</button>
+    <h1 id="title">Morse Agent</h1>
+    <button id="lampBtn" class="icon-btn" type="button" aria-pressed="false" aria-label="Always show the lamp">&#128161;</button>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+  </header>
+
+  <!-- HQ: pick an agent, set the lever, start a mission. -->
+  <section id="hq" class="screen">
+    <button id="agentChip" class="agent-chip" type="button">
+      <span class="face" aria-hidden="true">&#128373;</span>
+      <span class="who"><b id="agentName">Agent</b><small id="agentInfo"></small></span>
+      <span class="swap">Switch</span>
+    </button>
+
+    <button id="missionBtn" class="big-btn" type="button">
+      <span class="kicker" id="missionKicker">Mission 1</span>
+      <span class="new" id="missionNew">K M</span>
+      <span class="go">Start mission &rsaquo;</span>
+    </button>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Difficulty</h2>
+        <span class="lever-now" id="leverNow">Rookie</span>
+      </div>
+      <div id="lever" class="lever" role="slider" tabindex="0" aria-label="Difficulty"
+           aria-valuemin="0" aria-valuemax="2" aria-valuenow="0" aria-valuetext="Rookie">
+        <div class="slot"></div>
+        <div class="stops"><span data-v="0">Rookie</span><span data-v="1">Agent</span><span data-v="2">Ace</span></div>
+        <div class="handle"><div class="stick"></div><div class="knob"></div></div>
+      </div>
+      <p class="lever-says" id="leverSays"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Your letters</h2>
+        <button id="bookBtn" class="small-btn" type="button">&#128214; Code book</button>
+      </div>
+      <div id="learned" class="learned"></div>
+    </div>
+
+    <button id="bootBtn" class="wide-btn" type="button">&#127891; Boot Camp <small>Learn dots and dashes from the start</small></button>
+    <button id="duoBtn" class="wide-btn" type="button">&#128101; Field Agents <small>2 players: send a secret word to a friend</small></button>
+  </section>
+
+  <!-- Where missions and two-player turns are played. Filled in by ui.js. -->
+  <section id="play" class="screen" hidden>
+    <div class="steps" id="steps"></div>
+    <p class="hq-msg" id="hqMsg"></p>
+    <div class="radio">
+      <div id="lamp" class="lamp" aria-hidden="true"></div>
+      <div id="signal" class="signal" aria-live="polite"></div>
+    </div>
+    <div id="stage" class="stage"></div>
+  </section>
+
+  <!-- Two players: names and how many turns. -->
+  <section id="duo" class="screen" hidden>
+    <div class="card">
+      <h2>Field Agents</h2>
+      <p class="muted">Take turns. One of you taps a secret word on the key. The other listens and works it out.</p>
+      <label class="field">Agent 1 <input id="p1" maxlength="12" autocomplete="off" value="Agent 1"></label>
+      <label class="field">Agent 2 <input id="p2" maxlength="12" autocomplete="off" value="Agent 2"></label>
+      <div class="row-set">
+        <span>Turns each</span>
+        <div class="seg" id="turnsSeg" role="group" aria-label="Turns each">
+          <button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button>
+        </div>
+      </div>
+      <p class="muted small" id="duoLever"></p>
+      <button id="duoStart" class="btn" type="button">Start &rsaquo;</button>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="agentDialog" class="sheet" aria-labelledby="agentTitle">
+  <div class="sheet-head">
+    <h2 id="agentTitle">Who is playing?</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <div id="agentList" class="agent-list"></div>
+  <div id="newAgent" class="new-agent">
+    <input id="newName" maxlength="12" autocomplete="off" placeholder="Code name">
+    <button id="dice" class="icon-btn" type="button" aria-label="Pick a code name for me">&#127922;</button>
+    <button id="addAgent" class="btn" type="button">Add</button>
+  </div>
+</dialog>
+
+<dialog id="bookDialog" class="sheet" aria-labelledby="bookTitle">
+  <div class="sheet-head">
+    <h2 id="bookTitle">Code book</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <p class="muted small">Tap a letter to hear it. Grey ones are still secret.</p>
+  <div id="book" class="book"></div>
+</dialog>
+
+<dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
+  <div class="sheet-head">
+    <h2 id="helpTitle">How to be a Morse agent</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <ol class="how">
+    <li><b>Morse code is beeps.</b> A short one is a <b>dot</b>. A long one is a <b>dash</b>. Each letter has its own tune.</li>
+    <li><b>Learn it by ear.</b> Don't count the dots. Listen to the tune, like a song.</li>
+    <li><b>New here? Start with Boot Camp.</b> It teaches dots, dashes and the key in about two minutes.</li>
+    <li><b>Every mission adds a letter.</b> Get 9 out of 10 right to unlock the next one.</li>
+    <li><b>The key:</b> tap it quick for a dot. Hold it for a dash. Stop, and the letter is sent.</li>
+    <li><b>The lever</b> on HQ makes it easier or harder. Rookie gives big gaps and lots of help.</li>
+  </ol>
+  <p class="tip">Sound off? The lamp flashes with every beep. Tap &#128161; to keep it on.</p>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/rules.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/key.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>

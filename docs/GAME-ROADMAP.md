@@ -1925,3 +1925,44 @@ Random-*state* scrambles (they need a solver), cross/F2L splitting, Bluetooth
 cubes, cloud sync, algorithm trainers, session export, and any puzzle that is
 not a cube. Each is a session on its own, and none of them is what a family
 timer is for.
+
+---
+
+## Morse Agent — `morse/` ✅ built
+
+Not on the original list. Asked for as "a game that teaches Morse code", and the
+decisions that shaped it were made up front:
+
+- **Learn by ear, not by chart.** Koch's method: characters always at 12 wpm
+  (a 100 ms dit), two letters to start (K, M), one more per mission, 90% to
+  unlock. Letters first, then digits — 35 missions.
+- **A single telegraph key**, not dot/dash buttons. Tap/hold timing is the skill.
+- **Spy missions** for one player; **Field Agents** for two (pass the tablet).
+- **A difficulty lever** (Rookie / Agent / Ace) on HQ only, locked during a
+  mission. It changes three things and never the letter speed: Farnsworth
+  spacing (5 / 8 / 12 wpm overall), how many dots and dashes are shown
+  (every button / only when sending / only after a mistake), and the longest
+  word (3 / 4 / 5 letters).
+- **Boot Camp** before Mission 1, for a kid who has never heard Morse: dot vs
+  dash by ear, dot vs dash on the key, then copy three rhythms.
+- **Sound off → the lamp.** It flashes in step with every beep. It shows by
+  itself for the first 8 missions and whenever the game is muted; 💡 keeps it on
+  for tablets whose hardware mute the page can't see.
+- Kept separate from Enigma on purpose.
+
+### What was worth knowing
+
+> **Don't classify dots and dashes with a running average.** The first key
+> nudged a dit estimate after every press. A fast tapper (80 ms dits) whose
+> dashes all landed under the starting line read as "all dots" forever, because
+> every dash taught the estimate that dots were long. The key now keeps the
+> last 16 presses and, at the end of each letter, splits them at the widest gap
+> on a log scale; it only moves the line when the two groups are 1.8× apart.
+> `tools/morse-check.js` keys the whole alphabet at 80–250 ms dits with 20–30%
+> wobble and expects ≥90% clean.
+
+- Two-player playback uses the sender's **own press timings**, with a tidied gap
+  between letters (the real gaps hold the thinking time and the mistakes).
+- The pass mark counts only *hearing* (Listen + Decode). Sending is practised in
+  every mission but never blocks an unlock.
+

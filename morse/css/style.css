@@ -1,0 +1,362 @@
+/* Morse Agent - one stylesheet, no framework.                                  */
+/*                                                                              */
+/* Spy radio room: navy and brass. The radio (lamp and signal display) stays    */
+/* dark in both themes - a lamp only glows against the dark - and the theme     */
+/* changes the room around it.                                                  */
+
+:root{
+  --bg:#e9eef5; --ink:#15202e; --muted:#566478;
+  --card:#ffffff; --line:#d3dbe6; --shadow:rgba(20,35,60,.18);
+  --radio:#16233a; --radio2:#0d1626; --radio-ink:#e8eefb; --radio-line:#2c3d5c;
+  --lamp-off:#3a3320; --lamp-on:#ffd35a; --glow:rgba(255,200,60,.8);
+  --accent:#2f6fd6; --accent-ink:#fff; --brass:#c89b3c; --brass2:#8a6520;
+  --right:#1f9d55; --right-bg:#dff5e8; --wrong:#d03b3b; --wrong-bg:#fde3e3;
+  --chip:#eef2f8; --tile:#f7f9fc;
+  --tap:56px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0b111b; --ink:#e7edf7; --muted:#95a3b8;
+    --card:#141d2b; --line:#263247; --shadow:rgba(0,0,0,.55);
+    --accent:#5b93f0; --accent-ink:#0b111b;
+    --right:#4cc97e; --right-bg:#143325; --wrong:#f07070; --wrong-bg:#3a1a1a;
+    --chip:#1b2638; --tile:#1a2436;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0b111b; --ink:#e7edf7; --muted:#95a3b8;
+  --card:#141d2b; --line:#263247; --shadow:rgba(0,0,0,.55);
+  --accent:#5b93f0; --accent-ink:#0b111b;
+  --right:#4cc97e; --right-bg:#143325; --wrong:#f07070; --wrong-bg:#3a1a1a;
+  --chip:#1b2638; --tile:#1a2436;
+}
+:root[data-theme="light"]{
+  --bg:#e9eef5; --ink:#15202e; --muted:#566478;
+  --card:#ffffff; --line:#d3dbe6; --shadow:rgba(20,35,60,.18);
+  --accent:#2f6fd6; --accent-ink:#fff;
+  --right:#1f9d55; --right-bg:#dff5e8; --wrong:#d03b3b; --wrong-bg:#fde3e3;
+  --chip:#eef2f8; --tile:#f7f9fc;
+}
+
+*{box-sizing:border-box}
+/* .card and friends are display:flex/grid; without this they would beat the
+   hidden attribute and a "hidden" screen would still be on the page. */
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+button,input{font:inherit; color:inherit}
+button{-webkit-tap-highlight-color:transparent; touch-action:manipulation; cursor:pointer}
+
+.page{
+  max-width:760px; margin:0 auto; min-height:100dvh;
+  padding:calc(8px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:12px;
+}
+.screen{display:flex; flex-direction:column; gap:12px}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.top{display:flex; align-items:center; gap:6px}
+.top h1{
+  margin:0; flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  text-align:center; font-size:clamp(19px,5.5vw,26px); letter-spacing:.06em;
+}
+#back,.link-btn{
+  white-space:nowrap; display:inline-flex; align-items:center; min-height:var(--tap); padding:0 6px;
+  color:var(--ink); font-weight:600; text-decoration:none; border:0; background:none;
+}
+.icon-btn{
+  flex:0 0 auto; width:46px; height:46px; border-radius:50%; padding:0;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:19px; font-weight:700; line-height:1;
+}
+.icon-btn.on{background:var(--lamp-on); border-color:var(--brass); color:#3a2700}
+
+/* ── Buttons and cards ───────────────────────────────────────────────────── */
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 16px;
+  box-shadow:0 2px 8px var(--shadow);
+}
+.card h2{margin:0 0 6px; font-size:19px}
+.card-head{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+.card-head h2{flex:1; margin:0}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.center{text-align:center}
+.btn{
+  min-height:var(--tap); padding:0 22px; border-radius:14px;
+  border:1px solid transparent; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:18px;
+  box-shadow:0 3px 0 rgba(0,0,0,.25);
+}
+.btn.ghost{background:var(--card); color:var(--ink); border-color:var(--line)}
+.btn:active,.small-btn:active,.tile:active,.chip:active{transform:translateY(2px); box-shadow:none}
+.small-btn{
+  min-height:46px; padding:0 14px; border-radius:12px; font-weight:600; font-size:15px;
+  border:1px solid var(--line); background:var(--chip); color:var(--ink);
+}
+.actions{display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:4px}
+.actions .btn{flex:1 1 140px; max-width:280px}
+
+/* ── HQ ──────────────────────────────────────────────────────────────────── */
+.agent-chip{
+  display:flex; align-items:center; gap:12px; width:100%; min-height:64px; padding:8px 14px; text-align:left;
+  background:var(--card); border:1px solid var(--line); border-radius:18px;
+}
+.agent-chip .face{font-size:32px}
+.agent-chip .who{flex:1; display:flex; flex-direction:column; line-height:1.2}
+.agent-chip small{color:var(--muted)}
+.agent-chip .swap{font-size:14px; font-weight:600; color:var(--accent)}
+
+.big-btn{
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; padding:18px 20px; text-align:left;
+  border:2px solid var(--brass2); border-radius:22px; color:var(--radio-ink);
+  background:radial-gradient(circle at 85% 20%,#24406b,var(--radio) 60%,var(--radio2));
+  box-shadow:0 6px 18px var(--shadow), inset 0 1px 0 rgba(255,255,255,.12);
+}
+.big-btn .kicker{font-size:14px; letter-spacing:.12em; text-transform:uppercase; opacity:.8}
+.big-btn .new{font-size:30px; font-weight:800; letter-spacing:.08em}
+.big-btn .new small{font-size:15px; font-weight:500; letter-spacing:0; opacity:.8}
+.big-btn .go{margin-top:6px; align-self:flex-end; padding:8px 16px; border-radius:12px; background:var(--lamp-on); color:#3a2700; font-weight:800}
+.big-btn:active{transform:translateY(2px)}
+
+.wide-btn{
+  display:flex; flex-direction:column; align-items:center; width:100%; min-height:64px; padding:10px;
+  border:1px solid var(--line); border-radius:18px; background:var(--card); font-weight:700; font-size:18px;
+}
+.wide-btn small{font-weight:500; font-size:14px; color:var(--muted)}
+
+/* The lever: a brass handle in a slot, tipping left or right like the throttle
+   on an old ship's telegraph. The notch labels double as tap targets. */
+.lever{position:relative; padding:66px 22px 4px; touch-action:none; user-select:none; -webkit-user-select:none; cursor:grab; outline:none}
+.lever:focus-visible{box-shadow:0 0 0 3px var(--accent); border-radius:12px}
+.lever .slot{height:18px; border-radius:9px; background:linear-gradient(180deg,var(--radio2),var(--radio)); box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
+.lever .stops{display:flex; justify-content:space-between; margin:10px -22px 0}
+.lever .stops span{width:33.3%; text-align:center; font-weight:700; color:var(--muted); padding:6px 0}
+.lever .stops span:first-child{text-align:left; padding-left:4px}
+.lever .stops span:last-child{text-align:right; padding-right:4px}
+.lever .stops span.on{color:var(--ink)}
+/* The handle is a zero-size point on the slot's centre line (the pivot); the
+   stick and knob hang above it and the whole thing tips as it slides. */
+.lever .handle{
+  --tilt:0deg;
+  position:absolute; top:75px; left:22px; width:0; height:0;
+  transform:rotate(var(--tilt)); transition:left .22s cubic-bezier(.3,1.6,.5,1), transform .22s;
+}
+.lever .stick{
+  position:absolute; left:-5px; top:-44px; width:10px; height:44px; border-radius:5px;
+  background:linear-gradient(90deg,#6e5320,var(--brass),#6e5320);
+}
+.lever .knob{
+  position:absolute; left:-18px; top:-64px; width:36px; height:36px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ff8a7a,#c62f2f 60%,#7c1414);
+  box-shadow:0 3px 6px rgba(0,0,0,.4);
+}
+.lever-now{font-weight:800; color:var(--accent)}
+.lever-says{margin:10px 0 0; font-size:15px; color:var(--muted)}
+.lever.locked{opacity:.5; pointer-events:none}
+
+.learned,.book{display:flex; flex-wrap:wrap; gap:8px}
+.chip{
+  display:flex; flex-direction:column; align-items:center; gap:4px; min-width:56px; min-height:56px; padding:6px 8px;
+  border:1px solid var(--line); border-radius:12px; background:var(--chip);
+}
+.chip b{font:800 20px/1 ui-monospace,"Courier New",monospace}
+.chip.playing{background:var(--lamp-on); color:#3a2700}
+.chip.locked{opacity:.35}
+
+/* ── Dots and dashes ─────────────────────────────────────────────────────── */
+.pat{display:inline-flex; align-items:center; gap:3px; vertical-align:middle}
+.pat i{display:block; background:currentColor; border-radius:3px}
+.pat .dot{width:6px; height:6px; border-radius:50%}
+.pat .dash{width:16px; height:6px}
+.pat.big{gap:6px}
+.pat.big .dot{width:14px; height:14px}
+.pat.big .dash{width:40px; height:14px; border-radius:7px}
+
+/* ── Play screen ─────────────────────────────────────────────────────────── */
+.steps{display:flex; gap:6px; justify-content:center; flex-wrap:wrap}
+.step{
+  min-width:36px; padding:4px 10px; border-radius:20px; font-size:13px; font-weight:700; text-align:center;
+  background:var(--chip); color:var(--muted); border:1px solid var(--line);
+}
+.step.done{background:var(--right-bg); color:var(--right); border-color:transparent}
+.step.now{background:var(--accent); color:var(--accent-ink); border-color:transparent}
+.hq-msg{margin:0; min-height:1.4em; text-align:center; font-size:18px}
+.hq-msg:empty{display:none}
+
+.radio{
+  display:flex; align-items:center; gap:16px; min-height:84px; padding:12px 18px; border-radius:18px;
+  background:linear-gradient(180deg,var(--radio),var(--radio2)); color:var(--radio-ink);
+  border:2px solid var(--brass2); box-shadow:inset 0 2px 10px rgba(0,0,0,.5);
+}
+.lamp{
+  flex:0 0 auto; width:56px; height:56px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#5a4d2a,var(--lamp-off) 70%);
+  border:3px solid var(--brass); transition:background .08s, box-shadow .08s;
+}
+.lamp.on{
+  background:radial-gradient(circle at 35% 30%,#fff6c8,var(--lamp-on) 60%);
+  box-shadow:0 0 18px 6px var(--glow);
+  transition:none;
+}
+.signal{flex:1; min-width:0; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px 12px; font-size:20px; min-height:40px}
+.signal b{font:800 30px/1 ui-monospace,"Courier New",monospace}
+.signal .pat.live{color:var(--lamp-on)}
+
+.stage{display:flex; flex-direction:column; gap:12px}
+.bar{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.count{font-weight:800; font-size:18px}
+
+.intro{display:flex; justify-content:center; gap:12px; flex-wrap:wrap}
+.intro-card{
+  display:flex; flex-direction:column; align-items:center; gap:10px; min-width:150px; padding:16px 20px;
+  border:2px solid var(--line); border-radius:20px; background:var(--card);
+}
+.intro-card b{font:900 64px/1 ui-monospace,"Courier New",monospace}
+.intro-card small{color:var(--muted)}
+.intro-card.right{border-color:var(--right); background:var(--right-bg)}
+.intro-card.wrong{border-color:var(--wrong); background:var(--wrong-bg)}
+
+/* Answer tiles: as big as the screen allows, so a tablet gets thumb-sized ones
+   and a phone still fits the whole alphabet. */
+.tiles{display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:8px}
+.tile{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  min-height:64px; padding:6px 2px; border-radius:14px;
+  border:1px solid var(--line); background:var(--tile); box-shadow:0 3px 0 var(--line);
+}
+.tile b{font:800 26px/1 ui-monospace,"Courier New",monospace}
+.tile.right{background:var(--right-bg); border-color:var(--right); color:var(--right)}
+.tile.wrong{background:var(--wrong-bg); border-color:var(--wrong); color:var(--wrong)}
+.tile.was{outline:3px solid var(--right); outline-offset:2px}
+
+.word{display:flex; justify-content:center; gap:8px; flex-wrap:wrap}
+.word .slot{
+  width:58px; height:66px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:12px; border:2px solid var(--line); background:var(--card);
+  font:800 30px/1 ui-monospace,"Courier New",monospace;
+}
+.word .slot.now{border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.word .slot.sent{background:var(--right-bg); border-color:var(--right); color:var(--right)}
+.word .slot.skipped{opacity:.6}
+.word .slot.right{background:var(--right-bg); border-color:var(--right); color:var(--right)}
+.word .slot.wrong{background:var(--wrong-bg); border-color:var(--wrong); color:var(--wrong)}
+.word .slot s{font-size:16px; opacity:.7}
+.word .slot.wrong b{color:var(--right)}
+.target{display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; font-size:20px; min-height:46px}
+.target b{font:800 30px/1 ui-monospace,"Courier New",monospace}
+
+/* The telegraph key: a brass arm on a wooden base with a black knob. The whole
+   thing is the button, so a slightly-off tap still keys. */
+.key-wrap{display:flex; justify-content:center; padding-top:6px}
+.tkey{
+  position:relative; width:min(100%,420px); height:170px; border:0; padding:0; background:none;
+  touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none;
+}
+.tkey .base{
+  position:absolute; left:0; right:0; bottom:0; height:56px; border-radius:14px;
+  background:linear-gradient(180deg,#8a5a2b,#5b3614); box-shadow:0 5px 0 #3a210b, 0 8px 14px var(--shadow);
+  display:flex; align-items:center; justify-content:center; color:#f4dfb8; font-weight:800; letter-spacing:.2em; font-size:14px;
+}
+.tkey .arm{
+  position:absolute; left:14%; right:20%; bottom:70px; height:16px; border-radius:8px;
+  background:linear-gradient(180deg,#f0cf80,var(--brass) 50%,var(--brass2));
+  transform-origin:0 50%; transform:rotate(-4deg); transition:transform .04s;
+}
+.tkey .knob{
+  position:absolute; right:12%; bottom:74px; width:110px; height:64px; border-radius:50% 50% 45% 45%;
+  background:radial-gradient(ellipse at 40% 30%,#555,#111 70%); box-shadow:0 6px 0 #000;
+  transition:transform .04s, box-shadow .04s;
+}
+.tkey.down .arm{transform:rotate(0deg)}
+.tkey.down .knob{transform:translateY(12px); box-shadow:0 1px 0 #000}
+
+.word-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+.word-card{
+  min-height:80px; border-radius:16px; border:2px solid var(--line); background:var(--card);
+  font:800 28px/1 ui-monospace,"Courier New",monospace; letter-spacing:.1em;
+}
+.handover{display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; padding:30px 0}
+.handover p{font-size:20px; margin:0}
+.big-emoji{font-size:64px}
+.pts{flex:0 0 100%; margin:0 0 4px; text-align:center}
+
+.debrief{text-align:center; padding:10px 0}
+.debrief .score{font-size:24px; font-weight:700}
+.debrief .score b{font-size:56px}
+.debrief .score small{display:block; font-size:15px; color:var(--muted)}
+.debrief p{font-size:19px}
+.meter{position:relative; height:18px; border-radius:9px; background:var(--chip); margin:12px auto; max-width:420px; overflow:visible}
+.meter i{display:block; height:100%; border-radius:9px; background:var(--wrong)}
+.debrief.pass .meter i{background:var(--right)}
+.meter .mark{position:absolute; top:-5px; bottom:-5px; width:3px; background:var(--ink); border-radius:2px}
+
+.duo-end{display:flex; justify-content:center; gap:14px}
+.duo-end .player{
+  display:flex; flex-direction:column; align-items:center; min-width:130px; padding:14px; border-radius:18px;
+  background:var(--card); border:2px solid var(--line);
+}
+.duo-end .player.top{border-color:var(--brass); box-shadow:0 0 0 3px color-mix(in srgb,var(--brass) 40%,transparent)}
+.duo-end b{font-size:48px}
+
+/* ── Two-player setup ────────────────────────────────────────────────────── */
+.field{display:flex; align-items:center; gap:10px; margin:8px 0; font-weight:600}
+.field input,.new-agent input{
+  flex:1; min-width:0; min-height:48px; padding:0 12px; border-radius:12px;
+  border:1px solid var(--line); background:var(--tile); color:var(--ink); font-size:18px;
+}
+.row-set{display:flex; align-items:center; justify-content:space-between; gap:10px; margin:12px 0 4px; font-weight:600}
+.seg{display:flex; border:1px solid var(--line); border-radius:12px; overflow:hidden}
+.seg button{min-width:56px; min-height:48px; border:0; background:var(--tile); font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink)}
+#duo .btn{width:100%; margin-top:8px}
+
+/* ── Pop-ups ─────────────────────────────────────────────────────────────── */
+.sheet{
+  width:min(560px, calc(100vw - 24px)); max-height:min(85dvh, 680px); padding:16px;
+  border:1px solid var(--line); border-radius:18px; background:var(--card); color:var(--ink);
+  box-shadow:0 12px 40px var(--shadow);
+}
+.sheet::backdrop{background:rgba(5,10,20,.6)}
+.sheet-head{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+.sheet-head h2{flex:1; margin:0; font-size:20px}
+.sheet > .btn{width:100%; margin-top:12px}
+.how{margin:0; padding-left:1.3em}
+.how li{margin:6px 0}
+.tip{margin:10px 0 0; padding:8px 12px; border-radius:10px; background:var(--chip)}
+.agent-list{display:flex; flex-direction:column; gap:8px}
+.agent-row{display:flex; align-items:center; gap:8px}
+.agent-row .pick{
+  flex:1; display:flex; flex-direction:column; align-items:flex-start; min-height:58px; padding:8px 14px; text-align:left;
+  border:1px solid var(--line); border-radius:14px; background:var(--tile);
+}
+.agent-row.cur .pick{border:2px solid var(--accent)}
+.agent-row small{color:var(--muted)}
+.new-agent{display:flex; gap:8px; margin-top:12px}
+
+.toast{
+  position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom));
+  transform:translate(-50%,20px); opacity:0; pointer-events:none;
+  padding:10px 18px; border-radius:22px; background:#16233a; color:#fff; font-weight:600;
+  transition:opacity .2s, transform .2s; max-width:90vw; text-align:center;
+}
+.toast.show{opacity:1; transform:translate(-50%,0)}
+
+@media (max-width:480px){
+  .page{padding-inline:12px}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(54px,1fr)); gap:6px}
+  .tile{min-height:56px}
+  .word .slot{width:48px; height:58px; font-size:26px}
+  .tkey{height:150px}
+  .tkey .knob{width:92px; height:56px}
+  .radio{padding:10px 12px; gap:12px}
+  .lamp{width:46px; height:46px}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .lever .handle,.lever .stick{transition:none}
+}

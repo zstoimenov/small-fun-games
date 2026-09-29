@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v29";
+const CACHE = "game-box-v30";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -101,6 +101,12 @@ const ASSETS = [
   "./cube-timer/js/audio.js", "./cube-timer/js/ui.js", "./cube-timer/js/app.js",
   "./cube-timer/icons/icon-192.png", "./cube-timer/icons/icon-512.png",
   "./cube-timer/icons/apple-touch-icon.png",
+
+  "./morse/", "./morse/index.html", "./morse/manifest.webmanifest",
+  "./morse/css/style.css",
+  "./morse/js/rules.js", "./morse/js/audio.js", "./morse/js/key.js", "./morse/js/ui.js", "./morse/js/app.js",
+  "./morse/icons/icon-192.png", "./morse/icons/icon-512.png",
+  "./morse/icons/apple-touch-icon.png",
 
   "./enigma/", "./enigma/index.html", "./enigma/manifest.webmanifest",
   "./enigma/css/style.css",

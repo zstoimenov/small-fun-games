@@ -49,6 +49,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 | Game | Folder | What it is |
 | --- | --- | --- |
+| 📡 **Morse Agent** | [`morse/`](morse/) | Learn Morse code by ear, the way radio operators do. **Boot Camp** starts from nothing: hear a dot and a dash, make them on the telegraph key, copy a few rhythms. Then 35 spy missions, each adding one letter (Koch's method: K and M first, digits last), and you need 9 out of 10 to unlock the next. Every mission is *listen* (tap the letter you heard), *send* (tap words out on the key) and *decode* (spell out a word you hear). Letters are always sent at 12 words a minute; a **difficulty lever** (Rookie / Agent / Ace) changes the gaps between letters, how many dots and dashes are shown and how long the words are. The key learns each kid's own tapping speed. 1–2 players: in **Field Agents** one agent taps a secret word and the other hears it played back in *their* rhythm. A lamp flashes with every beep, so it still works with the sound off. Up to four agents per tablet, progress saved on the device (~age 8+). |
 | 🥅 **Footy Tactics Lab** | [`footy-tactics-lab/`](footy-tactics-lab/) | Learn to code with footy. Build a play from move/turn/repeat/handball blocks, run it one step at a time and debug your way to a goal. 10 levels, sequencing through nested loops (~age 8+). |
 | 🤖 **Robo Rules** | [`robo-rules/`](robo-rules/) | Teach Chip the robot pet with IF-THIS-THEN-THAT rules — a first taste of coding for kids (~age 7+). |
 
