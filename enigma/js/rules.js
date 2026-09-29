@@ -113,7 +113,9 @@ EN.Rules = (function () {
 
   return {
     ABC, ROTORS, REFLECTOR,
-    LAYOUT: ["QWERTZUIO", "ASDFGHJK", "PYXCVBNML"],
+    // QWERTY, not the real machine's QWERTZ: kids know the keyboard on their own
+    // tablet, and hunting for Z and Y in the wrong places is not the fun part.
+    LAYOUT: ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"],
     step, press, encode, turn, groups, posToLetters, lettersToPos, mod
   };
 })();

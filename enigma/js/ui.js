@@ -64,6 +64,8 @@ EN.UI = (function () {
     $("reset").addEventListener("click", handlers.reset);
     $("clear").addEventListener("click", handlers.clear);
     $("copy").addEventListener("click", handlers.copy);
+    $("undo").addEventListener("click", handlers.undo);
+    $("share").addEventListener("click", handlers.share);
     $("random").addEventListener("click", handlers.random);
     $("mute").addEventListener("click", handlers.mute);
   }

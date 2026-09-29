@@ -9,7 +9,10 @@
   // One "round" = one go with one start. Turning a rotor after you have already
   // typed starts a NEW round instead of wiping the paper, so a mis-tap never
   // throws away a message somebody just typed.
-  let rounds = [{ start: "AAA", typed: "", coded: "" }];
+  // `before` is where the rotors were before each letter, so Undo can wind them
+  // back. Without that, undoing the letter would leave the rotors one step ahead
+  // and every letter after it would come out wrong.
+  let rounds = [{ start: "AAA", typed: "", coded: "", before: [] }];
   const held = {};                  // keys that are down or still glowing, see keyDown
   let muted = false;
 
@@ -24,7 +27,7 @@
     pos = p.slice();
     const start = R.posToLetters(pos);
     if (cur().typed) {
-      rounds.push({ start, typed: "", coded: "" });
+      rounds.push({ start, typed: "", coded: "", before: [] });
       if (rounds.length > MAX_ROUNDS) rounds.shift();
     } else {
       cur().start = start;
@@ -44,6 +47,7 @@
       UI.lamp(h.lamp, false);       // swallowed, so cut the old glow short
     }
     const r = R.press(pos, ch);
+    cur().before.push(pos);
     pos = r.pos;
     cur().typed += ch;
     cur().coded += r.out;
@@ -89,7 +93,7 @@
   function clear() {
     // Clear wipes the paper only. It keeps the start you were using: the rotors
     // have moved on while typing, so they go back to it rather than staying put.
-    rounds = [{ start: cur().start, typed: "", coded: "" }];
+    rounds = [{ start: cur().start, typed: "", coded: "", before: [] }];
     pos = R.lettersToPos(cur().start);
     UI.lampsOff();
     UI.showRotors(pos, [1, 1, 1]);
@@ -97,10 +101,50 @@
     UI.tape(rounds);
   }
 
-  function copy() {
+  // Take back the last letter: off the paper, and the rotors turn back to where
+  // they were before it, so the next letter codes the same as if it never happened.
+  function undo() {
+    const r = cur();
+    if (!r.typed) { UI.toast("Nothing to undo."); return; }
+    r.typed = r.typed.slice(0, -1);
+    r.coded = r.coded.slice(0, -1);
+    const was = pos;
+    pos = r.before.pop();
+    UI.lampsOff();
+    // Roll back only the rotors that actually move, as the real ones would.
+    UI.showRotors(pos, pos.map((p, i) => (p !== was[i] ? -1 : 0)));
+    UI.tape(rounds);
+    EN.Audio.rotor();
+  }
+
+  // What a friend needs to read the message: the start, the code, and where the
+  // machine is.
+  function message() {
     const r = rounds.filter((x) => x.typed).pop();
-    if (!r) { UI.toast("Type something first!"); return; }
-    const text = "Secret start: " + r.start + "\nCode: " + R.groups(r.coded).join(" ");
+    if (!r) return null;
+    return "Secret start: " + r.start + "\nCode: " + R.groups(r.coded).join(" ");
+  }
+
+  // The phone's own share sheet (Messages, WhatsApp, email...). Where there is
+  // none - most desktop browsers - it copies instead, so the button always works.
+  function share() {
+    const text = message();
+    if (!text) { UI.toast("Type something first!"); return; }
+    if (!navigator.share) { copy(); return; }
+    const url = new URL("./", location.href).href;
+    navigator.share({
+      title: "A secret Enigma message",
+      text: "I sent you a secret message! Set the rings to the secret start and type the code.\n\n" + text + "\n\nDecode it here:",
+      url
+    }).catch((e) => {
+      // Closing the share sheet is not an error worth a message.
+      if (e && e.name !== "AbortError") copy();
+    });
+  }
+
+  function copy() {
+    const text = message();
+    if (!text) { UI.toast("Type something first!"); return; }
     const ok = () => UI.toast("Copied! Send it to a friend.");
     const fallback = () => {
       const ta = document.createElement("textarea");
@@ -128,7 +172,7 @@
     UI.muteState(muted);
   }
 
-  UI.build({ keyDown, keyUp, turn, reset, clear, copy, random, mute });
+  UI.build({ keyDown, keyUp, turn, reset, clear, copy, undo, share, random, mute });
   UI.muteState(muted);
   UI.showRotors(pos);
   UI.showStart(cur().start);
@@ -138,6 +182,7 @@
   // ignoring repeats stops a held key from typing a whole row of letters.
   window.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+    if (e.key === "Backspace") { e.preventDefault(); undo(); return; }
     if (e.key.length === 1 && /[a-z]/i.test(e.key)) {
       e.preventDefault();
       keyDown(e.key.toUpperCase());
