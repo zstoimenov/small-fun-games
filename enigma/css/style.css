@@ -250,6 +250,36 @@ button{font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; tou
       calc((100dvh - 490px) / 6.5)))}
 }
 
+/* Landscape tablets. Stacked, the rings, lamps and keys are taller than the
+   screen, and fitting them meant ~34px keys. Side by side - rings on the left,
+   lamps, code and keys on the right - the height goes to the keys instead.
+   The lamps shrink a little too: they are looked at, never tapped. */
+@media (orientation:landscape) and (min-width:900px){
+  .page{max-width:1100px}
+  .panel{
+    display:grid; align-items:center; column-gap:20px; row-gap:10px;
+    grid-template-columns:auto 1fr;
+    grid-template-areas:"rotors lamps" "rotors code" "rotors keys";
+    --lamp:calc(var(--k) * .8);
+    /* Width: ten keys in what is left of the page beside the rings (~240px
+       with the gap). Height: 3 lamp rows + 3 key rows (about 5.9 keys) plus
+       ~300px of header, code line, toolbar and padding. */
+    --k:max(30px, min(64px,
+        calc((min(100vw, 1100px) - 32px - 24px - 28px - 240px - 9 * var(--gap)) / 10),
+        calc((100dvh - 300px) / 5.9)));
+  }
+  .rotors{grid-area:rotors; flex-direction:column; gap:10px}
+  .rotor{flex-direction:row; gap:8px}
+  .rotor .up,.rotor .down{width:56px; height:56px}
+  .rotor .up{order:3}
+  .rotor .window{order:2}
+  .rotor .down{order:1}
+  .lamps{grid-area:lamps; border-top:0; padding-top:0}
+  .code-line{grid-area:code}
+  .keys{grid-area:keys}
+  .lamp{width:var(--lamp); height:var(--lamp); font-size:calc(var(--lamp) * .45)}
+}
+
 @media (prefers-reduced-motion: reduce){
   .drum.roll-up,.drum.roll-down{animation:none}
   .lamp,.key{transition:none}
