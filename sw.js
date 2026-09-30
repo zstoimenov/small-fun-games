@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v36";
+const CACHE = "game-box-v37";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -16,6 +16,7 @@ const ASSETS = [
   "./bulgarian-bukvar/", "./bulgarian-bukvar/index.html", "./bulgarian-bukvar/manifest.webmanifest",
   "./bulgarian-bukvar/css/style.css",
   "./bulgarian-bukvar/js/letters.js", "./bulgarian-bukvar/js/missions.js", "./bulgarian-bukvar/js/rules.js",
+  "./bulgarian-bukvar/js/cards.js", "./bulgarian-bukvar/js/quiz.js",
   "./bulgarian-bukvar/js/ui.js", "./bulgarian-bukvar/js/app.js",
   "./bulgarian-bukvar/icons/icon-192.png", "./bulgarian-bukvar/icons/icon-512.png",
   "./bulgarian-bukvar/icons/apple-touch-icon.png",

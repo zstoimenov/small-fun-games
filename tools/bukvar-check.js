@@ -11,8 +11,8 @@ const dir = path.join(__dirname, "..", "bulgarian-bukvar", "js");
 const sandbox = { Math, console };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ["letters.js", "missions.js", "rules.js"]) vm.runInContext(fs.readFileSync(path.join(dir, f), "utf8"), sandbox, { filename: f });
-const { Letters: L, MISSIONS: M, Rules: R } = sandbox.BQ;
+for (const f of ["letters.js", "missions.js", "rules.js", "cards.js", "quiz.js"]) vm.runInContext(fs.readFileSync(path.join(dir, f), "utf8"), sandbox, { filename: f });
+const { Letters: L, MISSIONS: M, Rules: R, CARDS: C, STAMPS: S, Quiz: Q } = sandbox.BQ;
 
 let fails = 0, passes = 0;
 const ok = (cond, msg) => { if (cond) passes++; else { fails++; console.log("FAIL", msg); } };
@@ -88,6 +88,43 @@ for (let seed = 1; seed <= 200; seed++) {
     } else ok(!tr.length, "no drill before a trap letter is learned");
   });
 }
+
+
+// History cards: readable when they open, and the quiz clue never gives the
+// name away (clues are English, so any Cyrillic in one is a leak).
+ok(new Set(C.map((c) => c.id)).size === C.length, "card ids unique");
+C.forEach((c) => {
+  const bad = R.unreadable(c.name + " " + c.story, R.known(c.m));
+  ok(!bad.length, "card " + c.id + " uses unlearned " + bad.join(" "));
+  ok(!/[\u0400-\u04FF]/.test(c.clue + c.en), "card " + c.id + " English lines have no Cyrillic");
+  ok(c.e && c.year && c.when && c.en && c.clue, "card " + c.id + " complete");
+});
+ok(S.length === 9 && S.every((s, i) => s.m === i + 1), "one stamp per mission 2-10");
+
+// The quiz: five questions, no repeats, exactly one right answer, every
+// Bulgarian option readable, and a pool of at least 12 different questions.
+S.forEach((st) => {
+  const n = st.m, set = R.known(n), keys = new Set();
+  for (let seed = 1; seed <= 300; seed++) {
+    const qs = Q.round(n, R.rng(seed * 7 + n));
+    ok(qs.length === Q.QUESTIONS, st.place + " deals " + Q.QUESTIONS + " questions");
+    ok(new Set(qs.map((q) => q.key)).size === qs.length, st.place + " has no repeated question");
+    qs.forEach((q) => {
+      keys.add(q.key);
+      if (q.kind === "timeline") {
+        ok(q.cards.length === 3 && Q.isRight(q, q.answer), "timeline is answerable");
+        ok(q.cards.every((c) => c.m <= n), "timeline cards are open");
+        return;
+      }
+      ok(q.options.filter((o) => o === q.answer).length === 1, st.place + " " + q.kind + ": one right answer");
+      ok(new Set(q.options).size === q.options.length && q.options.length >= 2, st.place + " " + q.kind + ": options distinct");
+      q.options.forEach((o) => ok(!R.unreadable(o, set).length, st.place + " " + q.kind + ": \"" + o + "\" readable"));
+      if (q.kind === "first") ok(q.cards.find((c) => c.name === q.answer).year < q.cards.find((c) => c.name !== q.answer).year, "first picks the older");
+    });
+  }
+  ok(keys.size >= 12, st.place + " quiz pool has " + keys.size + " questions (need 12)");
+});
+ok(Q.stamp(5, 0) === "gold" && Q.stamp(5, 1) === "ink" && Q.stamp(4, 0) === null, "stamp rules");
 
 ok(R.stars(6, 10) === 1 && R.stars(7, 10) === 2 && R.stars(9, 10) === 3, "stars thresholds");
 
