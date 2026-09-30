@@ -1978,11 +1978,31 @@ the jobs that use it. Decisions made up front:
 - **Every chapter's lesson names a job**, and home has a "Who works with…?" card
   with three real jobs in one kid-level sentence each, plus a nudge to ask a
   grown-up who does one.
-- **Career Compass is deferred.** A launcher page tracking which areas a kid
-  plays most and does well in. When it's built, keep "chooses to play", "does
-  well at" and "says they liked" as three separate signals: replay time is not
-  aptitude.
+- **Career Compass** ✅ built as `career-compass/` (see below). It keeps
+  "chooses to play", "does well at" and "says they liked" as separate signals:
+  replay time is not aptitude.
 - Order: Circuit Lab, then Bridge Builder. Circuit Lab had less unknown physics.
+
+### Career Compass — `career-compass/` ✅ built
+
+Kid first, with a grown-ups corner. Six styles from Holland's RIASEC interest
+types in kid words (Builders, Explorers, Creators, Helpers, Leaders,
+Organisers), each with three jobs and an "ask a grown-up" line. Four signals,
+never blended into one another:
+
+- **Quiz**: 12 would-you-rather pairs, every style offered exactly 4 times.
+- **Likes**: 👍 😐 👎 per played game, asked on the Compass page only, so no
+  game needed changing.
+- **Plays**: `gamebox:plays`, counted by the launcher's Play button. Scored as
+  the average over the style's *played* games against the most-played game,
+  because Explorers and Organisers have ten games each and Creators one.
+- **Stars**: from `gamebox:progress:<folder>`, games with stars won only.
+
+The needle uses the mean of Quiz, Likes and Plays; Stars show as "doing well".
+The catalogue moved to `games.js` so both pages read one list; each game's
+`compass` field names its styles. Gap: few games build Creator or Helper
+skills yet, which argues for a Creator (drawing, stories, music) or Helper
+game next.
 
 ### Circuit Lab — `circuit-lab/` ✅ built
 

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Career Compass</title>
+<meta name="description" content="Builder, Explorer, Creator, Helper, Leader or Organiser? Answer would-you-rather questions, rate your games, and meet the jobs that fit.">
+<meta name="theme-color" content="#6a4c93">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Compass">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Home</button>
+    <h1 id="title">Career Compass</h1>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How it works">?</button>
+  </header>
+
+  <!-- Home: the compass, three tiles, the six styles. -->
+  <section id="home" class="screen">
+    <div class="card compass-card">
+      <div id="dial" class="dial"></div>
+      <div class="reading">
+        <p class="kicker" id="readKicker"></p>
+        <h2 id="readName"></h2>
+        <p id="readSays"></p>
+      </div>
+    </div>
+    <div class="tiles">
+      <button id="quizBtn" class="tile" type="button"><span aria-hidden="true">&#129300;</span><b>Would you rather?</b><small id="quizInfo"></small></button>
+      <button id="rateBtn" class="tile" type="button"><span aria-hidden="true">&#128077;</span><b>Rate my games</b><small id="rateInfo"></small></button>
+      <button id="grownBtn" class="tile" type="button"><span aria-hidden="true">&#128106;</span><b>Grown-ups</b><small>What's behind it</small></button>
+    </div>
+    <h3 class="section">Six kinds of work</h3>
+    <div id="areas" class="areas"></div>
+  </section>
+
+  <!-- Would you rather: one question at a time, two big choices. -->
+  <section id="quiz" class="screen" hidden>
+    <div class="goal"><span class="goal-name">Would you rather...</span><span class="goal-count" id="qCount"></span></div>
+    <div id="qChoices" class="choices"></div>
+    <p class="hint">No right or wrong answers. Pick the one that sounds more fun!</p>
+  </section>
+
+  <!-- Rate: every game played so far. -->
+  <section id="rate" class="screen" hidden>
+    <p class="intro">Did you like it? Tap a face for each game you've played.</p>
+    <div id="rateList" class="rate-list"></div>
+  </section>
+
+  <!-- One style: what it means, three jobs, games to try. -->
+  <dialog id="areaDialog" aria-labelledby="aName">
+    <div class="dlg">
+      <p class="big-emoji" id="aEmoji" aria-hidden="true"></p>
+      <h2 id="aName"></h2>
+      <p id="aSays"></p>
+      <div id="aJobs" class="jobs"></div>
+      <p class="ask">&#128172; <span id="aAsk"></span></p>
+      <h3 class="section">Games for <span id="aShort"></span></h3>
+      <div id="aGames" class="game-links"></div>
+      <button class="btn primary" type="button" data-close>Close</button>
+    </div>
+  </dialog>
+
+  <!-- The reveal after the quiz. -->
+  <dialog id="doneDialog" aria-labelledby="dName">
+    <div class="dlg">
+      <p class="kicker">Your compass points to</p>
+      <p class="big-emoji" id="dEmoji" aria-hidden="true"></p>
+      <h2 id="dName"></h2>
+      <p id="dSays"></p>
+      <p class="muted" id="dNext"></p>
+      <button class="btn primary" type="button" id="dOk">See my compass</button>
+    </div>
+  </dialog>
+
+  <!-- For grown-ups: the raw signals, kept apart. -->
+  <dialog id="grownDialog" aria-labelledby="gTitle">
+    <div class="dlg wide">
+      <h2 id="gTitle">For grown-ups</h2>
+      <p>The compass uses Holland's six interest types (RIASEC), the model most careers advisers use, in kid words. It keeps four signals apart, because choosing to play something is not the same as being good at it:</p>
+      <ul class="signals">
+        <li><b>Quiz</b>: would-you-rather picks, out of 4 per style.</li>
+        <li><b>Likes</b>: the kid's own &#128077; &#128528; &#128078; on each game.</li>
+        <li><b>Plays</b>: times a game was started from the Game Box home page.</li>
+        <li><b>Stars</b>: share of stars won, in games that have stars.</li>
+      </ul>
+      <p>The needle only uses Quiz, Likes and Plays. Stars sit beside it as "doing well". At 8, interests change often: use this to start a chat, never to decide anything.</p>
+      <div class="table-wrap"><table id="gTable"></table></div>
+      <p class="muted">Each game counts towards one or two styles. Only a few games build Creator and Helper skills so far, so the quiz and ratings matter most there. Everything stays on this device.</p>
+      <div class="actions">
+        <button class="btn" type="button" id="gReset">Start again</button>
+        <button class="btn primary" type="button" data-close>Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="helpDialog" aria-labelledby="hTitle">
+    <div class="dlg">
+      <h2 id="hTitle">&#129517; Career Compass</h2>
+      <p>There are six kinds of work. Which ones sound like you?</p>
+      <ol class="how">
+        <li>Answer 12 <b>Would you rather?</b> questions.</li>
+        <li>Play games, then come back and <b>rate</b> them.</li>
+        <li>Your compass points to the kind of work you seem to love. Tap any kind to meet real jobs.</li>
+      </ol>
+      <p class="muted">You can like lots of things! Most grown-ups mix two or three.</p>
+      <button class="btn primary" type="button" data-close>Let's go!</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+</main>
+
+<script src="../games.js"></script>
+<script src="./js/areas.js"></script>
+<script src="./js/score.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(() => {});
+</script>
+</body>
+</html>

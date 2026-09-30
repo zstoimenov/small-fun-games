@@ -10,7 +10,8 @@ Read that before starting a new game.
 ## Layout
 
 ```
-index.html      the launcher — the GAMES catalogue and the filter bar live here
+index.html      the launcher — shelves, filters, search
+games.js        the GAMES catalogue, shared by the launcher and career-compass/
 sw.js           ONE service worker for the whole site, launcher and games alike
 <game>/         one folder per game
 docs/           planning notes
@@ -34,9 +35,9 @@ audio, UI and app state in separate files.
 
 1. Folder with `index.html`, relative paths throughout.
 2. Back link to the launcher: `<a href="../">&lsaquo; Games</a>`.
-3. Catalogue entry in the root `index.html` `GAMES` array. Fields and the
+3. Catalogue entry in the `GAMES` array in `games.js`. Fields and the
    category list are documented in [`README.md`](README.md#add-a-new-game) —
-   `hook` (the one line on the card), `category`, `tags`, `players: [min, max]`,
+   `hook` (the one line on the card), `category`, `tags`, `compass`, `players: [min, max]`,
    `age`, `highlights`. **Chips are generated from those fields; never
    hand-write them.** A game with stars also writes
    `gamebox:progress:<folder>` so the home page can show them (README).
