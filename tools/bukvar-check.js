@@ -1,4 +1,4 @@
-/* Буквар Quest - checks for the pure parts: the alphabet, the decodability of  */
+/* Буквар - checks for the pure parts: the alphabet, the decodability of        */
 /* every word and sentence, and the rounds each step deals. No browser needed.  */
 /*                                                                              */
 /*   node tools/bukvar-check.js                                                 */

@@ -1,4 +1,4 @@
-/* Буквар Quest - one stylesheet, no framework.                                  */
+/* Буквар - one stylesheet, no framework.                                        */
 /*                                                                              */
 /* A school primer: notebook paper with ruled lines under every big letter, and */
 /* the green, white and red of the Bulgarian flag. Green is progress, red marks */
@@ -369,9 +369,9 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
   .album{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
   .album b{font-size:13px}
 }
-/* Копривщица is the longest place name; let long names shrink to fit the ring. */
-.stamp [lang]{max-width:100%; font-size:clamp(9px,2.6vw,12px); overflow-wrap:anywhere}
-.stamp.long [lang]{font-size:10px; letter-spacing:0}
-.quiz-stamp .stamp.long [lang]{font-size:12px}
+/* A place name never breaks inside a word (КОПРИВЩИ-ЦА). Each word keeps to
+   one line and ui.js shrinks the type until the longest one fits the ring. */
+.stamp [lang]{max-width:100%}
+.stamp .pw{display:block; white-space:nowrap}
 .album b.long{font-size:11px; letter-spacing:-.02em; overflow-wrap:normal}
 @media (max-width:420px){ .album b.long{font-size:10.5px} .album button{padding-inline:2px} }

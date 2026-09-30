@@ -1,4 +1,4 @@
-/* Буквар Quest - the history cards. Pure data.                                 */
+/* Буквар - the history cards. Pure data.                                       */
 /*                                                                              */
 /* A card opens with the mission `m` (0-based), and its name and story use only */
 /* letters taught by then - the same rule as missions.js, checked the same way. */

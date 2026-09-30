@@ -1,4 +1,4 @@
-/* Буквар Quest - the ten missions. Pure data.                                  */
+/* Буквар - the ten missions. Pure data.                                        */
 /*                                                                              */
 /* The one rule this file lives by: every word and sentence in a mission uses   */
 /* only the letters taught in that mission or before it. tools/bukvar-check.js  */

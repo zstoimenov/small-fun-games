@@ -1,4 +1,4 @@
-/* Буквар Quest - everything that touches the page.                             */
+/* Буквар - everything that touches the page.                                   */
 /*                                                                              */
 /* ui.js draws and reports; it never decides anything. The app says what to     */
 /* show and hands over callbacks. What counts as right is rules.js's business.  */
@@ -19,7 +19,7 @@ BQ.UI = (function () {
     ["home", "play"].forEach((s) => { $(s).hidden = s !== id; });
     $("back").hidden = id !== "home";
     $("toHome").hidden = id === "home";
-    $("title").textContent = title || "Буквар Quest";
+    $("title").textContent = title || "Буквар";
     window.scrollTo(0, 0);
   }
 
@@ -182,8 +182,23 @@ BQ.UI = (function () {
   // or "empty" (mission not reached).
   function stampHtml(st, state, cls) {
     const ink = state === "gold" || state === "ink" ? ' style="--ink:' + st.ink + '"' : "";
-    return '<span class="stamp ' + state + (st.place.length > 9 && !st.place.includes(" ") ? " long" : "") + " " + (cls || "") + '"' + ink + '><span lang="bg">' + esc(st.place) + "</span>" +
+    return '<span class="stamp ' + state + " " + (cls || "") + '"' + ink + '><span lang="bg">' +
+      st.place.split(" ").map((w) => '<span class="pw">' + esc(w) + "</span>").join("") + "</span>" +
       (state === "gold" ? '<span class="se emoji">🏅</span>' : state === "ink" ? '<span class="se emoji">✔️</span>' : "") + "</span>";
+  }
+
+  // Shrink a stamp's words until the longest fits inside the ring. Measured,
+  // not guessed: the width of КОПРИВЩИЦА depends on the tablet's font.
+  function fitStamps(root) {
+    root.querySelectorAll(".stamp").forEach((st) => {
+      const room = st.clientWidth - 16;
+      let size = parseFloat(getComputedStyle(st).fontSize);
+      const words = [...st.querySelectorAll(".pw")];
+      while (size > 7 && words.some((w) => w.scrollWidth > room)) {
+        size -= 0.5;
+        words.forEach((w) => { w.style.fontSize = size + "px"; });
+      }
+    });
   }
 
   function passport(list, onPick) {
@@ -191,6 +206,7 @@ BQ.UI = (function () {
       '<button type="button" data-i="' + i + '"' + (state === "empty" ? " disabled" : "") + ' aria-label="' + esc(st.place) + '">' +
       stampHtml(st, state) +
       "<small>" + (state === "empty" ? "After Mission " + (st.m + 1) : state === "open" ? "Tap to try" : state === "gold" ? "Gold!" : "Try for gold") + "</small></button>").join("");
+    fitStamps($("passport"));
     $("passport").onclick = (e) => { const b = e.target.closest("button[data-i]"); if (b && !b.disabled) onPick(+b.dataset.i); };
   }
 
@@ -236,5 +252,5 @@ BQ.UI = (function () {
 
   function starsHtml(n) { return "★".repeat(n) + "<i>" + "★".repeat(3 - n) + "</i>"; }
 
-  return { stampHtml, passport, album, showCard, quizQ, numberTile, $, esc, bg, emo, screen, steps, who, stage, toast, map, abc, letterCard, showLetter, grownup, learn, blend, lightBlend, match, build, fillSlot, read, trap, starsHtml };
+  return { fitStamps, stampHtml, passport, album, showCard, quizQ, numberTile, $, esc, bg, emo, screen, steps, who, stage, toast, map, abc, letterCard, showLetter, grownup, learn, blend, lightBlend, match, build, fillSlot, read, trap, starsHtml };
 })();

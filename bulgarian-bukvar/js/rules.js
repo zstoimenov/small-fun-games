@@ -1,4 +1,4 @@
-/* Буквар Quest - what the missions teach and how each round is dealt. Pure:    */
+/* Буквар - what the missions teach and how each round is dealt. Pure:          */
 /* no DOM, no storage, so tools/bukvar-check.js can load it in plain node.      */
 "use strict";
 window.BQ = window.BQ || {};

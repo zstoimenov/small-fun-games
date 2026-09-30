@@ -2041,7 +2041,7 @@ longer gaps. Jobs: civil engineer, builder, architect.
   `circuit-check.js`) before designing a single level.
 - Reuse Circuit Lab's board: dots, edges, tap-to-place, SVG layers.
 
-## Буквар Quest — `bulgarian-bukvar/` ✅ built
+## Буквар — `bulgarian-bukvar/` ✅ built
 
 Not on the original list. The ask was *"a game that teaches Bulgarian history and
 famous people, with a primer (буквар) that teaches reading in Bulgarian"*. The

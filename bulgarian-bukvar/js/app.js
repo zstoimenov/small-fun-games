@@ -1,4 +1,4 @@
-/* Буквар Quest - the glue: progress, the five mission steps, tricky letters,  */
+/* Буквар - the glue: progress, the five mission steps, tricky letters,        */
 /* the history cards and the passport quiz.                                    */
 "use strict";
 (function () {
@@ -320,6 +320,7 @@
     $("quizStamp").innerHTML = UI.stampHtml(st, state === "open" ? "open" : state);
     $("quizFact").textContent = st.fact + (state === "gold" ? " You have the gold stamp!" : state === "ink" ? " Win it with no help for gold." : "");
     $("quizDialog").showModal();
+    UI.fitStamps($("quizStamp"));
   }
 
   // One or two players answer the same five questions. With two, both have
@@ -426,6 +427,7 @@
         scores + "<p>" + msg + "</p>" +
         '<div class="actions"><button class="btn ghost" type="button" data-act="home">Home</button>' +
         '<button class="btn" type="button" data-act="again">' + (got === "gold" ? "Play again" : "Try again") + "</button></div></div>");
+      UI.fitStamps(el);
       el.onclick = (e) => {
         const a = e.target.closest("[data-act]");
         if (!a) return;

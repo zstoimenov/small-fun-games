@@ -1,4 +1,4 @@
-/* Буквар Quest - the passport quiz. Pure, like rules.js.                       */
+/* Буквар - the passport quiz. Pure, like rules.js.                             */
 /*                                                                              */
 /* A quiz belongs to a stamp, and a stamp to a mission: it asks only about      */
 /* letters, words and cards the child has by then. Five questions, all tap-only.*/

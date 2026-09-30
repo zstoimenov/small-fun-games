@@ -1,4 +1,4 @@
-/* Буквар Quest - the alphabet: 30 letters, an English sound hint for each, and */
+/* Буквар - the alphabet: 30 letters, an English sound hint for each, and       */
 /* the letters that fool an English reader.                                     */
 /*                                                                              */
 /* There is no audio in this game (a speech engine reads a lone letter as its   */
