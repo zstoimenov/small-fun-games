@@ -72,6 +72,7 @@ can play with someone else. (The older short form, `#coding`, still works.)
 | Game | Folder | What it is |
 | --- | --- | --- |
 | 🍎 **Newton's Playground** | [`newtons-laws/`](newtons-laws/) | Newton's three laws of motion, one chapter each. Every chapter opens with a no-rules "Try it" sandbox, then four levels where you stop something on a green flag. **Law 1** - slingshot a puck over ice, grass and sand, and watch it slide forever in space. **Law 2** - push a cart loaded with a teddy, a box or an elephant; pick the push, pick the load, and make a 4x-heavier elephant keep up with the teddy. **Law 3** - throw balls off a skateboard and roll the other way, ride a balloon rocket, and guess who rolls further when two kids push apart. Force arrows show every push and its pair. Stars per level, a line on what you learned after each law, and a 3-question quiz (~age 8+). |
+| ⚡ **Circuit Lab** | [`circuit-lab/`](circuit-lab/) | Snap batteries, wires, bulbs, switches, buzzers and fans onto a board of dots, and watch moving dots show the electricity flowing. Three chapters of four levels. **Full Circle** - close the loop, build round a corner, add a light switch, make a doorbell. **One Path or Two** - two bulbs in a row glow dim (series), on their own paths they glow bright (parallel), each light gets its own switch, and two batteries make a bulb extra bright. **Safe Paths** - test a coin, a key, a pencil, wood, paper and a balloon to find conductors and insulators, fix a loop with the right things, and remove a dangerous short circuit. A free build with every part, a "Who works with circuits?" card with three real jobs, a wall-power safety rule, and a 3-question quiz. Real nodal analysis under the hood; `node tools/circuit-check.js` plays a solution to every level (~age 8+). |
 
 ### 🗣️ Languages
 
@@ -81,7 +82,8 @@ can play with someone else. (The older short form, `#coding`, still works.)
 
 ### Planned
 
-Nothing outstanding. All four games on the original roadmap are built, and four
+Next up: **Bridge Builder** (engineering), the second game in the careers track.
+All four games on the original roadmap are built, and four
 more were added on top of them — Deal or No Deal, Lemonade Stand, Bank Boss and
 Cube Timer.
 
