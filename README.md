@@ -9,7 +9,7 @@ no dependencies — plain HTML/CSS/JS, and it works offline once loaded.
 Every game belongs to exactly one **category**, and declares how many players it
 takes. The launcher filters on both, with two rows of pills at the top:
 
-- **Category** — All, Board & Strategy, Coding, Puzzles, Maths, Sport, Science.
+- **Category** — All, Board & Strategy, Coding, Puzzles, Maths, Sport, Science, Languages.
 - **Players** — Any, On my own, With a friend, 3 or more.
 
 The two combine, so you can ask for coding games you can play on your own. A
@@ -72,6 +72,12 @@ can play with someone else. (The older short form, `#coding`, still works.)
 | Game | Folder | What it is |
 | --- | --- | --- |
 | 🍎 **Newton's Playground** | [`newtons-laws/`](newtons-laws/) | Newton's three laws of motion, one chapter each. Every chapter opens with a no-rules "Try it" sandbox, then four levels where you stop something on a green flag. **Law 1** - slingshot a puck over ice, grass and sand, and watch it slide forever in space. **Law 2** - push a cart loaded with a teddy, a box or an elephant; pick the push, pick the load, and make a 4x-heavier elephant keep up with the teddy. **Law 3** - throw balls off a skateboard and roll the other way, ride a balloon rocket, and guess who rolls further when two kids push apart. Force arrows show every push and its pair. Stars per level, a line on what you learned after each law, and a 3-question quiz (~age 8+). |
+
+### 🗣️ Languages
+
+| Game | Folder | What it is |
+| --- | --- | --- |
+| 🔤 **Буквар Quest** | [`bulgarian-bukvar/`](bulgarian-bukvar/) | Learn to read Bulgarian, one letter at a time, the way a Буквар teaches it. Ten missions cover all 30 letters, easy ones first. Each mission has five steps: **Learn** the letter, **Blend** sounds into words, **Match** pictures to words, **Build** words from loose letters and **Read** a sentence. There is no sound on purpose, because computer voices say Bulgarian letters wrong. A grown-up says the sounds in the together steps, and the solo steps check themselves. Every word only uses letters already learned. **Tricky letters** drills the ones that look English but aren't (Р, В, Н, С, Х, У, п, и) (~age 7+). |
 
 ### Planned
 

@@ -1967,7 +1967,7 @@ decisions that shaped it were made up front:
   every mission but never blocks an unlock.
 
 
-## Буквар Quest — `bulgarian-bukvar/` 📝 planned
+## Буквар Quest — `bulgarian-bukvar/` 🚧 session 1 built
 
 Not on the original list. The ask was *"a game that teaches Bulgarian history and
 famous people, with a primer (буквар) that teaches reading in Bulgarian"*. The
@@ -2081,3 +2081,28 @@ search); the content is not. Missions + cards + quiz pools are mostly data.
 Estimate **3,300-4,000 lines**, with the quiz adding ~300 to the earlier figure.
 Two sessions: (1) letters, missions, look-alike drill; (2) history cards, quiz
 and passport, album.
+
+### Session 1: what shipped
+
+Missions, the tricky-letter drill and the house furniture. History cards, the
+passport quiz and the album are session 2.
+
+- **Sizes:** `letters.js` 72, `missions.js` 99, `rules.js` 154, `ui.js` 182,
+  `app.js` 295, `style.css` 296, `index.html` 110: 1,208 lines, well under the
+  "2,000 floor". No audio, no AI, no two-player setup and no tutorial yet, which
+  is where that floor usually goes.
+- **Mission sizes are 4, 3 × 8, 2,** not ten threes. Mission 1 needs four letters
+  (А М Л О) before it has three picture words (мама, лама, ало). Mission 10
+  gets the two leftovers, Я and Ь.
+- **Stars come from the solo steps only** (Match and Build, first tap right).
+  The together steps can't be scored honestly: the grown-up taps ✓.
+- **Tricky letters opens after Mission 2**, the first one with a trap letter (Н).
+  Small п and и were added to the six capitals: they look like English n and u.
+- **`tools/bukvar-check.js`** checks decodability of every word, sentence and
+  example, unique words and pictures (a repeated emoji would give a match
+  question two right answers), and deals every step for all ten missions over
+  200 seeds. Two sentences broke the rule in the first draft (Пиратът and
+  Мишката яде used Ъ and Я before they are taught). Run it after every
+  content change.
+- **Emoji only from Unicode 12 or older.** Newer ones (🪶 перо, 🪆 кукла, 🪰 муха)
+  show as boxes on older tablets.
