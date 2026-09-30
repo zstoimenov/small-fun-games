@@ -229,7 +229,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
 .loose{display:flex; justify-content:center; flex-wrap:wrap; gap:8px}
 .loose .tile{min-width:62px; min-height:66px; font-size:34px}
 .loose .tile.used{visibility:hidden}
-.loose .tile.glow{border-color:var(--gold); background:var(--gold-bg)}
+.tile.glow,.loose .tile.glow{border-color:var(--gold); background:var(--gold-bg)}
 
 /* Read: one sentence, big, each word tappable to keep a finger on the place. */
 .sentence{display:flex; flex-wrap:wrap; justify-content:center; gap:4px 14px; margin:0; padding:10px 0}
@@ -294,3 +294,84 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
   .blend span{transition:none}
 }
 .prompt .w.huge{font-size:110px}
+
+/* ── Passport stamps ─────────────────────────────────────────────────────── */
+/* A rubber stamp: round, double ring, slightly crooked, in its own ink. The   */
+/* ink colour comes from the stamp's data as --ink. An empty slot is a dashed  */
+/* circle waiting for one.                                                     */
+.passport{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px}
+.passport button{border:0; background:none; padding:0; display:flex; flex-direction:column; align-items:center; gap:4px}
+.passport button:disabled{cursor:default}
+.passport small{font-size:12px; color:var(--muted); text-align:center; line-height:1.2}
+.stamp{
+  --ink:var(--accent);
+  width:92px; height:92px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border:3px solid var(--ink); box-shadow:inset 0 0 0 3px var(--card), inset 0 0 0 5px var(--ink);
+  color:var(--ink); text-align:center; padding:8px; transform:rotate(-8deg);
+  font-weight:800; font-size:12px; line-height:1.1; text-transform:uppercase; letter-spacing:.03em;
+}
+.stamp .se{font-size:26px; line-height:1}
+.stamp.gold{--ink:var(--gold); background:radial-gradient(circle,var(--gold-bg),transparent 70%)}
+.stamp.empty{--ink:var(--line); border-style:dashed; box-shadow:none; transform:none; color:var(--muted); font-weight:600}
+.stamp.open{--ink:var(--muted); border-style:dashed; box-shadow:none; transform:none}
+.stamp.thunk{animation:thunk .45s cubic-bezier(.3,1.6,.5,1)}
+@keyframes thunk{0%{transform:scale(2.2) rotate(-20deg); opacity:0} 100%{transform:scale(1) rotate(-8deg); opacity:1}}
+.quiz-stamp{display:flex; justify-content:center; padding:6px 0}
+.quiz-stamp .stamp{width:120px; height:120px; font-size:14px}
+
+/* ── History cards ───────────────────────────────────────────────────────── */
+.album{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:8px}
+.album button{
+  display:flex; flex-direction:column; align-items:center; gap:2px; min-height:108px; padding:8px 4px; border-radius:14px;
+  border:1px solid var(--line); background:var(--tile); box-shadow:0 3px 0 var(--line); text-align:center;
+}
+.album .ce{font-size:34px}
+.album b{font-size:14px; line-height:1.15}
+.album small{font-size:12px; color:var(--muted)}
+.album .locked{opacity:.45; box-shadow:none}
+.album .locked .ce{font-size:28px; color:var(--muted); font-weight:800}
+.album .new{border:2px solid var(--red)}
+.hcard-top{display:flex; align-items:center; gap:14px}
+.hcard-top .ce{font-size:60px}
+.hcard-top h3{margin:0; font-size:26px}
+.hcard-top p{margin:2px 0 0; color:var(--muted); font-weight:700}
+.hcard .ruled{margin:12px 0}
+.hcard .story{margin:0; font-size:clamp(24px,6vw,32px); font-weight:800; line-height:36px}
+.hcard .en{margin:0; font-size:17px}
+.hcard .en b{display:block; font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
+
+/* ── Quiz ────────────────────────────────────────────────────────────────── */
+.ask{margin:0; text-align:center; font-size:21px; font-weight:700; text-wrap:balance}
+.tile.bgw{font-size:24px}
+.tile.dim{opacity:.3}
+.tile .yr{display:block; font-size:14px; color:var(--muted); font-weight:700}
+.tile .no{display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; margin-right:8px; border-radius:50%; background:var(--accent); color:var(--accent-ink); font-size:16px}
+.tiles.cards .tile{flex-direction:column; font-size:20px; gap:2px}
+.tiles.cards .tile .emoji{font-size:34px}
+.player-tag{font-weight:800; color:var(--red)}
+.scores{display:flex; justify-content:center; gap:14px; flex-wrap:wrap}
+.scores div{display:flex; flex-direction:column; align-items:center; min-width:120px; padding:12px; border-radius:16px; border:2px solid var(--line); background:var(--card)}
+.scores b{font-size:44px}
+.new-things{display:flex; flex-wrap:wrap; justify-content:center; gap:8px}
+
+@media (prefers-reduced-motion: reduce){ .stamp.thunk{animation:none} }
+.big-emoji{font-size:64px}
+/* Three timeline cards sit in one row, the way a timeline reads; on a phone
+   they stack, because a long name like Освобождението won't fit a third. */
+.tiles.cards.n3{grid-template-columns:repeat(3,1fr)}
+.album b{overflow-wrap:anywhere; hyphens:auto}
+.album{grid-template-columns:repeat(auto-fill,minmax(118px,1fr))}
+/* Sit the story's lines on the notebook rules (36px apart). */
+.hcard .ruled{padding-block:4px 10px}
+@media (max-width:560px){
+  .tiles.cards.n3{grid-template-columns:1fr}
+  .tiles.cards.n3 .tile{flex-direction:row; justify-content:flex-start; gap:10px; min-height:64px}
+  .album{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+  .album b{font-size:13px}
+}
+/* Копривщица is the longest place name; let long names shrink to fit the ring. */
+.stamp [lang]{max-width:100%; font-size:clamp(9px,2.6vw,12px); overflow-wrap:anywhere}
+.stamp.long [lang]{font-size:10px; letter-spacing:0}
+.quiz-stamp .stamp.long [lang]{font-size:12px}
+.album b.long{font-size:11px; letter-spacing:-.02em; overflow-wrap:normal}
+@media (max-width:420px){ .album b.long{font-size:10.5px} .album button{padding-inline:2px} }

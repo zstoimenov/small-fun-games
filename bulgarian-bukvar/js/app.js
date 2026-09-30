@@ -1,19 +1,27 @@
-/* Буквар Quest - the glue: progress, the five mission steps, tricky letters.   */
+/* Буквар Quest - the glue: progress, the five mission steps, tricky letters,  */
+/* the history cards and the passport quiz.                                    */
 "use strict";
 (function () {
   const L = BQ.Letters;
   const M = BQ.MISSIONS;
   const R = BQ.Rules;
   const UI = BQ.UI;
+  const Q = BQ.Quiz;
+  const C = BQ.CARDS;
+  const S = BQ.STAMPS;
   const $ = UI.$;
   const KEY = "bukvar-quest";
 
   // ── Saved state ───────────────────────────────────────────────────────────
   // done[i] is the best stars for mission i, 0 if it has never been finished.
-  const fresh = () => ({ done: M.map(() => 0), trapBest: 0 });
+  // stamps[place] is "ink" or "gold". seen lists cards already opened, so a
+  // new one can wear a red border until it is looked at.
+  const fresh = () => ({ done: M.map(() => 0), trapBest: 0, stamps: {}, seen: [] });
   let store = fresh();
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
   store.done = M.map((_, i) => +store.done[i] || 0);
+  if (!store.stamps || typeof store.stamps !== "object") store.stamps = {};
+  if (!Array.isArray(store.seen)) store.seen = [];
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
 
   const finished = () => store.done.filter((s) => s > 0).length;
@@ -21,6 +29,10 @@
   // Letters from finished missions only: a letter half-way through its first
   // mission isn't "yours" yet.
   const knownLetters = () => (finished() ? R.known(finished() - 1) : []);
+  // Cards and stamps open when their mission is finished, whatever order the
+  // missions were replayed in.
+  const cardOpen = (c) => store.done[c.m] > 0;
+  const stampState = (st) => store.stamps[st.place] || (store.done[st.m] > 0 ? "open" : "empty");
 
   // ── Run tokens ────────────────────────────────────────────────────────────
   // Every screen change bumps `run`, so a "next round" timer that fires after
@@ -44,11 +56,24 @@
     const known = knownLetters();
     $("letterCount").textContent = known.length + " of 30";
     UI.abc(known, (c) => UI.showLetter(c, exampleFor(c)));
+    const won = S.filter((st) => store.stamps[st.place]).length;
+    $("stampCount").textContent = won + " of " + S.length;
+    UI.passport(S.map((st) => ({ st, state: stampState(st) })), (i) => quizSetup(S[i]));
+    // Oldest first: the album is a timeline, whatever order the cards opened in.
+    const cards = C.slice().sort((a, b) => a.year - b.year);
+    $("cardCount").textContent = C.filter(cardOpen).length + " of " + C.length;
+    UI.album(cards.map((c) => ({ c, open: cardOpen(c), fresh: cardOpen(c) && !store.seen.includes(c.id) })), (i) => openCard(cards[i]));
     const traps = finished() ? R.trapsKnown(finished() - 1) : [];
     $("trapBtn").disabled = !traps.length;
     $("trapSays").textContent = traps.length
       ? "Letters that look English, but aren't" + (store.trapBest ? " · best " + store.trapBest + "/" + R.TRAP_ROUNDS : "")
       : "Opens after Mission 2";
+  }
+
+  function openCard(c) {
+    if (!store.seen.includes(c.id)) { store.seen.push(c.id); save(); }
+    UI.showCard(c);
+    $("cardDialog").addEventListener("close", () => { if (!$("home").hidden) home(); }, { once: true });
   }
 
   function exampleFor(c) {
@@ -206,6 +231,8 @@
     UI.steps(R.STEPS.map((x) => x.label), R.STEPS.length);
     UI.who("");
     const last = n === M.length - 1;
+    const newCards = firstTime ? C.filter((c) => c.m === n) : [];
+    const newStamp = firstTime ? S.find((st) => st.m === n) : null;
     const el = UI.stage(
       '<div class="result">' +
       "<h2>Mission " + (n + 1) + " done!</h2>" +
@@ -214,12 +241,21 @@
       "<p>" + (firstTime ? "New letters:" : "Your letters:") + "</p>" +
       '<div class="got" lang="bg">' + M[n].letters.join(" ") + "</div>" +
       (last ? "<p><b>You know all 30 letters of the Bulgarian alphabet!</b></p>" : "") +
+      (newCards.length || newStamp ? "<p><b>You unlocked:</b></p>" : "") +
+      '<div class="new-things">' +
+      newCards.map((c) => '<button class="small-btn" type="button" data-card="' + c.id + '"><span class="emoji">' + c.e + '</span> <span lang="bg">' + UI.esc(c.name) + "</span></button>").join("") +
+      (newStamp ? '<button class="small-btn" type="button" data-stamp="' + S.indexOf(newStamp) + '">🛂 Quiz: <span lang="bg">' + UI.esc(newStamp.place) + "</span></button>" : "") +
+      "</div>" +
       (stars < 3 ? '<p class="muted">Play it again for 3 stars.</p>' : "") +
       '<div class="actions">' +
       '<button class="btn ghost" type="button" data-act="home">Home</button>' +
       (last ? "" : '<button class="btn" type="button" data-act="next">Mission ' + (n + 2) + " ›</button>") +
       "</div></div>");
     el.onclick = (e) => {
+      const card = e.target.closest("[data-card]");
+      if (card) return openCard(C.find((c) => c.id === card.dataset.card));
+      const st = e.target.closest("[data-stamp]");
+      if (st) return quizSetup(S[+st.dataset.stamp]);
       const a = e.target.closest("[data-act]");
       if (!a) return;
       if (a.dataset.act === "next") mission(n + 1); else home();
@@ -274,10 +310,142 @@
     show();
   }
 
+
+  // ── Passport quiz ─────────────────────────────────────────────────────────
+  let quizFor = null;
+  function quizSetup(st) {
+    quizFor = st;
+    const state = stampState(st);
+    $("quizTitle").textContent = "Quiz: " + st.place;
+    $("quizStamp").innerHTML = UI.stampHtml(st, state === "open" ? "open" : state);
+    $("quizFact").textContent = st.fact + (state === "gold" ? " You have the gold stamp!" : state === "ink" ? " Win it with no help for gold." : "");
+    $("quizDialog").showModal();
+  }
+
+  // One or two players answer the same five questions. With two, both have
+  // to get all five for the stamp, because the passport belongs to the tablet.
+  function quiz(st, players) {
+    run++;
+    UI.screen("play", st.place);
+    $("steps").innerHTML = "";
+    UI.who(players > 1 ? "" : "solo");
+    const qs = Q.round(st.m, Math.random);
+    const results = [];
+    const names = players > 1 ? ["Player 1", "Player 2"] : [""];
+
+    const turn = (p) => {
+      let i = 0, right = 0, hints = 0;
+      const show = () => {
+        run++;
+        const q = qs[i];
+        const el = UI.quizQ(q, i, qs.length, names[p]);
+        const tiles = [...el.querySelectorAll(".tile")];
+        let used = false, picks = [];
+        const next = () => { if (++i < qs.length) show(); else { results.push({ right, hints }); p + 1 < players ? handover(p + 1) : end(); } };
+        const settle = (good) => {
+          used = true;
+          if (good) right++;
+          tiles.forEach((t) => { t.disabled = true; });
+          if (good) later(900, next); else $("qNext").hidden = false;
+        };
+        el.onclick = (e) => {
+          if (e.target.closest("[data-act=next]")) return next();
+          if (e.target.closest("[data-act=hint]")) {
+            if (used) return;
+            const b = e.target.closest("[data-act=hint]");
+            b.disabled = true;
+            hints++;
+            if (q.kind === "timeline") {
+              const oldest = q.cards.findIndex((c) => c.id === q.answer[0]);
+              tiles[oldest].classList.add("glow");
+            } else if (q.kind === "first") {
+              el.querySelectorAll(".yr").forEach((y) => { y.hidden = false; });
+            } else {
+              const wrong = tiles.filter((t) => q.options[+t.dataset.k] !== q.answer && !t.classList.contains("dim"));
+              if (wrong.length) { const t = R.pick(wrong, Math.random); t.classList.add("dim"); t.disabled = true; }
+            }
+            return;
+          }
+          const t = e.target.closest(".tile");
+          if (!t || t.disabled || used) return;
+          const k = +t.dataset.k;
+          if (q.kind === "timeline") {
+            picks.push(q.cards[k].id);
+            UI.numberTile(t, picks.length);
+            if (picks.length < 3) return;
+            const good = Q.isRight(q, picks);
+            // Show the real order and the years either way: that is the lesson.
+            tiles.forEach((x, j) => {
+              x.classList.add(q.answer[picks.indexOf(q.cards[j].id)] === q.cards[j].id ? "right" : "wrong");
+              x.querySelector(".yr").hidden = false;
+            });
+            if (!good) UI.toast("Oldest first: " + q.answer.map((id) => C.find((c) => c.id === id).name).join(", "));
+            return settle(good);
+          }
+          const pick = q.kind === "first" ? q.cards[k].name : q.options[k];
+          const good = Q.isRight(q, pick);
+          t.classList.add(good ? "right" : "wrong");
+          if (!good) tiles.forEach((x) => {
+            const val = q.kind === "first" ? q.cards[+x.dataset.k].name : q.options[+x.dataset.k];
+            if (val === q.answer) x.classList.add("right");
+          });
+          if (q.kind === "first") el.querySelectorAll(".yr").forEach((y) => { y.hidden = false; });
+          settle(good);
+        };
+      };
+      show();
+    };
+
+    const handover = (p) => {
+      run++;
+      const el = UI.stage('<div class="result"><div class="emoji big-emoji">🔄</div>' +
+        "<h2>" + names[p - 1] + " got " + results[p - 1].right + " of " + qs.length + "</h2>" +
+        "<p>Now pass the tablet to <b>" + names[p] + "</b>.</p>" +
+        '<div class="actions"><button class="btn" type="button" data-act="go">I\'m ' + names[p] + ", go! ›</button></div></div>");
+      el.onclick = (e) => { if (e.target.closest("[data-act=go]")) turn(p); };
+    };
+
+    const end = () => {
+      run++;
+      const right = Math.min(...results.map((r) => r.right));
+      const hints = results.reduce((a, r) => a + r.hints, 0);
+      const got = Q.stamp(right, hints);
+      const had = store.stamps[st.place];
+      const better = got && (!had || (had === "ink" && got === "gold"));
+      if (better) { store.stamps[st.place] = got; save(); }
+      UI.who("");
+      const scores = players > 1
+        ? '<div class="scores">' + results.map((r, k) => "<div><span>" + names[k] + "</span><b>" + r.right + "</b><small>of " + qs.length + "</small></div>").join("") + "</div>"
+        : "<p><b>" + results[0].right + " out of " + qs.length + "</b></p>";
+      const msg = got === "gold" ? (better ? "Gold stamp! No help at all." : "Perfect again!")
+        : got === "ink" ? (better ? "You won the stamp! Try with no help for gold." : "All right again! No help next time for gold.")
+        : players > 1 ? "You both need 5 for the stamp. Try again!"
+        : right === qs.length - 1 ? "So close! Try again for the stamp." : "Keep going! Try again for the stamp.";
+      const el = UI.stage('<div class="result"><h2>' + UI.esc(st.place) + "</h2>" +
+        '<div class="quiz-stamp">' + UI.stampHtml(st, got || stampState(st), better ? "thunk" : "") + "</div>" +
+        scores + "<p>" + msg + "</p>" +
+        '<div class="actions"><button class="btn ghost" type="button" data-act="home">Home</button>' +
+        '<button class="btn" type="button" data-act="again">' + (got === "gold" ? "Play again" : "Try again") + "</button></div></div>");
+      el.onclick = (e) => {
+        const a = e.target.closest("[data-act]");
+        if (!a) return;
+        if (a.dataset.act === "again") quiz(st, players); else home();
+      };
+    };
+
+    turn(0);
+  }
+
   // ── Wiring ────────────────────────────────────────────────────────────────
   $("missionBtn").addEventListener("click", () => mission(nextMission()));
   $("trapBtn").addEventListener("click", drill);
   $("toHome").addEventListener("click", home);
+  $("quizDialog").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-players]");
+    if (!b || !quizFor) return;
+    $("quizDialog").close();
+    quiz(quizFor, +b.dataset.players);
+  });
   $("help").addEventListener("click", () => { $("resetYes").hidden = true; $("helpDialog").showModal(); });
   $("resetBtn").addEventListener("click", () => { $("resetYes").hidden = false; });
   $("resetYes").addEventListener("click", () => {

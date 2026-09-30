@@ -176,7 +176,65 @@ BQ.UI = (function () {
       "</div>");
   }
 
+
+  // ── Passport and history cards ──────────────────────────────────────────
+  // A stamp face. `state` is "gold", "ink", "open" (quiz available, not won)
+  // or "empty" (mission not reached).
+  function stampHtml(st, state, cls) {
+    const ink = state === "gold" || state === "ink" ? ' style="--ink:' + st.ink + '"' : "";
+    return '<span class="stamp ' + state + (st.place.length > 9 && !st.place.includes(" ") ? " long" : "") + " " + (cls || "") + '"' + ink + '><span lang="bg">' + esc(st.place) + "</span>" +
+      (state === "gold" ? '<span class="se emoji">🏅</span>' : state === "ink" ? '<span class="se emoji">✔️</span>' : "") + "</span>";
+  }
+
+  function passport(list, onPick) {
+    $("passport").innerHTML = list.map(({ st, state }, i) =>
+      '<button type="button" data-i="' + i + '"' + (state === "empty" ? " disabled" : "") + ' aria-label="' + esc(st.place) + '">' +
+      stampHtml(st, state) +
+      "<small>" + (state === "empty" ? "After Mission " + (st.m + 1) : state === "open" ? "Tap to try" : state === "gold" ? "Gold!" : "Try for gold") + "</small></button>").join("");
+    $("passport").onclick = (e) => { const b = e.target.closest("button[data-i]"); if (b && !b.disabled) onPick(+b.dataset.i); };
+  }
+
+  function album(list, onPick) {
+    $("album").innerHTML = list.map(({ c, open, fresh }, i) => open
+      ? '<button type="button" data-i="' + i + '" class="' + (fresh ? "new" : "") + '"><span class="ce emoji">' + c.e + '</span><b lang="bg"' + (/\S{12,}/.test(c.name) ? ' class="long"' : "") + ">" + esc(c.name) + "</b><small>" + esc(c.when) + "</small></button>"
+      : '<button type="button" class="locked" disabled><span class="ce">?</span><small>Mission ' + (c.m + 1) + "</small></button>").join("");
+    $("album").onclick = (e) => { const b = e.target.closest("button[data-i]"); if (b) onPick(+b.dataset.i); };
+  }
+
+  function showCard(c) {
+    $("cardTitle").textContent = "History card";
+    $("cardBody").innerHTML = '<div class="hcard">' +
+      '<div class="hcard-top"><span class="ce emoji">' + c.e + '</span><div><h3 lang="bg">' + esc(c.name) + "</h3><p>" + esc(c.when) + "</p></div></div>" +
+      '<p class="say">👥 Read it together:</p>' +
+      '<div class="ruled"><p class="story" lang="bg">' + esc(c.story) + "</p></div>" +
+      '<p class="en"><b>In English</b>' + esc(c.en) + "</p></div>";
+    $("cardDialog").showModal();
+  }
+
+  // ── Quiz ────────────────────────────────────────────────────────────────
+  function quizQ(q, i, n, who) {
+    const head = '<div class="bar"><span class="count">' + (who ? '<span class="player-tag">' + esc(who) + "</span> · " : "") + (i + 1) + " / " + n + "</span>" +
+      '<button class="small-btn" type="button" data-act="hint">💡 Help</button></div>' +
+      '<p class="ask">' + esc(q.ask) + "</p>";
+    if (q.kind === "timeline" || q.kind === "first") {
+      return stage(head + '<div class="tiles cards n' + q.cards.length + '">' + (q.cards).map((c, k) =>
+        '<button class="tile" type="button" data-k="' + k + '"><span class="emoji">' + c.e + '</span><span lang="bg">' + esc(c.name) + '</span><span class="yr" hidden>' + esc(c.when) + "</span></button>").join("") +
+        '</div><div id="qNext" class="actions" hidden><button class="btn" type="button" data-act="next">Next ›</button></div>');
+    }
+    const pic = q.pic ? '<div class="prompt">' + emo(q.pic) + "</div>" : "";
+    const letter = q.kind === "letter";
+    return stage(head + pic + '<div class="tiles">' + q.options.map((o, k) =>
+      '<button class="tile' + (letter ? "" : " bgw") + '" type="button" data-k="' + k + '" lang="bg">' + esc(o) + "</button>").join("") +
+      '</div><div id="qNext" class="actions" hidden><button class="btn" type="button" data-act="next">Next ›</button></div>');
+  }
+
+  // Timeline taps get a number badge, 1 for the first one tapped.
+  function numberTile(t, k) {
+    t.insertAdjacentHTML("afterbegin", '<span class="no">' + k + "</span>");
+    t.disabled = true;
+  }
+
   function starsHtml(n) { return "★".repeat(n) + "<i>" + "★".repeat(3 - n) + "</i>"; }
 
-  return { $, esc, bg, emo, screen, steps, who, stage, toast, map, abc, letterCard, showLetter, grownup, learn, blend, lightBlend, match, build, fillSlot, read, trap, starsHtml };
+  return { stampHtml, passport, album, showCard, quizQ, numberTile, $, esc, bg, emo, screen, steps, who, stage, toast, map, abc, letterCard, showLetter, grownup, learn, blend, lightBlend, match, build, fillSlot, read, trap, starsHtml };
 })();

@@ -1967,7 +1967,7 @@ decisions that shaped it were made up front:
   every mission but never blocks an unlock.
 
 
-## Буквар Quest — `bulgarian-bukvar/` 🚧 session 1 built
+## Буквар Quest — `bulgarian-bukvar/` ✅ built
 
 Not on the original list. The ask was *"a game that teaches Bulgarian history and
 famous people, with a primer (буквар) that teaches reading in Bulgarian"*. The
@@ -2106,3 +2106,35 @@ passport quiz and the album are session 2.
   content change.
 - **Emoji only from Unicode 12 or older.** Newer ones (🪶 перо, 🪆 кукла, 🪰 муха)
   show as boxes on older tablets.
+
+### Session 2: what shipped
+
+History cards, the passport quiz and the album. `cards.js` and `quiz.js` are
+new; `tools/bukvar-check.js` covers both.
+
+- **Word review after session 1.** тата → тати (тата is not the word), and
+  every picture word checked against its emoji: сирене 🧀 was кашкавал,
+  кафе ☕ could be чай, къща 🏡 clashed with дом 🏠, Юпитер 🪐 looks like
+  Saturn, гора 🌲 is one tree (now ела), кифла 🥐 is a кроасан, пони → кон.
+  **An emoji is only a good picture if a Bulgarian parent would name it the
+  same word.** Check that, not just whether the word is right.
+- **14 cards, opening from Mission 4.** A card opens with the first mission
+  whose letters can read its name and story, not by date. Аспарух (681) opens
+  at Mission 8 because of Х; nothing says "България" before Mission 10, and
+  "княз" is out for the same reason (Я). Nothing is readable enough for a card
+  before Mission 4. The album sorts by year, so it reads as a timeline anyway.
+- **Cards have no question of their own.** The brief had one per card; the
+  quiz's "Who am I?" does that job, with one reward system instead of two.
+- **Nine stamps, one per mission 2-10**, in the brief's spirit but not its
+  exact list: Карлово (Levski) replaced Шипка, which is a card instead.
+- **Quiz = 5 questions** from six makers: letter, picture, spelling, who,
+  which came first, timeline. Early quizzes (no cards yet) are all letters and
+  words. Every Bulgarian option is checked readable at that stamp's mission,
+  and every stamp has a pool of 12+ distinct questions over 300 seeds.
+- **Help** (💡) costs the gold: it greys out one wrong answer, shows the years,
+  or lights the oldest card in a timeline.
+- **Two players must both score 5** for the stamp, because the passport
+  belongs to the tablet.
+- **Long names were the layout risk.** Копривщица overflowed its stamp and
+  Освобождението its album tile; both are measured (`scrollWidth`) at 390 and
+  820 px and shrink rather than break mid-word.
