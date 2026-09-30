@@ -66,6 +66,29 @@ LC.Studio = (function () {
     const q = t.request;
     $("mRequest").hidden = !q;
     if (q) $("mRequest").innerHTML = `✉️ The ${q.fam} family (circled) wants a ${T[q.need].e} ${T[q.need].name.toLowerCase()} nearby by the end of year ${q.due}. Thank-you: ${q.reward} coins.`;
+    // An offer stays here, next to the map, until it's answered, so there's
+    // time to look at the circled square before saying yes or no.
+    const off = t.offer;
+    $("mOffer").hidden = !off || t.over;
+    if (off && !t.over) {
+      $("mOffer").innerHTML = `<p><b>🤝 An offer for the town</b> (circled on the map)</p><p>${esc(off.text)}</p><p class="muted">Answer before you end the year, or they'll go to another town.</p>`;
+      const row = document.createElement("div");
+      row.className = "offer-acts";
+      const mk = (cls, text, yes) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = cls; b.textContent = text;
+        b.addEventListener("click", () => {
+          const o = M.answer(t, yes);
+          keep(); board.paint(); header();
+          LC.UI.toast(yes ? `You said yes!${o && o.coins ? ` +${o.coins} coins.` : ""}` : "You said no, thank you.");
+          if (yes) LC.Audio.right(); else LC.Audio.click();
+        });
+        row.appendChild(b);
+      };
+      mk("btn ghost small", "👎 No thanks", false);
+      mk("btn go small", "👍 Yes", true);
+      $("mOffer").appendChild(row);
+    }
     $("mOver").hidden = !t.over;
     if (t.over) {
       const sc = M.score(t);
@@ -122,12 +145,8 @@ LC.Studio = (function () {
     body.innerHTML = h;
     acts.innerHTML = "";
     const btn = (cls, text, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); acts.appendChild(b); return b; };
-    if (ev.choice && t.offer) {
-      const yes = () => { const o = M.answer(t, true); keep(); board.paint(); header(); acts.innerHTML = ""; body.insertAdjacentHTML("beforeend", `<p class="why good">You said yes!${o && o.coins ? ` +${o.coins} coins.` : ""}</p>`); nextBtn(); };
-      const no = () => { M.answer(t, false); keep(); board.paint(); header(); acts.innerHTML = ""; body.insertAdjacentHTML("beforeend", '<p class="why">You said no, thank you.</p>'); nextBtn(); };
-      btn("btn ghost", "👎 No thanks", no);
-      btn("btn go", "👍 Yes", yes);
-    } else nextBtn();
+    if (ev.choice && t.offer) body.insertAdjacentHTML("beforeend", '<p class="why">🤝 The offer waits on the main screen, next to the map: look at the circled square, then answer 👍 or 👎 before you end the year.</p>');
+    nextBtn();
     // Anything the news was about is ringed on the map: this closes the card
     // and shows it, with the headline kept beside the map.
     if (sum.marks.length) {

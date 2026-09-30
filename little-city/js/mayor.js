@@ -416,6 +416,9 @@ LC.Mayor = (function () {
     const before = look(town);
     const sum = { year: town.year, inn: 0, out: 0, why: {}, news: [], upgrades: 0, marks: [] };
     town.newMedals = [];
+    // An offer waits on the main screen for one year. Not answered by the
+    // time the year ends means no.
+    if (town.offer) { sum.news.push("🤝 Nobody answered the offer, so they took it to another town."); town.offer = null; }
     const ev = event(town, r, before);
     sum.event = ev;
     if (ev.at) sum.marks.push({ x: ev.at.x, y: ev.at.y, e: ev.e });
