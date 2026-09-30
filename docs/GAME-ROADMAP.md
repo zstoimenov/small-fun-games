@@ -2019,12 +2019,18 @@ faces, bubble kinds, words) and build-to-a-brief with rules such as "a worried
 face in panel 2", "the same hero in every panel" or "a new scene by the end".
 Face questions show no labels on purpose.
 
-### More Creator ideas (not started)
+### Story Builder — `story-builder/` ✅ built
 
-- **Story Builder** - pick a character, place, problem and fix, then read it
-  back; levels teach story shape. Jobs: author, film director, journalist.
-  The most reading-heavy of the four, and Comic Studio now covers story
-  shape, so it would need a different angle (writing, not picking).
+Given its own angle so it doesn't repeat Comic Studio: writing sentences, not
+picking story parts. Word tiles carry a kind (who, wow verb, describing,
+joining...), and briefs check kinds only (`words.js` rules: counts, order,
+first word, number of senses, words per part), never the ideas, so any silly
+sentence that follows the rules wins. Tiles are past tense and "who" tiles
+bring their own article, so tiles in the right order always read properly.
+Read-aloud uses the tablet's speechSynthesis voice (en-AU first), which needs
+no download. The studio is a five-part story mountain with a bookshelf of 12.
+
+All four Creator ideas are now built.
 
 ### Career Compass — `career-compass/` ✅ built
 

@@ -30,6 +30,21 @@ const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub
 // hand-write them.
 const GAMES = [
   {
+    title: "Story Builder",
+    folder: "story-builder",
+    compass: ["creator"],
+    hook: "Build sentences and write your own stories",
+    tags: ["jobs"],
+    emoji: "📖",
+    added: "2026-09-30",
+    category: "arts",
+    players: [1, 1],
+    age: 8,
+    blurb: "Tap word tiles to build super sentences, then swap boring words for wow verbs, add describing words and join ideas with because, but and so. Use your five senses, show feelings without saying them, and climb the story mountain to write whole stories. The tablet reads your stories aloud! Meet the people who write for a job.",
+    colors: ["#26a69a", "#3949ab"],
+    highlights: ["🧩 Word tiles", "🔊 Reads aloud"]
+  },
+  {
     title: "Comic Studio",
     folder: "comic-studio",
     compass: ["creator"],
