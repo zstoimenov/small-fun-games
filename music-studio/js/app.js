@@ -7,7 +7,7 @@ window.MS = window.MS || {};
   const KEY = "music-studio";
 
   // ── Saved progress ─────────────────────────────────────────────────────────
-  const store = { stars: {}, quiz: null, muted: false, seenHelp: false, draft: null, gallery: [] };
+  const store = { stars: {}, quiz: null, muted: false, seenHelp: false, draft: null, gallery: [], steps: 8 };
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } report(); };
   const starsOf = (ch, i) => store.stars[ch + "-" + i] || 0;
@@ -109,6 +109,7 @@ window.MS = window.MS || {};
   $("sClear").addEventListener("click", MS.Studio.clear);
   $("sNew").addEventListener("click", MS.Studio.newSong);
   $("sSave").addEventListener("click", MS.Studio.saveSong);
+  $("sSettings").addEventListener("click", MS.Studio.settings);
 
   // ── Quiz ───────────────────────────────────────────────────────────────────
   function startQuiz() {

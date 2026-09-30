@@ -10,16 +10,17 @@ MS.grid = function (box, o) {
   const rowOf = (id) => MS.ROWS.find((r) => r.id === id);
   const len = o.song.len || 8;
   box.innerHTML = "";
-  box.className = "grid";
+  // 16 steps is too many to squeeze onto a phone: the grid scrolls instead.
+  box.className = "grid" + (len > 8 ? " wide" : "");
   box.style.setProperty("--steps", len);
   const cells = {};
 
   // Beat numbers along the top: the big dots are the beats, the small ones
   // the "and" in between.
-  box.appendChild(document.createElement("span"));
+  box.appendChild(Object.assign(document.createElement("span"), { className: "corner" }));
   for (let s = 0; s < len; s++) {
     const n = document.createElement("span");
-    n.className = "count" + (s % 2 ? "" : " beat");
+    n.className = "count" + (s % 2 ? "" : " beat") + (s && s % 8 === 0 ? " bar" : "");
     n.textContent = s % 2 ? "·" : s / 2 + 1;
     n.setAttribute("aria-hidden", "true");
     box.appendChild(n);
@@ -36,7 +37,7 @@ MS.grid = function (box, o) {
     for (let s = 0; s < len; s++) {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "cell" + (s % 2 ? "" : " beat");
+      b.className = "cell" + (s % 2 ? "" : " beat") + (s && s % 8 === 0 ? " bar" : "");
       b.style.setProperty("--rc", r.color);
       b.setAttribute("aria-label", (r.long || r.name) + ", step " + (s + 1));
       if (o.locked && o.locked(s)) { b.disabled = true; b.classList.add("locked"); }

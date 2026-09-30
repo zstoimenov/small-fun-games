@@ -18,8 +18,19 @@ MS.Studio = (function () {
 
   function fresh() {
     const [emoji, word] = pick(NAMES);
-    return { id: null, emoji, name: word + " " + pick(WORDS), dirty: false,
-      song: MS.make({ bpm: 100, kick: "x...x...", snare: "..x...x.", hat: "x.x.x.x." }) };
+    const song = MS.make({ bpm: 100, kick: "x...x...", snare: "..x...x.", hat: "x.x.x.x." });
+    return { id: null, emoji, name: word + " " + pick(WORDS), dirty: false, song: resize(song, store.steps || 8) };
+  }
+  // 8 to 16 repeats the bar, so the song sounds exactly the same with room to
+  // change the second half. 16 to 8 keeps the first half.
+  function resize(song, len) {
+    const from = song.len || 8;
+    Object.keys(song.cells).forEach((id) => {
+      const c = song.cells[id];
+      song.cells[id] = Array.from({ length: len }, (_, i) => c[i % from] || 0);
+    });
+    song.len = len;
+    return song;
   }
   function init(s, onSave, onToast) {
     store = s; save = onSave; toast = onToast;
@@ -40,6 +51,26 @@ MS.Studio = (function () {
       MS.seg(MS.INSTRUMENTS, () => d().song.inst, (v) => { d().song.inst = v; changed(); }, "Instrument"),
       MS.seg(MS.MOODS, () => d().song.mood, (v) => { d().song.mood = v; changed(); }, "Mood"));
     g = MS.grid($("sGrid"), { rows: MS.ROWS.map((r) => r.id), song: d().song, onChange: changed });
+  }
+
+  // ── Settings ───────────────────────────────────────────────────────────────
+  function settings() { paintSettings(); $("settingsDialog").showModal(); }
+  function paintSettings() {
+    const box = $("setSteps");
+    box.innerHTML = "";
+    box.appendChild(MS.seg([{ id: 8, name: "8 steps", emoji: "▫️" }, { id: 16, name: "16 steps", emoji: "▪️" }],
+      () => d().song.len || 8, setSteps, "Grid length"));
+  }
+  function setSteps(len) {
+    const song = d().song;
+    if ((song.len || 8) === len) return;
+    const lost = len < (song.len || 8) && MS.ROWS.some((r) => song.cells[r.id].slice(len).some(Boolean));
+    if (lost && !confirm("Going back to 8 steps keeps the first half. The second half will be gone. OK?")) { paintSettings(); return; }
+    stop();
+    resize(song, len);
+    store.steps = len;
+    changed();
+    open();
   }
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -110,6 +141,7 @@ MS.Studio = (function () {
       const openB = mk("btn", "Open", "Open", () => {
         if (d().dirty && d().id !== x.id && !confirm("Open this song? Anything you haven't saved in the studio will be gone.")) return;
         store.draft = { id: x.id, emoji: x.emoji, name: x.name, song: MS.copy(x.song), dirty: false };
+        store.steps = x.song.len || 8;
         save();
         edit();
       });
@@ -128,5 +160,5 @@ MS.Studio = (function () {
     });
   }
 
-  return { init, open, gallery, stop, toggle, rename, clear, newSong, saveSong };
+  return { init, open, gallery, stop, toggle, rename, clear, newSong, saveSong, settings };
 })();

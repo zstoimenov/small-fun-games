@@ -70,11 +70,12 @@
       <div class="studio-row">
         <button id="sName" class="song-name" type="button" aria-label="Rename your song"></button>
         <button id="sPlay" class="btn go" type="button" aria-pressed="false">&#9654; Play</button>
+        <button id="sSettings" class="icon-btn" type="button" aria-label="Settings">&#9881;&#65039;</button>
       </div>
       <div id="sTempo"></div>
       <div id="sSound" class="studio-row"></div>
     </div>
-    <div id="sGrid"></div>
+    <div class="grid-scroll"><div id="sGrid"></div></div>
     <div class="actions studio-acts">
       <button id="sNew" class="btn ghost" type="button">&#10024; New</button>
       <button id="sClear" class="btn ghost" type="button">&#129529; Clear</button>
@@ -131,6 +132,17 @@
   <div id="jobs" class="job-list"></div>
   <p class="ask">&#128172; Know a grown-up who plays an instrument or works with music? Ask them how they learned!</p>
   <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<dialog id="settingsDialog" class="sheet" aria-labelledby="settingsTitle">
+  <div class="sheet-head">
+    <h2 id="settingsTitle">&#9881;&#65039; Settings</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <p><b>How long is your grid?</b></p>
+  <div id="setSteps"></div>
+  <p class="ask">8 steps is one bar. 16 steps is two bars: longer tunes and fancier beats. Going to 16 copies your song into both halves.</p>
+  <button class="btn" type="button" data-close>Done</button>
 </dialog>
 
 <dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
