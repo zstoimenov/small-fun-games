@@ -1996,13 +1996,22 @@ happy/sad swaps major for minor pentatonic. A new **Arts & Music** category
 gives Creator games their own shelf. The studio keeps a draft and a gallery of
 12 songs in localStorage.
 
+### Design Studio — `design-studio/` ✅ built
+
+Was "Colour & Design Studio". Paint only (no screen/RGB light), because light
+mixes the opposite way and would muddle the school rules at 8. Mixing is RYB
+through the Gossett & Chen colour cube; only the ratio of drops matters, black
+counts double, and a match is CIE76 delta E under 5. Drops can't be taken out,
+so a restart is the only mistake a mix round can make. Warm/cool comes from hue
+with greys neutral, and briefs use the WCAG contrast ratio (3:1 for big
+titles). The open studio is a poster maker; paints mixed there join the
+palette (8 kept). `tools/design-check.js` proves no small wrong recipe
+matches a target.
+
 ### More Creator ideas (not started)
 
 Asked for alongside Music Studio; build order to be decided.
 
-- **Colour & Design Studio** - mix paints to match a colour (primary and
-  secondary, warm and cool), then design a poster or logo with a brief. Jobs:
-  graphic designer, painter, fashion designer. Stars from how close a mix gets.
 - **Comic Studio** - build panels from characters, backgrounds and speech
   bubbles; levels teach beginning-middle-end and showing feelings on faces.
   Jobs: illustrator, writer, animator. Needs art assets, so the most work.

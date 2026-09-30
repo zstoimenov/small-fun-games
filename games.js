@@ -30,6 +30,21 @@ const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub
 // hand-write them.
 const GAMES = [
   {
+    title: "Design Studio",
+    folder: "design-studio",
+    compass: ["creator"],
+    hook: "Mix paints, then design posters",
+    tags: ["jobs"],
+    emoji: "🎨",
+    added: "2026-09-30",
+    category: "arts",
+    players: [1, 1],
+    age: 8,
+    blurb: "Mix red, yellow and blue paint to make every colour, then add white and black for light and dark. Sort warm and cool colours, find opposites on the colour wheel, and find out why some posters are easy to read and some aren't. Then design posters and logos for your own customers, and meet the people who work with colour for a job!",
+    colors: ["#ba68c8", "#fb8c00"],
+    highlights: ["🧪 Paint mixing", "🖼️ Poster maker"]
+  },
+  {
     title: "Music Studio",
     folder: "music-studio",
     compass: ["creator"],
