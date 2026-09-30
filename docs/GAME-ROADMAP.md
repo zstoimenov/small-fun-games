@@ -1982,8 +1982,7 @@ the jobs that use it. Decisions made up front:
   plays most and does well in. When it's built, keep "chooses to play", "does
   well at" and "says they liked" as three separate signals: replay time is not
   aptitude.
-- Order: Circuit Lab, then Bridge Builder. Circuit Lab has less unknown physics,
-  and its tap-an-edge board is what Bridge Builder can reuse.
+- Order: Circuit Lab, then Bridge Builder. Circuit Lab had less unknown physics.
 
 ### Circuit Lab — `circuit-lab/` ✅ built
 
@@ -2028,18 +2027,31 @@ now in every screen rather than one note at the bottom:
 - `show()` clears the level for any screen that isn't the board, so the safety
   screen must be shown *before* its level is set. That bit once.
 
-### Bridge Builder — `bridge-builder/` (next)
+### Bridge Builder — `bridge-builder/` ✅ built
 
-Tap two dots to add a beam, then Test: a truck drives across. Beams glow
-green, yellow, red with strain and snap past their limit. Levels, one idea each:
-a plank sags; supports underneath help; **triangles don't squash, squares do**;
-heavier trucks; a beam budget (fewest beams = most stars, safety vs cost);
-longer gaps. Jobs: civil engineer, builder, architect.
+Tap a dot, then a neighbouring dot, to lay road (flat, on the road line only),
+wood or steel; the selection carries on from the dot you reached, so a road is
+dot, dot, dot. Test drives the truck over while every piece is coloured by how
+close it is to breaking. Three chapters of three levels, a free build with any
+of four trucks, jobs (civil engineer, builder, architect) and a quiz.
 
-- Biggest risk is the physics: a spring-and-joint model that wobbles or
-  explodes on its own ruins it. Prove stability in a node harness (like
-  `circuit-check.js`) before designing a single level.
-- Reuse Circuit Lab's board: dots, edges, tap-to-place, SVG layers.
+- **Static, not dynamic.** Each frame the truck moves and the bridge is solved
+  for where it settles (direct stiffness method). Nothing can jiggle itself to
+  bits, and the same bridge always fails the same way. Roads are welded frame
+  members that bend; beams are pinned and only push or pull, which is what
+  makes squares fold and triangles hold with no special-casing.
+- **Loose bits are found by a hair of stiffness everywhere (1e-3)**: a floppy
+  joint moves a mile and falls off. At 1e-6 next to the anchors' stiffness the
+  rounding error made a sound truss look loose; don't go lower.
+- **Beams are 10x stiffer along their length than a road is across.** Closer
+  than that and the road soaks up the truss sagging and no truss can carry the
+  big truck.
+- **Pars came from brute force** (`search` in the harness history): nothing
+  with 6 or fewer beams above the road carries the truck over a 4-gap (7 does),
+  and two props off the bank faces do it from below. The props were a surprise
+  and became a level: the riverbank is one side of a triangle.
+- A snapped road is usually where some *other* failure shows, so a level can
+  set `fail` to say what it really means ("the squares folded").
 
 ## Буквар — `bulgarian-bukvar/` ✅ built
 

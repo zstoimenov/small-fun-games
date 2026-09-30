@@ -77,6 +77,50 @@ const under = roadAcross(0, 4).concat([M([0, 1], [1, 1]), M([1, 1], [2, 1]), M([
   M([0, 0], [1, 1]), M([1, 1], [2, 0]), M([2, 0], [3, 1]), M([3, 1], [4, 0]), M([1, 1], [1, 0]), M([3, 1], [3, 0])]);
 report("gap 4, truss under, truck", drive(under, anchorsFor(0, 4), [0, 4], "truck"), null);
 
+// ── Every level ────────────────────────────────────────────────────────────
+// Pieces the kid places, as "x,y x,y material".
+const SOLUTIONS = {
+  "1-0": ["0,0 1,0 road", "1,0 2,0 road"],
+  "1-1": ["0,0 1,0 road", "1,0 2,0 road", "2,0 3,0 road", "3,0 4,0 road", "2,2 2,1 beam", "2,1 2,0 beam"],
+  "1-2": ["0,0 1,0 road", "1,0 2,0 road", "2,0 3,0 road", "3,0 4,0 road", "4,0 5,0 road", "5,0 6,0 road", "2,1 2,0 beam", "4,1 4,0 beam"],
+  "2-0": ["0,0 1,-1 beam", "3,-1 4,0 beam"],
+  "2-1": ["0,0 1,-1 beam", "1,-1 2,0 beam", "2,0 3,-1 beam", "3,-1 4,0 beam", "1,-1 2,-1 beam", "2,-1 3,-1 beam", "2,-1 2,0 beam"],
+  "2-2": ["1,0 0,1 beam", "3,0 4,1 beam"],
+  "3-0": ["0,0 1,-1 steel", "1,-1 2,-1 steel", "2,-1 3,-1 steel", "3,-1 4,0 steel",
+          "1,-1 1,0 beam", "2,-1 2,0 beam", "3,-1 3,0 beam", "1,-1 2,0 beam", "3,-1 2,0 beam"],
+  "3-1": ["3,2 3,1 beam", "3,1 3,0 beam", "1,0 0,1 beam", "5,0 6,1 beam"],
+  "3-2": ["0,0 1,-1 steel", "5,-1 6,0 steel", "1,-1 2,-1 steel", "2,-1 3,-1 steel", "3,-1 4,-1 steel", "4,-1 5,-1 steel",
+          "1,-1 1,0 beam", "2,-1 2,0 beam", "3,-1 3,0 beam", "4,-1 4,0 beam", "5,-1 5,0 beam",
+          "1,-1 2,0 beam", "2,-1 3,0 beam", "4,-1 3,0 beam", "5,-1 4,0 beam"]
+};
+const parse = (s) => { const [a, b, mat] = s.split(" "); return { a, b, mat }; };
+
+if (BB.CHAPTERS) {
+  console.log("levels");
+  BB.CHAPTERS.forEach((ch) => ch.levels.forEach((lv, i) => {
+    const id = ch.id + "-" + i;
+    const base = lv.parts.map(parse);
+    const A = Ph.anchors(lv);
+    const empty = drive(base, A, [0, lv.gap], lv.truck);
+    ok(!empty.held, id + " holds before the kid builds anything");
+    const sol = (SOLUTIONS[id] || []).map(parse);
+    ok(sol.length, id + " has no solution written");
+    const inv = Object.assign({}, lv.inv);
+    const seen = new Set(base.map((m) => Ph.key(m.a, m.b)));
+    sol.forEach((m) => {
+      const why = Ph.canJoin(lv, m.a, m.b, m.mat);
+      ok(!why, id + " " + m.a + "-" + m.b + ": " + why);
+      ok(!seen.has(Ph.key(m.a, m.b)), id + " " + m.a + "-" + m.b + " is already there");
+      seen.add(Ph.key(m.a, m.b));
+      ok((inv[m.mat] || 0) > 0, id + " runs out of " + m.mat);
+      inv[m.mat]--;
+    });
+    ok(sol.length === lv.par, id + " par is " + lv.par + " but the solution uses " + sol.length);
+    const r = drive(base.concat(sol), A, [0, lv.gap], lv.truck);
+    report(id + " " + lv.name + " (" + lv.truck + ")", r, true);
+  }));
+}
+
 module.exports = { drive, M, roadAcross, anchorsFor, report, ok };
 if (require.main === module) {
   console.log(fails ? fails + " failure(s)" : "all good");

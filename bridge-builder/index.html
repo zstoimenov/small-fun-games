@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Bridge Builder</title>
+<meta name="description" content="Build bridges out of roads, wood and steel, then drive a truck across and watch what bends.">
+<meta name="theme-color" content="#1f6fb2">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bridge Builder">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Back</button>
+    <h1 id="title">Bridge Builder</h1>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+  </header>
+
+  <!-- Home: what engineers do, the chapters, free build, jobs, quiz. -->
+  <section id="home" class="screen">
+    <div class="card hero">
+      <span class="hero-emoji" aria-hidden="true">&#127753;</span>
+      <div>
+        <h2>Be a bridge engineer</h2>
+        <p>A truck needs to cross the river. Build a bridge out of road, wood and steel, then press <b>Test</b> and watch it drive over.</p>
+        <p>Will it hold, bend, or snap? Colours show how hard each piece is working.</p>
+      </div>
+    </div>
+    <div id="chapters" class="chapters"></div>
+    <button id="freeBtn" class="wide-btn" type="button">&#128295; Free build <small>A long river, every material and any truck. Build anything!</small></button>
+    <div class="card jobs">
+      <h2>&#128119; Who builds bridges?</h2>
+      <div id="jobs" class="job-list"></div>
+      <p class="ask">&#128172; Know a grown-up who does one of these jobs? Ask them what the best part is!</p>
+    </div>
+    <button id="quizBtn" class="wide-btn" type="button">&#127891; Bridge Quiz <small id="quizInfo">3 quick questions</small></button>
+  </section>
+
+  <!-- A chapter: the big idea, then its levels. -->
+  <section id="chapter" class="screen" hidden>
+    <div class="card law-card">
+      <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
+      <p class="kicker" id="lawKicker"></p>
+      <h2 id="lawName"></h2>
+      <p class="law-big" id="lawSays"></p>
+      <div id="lawMore"></div>
+      <details class="grown-up">
+        <summary>In grown-up words</summary>
+        <p id="lawGrown"></p>
+      </details>
+    </div>
+    <div id="levels" class="levels"></div>
+  </section>
+
+  <!-- The river, for every level and the free build. Controls come from ui.js. -->
+  <section id="play" class="screen" hidden>
+    <div class="goal">
+      <span class="goal-name" id="goalName"></span>
+      <span class="goal-stars" id="goalStars"></span>
+      <p id="goalText"></p>
+    </div>
+    <div class="stage" id="stage"></div>
+    <p class="say" id="say" aria-live="polite"></p>
+    <div class="controls" id="controls"></div>
+  </section>
+
+  <!-- The quiz: one question at a time. -->
+  <section id="quiz" class="screen" hidden>
+    <div class="card quiz-card">
+      <p class="kicker" id="qCount"></p>
+      <span class="q-emoji" id="qEmoji" aria-hidden="true"></span>
+      <h2 id="qText"></h2>
+      <div class="answers" id="qAnswers"></div>
+      <p class="q-why" id="qWhy" aria-live="polite"></p>
+      <div class="actions"><button id="qNext" class="btn" type="button" hidden>Next &rsaquo;</button></div>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="winDialog" class="sheet" aria-labelledby="winTitle">
+  <div class="big-stars" id="winStars" aria-hidden="true"></div>
+  <h2 id="winTitle">You did it!</h2>
+  <p id="winText"></p>
+  <div class="actions">
+    <button id="winAgain" class="btn ghost" type="button">Play again</button>
+    <button id="winNext" class="btn" type="button">Next &rsaquo;</button>
+  </div>
+</dialog>
+
+<dialog id="lessonDialog" class="sheet lesson" aria-labelledby="lessonTitle">
+  <span class="lesson-emoji" id="lessonEmoji" aria-hidden="true"></span>
+  <h2 id="lessonTitle"></h2>
+  <p class="law-big" id="lessonSays"></p>
+  <p id="lessonLife"></p>
+  <p class="lesson-job" id="lessonJob"></p>
+  <div class="actions"><button class="btn" type="button" id="lessonOk">Back to the lab</button></div>
+</dialog>
+
+<dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
+  <div class="sheet-head">
+    <h2 id="helpTitle">How to play</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <ol class="how">
+    <li><b>Pick a material</b> from the box: road, wood or steel.</li>
+    <li><b>Tap a dot, then a dot next to it,</b> to join them. Keep tapping to carry on from there.</li>
+    <li><b>Road</b> is what the truck drives on. It only goes flat, along the road line.</li>
+    <li><b>Triangles</b> on the riverbank pins &#9650; hold the bridge up.</li>
+    <li><b>Tap the middle of a piece</b> to take it back.</li>
+    <li><b>Test it!</b> Green means easy, yellow means working hard, red means about to break.</li>
+    <li><b>Stars:</b> 3 if you use the fewest pieces.</li>
+  </ol>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/physics.js"></script>
+<script src="./js/levels.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/board.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>

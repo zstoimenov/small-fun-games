@@ -25,6 +25,7 @@ BB.Physics = (function () {
   const TRUCKS = {
     car:   { w: 1,   len: 1.0, emoji: "\u{1F697}", label: "Car" },
     truck: { w: 2,   len: 1.2, emoji: "\u{1F69A}", label: "Truck" },
+    fire:  { w: 2,   len: 1.2, emoji: "\u{1F692}", label: "Fire truck" },
     big:   { w: 4,   len: 1.4, emoji: "\u{1F69B}", label: "Big truck" }
   };
   const LOOSE = 0.6;   // a joint that moves further than this has come apart
@@ -189,11 +190,50 @@ BB.Physics = (function () {
         res.broke = broke;
         return res;
       }
-      if (worst >= 0) { live[worst].gone = "snap"; broke.push(live[worst]); }
+      if (worst >= 0) {
+        // Keep the force it broke under: + stretched, - squashed. The game
+        // says which, because "squashed" and "stretched" need different fixes.
+        live[worst].gone = "snap";
+        live[worst].N = res.strain[worst].N;
+        broke.push(live[worst]);
+      }
       else loose.forEach((m) => { m.gone = "fall"; broke.push(m); });
     }
     throw new Error("settle did not settle");
   }
 
-  return { MAT, TRUCKS, LOOSE, solve, settle, truckLoads, xy };
+  // ── A level's board ────────────────────────────────────────────────────────
+  // Dots run from the left bank edge (x=0) to the right (x=gap), rows lo..hi.
+  // On the bank edges only the road dot and the one just below it exist; the
+  // rest of the bank is solid ground.
+  function dots(lv) {
+    const out = [];
+    for (let y = lv.rows[0]; y <= lv.rows[1]; y++) {
+      for (let x = 0; x <= lv.gap; x++) {
+        if ((x === 0 || x === lv.gap) && y > 1) continue;
+        out.push(x + "," + y);
+      }
+    }
+    return out;
+  }
+  function anchors(lv) {
+    const a = ["0,0", lv.gap + ",0"];
+    if (lv.rows[1] >= 1) a.push("0,1", lv.gap + ",1");
+    (lv.rocks || []).forEach((r) => a.push(r.join(",")));
+    return a;
+  }
+  // Can a piece of `mat` go between dots a and b? Returns null if so, or the
+  // reason it can't, in words a kid can act on.
+  function canJoin(lv, a, b, mat) {
+    const all = dots(lv);
+    if (all.indexOf(a) < 0 || all.indexOf(b) < 0) return "That's not a dot.";
+    const [x1, y1] = xy(a), [x2, y2] = xy(b);
+    if (Math.abs(x1 - x2) > 1 || Math.abs(y1 - y2) > 1 || a === b) return "Pieces only join dots that are next to each other.";
+    if (x1 === x2 && (x1 === 0 || x1 === lv.gap)) return "That's solid riverbank already.";
+    if (mat === "road" && !(y1 === 0 && y2 === 0)) return "Road only goes flat, along the road line.";
+    return null;
+  }
+  const key = (a, b) => (a < b ? a + "|" + b : b + "|" + a);
+
+  return { MAT, TRUCKS, LOOSE, solve, settle, truckLoads, xy, dots, anchors, canJoin, key };
 })();

@@ -39,7 +39,7 @@ window.BB = window.BB || {};
           text: "Tap a dot on the riverbank, then the next dot along, to lay a piece of road. Reach the other side, then press Test!",
           win: "The car made it! A short gap only needs a plank." },
         { name: "Too long!", gap: 4, rows: [-1, 2], rocks: [[2, 2]], truck: "car", parts: [],
-          inv: { road: 4, beam: 2 }, par: 6,
+          inv: { road: 4, beam: 2 }, par: 6, fail: "A plank this long bends too far and snaps. Use the rock to hold up the middle!",
           text: "This gap is twice as long. Try just a road first and see what happens. Then use the rock to hold it up.",
           win: "The pillar holds up the middle, so the road only has to reach half as far." },
         { name: "Two pillars", gap: 6, rows: [-1, 1], rocks: [[2, 1], [4, 1]], truck: "truck", parts: [],
@@ -68,7 +68,7 @@ window.BB = window.BB || {};
       grown: "A frame of squares with pinned corners is a mechanism: it can move without any beam stretching. Triangles are rigid, so a truss carries the load by pure pulling and squashing in its beams.",
       levels: [
         { name: "Squash test", gap: 4, rows: [-1, 0], truck: "car", parts: SQUARES,
-          inv: { beam: 4 }, par: 2,
+          inv: { beam: 4 }, par: 2, fail: "The squares folded flat, so the road had to hold the car all by itself, and snapped.",
           text: "This bridge is made of squares. Test it first. Then add beams across the squares to make triangles.",
           win: "Just two triangles lock the whole frame, so the squares can't fold any more." },
         { name: "Build a truss", gap: 4, rows: [-1, 0], truck: "truck", parts: road(4),
