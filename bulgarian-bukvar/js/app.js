@@ -16,12 +16,14 @@
   // done[i] is the best stars for mission i, 0 if it has never been finished.
   // stamps[place] is "ink" or "gold". seen lists cards already opened, so a
   // new one can wear a red border until it is looked at.
-  const fresh = () => ({ done: M.map(() => 0), trapBest: 0, stamps: {}, seen: [] });
+  // remembered lists cards whose "Remember it?" question was answered right.
+  const fresh = () => ({ done: M.map(() => 0), trapBest: 0, stamps: {}, seen: [], remembered: [] });
   let store = fresh();
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
   store.done = M.map((_, i) => +store.done[i] || 0);
   if (!store.stamps || typeof store.stamps !== "object") store.stamps = {};
   if (!Array.isArray(store.seen)) store.seen = [];
+  if (!Array.isArray(store.remembered)) store.remembered = [];
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
 
   const finished = () => store.done.filter((s) => s > 0).length;
@@ -59,10 +61,11 @@
     const won = S.filter((st) => store.stamps[st.place]).length;
     $("stampCount").textContent = won + " of " + S.length;
     UI.passport(S.map((st) => ({ st, state: stampState(st) })), (i) => quizSetup(S[i]));
-    // Oldest first: the album is a timeline, whatever order the cards opened in.
-    const cards = C.slice().sort((a, b) => a.year - b.year);
-    $("cardCount").textContent = C.filter(cardOpen).length + " of " + C.length;
-    UI.album(cards.map((c) => ({ c, open: cardOpen(c), fresh: cardOpen(c) && !store.seen.includes(c.id) })), (i) => openCard(cards[i]));
+    const opened = C.filter(cardOpen).length;
+    const unseen = C.filter((c) => cardOpen(c) && !store.seen.includes(c.id)).length;
+    $("cardCount").textContent = opened
+      ? opened + " of " + C.length + " open · " + store.remembered.length + " remembered ✓" + (unseen ? " · " + unseen + " new!" : "")
+      : "Famous Bulgarians, big moments and traditions. The first opens after Mission 4.";
     const traps = finished() ? R.trapsKnown(finished() - 1) : [];
     $("trapBtn").disabled = !traps.length;
     $("trapSays").textContent = traps.length
@@ -70,11 +73,58 @@
       : "Opens after Mission 2";
   }
 
+  // ── History cards ─────────────────────────────────────────────────────────
+  const GROUPS = [
+    { title: "History", has: (c) => c.topic === "history" },
+    { title: "Science and art", has: (c) => c.topic === "science" || c.topic === "art" },
+    { title: "Sport", has: (c) => c.topic === "sport" },
+    { title: "Traditions", has: (c) => c.topic === "tradition" }
+  ];
+  function albumView() {
+    run++;
+    UI.screen("albumScreen", "History cards");
+    UI.who("");
+    $("albumSays").textContent = "Tap a card to read its story. Answer \"Remember it?\" at the end to earn a ✓. " +
+      store.remembered.length + " of " + C.length + " remembered.";
+    // Oldest first inside each group, so History reads as a timeline.
+    UI.album(GROUPS.map((g) => ({
+      title: g.title,
+      items: C.filter(g.has).sort((a, b) => (a.year ?? 1e9) - (b.year ?? 1e9)).map((c) => ({
+        c, open: cardOpen(c), fresh: cardOpen(c) && !store.seen.includes(c.id), done: store.remembered.includes(c.id)
+      }))
+    })), (id) => openCard(C.find((c) => c.id === id)));
+  }
+
+  let card = null, page = 0, pick;
   function openCard(c) {
     if (!store.seen.includes(c.id)) { store.seen.push(c.id); save(); }
-    UI.showCard(c);
-    $("cardDialog").addEventListener("close", () => { if (!$("home").hidden) home(); }, { once: true });
+    card = c; page = 0; pick = undefined;
+    UI.cardPage(card, page, store.remembered.includes(card.id), pick);
+    if (!$("cardDialog").open) $("cardDialog").showModal();
   }
+  const turnCard = (to) => {
+    page = Math.max(0, Math.min(UI.cardPages(card) - 1, to));
+    UI.cardPage(card, page, store.remembered.includes(card.id), pick);
+  };
+  $("cardBack").addEventListener("click", () => turnCard(page - 1));
+  $("cardNext").addEventListener("click", () => {
+    if (page === UI.cardPages(card) - 1) return $("cardDialog").close();
+    turnCard(page + 1);
+  });
+  $("cardBody").addEventListener("click", (e) => {
+    if (e.target.closest("[data-act=reread]")) { pick = undefined; return turnCard(0); }
+    const b = e.target.closest("[data-ans]");
+    if (!b || pick !== undefined) return;
+    pick = b.dataset.ans;
+    if (pick === card.ask[1] && !store.remembered.includes(card.id)) { store.remembered.push(card.id); save(); }
+    turnCard(page);
+  });
+  // Closing a card refreshes whichever list it was opened from, so a new ✓ or
+  // a card that is no longer "new" shows straight away.
+  $("cardDialog").addEventListener("close", () => {
+    if (!$("albumScreen").hidden) albumView();
+    else if (!$("home").hidden) home();
+  });
 
   function exampleFor(c) {
     for (const m of M) if (m.examples[c]) return m.examples[c];
@@ -441,6 +491,7 @@
   // ── Wiring ────────────────────────────────────────────────────────────────
   $("missionBtn").addEventListener("click", () => mission(nextMission()));
   $("trapBtn").addEventListener("click", drill);
+  $("albumBtn").addEventListener("click", albumView);
   $("toHome").addEventListener("click", home);
   $("quizDialog").addEventListener("click", (e) => {
     const b = e.target.closest("[data-players]");

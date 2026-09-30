@@ -12,6 +12,8 @@ BQ.Quiz = (function () {
   const QUESTIONS = 5;
 
   const cardsBy = (n) => BQ.CARDS.filter((c) => c.m <= n);
+  // Traditions have no year, so they can't be put in order against anything.
+  const datedBy = (n) => cardsBy(n).filter((c) => c.year !== null);
   const hintOf = (c) => L.BY[c].hint.split(",")[0].split(":")[0];
 
   // Wrong spellings a child could believably make: two letters swapped, or one
@@ -64,8 +66,16 @@ BQ.Quiz = (function () {
       const opts = [c].concat(R.shuffle(cards.filter((x) => x !== c), rand).slice(0, 3));
       return { kind: "who", key: "W" + c.id, ask: "Who am I? " + c.clue, options: R.shuffle(opts.map((x) => x.name), rand), answer: c.name, bg: true };
     },
-    first(n, rand) {
+    // The card's own "Remember it?" question, in English. Recall of the story,
+    // not reading: its options are English, so the readability check skips it.
+    story(n, rand) {
       const cards = cardsBy(n);
+      if (!cards.length) return null;
+      const c = R.pick(cards, rand);
+      return { kind: "story", key: "Q" + c.id, ask: c.ask[0], card: c, options: R.shuffle(c.ask.slice(1), rand), answer: c.ask[1], bg: false };
+    },
+    first(n, rand) {
+      const cards = datedBy(n);
       if (cards.length < 2) return null;
       const [a, b] = R.shuffle(cards, rand);
       if (a.year === b.year) return null;
@@ -73,7 +83,7 @@ BQ.Quiz = (function () {
       return { kind: "first", key: "F" + [a.id, b.id].sort().join(), ask: "Which came first?", options: [a.name, b.name], cards: [a, b], answer: older.name, bg: true };
     },
     timeline(n, rand) {
-      const cards = cardsBy(n);
+      const cards = datedBy(n);
       if (cards.length < 3) return null;
       const three = R.shuffle(cards, rand).slice(0, 3);
       if (new Set(three.map((c) => c.year)).size < 3) return null;
@@ -82,17 +92,20 @@ BQ.Quiz = (function () {
     }
   };
 
-  // What a round is made of, by how much history the child has: none at first,
-  // then two card questions. With three cards or more, the second one is
-  // sometimes a timeline instead of "which came first?".
-  function recipe(n) {
+  // What a round is made of, by how much history the child has. No cards yet:
+  // all reading. Then two reading, three history: "Who am I?", a question from
+  // a card's story, and "which came first?" or (with three dated cards or
+  // more) a timeline. Reading questions alternate picture and spelling.
+  function recipe(n, rand) {
     const c = cardsBy(n).length;
-    if (c < 2) return ["letter", "picture", "spelling", "letter", "picture"];
-    return ["letter", "picture", "spelling", "who", "first"];
+    if (!c) return ["letter", "picture", "spelling", "letter", "picture"];
+    if (c < 2) return ["letter", "picture", "spelling", "story", "picture"];
+    const order = datedBy(n).length >= 3 && rand() < 0.5 ? "timeline" : "first";
+    return ["letter", rand() < 0.5 ? "picture" : "spelling", "who", "story", order];
   }
 
   function round(n, rand) {
-    const kinds = recipe(n).map((k) => (k === "first" || k === "timeline") && cardsBy(n).length >= 3 ? R.pick(["first", "timeline"], rand) : k);
+    const kinds = recipe(n, rand);
     const out = [];
     const seen = new Set();
     for (const k of kinds) {

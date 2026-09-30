@@ -16,7 +16,7 @@ BQ.UI = (function () {
   const emo = (e) => '<span class="emoji" aria-hidden="true">' + e + "</span>";
 
   function screen(id, title) {
-    ["home", "play"].forEach((s) => { $(s).hidden = s !== id; });
+    ["home", "play", "albumScreen"].forEach((s) => { $(s).hidden = s !== id; });
     $("back").hidden = id !== "home";
     $("toHome").hidden = id === "home";
     $("title").textContent = title || "Буквар";
@@ -210,21 +210,49 @@ BQ.UI = (function () {
     $("passport").onclick = (e) => { const b = e.target.closest("button[data-i]"); if (b && !b.disabled) onPick(+b.dataset.i); };
   }
 
-  function album(list, onPick) {
-    $("album").innerHTML = list.map(({ c, open, fresh }, i) => open
-      ? '<button type="button" data-i="' + i + '" class="' + (fresh ? "new" : "") + '"><span class="ce emoji">' + c.e + '</span><b lang="bg"' + (/\S{12,}/.test(c.name) ? ' class="long"' : "") + ">" + esc(c.name) + "</b><small>" + esc(c.when) + "</small></button>"
-      : '<button type="button" class="locked" disabled><span class="ce">?</span><small>Mission ' + (c.m + 1) + "</small></button>").join("");
-    $("album").onclick = (e) => { const b = e.target.closest("button[data-i]"); if (b) onPick(+b.dataset.i); };
+  // The album, in groups. Each item is { c, open, fresh, done }: done means
+  // the child answered its "Remember it?" question.
+  function album(groups, onPick) {
+    $("album").innerHTML = groups.map((g) =>
+      '<h3 class="album-head">' + esc(g.title) + ' <small>' + g.items.filter((x) => x.open).length + " of " + g.items.length + "</small></h3>" +
+      '<div class="album">' + g.items.map(({ c, open, fresh, done }) => open
+        ? '<button type="button" data-id="' + c.id + '" class="' + (fresh ? "new" : "") + '">' +
+          (done ? '<span class="tick" aria-label="remembered">✓</span>' : "") +
+          '<span class="ce emoji">' + c.e + '</span><b lang="bg"' + (/\S{12,}/.test(c.name) ? ' class="long"' : "") + ">" + esc(c.name) + "</b><small>" + esc(c.when) + "</small></button>"
+        : '<button type="button" class="locked" disabled><span class="ce">?</span><small>Mission ' + (c.m + 1) + "</small></button>").join("") +
+      "</div>").join("");
+    $("album").onclick = (e) => { const b = e.target.closest("button[data-id]"); if (b) onPick(b.dataset.id); };
   }
 
-  function showCard(c) {
-    $("cardTitle").textContent = "History card";
-    $("cardBody").innerHTML = '<div class="hcard">' +
-      '<div class="hcard-top"><span class="ce emoji">' + c.e + '</span><div><h3 lang="bg">' + esc(c.name) + "</h3><p>" + esc(c.when) + "</p></div></div>" +
-      '<p class="say">👥 Read it together:</p>' +
-      '<div class="ruled"><p class="story" lang="bg">' + esc(c.story) + "</p></div>" +
-      '<p class="en"><b>In English</b>' + esc(c.en) + "</p></div>";
-    $("cardDialog").showModal();
+  // A card is a little book: the hook, the story pages, the Bulgarian line to
+  // read together, then "Remember it?". `page` counts from 0; the app keeps it.
+  const cardPages = (c) => 2 + c.pages.length + 1;
+  function cardPage(c, page, done, pick) {
+    const last = cardPages(c) - 1;
+    const top = '<div class="hcard-top"><span class="ce emoji">' + c.e + '</span><div><h3 lang="bg">' + esc(c.name) + "</h3><p>" + esc(c.when) + "</p></div></div>";
+    let body;
+    if (page === 0) {
+      body = top + '<p class="kicker">Did you know?</p><p class="hook">' + esc(c.hook) + "</p>";
+    } else if (page <= c.pages.length) {
+      body = top + '<p class="story-en">' + esc(c.pages[page - 1]) + "</p>";
+    } else if (page === last - 1) {
+      body = top + '<p class="say">👥 Read it together:</p><div class="ruled"><p class="story" lang="bg">' + esc(c.line) + "</p></div>";
+    } else {
+      // pick: undefined (not answered yet) or the option tapped.
+      const opts = c.ask.slice(1).sort();
+      body = top + '<p class="kicker">Remember it?' + (done ? " ✓" : "") + '</p><p class="hook">' + esc(c.ask[0]) + "</p>" +
+        '<div class="tiles one">' + opts.map((o) => {
+          const cls = pick === undefined ? "" : o === c.ask[1] ? " right" : o === pick ? " wrong" : "";
+          return '<button class="tile snd' + cls + '" type="button" data-ans="' + esc(o) + '"' + (pick === undefined ? "" : " disabled") + ">" + esc(o) + "</button>";
+        }).join("") + "</div>" +
+        (pick !== undefined && pick !== c.ask[1] ? '<p class="say">Not quite. <button class="small-btn" type="button" data-act="reread">Read the story again</button></p>' : "") +
+        (pick === c.ask[1] ? '<p class="say"><b>You remembered! ✓</b></p>' : "");
+    }
+    $("cardTitle").textContent = page === last ? "Remember it?" : "History card";
+    $("cardBody").innerHTML = '<div class="hcard">' + body + "</div>";
+    $("cardDots").innerHTML = Array.from({ length: cardPages(c) }, (_, i) => "<i" + (i === page ? ' class="on"' : "") + "></i>").join("");
+    $("cardBack").disabled = page === 0;
+    $("cardNext").textContent = page === last ? "Done" : page === last - 1 ? "Remember it? ›" : "Next ›";
   }
 
   // ── Quiz ────────────────────────────────────────────────────────────────
@@ -239,8 +267,11 @@ BQ.UI = (function () {
     }
     const pic = q.pic ? '<div class="prompt">' + emo(q.pic) + "</div>" : "";
     const letter = q.kind === "letter";
-    return stage(head + pic + '<div class="tiles">' + q.options.map((o, k) =>
-      '<button class="tile' + (letter ? "" : " bgw") + '" type="button" data-k="' + k + '" lang="bg">' + esc(o) + "</button>").join("") +
+    // Story questions are asked and answered in English, one per row.
+    const en = !q.bg;
+    const from = q.card ? '<p class="say"><span class="emoji">' + q.card.e + '</span> From the card <b lang="bg">' + esc(q.card.name) + "</b></p>" : "";
+    return stage(head + pic + from + '<div class="tiles' + (en ? " one" : "") + '">' + q.options.map((o, k) =>
+      '<button class="tile' + (en ? " snd" : letter ? "" : " bgw") + '" type="button" data-k="' + k + '"' + (en ? "" : ' lang="bg"') + ">" + esc(o) + "</button>").join("") +
       '</div><div id="qNext" class="actions" hidden><button class="btn" type="button" data-act="next">Next ›</button></div>');
   }
 
@@ -252,5 +283,5 @@ BQ.UI = (function () {
 
   function starsHtml(n) { return "★".repeat(n) + "<i>" + "★".repeat(3 - n) + "</i>"; }
 
-  return { fitStamps, stampHtml, passport, album, showCard, quizQ, numberTile, $, esc, bg, emo, screen, steps, who, stage, toast, map, abc, letterCard, showLetter, grownup, learn, blend, lightBlend, match, build, fillSlot, read, trap, starsHtml };
+  return { cardPages, cardPage, fitStamps, stampHtml, passport, album, quizQ, numberTile, $, esc, bg, emo, screen, steps, who, stage, toast, map, abc, letterCard, showLetter, grownup, learn, blend, lightBlend, match, build, fillSlot, read, trap, starsHtml };
 })();

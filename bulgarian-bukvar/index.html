@@ -50,14 +50,10 @@
       <div id="passport" class="passport"></div>
     </div>
 
-    <div class="card">
-      <div class="card-head">
-        <h2>History cards</h2>
-        <span class="muted small" id="cardCount"></span>
-      </div>
-      <p class="muted small">Famous Bulgarians and big moments, in order of when they happened.</p>
-      <div id="album" class="album"></div>
-    </div>
+    <button id="albumBtn" class="wide-btn" type="button">
+      &#128218; History cards
+      <small id="cardCount">Famous Bulgarians, big moments and traditions</small>
+    </button>
 
     <div class="card">
       <div class="card-head">
@@ -72,6 +68,12 @@
       &#128064; Tricky letters
       <small id="trapSays">Letters that look English, but aren't</small>
     </button>
+  </section>
+
+  <!-- The album: every history card, grouped by kind, oldest first. -->
+  <section id="albumScreen" class="screen" hidden>
+    <p class="muted" id="albumSays"></p>
+    <div id="album"></div>
   </section>
 
   <!-- A mission, or the tricky-letter drill. Filled in by ui.js. -->
@@ -98,7 +100,11 @@
     <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
   </div>
   <div id="cardBody"></div>
-  <button class="btn" type="button" data-close>OK</button>
+  <nav class="page-nav" aria-label="Card pages">
+    <button id="cardBack" class="small-btn" type="button">&lsaquo; Back</button>
+    <div class="page-dots" id="cardDots"></div>
+    <button id="cardNext" class="btn" type="button">Next &rsaquo;</button>
+  </nav>
 </dialog>
 
 <dialog id="quizDialog" class="sheet" aria-labelledby="quizTitle">
@@ -125,7 +131,7 @@
     <li><b>&#128101; Together</b> steps need a grown-up who speaks Bulgarian. They say the sounds and listen to you read.</li>
     <li><b>&#128587; On your own</b> steps you can do by yourself. Match pictures to words and build words from letters.</li>
     <li><b>Stars</b> come from the on-your-own steps. Get it right first time for 3 stars.</li>
-    <li><b>History cards</b> open as you learn. Read the Bulgarian together, then the English.</li>
+    <li><b>History cards</b> open as you learn. Each one is a little story. At the end, answer "Remember it?" to earn a &#10004;.</li>
     <li><b>&#128706; Passport:</b> each mission opens a quiz about a place in Bulgaria. Get all 5 right for the stamp. No help used? It's gold!</li>
     <li><b>Tricky letters</b> look like English letters but make a different sound. Practise them any time.</li>
   </ol>

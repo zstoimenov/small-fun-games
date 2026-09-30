@@ -94,11 +94,21 @@ for (let seed = 1; seed <= 200; seed++) {
 // name away (clues are English, so any Cyrillic in one is a leak).
 ok(new Set(C.map((c) => c.id)).size === C.length, "card ids unique");
 C.forEach((c) => {
-  const bad = R.unreadable(c.name + " " + c.story, R.known(c.m));
+  const bad = R.unreadable(c.name + " " + c.line, R.known(c.m));
   ok(!bad.length, "card " + c.id + " uses unlearned " + bad.join(" "));
-  ok(!/[\u0400-\u04FF]/.test(c.clue + c.en), "card " + c.id + " English lines have no Cyrillic");
-  ok(c.e && c.year && c.when && c.en && c.clue, "card " + c.id + " complete");
+  ok(!/[\u0400-\u04FF]/.test(c.clue + c.ask.join("")), "card " + c.id + " clue and question have no Cyrillic");
+  ok(c.e && c.when && c.hook && c.clue && (c.year === null || Number.isInteger(c.year)), "card " + c.id + " complete");
+  ok(Array.isArray(c.pages) && c.pages.length >= 2 && c.pages.every((t) => t.length > 20), "card " + c.id + " has story pages");
+  ok(c.ask.length === 4 && new Set(c.ask.slice(1)).size === 3, "card " + c.id + " Remember it has 3 distinct options");
+  ok(c.m >= 0 && c.m < M.length, "card " + c.id + " opens with a real mission");
 });
+C.filter((c) => c.year !== null).forEach((c) => {
+  const first = +c.when.match(/\d{3,}|\d+(?= BC)/)[0] * (/BC/.test(c.when) ? -1 : 1);
+  ok(first === c.year, "card " + c.id + " year " + c.year + " matches the first year shown (" + c.when + ")");
+});
+ok(C.length >= 40, "at least 40 cards (" + C.length + ")");
+ok(new Set(C.map((c) => c.name)).size === C.length, "card names unique");
+ok(new Set(C.map((c) => c.e)).size === C.length, "card pictures unique");
 ok(S.length === 9 && S.every((s, i) => s.m === i + 1), "one stamp per mission 2-10");
 
 // The quiz: five questions, no repeats, exactly one right answer, every
@@ -118,7 +128,9 @@ S.forEach((st) => {
       }
       ok(q.options.filter((o) => o === q.answer).length === 1, st.place + " " + q.kind + ": one right answer");
       ok(new Set(q.options).size === q.options.length && q.options.length >= 2, st.place + " " + q.kind + ": options distinct");
-      q.options.forEach((o) => ok(!R.unreadable(o, set).length, st.place + " " + q.kind + ": \"" + o + "\" readable"));
+      if (q.bg) q.options.forEach((o) => ok(!R.unreadable(o, set).length, st.place + " " + q.kind + ": \"" + o + "\" readable"));
+      if (q.card) ok(q.card.m <= n, "story question's card is open");
+      if (q.kind === "first") ok(q.cards.every((c) => c.year !== null), "first only uses dated cards");
       if (q.kind === "first") ok(q.cards.find((c) => c.name === q.answer).year < q.cards.find((c) => c.name !== q.answer).year, "first picks the older");
     });
   }

@@ -2212,3 +2212,29 @@ new; `tools/bukvar-check.js` covers both.
 - **Long names were the layout risk.** Копривщица overflowed its stamp and
   Освобождението its album tile; both are measured (`scrollWidth`) at 390 and
   820 px and shrink rather than break mid-word.
+
+### Third pass: the cards became stories
+
+Asked for: "not long enough or engaging enough for a kid to remember the
+facts", more cards, Levski FC and Georgi Asparuhov, and the name Буквар.
+
+- **A card is now a picture book:** a hook ("Did you know?"), two English story
+  pages, the Bulgarian line to read together, and "Remember it?". Right answers
+  earn a ✓, saved in `remembered`. The hook is the one strange, true detail a
+  child keeps (the cherry-tree cannons, Kubrat's sticks, Botev's steamship) and
+  the question asks about exactly that. **Write the question first, then make
+  sure the hook answers it.**
+- **The stories are English on purpose.** The Bulgarian line still has to be
+  readable with the letters taught so far, so it stays one sentence; the
+  memory lives in the English, which the child can read alone.
+- **42 cards in four groups** (history, science and art, sport, traditions), on
+  their own album screen: 42 tiles made the home page far too long.
+- **`year` must be the first year `when` shows.** Rakovski showed 1821–1867 but
+  sorted as 1862, so a timeline marked "Levski, then Rakovski" wrong against
+  what the cards displayed. The checker now parses `when` and compares.
+- **Legends are marked as legends** ("The story goes that...") and the dark
+  stories (Krum's skull cup, Samuil's blinded army) are left out for 7-9s.
+- **The quiz asks about the stories** too: each round is two reading questions
+  and three history ones, one of them a card's own "Remember it?".
+- **Stamp names never break inside a word.** Each word keeps to one line and
+  `fitStamps` shrinks the type until it fits, measured on the device.
