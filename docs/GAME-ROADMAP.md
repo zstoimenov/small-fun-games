@@ -2062,6 +2062,28 @@ of four trucks, jobs (civil engineer, builder, architect) and a quiz.
 - A snapped road is usually where some *other* failure shows, so a level can
   set `fail` to say what it really means ("the squares folded").
 
+
+### Vet Clinic — `vet-clinic/` ✅ built
+
+Case-based: owner's story, pick checks, read each against that species' normal
+range, then diagnose, treat and advise on home care. Three chapters: Check-up
+(whose heartbeat? hot or not? a healthy puppy's vaccination), What's Wrong?
+(broken leg, fleas, rabbit teeth, chocolate), Wildlife Rescue (joey, koala,
+turtle; Australian, as asked, with "never touch a bat").
+
+- **Every number is drawn on its range**, never alone. The whole of chapter 1
+  is that normal depends on the animal: 38.8 °C is a dog's normal and your fever.
+- **Stars count wrong answers plus checks a good vet wouldn't do** (a case
+  marks at most one `waste`, e.g. an X-ray for itchy skin). Checks that fit but
+  come back normal are free: ruling things out is real vet work.
+- **The heartbeat game plays each animal at the middle of its range** (mouse
+  600, cat 180, dog 100, elephant 30). `vet-check.js` fails if any two are under
+  1.5x apart, because by ear closer than that is a guess.
+- No physics, so no harness to tune; `vet-check.js` checks the data instead:
+  every case has a not-normal key clue (unless the answer is "healthy", when
+  nothing may read as abnormal), every number uses its own animal's range, and
+  every answer has a reason.
+
 ## Буквар — `bulgarian-bukvar/` ✅ built
 
 Not on the original list. The ask was *"a game that teaches Bulgarian history and

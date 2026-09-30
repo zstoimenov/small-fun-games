@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v42";
+const CACHE = "game-box-v43";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -145,6 +145,13 @@ const ASSETS = [
   "./bridge-builder/js/board.js", "./bridge-builder/js/ui.js", "./bridge-builder/js/app.js",
   "./bridge-builder/icons/icon-192.png", "./bridge-builder/icons/icon-512.png",
   "./bridge-builder/icons/apple-touch-icon.png",
+
+  "./vet-clinic/", "./vet-clinic/index.html", "./vet-clinic/manifest.webmanifest",
+  "./vet-clinic/css/style.css",
+  "./vet-clinic/js/cases.js", "./vet-clinic/js/audio.js", "./vet-clinic/js/clinic.js",
+  "./vet-clinic/js/ui.js", "./vet-clinic/js/app.js",
+  "./vet-clinic/icons/icon-192.png", "./vet-clinic/icons/icon-512.png",
+  "./vet-clinic/icons/apple-touch-icon.png",
 ];
 
 // Precache fresh copies — cache:"reload" bypasses the HTTP cache so the offline

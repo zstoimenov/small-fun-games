@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Vet Clinic</title>
+<meta name="description" content="Be a vet: check animals, read the clues, work out what is wrong and treat them, from puppies to koalas.">
+<meta name="theme-color" content="#2a9d8f">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vet Clinic">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Back</button>
+    <h1 id="title">Vet Clinic</h1>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+  </header>
+
+  <!-- Home: one line of intro, the chapters, three tiles. -->
+  <section id="home" class="screen">
+    <p class="intro">You're the vet! Check each animal, find the clues, and make them better.</p>
+    <div id="chapters" class="chapters"></div>
+    <div class="tiles">
+      <button id="chartBtn" class="tile" type="button"><span aria-hidden="true">&#128203;</span><b>Vet's chart</b><small>What's normal?</small></button>
+      <button id="quizBtn" class="tile" type="button"><span aria-hidden="true">&#127891;</span><b>Quiz</b><small id="quizInfo"></small></button>
+      <button id="jobsBtn" class="tile" type="button"><span aria-hidden="true">&#128119;</span><b>Jobs</b><small>Who cares for animals?</small></button>
+    </div>
+  </section>
+
+  <!-- A chapter: the big idea, then its levels. -->
+  <section id="chapter" class="screen" hidden>
+    <div class="card law-card">
+      <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
+      <p class="kicker" id="lawKicker"></p>
+      <h2 id="lawName"></h2>
+      <p class="law-big" id="lawSays"></p>
+      <div id="lawMore"></div>
+      <details class="grown-up">
+        <summary>In grown-up words</summary>
+        <p id="lawGrown"></p>
+      </details>
+    </div>
+    <div id="levels" class="levels"></div>
+  </section>
+
+  <!-- A level: the clinic fills #clinic from clinic.js. -->
+  <section id="play" class="screen" hidden>
+    <div class="goal">
+      <span class="goal-name" id="goalName"></span>
+      <span class="goal-count" id="clinicProgress"></span>
+      <p id="goalText"></p>
+    </div>
+    <div id="clinic" class="clinic"></div>
+  </section>
+
+  <!-- The quiz: one question at a time. -->
+  <section id="quiz" class="screen" hidden>
+    <div class="card quiz-card">
+      <p class="kicker" id="qCount"></p>
+      <span class="q-emoji" id="qEmoji" aria-hidden="true"></span>
+      <h2 id="qText"></h2>
+      <div class="answers" id="qAnswers"></div>
+      <p class="q-why" id="qWhy" aria-live="polite"></p>
+      <div class="actions"><button id="qNext" class="btn" type="button" hidden>Next &rsaquo;</button></div>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="winDialog" class="sheet" aria-labelledby="winTitle">
+  <div class="big-stars" id="winStars" aria-hidden="true"></div>
+  <h2 id="winTitle">You did it!</h2>
+  <p id="winText"></p>
+  <div class="actions">
+    <button id="winAgain" class="btn ghost" type="button">Play again</button>
+    <button id="winNext" class="btn" type="button">Next &rsaquo;</button>
+  </div>
+</dialog>
+
+<dialog id="lessonDialog" class="sheet lesson" aria-labelledby="lessonTitle">
+  <span class="lesson-emoji" id="lessonEmoji" aria-hidden="true"></span>
+  <h2 id="lessonTitle"></h2>
+  <p class="law-big" id="lessonSays"></p>
+  <p id="lessonLife"></p>
+  <p class="lesson-job" id="lessonJob"></p>
+  <div class="actions"><button class="btn" type="button" id="lessonOk">Back to the lab</button></div>
+</dialog>
+
+<dialog id="jobsDialog" class="sheet" aria-labelledby="jobsTitle">
+  <div class="sheet-head">
+    <h2 id="jobsTitle">&#128119; Who cares for animals?</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <div id="jobs" class="job-list"></div>
+  <p class="ask">&#128172; Know a grown-up who does one of these jobs? Ask them what the best part is!</p>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<dialog id="chartDialog" class="sheet" aria-labelledby="chartTitle">
+  <div class="sheet-head">
+    <h2 id="chartTitle">&#128203; Vet's chart</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <p>What's <b>normal</b> for each animal, at rest.</p>
+  <table class="chart"><thead><tr><th>Animal</th><th>Heartbeat<br><small>a minute</small></th><th>Temperature</th></tr></thead><tbody id="chartBody"></tbody></table>
+  <p class="ask">Small animals have fast hearts. Dogs, cats and rabbits are warmer than you!</p>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
+  <div class="sheet-head">
+    <h2 id="helpTitle">How to play</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <ol class="how">
+    <li><b>Read what the owner says.</b> It's your first clue.</li>
+    <li><b>Pick your checks:</b> heartbeat, temperature, eyes, mouth, skin, weight or X-ray.</li>
+    <li><b>Green band</b> = normal for that animal. The pin shows your patient.</li>
+    <li><b>Only do the checks that fit.</b> A check you didn't need costs a star.</li>
+    <li><b>Then decide:</b> what's wrong, how to treat it, and how to care for it at home.</li>
+    <li><b>Wild animals:</b> never touch one yourself. Tell a grown-up to call wildlife rescue.</li>
+  </ol>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/cases.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/clinic.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>
