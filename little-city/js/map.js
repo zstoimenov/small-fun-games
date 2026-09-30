@@ -46,6 +46,7 @@ window.LC = window.LC || {};
     if (st && !o.small) st.houses.forEach((hh) => {
       s += `<circle cx="${hh.x * S + S - 9}" cy="${hh.y * S + 9}" r="9" fill="#fff" stroke="#555" stroke-width="1"/><text x="${hh.x * S + S - 9}" y="${hh.y * S + 10}" font-size="13" text-anchor="middle" dominant-baseline="central">${FACE[hh.face]}</text>`;
     });
+    if (o.extra) s += o.extra;
     if (o.pick) s += `<rect x="${o.pick.x * S + 1}" y="${o.pick.y * S + 1}" width="${S - 2}" height="${S - 2}" rx="6" fill="none" stroke="#e91e63" stroke-width="3"/>`;
     return `<svg viewBox="0 0 ${w * S} ${h * S}" xmlns="http://www.w3.org/2000/svg" ${o.attrs || ""}>${s}</svg>`;
   }

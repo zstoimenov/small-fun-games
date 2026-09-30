@@ -1,105 +1,255 @@
-/* Little City - the sandbox and the saved towns.                              */
+/* Little City - Be the Mayor: the screens around the mayor's map.             */
 /*                                                                             */
-/* The town being built lives in store.draft, so leaving never loses it.      */
-/* Saving copies it into store.gallery (6 at most: towns are bigger than a    */
-/* poster). Money can be switched on for a real mayor's challenge.            */
+/* Towns in progress live in store.towns (6 at most) and save after every     */
+/* change, so a town can be picked up again next week. Medals won in any town */
+/* are kept in store.medalsEver, even after that town is deleted.             */
 "use strict";
 window.LC = window.LC || {};
 
 LC.Studio = (function () {
   const $ = (id) => document.getElementById(id);
-  const MAX = 6, W = 10, H = 8, BUDGET = 300;
-  const NAMES = ["Sunnyville", "Koala Creek", "Maple Town", "Rocket City", "Wattle Park", "Seaside", "Hilltop", "Bluegum Bay"];
-  const TOOLS = ["road", "house", "flats", "park", "shop", "school", "clinic", "fire", "factory", "bulldoze"];
-  const NEEDS = ["road", "school", "clinic", "fire", "shop", "park", "noise", "job"];
+  const M = LC.Mayor, T = LC.TYPES;
+  const MAX = 6;
+  const NAMES = ["Sunnyville", "Koala Creek", "Maple Town", "Rocket City", "Wattle Park", "Seaside", "Hilltop", "Bluegum Bay", "Pebble Point", "Emu Flats"];
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const copy = (x) => JSON.parse(JSON.stringify(x));
-  let store = null, save = null, toast = null;
+  let store = null, save = null, toast = null, go = null, board = null, fresh = null;
 
-  function blank() {
-    const rows = Array.from({ length: H }, (_, y) => (y === 4 ? "E" : ".") + ".".repeat(W - 1));
-    rows[1] = "..^^......"; rows[6] = "......~~~."; rows[7] = ".....~~~~.";
-    return LC.Sim.parse(rows);
+  function init(s, onSave, onToast, opts) {
+    store = s; save = onSave; toast = onToast; go = opts.go;
+    if (!Array.isArray(store.towns)) store.towns = [];
+    if (!Array.isArray(store.medalsEver)) store.medalsEver = [];
   }
-  function fresh() { return { id: null, name: pick(NAMES), grid: blank(), money: false, dirty: false }; }
-  function init(s, onSave, onToast) {
-    store = s; save = onSave; toast = onToast;
-    if (!store.draft) store.draft = fresh();
-    if (!Array.isArray(store.gallery)) store.gallery = [];
+  const town = () => store.towns.find((t) => t.id === store.current) || null;
+  function keep() {
+    const t = town();
+    if (t) store.medalsEver = Array.from(new Set(store.medalsEver.concat(t.medals)));
+    save();
   }
-  const d = () => store.draft;
+  function tile() {
+    const t = town();
+    return t ? `${t.name}: year ${t.year}` : "Run a town";
+  }
 
+  // ── The mayor's screen ─────────────────────────────────────────────────────
   function open() {
-    $("sName").innerHTML = `${esc(d().name)} <small aria-hidden="true">✏️</small>`;
-    $("sMoney").setAttribute("aria-pressed", String(!!d().money));
-    $("sMoney").innerHTML = d().money ? "💰 Money: on" : "💰 Money: off";
-    const level = { tools: TOOLS, needs: NEEDS, money: d().money ? BUDGET : null };
-    LC.board($("sEditor"), d().grid, { level, onChange: () => { d().dirty = true; save(); } });
+    const t = town();
+    if (!t) { newTown(); return false; }
+    $("sName").innerHTML = `${esc(t.name)} <small aria-hidden="true">✏️</small>`;
+    board = LC.mayorBoard($("sEditor"), t, { onChange: () => { keep(); header(); }, locked: () => t.over });
+    header();
+    return true;
   }
-  function toggleMoney() { d().money = !d().money; save(); open(); toast(d().money ? "You have " + BUDGET + " coins. Keep the town out of the red!" : "Money off: build anything!"); }
-  function rename() {
-    const n = prompt("What's your town called?", d().name);
-    if (n == null || !n.trim()) return;
-    d().name = n.trim().slice(0, 24);
-    d().dirty = true;
-    save();
-    open();
-  }
-  function newTown() {
-    if (d().dirty && !confirm("Start a new town? Anything you haven't saved will be gone.")) return;
-    store.draft = fresh();
-    save();
-    open();
-  }
-  function saveTown() {
-    const dr = d();
-    const at = dr.id ? store.gallery.findIndex((x) => x.id === dr.id) : -1;
-    const entry = { id: dr.id || Date.now(), name: dr.name, grid: copy(dr.grid), money: dr.money, at: Date.now() };
-    if (at >= 0) store.gallery[at] = entry;
-    else if (store.gallery.length >= MAX) { toast("You have " + MAX + " towns saved. Delete one first!"); return; }
-    else store.gallery.unshift(entry);
-    dr.id = entry.id;
-    dr.dirty = false;
-    save();
-    LC.Audio.right();
-    toast("Saved to My towns! 💾");
+  function header() {
+    const t = town();
+    if (!t) return;
+    const st = board.look();
+    const rk = M.RANKS[t.rank], next = M.RANKS[t.rank + 1];
+    $("mRank").innerHTML = `${rk.e} ${rk.name}` + (next ? `<small>${Math.max(0, next.at - st.people)} more people to ${next.name}</small>` : "");
+    const happy = st.people ? Math.round(100 * st.happy / st.people) : 0;
+    $("mStats").innerHTML = `<span>📅 Year <b>${t.year}</b>${t.mode === "challenge" ? ` of ${M.CHALLENGE_YEARS}` : ""}</span>` +
+      `<span>👥 <b>${st.people}</b></span><span>😀 <b>${happy}%</b></span>` +
+      `<span class="${t.coins < 10 ? "bad" : ""}">💰 <b>${t.coins}</b></span>` +
+      `<span class="${st.balance < 0 ? "bad" : ""}" title="What the next year will add or take">📈 <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b>/yr</span>` +
+      (t.loan ? `<span class="bad">🏦 owe <b>${t.loan}</b></span>` : "");
+    // The campaign: who's standing, what they promise, and a live poll that
+    // moves as the mayor builds.
+    const c = t.campaign;
+    $("mCampaign").hidden = !c;
+    if (c) {
+      const poll = M.tally(t), tot = poll.total || 1;
+      const row = (e, name, v, promise, you) => `<div class="cand${you ? " you" : ""}"><span class="ce">${e}</span><div><b>${name}</b>${promise ? `<small>“${esc(promise)}”</small>` : ""}<div class="bar"><i style="width:${Math.round(100 * v / tot)}%"></i></div></div><span class="pc">${Math.round(100 * v / tot)}%</span></div>`;
+      $("mCampaign").innerHTML = `<p class="kicker">🗳️ Election at the end of this year!</p>` +
+        row("🧑‍💼", "You", poll.votes.mayor, "", true) + c.rivals.map((rv, k) => row(rv.e, rv.name, poll.votes["r" + k], rv.promise)).join("") +
+        `<p class="muted">This poll changes as you build. Fix what the rivals promise to win those families back!</p>`;
+    }
+    const q = t.request;
+    $("mRequest").hidden = !q;
+    if (q) $("mRequest").innerHTML = `✉️ The ${q.fam} family (circled) wants a ${T[q.need].e} ${T[q.need].name.toLowerCase()} nearby by the end of year ${q.due}. Thank-you: ${q.reward} coins.`;
+    $("mOver").hidden = !t.over;
+    if (t.over) {
+      const sc = M.score(t);
+      $("mOver").innerHTML = t.lost
+        ? `<p><b>🗳️ You lost the election in year ${t.year - 1}.</b> ${t.snap ? "You can try that year again!" : ""}</p>`
+        : `<p><b>🏁 Your 20 years as mayor are over!</b> Score ${sc.pts} ${"⭐".repeat(sc.stars)}</p>`;
+      if (t.lost && t.snap) {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "btn small"; b.textContent = "↺ Try the election year again";
+        b.addEventListener("click", retry);
+        $("mOver").appendChild(b);
+      }
+    }
+    $("mEnd").disabled = t.over;
   }
 
-  function gallery(edit) {
+  // ── End the year ───────────────────────────────────────────────────────────
+  function endYear() {
+    const t = town();
+    if (!t || t.over) return;
+    const before = board.look();
+    const sum = M.endYear(t);
+    keep();
+    board.paint();
+    board.burst(sum, before);
+    header();
+    LC.Audio.build();
+    setTimeout(() => yearCard(sum), window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900);
+  }
+  const WHY = { road: "no road", school: "no school nearby", clinic: "no clinic nearby", fire: "no fire station nearby", shop: "no shop nearby", park: "no park nearby", noise: "a noisy factory next door", job: "no jobs nearby", police: "no police nearby", repair: "storm damage" };
+  function yearCard(sum) {
+    const t = town();
+    const body = $("yBody"), acts = $("yActs");
+    $("yTitle").textContent = `Year ${sum.year} is over!`;
+    let h = "";
+    const ev = sum.event;
+    h += `<div class="event card"><span class="ev-e" aria-hidden="true">${ev.e}</span><div><b>${esc(ev.title)}</b><p>${esc(ev.text)}</p></div></div>`;
+    const why = Object.entries(sum.why).sort((a, b) => b[1] - a[1]).map(([k]) => WHY[k]).filter(Boolean).slice(0, 2).join(" and ");
+    h += `<ul class="year-list"><li>🚚 <b>${sum.inn}</b> people moved in${sum.out ? `, 🚪 <b>${sum.out}</b> moved out${why ? ` (${why})` : ""}` : ""}. Now <b>${sum.people}</b> live here.</li>`;
+    h += `<li>💰 Taxes <b>+${sum.tax}</b>${sum.earn ? `, shops and work <b>+${sum.earn}</b>` : ""}${sum.upkeep ? `, running costs <b>-${sum.upkeep}</b>` : ""}${sum.interest ? `, loan interest <b>-${sum.interest}</b>` : ""} = <b>${sum.balance >= 0 ? "+" : ""}${sum.balance}</b>. The town has <b>${sum.coins}</b> coins.</li>`;
+    sum.news.forEach((n) => { h += `<li>${esc(n)}</li>`; });
+    h += "</ul>";
+    if (sum.election) {
+      const e = sum.election, tot = e.total || 1;
+      const row = (em, name, v, you) => `<div class="cand${you ? " you" : ""}"><span class="ce">${em}</span><div><b>${name}</b><div class="bar"><i style="width:${Math.round(100 * v / tot)}%"></i></div></div><span class="pc">${v} vote${v === 1 ? "" : "s"}</span></div>`;
+      h += `<div class="election card"><p class="kicker">🗳️ Election results</p>${row("🧑‍💼", "You", e.votes.mayor, true)}${e.rivals.map((rv, k) => row(rv.e, rv.name, e.votes["r" + k])).join("")}` +
+        (e.thanks ? `<p class="muted">✉️ Families you helped brought ${e.thanks} extra votes!</p>` : "") +
+        (e.won ? `<p class="big-win">🎉 You won! Welcome to term ${t.term} as mayor.</p>` : `<p class="big-lose">${e.winner.e} ${e.winner.name} won the election. Families wanted: “${esc(e.winner.promise)}”</p>`) + "</div>";
+    }
+    if (sum.medals.length) h += `<div class="medals-won">${sum.medals.map((id) => { const m = M.MEDALS.find((x) => x.id === id); return `<span class="medal on">${m.e}<b>${m.name}</b></span>`; }).join("")}</div>`;
+    if (sum.final && !t.lost) h += `<div class="final card"><p class="kicker">🏁 20 years as mayor!</p><p class="big-stars">${"★".repeat(sum.final.stars)}<span class="dim">${"★".repeat(3 - sum.final.stars)}</span></p><p>Score <b>${sum.final.pts}</b>: ${sum.final.people} people, ${sum.final.happy} happy, plus savings, minus any loan.</p></div>`;
+    body.innerHTML = h;
+    acts.innerHTML = "";
+    const btn = (cls, text, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); acts.appendChild(b); return b; };
+    if (ev.choice && t.offer) {
+      const yes = () => { const o = M.answer(t, true); keep(); board.paint(); header(); acts.innerHTML = ""; body.insertAdjacentHTML("beforeend", `<p class="why good">You said yes!${o && o.coins ? ` +${o.coins} coins.` : ""}</p>`); nextBtn(); };
+      const no = () => { M.answer(t, false); keep(); board.paint(); header(); acts.innerHTML = ""; body.insertAdjacentHTML("beforeend", '<p class="why">You said no, thank you.</p>'); nextBtn(); };
+      btn("btn ghost", "👎 No thanks", no);
+      btn("btn go", "👍 Yes", yes);
+    } else nextBtn();
+    function nextBtn() {
+      if (t.lost && t.snap) { btn("btn ghost", "Finish", () => $("yearDialog").close()); btn("btn go", "↺ Try that year again", () => { $("yearDialog").close(); retry(); }); }
+      else btn("btn go", t.over ? "See my town" : `On to year ${t.year} ›`, () => $("yearDialog").close());
+    }
+    if (sum.medals.length || (sum.election && sum.election.won)) LC.Audio.win(); else if (sum.election) LC.Audio.wrong();
+    $("yearDialog").showModal();
+  }
+  function retry() {
+    const t = town();
+    const back = M.retry(t);
+    if (!back) return;
+    store.towns[store.towns.indexOf(t)] = back;
+    keep();
+    open();
+    toast("Back to the start of the election year. You can do it! 🗳️");
+  }
+
+  // ── The bank ───────────────────────────────────────────────────────────────
+  function bank() {
+    const t = town();
+    if (!t) return;
+    const lim = M.loanLimit(t);
+    $("bankBody").innerHTML = `<p>💰 The town has <b>${t.coins}</b> coins.</p><p>🏦 You owe the bank <b>${t.loan}</b> coins. Interest: <b>${Math.ceil(t.loan * 0.1)}</b> coins a year.</p><p class="muted">The bank will lend up to ${lim} coins in total: bigger towns can borrow more.</p>`;
+    $("bBorrow").disabled = t.over || t.loan >= lim;
+    $("bRepay").disabled = $("bRepayAll").disabled = t.over || !t.loan || !t.coins;
+    if (!$("bankDialog").open) $("bankDialog").showModal();
+  }
+  function bankDo(fn) { const t = town(); const err = fn(t); if (err) toast(err); else LC.Audio.right(); keep(); board.paint(); header(); bank(); }
+
+  // ── Medals ─────────────────────────────────────────────────────────────────
+  function medals() {
+    const t = town();
+    const have = new Set(store.medalsEver.concat(t ? t.medals : []));
+    $("medalInfo").textContent = `${have.size} of ${M.MEDALS.length} medals won. Medals from every town count!`;
+    $("medalGrid").innerHTML = M.MEDALS.map((m) => `<div class="medal${have.has(m.id) ? " on" : ""}"><span aria-hidden="true">${have.has(m.id) ? m.e : "🔒"}</span><b>${m.name}</b><small>${m.text}</small></div>`).join("");
+    $("medalDialog").showModal();
+  }
+
+  // ── A new town ─────────────────────────────────────────────────────────────
+  function newTown() {
+    if (store.towns.length >= MAX) { toast(`You have ${MAX} towns. Delete one in 🏙️ My towns first!`); return; }
+    fresh = { name: pick(NAMES), mode: "endless", seed: Math.floor(Math.random() * 1e9) };
+    paintNew();
+    $("newDialog").showModal();
+  }
+  function paintNew() {
+    $("nName").innerHTML = `${esc(fresh.name)} <small aria-hidden="true">✏️</small>`;
+    const modes = [{ id: "endless", e: "♾️", name: "Keep going", sub: "Grow forever. Elections every 4 years." }, { id: "challenge", e: "🏁", name: "20-year challenge", sub: "Get the best score in 20 years." }];
+    $("nMode").innerHTML = "";
+    modes.forEach((m) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "mode" + (fresh.mode === m.id ? " on" : "");
+      b.setAttribute("aria-pressed", String(fresh.mode === m.id));
+      b.innerHTML = `<span aria-hidden="true">${m.e}</span><b>${m.name}</b><small>${m.sub}</small>`;
+      b.addEventListener("click", () => { fresh.mode = m.id; paintNew(); });
+      $("nMode").appendChild(b);
+    });
+    const mp = M.makeMap(fresh.seed);
+    $("nMap").innerHTML = LC.mapSvg(mp.grid, null, { small: true, attrs: 'role="img" aria-label="Your new map"' });
+    $("nLand").textContent = `${mp.land.e} ${mp.land.name}`;
+  }
+  function start() {
+    const t = M.create(fresh.name, fresh.mode, fresh.seed);
+    store.towns.unshift(t);
+    store.current = t.id;
+    keep();
+    $("newDialog").close();
+    go();
+  }
+
+  function rename() {
+    const target = $("newDialog").open ? fresh : town();
+    if (!target) return;
+    const n = prompt("What's your town called?", target.name);
+    if (n == null || !n.trim()) return;
+    target.name = n.trim().slice(0, 24);
+    if ($("newDialog").open) paintNew(); else { keep(); open(); }
+  }
+
+  // ── My towns ───────────────────────────────────────────────────────────────
+  function gallery() {
     const box = $("townList");
     box.innerHTML = "";
-    $("townsInfo").textContent = store.gallery.length + " of " + MAX + " saved";
-    if (!store.gallery.length) {
-      box.innerHTML = '<div class="card empty"><p class="big-emoji" aria-hidden="true">🏙️</p><p><b>No towns yet.</b></p><p>Build one in the sandbox and tap 💾 Save.</p></div>';
+    const have = new Set(store.medalsEver);
+    $("townsInfo").textContent = `${store.towns.length} of ${MAX} towns · 🏅 ${have.size} of ${M.MEDALS.length} medals`;
+    if (!store.towns.length) {
+      box.innerHTML = '<div class="card empty"><p class="big-emoji" aria-hidden="true">🏙️</p><p><b>No towns yet.</b></p><p>Start a new town and be its mayor!</p></div>';
       return;
     }
-    store.gallery.forEach((x) => {
-      const st = LC.Sim.evaluate(x.grid, NEEDS);
+    store.towns.forEach((t) => {
+      const st = M.look(t), rk = M.RANKS[t.rank];
       const card = document.createElement("div");
       card.className = "town card";
-      card.innerHTML = `<div class="thumb">${LC.mapSvg(x.grid, st, { attrs: 'aria-hidden="true"' })}</div><div class="town-body"><b>${esc(x.name)}</b><small>👥 ${st.people} people · 😀 ${st.happy} happy</small></div>`;
+      const status = t.lost ? "🗳️ Lost an election" : t.over ? `🏁 Finished · ${"⭐".repeat(M.score(t).stars)}` : t.mode === "challenge" ? `🏁 Year ${t.year} of ${M.CHALLENGE_YEARS}` : `♾️ Year ${t.year}`;
+      card.innerHTML = `<div class="thumb">${LC.mapSvg(t.grid, st, { attrs: 'aria-hidden="true"' })}</div><div class="town-body"><b>${esc(t.name)}</b><small>${rk.e} ${rk.name} · 👥 ${st.people} · 💰 ${t.coins}</small><small>${status}</small></div>`;
       const acts = document.createElement("div");
       acts.className = "town-acts";
-      const mk = (cls, html, label, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.innerHTML = html; b.setAttribute("aria-label", label + " " + x.name); b.addEventListener("click", fn); return b; };
+      const mk = (cls, html, label, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.innerHTML = html; b.setAttribute("aria-label", label + " " + t.name); b.addEventListener("click", fn); return b; };
       acts.append(
-        mk("btn small", "Open", "Open", () => {
-          if (d().dirty && d().id !== x.id && !confirm("Open this town? Anything you haven't saved in the sandbox will be gone.")) return;
-          store.draft = { id: x.id, name: x.name, grid: copy(x.grid), money: x.money, dirty: false };
-          save();
-          edit();
-        }),
+        mk("btn small", t.over ? "Look" : "Continue", "Open", () => { store.current = t.id; save(); go(); }),
         mk("icon-btn", "🗑️", "Delete", () => {
-          if (!confirm("Delete " + x.name + "?")) return;
-          store.gallery = store.gallery.filter((y) => y.id !== x.id);
-          if (d().id === x.id) d().id = null;
+          if (!confirm("Delete " + t.name + "? Its medals stay yours.")) return;
+          store.towns = store.towns.filter((x) => x.id !== t.id);
+          if (store.current === t.id) store.current = null;
           save();
-          gallery(edit);
+          gallery();
         }));
       card.appendChild(acts);
       box.appendChild(card);
     });
   }
 
-  return { init, open, rename, newTown, saveTown, toggleMoney, gallery };
+  function wire() {
+    $("mEnd").addEventListener("click", endYear);
+    $("mBank").addEventListener("click", bank);
+    $("mMedals").addEventListener("click", medals);
+    $("bBorrow").addEventListener("click", () => bankDo((t) => M.borrow(t, 20)));
+    $("bRepay").addEventListener("click", () => bankDo((t) => M.repay(t, 20)));
+    $("bRepayAll").addEventListener("click", () => bankDo((t) => M.repay(t, t.loan)));
+    $("nReroll").addEventListener("click", () => { fresh.seed = Math.floor(Math.random() * 1e9); paintNew(); });
+    $("nStart").addEventListener("click", start);
+    $("nName").addEventListener("click", rename);
+  }
+
+  return { init, open, tile, gallery, newTown, rename, wire, current: town };
 })();

@@ -20,7 +20,12 @@ LC.TYPES = {
   school: { e: "🏫", name: "School", need: "school", range: 4, cost: 20, upkeep: 5 },
   clinic: { e: "🏥", name: "Clinic", need: "clinic", range: 4, cost: 20, upkeep: 5 },
   fire: { e: "🚒", name: "Fire station", need: "fire", range: 5, cost: 16, upkeep: 4 },
-  factory: { e: "🏭", name: "Factory", cost: 18, income: 6, jobs: true, noisy: true }
+  factory: { e: "🏭", name: "Factory", cost: 18, income: 6, jobs: true, noisy: true },
+  // Only in Be the Mayor, unlocked as the town grows.
+  library: { e: "📚", name: "Library", bonus: true, range: 4, cost: 24, upkeep: 3 },
+  police: { e: "🚓", name: "Police", need: "police", range: 5, cost: 20, upkeep: 3 },
+  station: { e: "🚉", name: "Train station", station: true, jobs: true, cost: 40, upkeep: 2, income: 4 },
+  stadium: { e: "🏟️", name: "Stadium", bonus: true, range: 6, cost: 60, upkeep: 5 }
 };
 LC.JOB_RANGE = 5;
 LC.NEEDS = {
@@ -31,7 +36,9 @@ LC.NEEDS = {
   shop: "There's nowhere near to buy food!",
   park: "There's nowhere for the kids to play.",
   noise: "The factory next door is SO noisy!",
-  job: "I can't find a job near here."
+  job: "I can't find a job near here.",
+  police: "I'd feel safer with a police station nearby.",
+  repair: "The storm broke our roof! Please fix it."
 };
 LC.HAPPY = ["I love living here!", "Everything I need is close by!", "Best town ever!", "What a lovely street!"];
 const CODES = { r: "road", h: "house", b: "flats", p: "park", s: "shop", k: "school", c: "clinic", f: "fire", x: "factory" };

@@ -7,7 +7,7 @@ window.LC = window.LC || {};
   const KEY = "little-city";
 
   // ── Saved progress ─────────────────────────────────────────────────────────
-  const store = { stars: {}, quiz: null, muted: false, seenHelp: false, draft: null, gallery: [] };
+  const store = { stars: {}, quiz: null, muted: false, seenHelp: false, towns: [], current: null, medalsEver: [] };
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } report(); };
   const starsOf = (ch, i) => store.stars[ch + "-" + i] || 0;
@@ -20,19 +20,19 @@ window.LC = window.LC || {};
     try { localStorage.setItem("gamebox:progress:little-city", JSON.stringify({ stars: got, max, at: Date.now() })); } catch (e) { /* ignore */ }
   }
   const chapterById = (id) => LC.CHAPTERS.find((c) => c.id === id);
-  LC.Studio.init(store, save, LC.UI.toast);
+  LC.Studio.init(store, save, LC.UI.toast, { go: () => openStudio() });
 
   let screen = "home", back = "home";
   let ch = null, lvl = 0, cfg = null;
   let quiz = null;
 
-  const TITLES = { home: "Little City", studio: "Sandbox", towns: "My towns", quiz: "Town Quiz" };
+  const TITLES = { home: "Little City", studio: "Be the Mayor", towns: "My towns", quiz: "Town Quiz" };
   function show(name) {
     screen = name;
     ["home", "chapter", "play", "studio", "towns", "quiz"].forEach((s) => { $(s).hidden = s !== name; });
     $("back").hidden = name !== "home";
     $("up").hidden = name === "home";
-    $("up").innerHTML = "&lsaquo; " + (name === "play" && ch ? ch.kicker : name === "towns" && back === "studio" ? "Sandbox" : "Home");
+    $("up").innerHTML = "&lsaquo; " + (name === "play" && ch ? ch.kicker : name === "towns" && back === "studio" ? "Mayor" : "Home");
     $("title").textContent = TITLES[name] || (name === "chapter" ? ch.name : "Level " + (lvl + 1));
     window.scrollTo(0, 0);
     if (name !== "play") LC.Lesson.stop();
@@ -41,7 +41,8 @@ window.LC = window.LC || {};
   function goHome() {
     ch = null;
     LC.UI.home(starsOf, store.quiz, openChapter);
-    $("townsTile").textContent = store.gallery.length ? store.gallery.length + " saved" : "None yet";
+    $("townsTile").textContent = store.towns && store.towns.length ? store.towns.length + " town" + (store.towns.length > 1 ? "s" : "") : "None yet";
+    $("mayorTile").textContent = LC.Studio.tile();
     show("home");
   }
   function openChapter(id) {
@@ -49,8 +50,9 @@ window.LC = window.LC || {};
     LC.UI.chapter(ch, starsOf, unlocked, (i) => play(i));
     show("chapter");
   }
-  function openStudio() { show("studio"); LC.Studio.open(); }
-  function openTowns(from) { back = from; show("towns"); LC.Studio.gallery(openStudio); }
+  // With no town yet, Be the Mayor opens the new-town dialog instead.
+  function openStudio() { if (!LC.Studio.current()) { LC.Studio.newTown(); return; } show("studio"); LC.Studio.open(); }
+  function openTowns(from) { back = from; show("towns"); LC.Studio.gallery(); }
 
   // ── A level ────────────────────────────────────────────────────────────────
   function play(i) {
@@ -96,15 +98,13 @@ window.LC = window.LC || {};
   });
   $("jobsBtn").addEventListener("click", () => $("jobsDialog").showModal());
 
-  // ── Studio and gallery ─────────────────────────────────────────────────────
+  // ── Be the Mayor ───────────────────────────────────────────────────────────
+  LC.Studio.wire();
   $("studioBtn").addEventListener("click", openStudio);
   $("townsBtn").addEventListener("click", () => openTowns("home"));
-  $("sTowns").addEventListener("click", () => openTowns("studio"));
-  $("townsStudio").addEventListener("click", openStudio);
+  $("townsStudio").addEventListener("click", () => LC.Studio.newTown());
   $("sName").addEventListener("click", LC.Studio.rename);
-  $("sNew").addEventListener("click", LC.Studio.newTown);
-  $("sSave").addEventListener("click", LC.Studio.saveTown);
-  $("sMoney").addEventListener("click", LC.Studio.toggleMoney);
+  $("mayorTown").addEventListener("click", () => openTowns("studio"));
 
   // ── Quiz ───────────────────────────────────────────────────────────────────
   function startQuiz() {

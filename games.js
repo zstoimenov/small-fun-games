@@ -40,9 +40,9 @@ const GAMES = [
     category: "science",
     players: [1, 1],
     age: 8,
-    blurb: "Build roads, homes, schools, clinics, parks and shops, and tap every house to hear what the family needs. Keep the noisy factory off people's doorsteps, balance the town's budget, read residents' letters and hold a town vote. Then build your own town in the sandbox, and meet the people who plan and run towns for a job!",
+    blurb: "Build roads, homes, schools, clinics, parks and shops, and tap every house to hear what the family needs. Then be the mayor: every year families move in or out, storms and festivals happen, and residents write letters. Every 4 years you face an election against rival candidates, so keep your town happy! Meet the people who plan and run towns for a job.",
     colors: ["#66bb6a", "#1e88e5"],
-    highlights: ["🗳️ Town vote", "💰 Budget"]
+    highlights: ["🗳️ Elections", "📅 Year by year"]
   },
   {
     title: "Story Builder",

@@ -2044,6 +2044,29 @@ puzzles were measured: 4 of 12 school spots, 1 of 13 clinic spots and 2 of 14
 factory spots work, so range shading and the families' words carry the hint.
 `tools/city-check.js` replays a worked answer for every build level.
 
+#### Second pass: Be the Mayor (turn-based, elections)
+
+Asked for because nothing moved and a finished sandbox city had no reason to
+come back. The sandbox became a turn-based game (`mayor.js`, pure, seeded):
+a year per turn, occupancy that grows +2 a year in happy homes, +1 in OK ones
+below half full, and -1 in unhappy ones (so a town without services stalls
+instead of dying); tax 1 coin a person plus happy/3; shops earn customers/5
+(max 5), factories workers/4 (max 8); separate, lower running costs than the
+lessons. Needs switch on with size (shop 8, school 16, park 24, clinic 36,
+jobs 50, fire 60, police 110). One event a year; fires only after year 5 and
+only to buildings no fire station covers. Elections every 4 years: happy
+homes vote for the mayor, OK homes split if a rival promises their missing
+need, unhappy homes vote for the rival who promises it (or the loan). Losing
+ends the town but can be retried from a snapshot taken when the campaign
+starts.
+
+Tuned with `tools/mayor-bot.js` over 200 seeded towns: a sensible bot reaches
+~90 people in 20 years (84/200 reach City) and wins 89% of elections;
+houses-only stalls near 39 and loses its first election; a lazy start stays
+at 8. Two measurement traps worth remembering: 2 coins a person made coins
+pile up to 1,800 with nothing to buy, and a naive voting rule (OK homes all
+defecting) lost half of all towns at the very first election.
+
 Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
 Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
 

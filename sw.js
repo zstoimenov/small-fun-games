@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v51";
+const CACHE = "game-box-v52";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -16,7 +16,7 @@ const ASSETS = [
 
   "./little-city/", "./little-city/index.html", "./little-city/manifest.webmanifest",
   "./little-city/css/style.css",
-  "./little-city/js/sim.js", "./little-city/js/audio.js", "./little-city/js/map.js",
+  "./little-city/js/sim.js", "./little-city/js/audio.js", "./little-city/js/map.js", "./little-city/js/mayor.js", "./little-city/js/mayor-ui.js",
   "./little-city/js/levels.js", "./little-city/js/lesson.js", "./little-city/js/studio.js",
   "./little-city/js/ui.js", "./little-city/js/app.js",
   "./little-city/icons/icon-192.png", "./little-city/icons/icon-512.png",

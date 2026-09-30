@@ -1,0 +1,501 @@
+/* Little City - Be the Mayor: a town that changes every year. No DOM here,    */
+/* so tools/city-check.js can play hundreds of towns to tune the numbers.      */
+/*                                                                             */
+/* A turn is a year. The mayor builds with the coins in the treasury, then     */
+/* ends the year: families move in or out depending on what's near them,      */
+/* shops and factories earn from the people around them, running costs and    */
+/* loan interest go out, and one thing happens (a storm, a festival, a letter */
+/* asking for something, an offer to say yes or no to). Everything random is  */
+/* drawn from the town's own seed, so the same town always plays the same.    */
+"use strict";
+window.LC = window.LC || {};
+
+LC.Mayor = (function () {
+  const Sim = LC.Sim, T = LC.TYPES;
+  const W = 11, H = 8;
+  const START_COINS = 80, INTEREST = 0.1, CHALLENGE_YEARS = 20, TAX = 1;
+  // Running costs in Be the Mayor. Lower than the lessons' numbers, because
+  // here they come out of real taxes every single year.
+  const UPKEEP = { park: 1, school: 3, clinic: 3, fire: 2, library: 2, police: 2, station: 2, stadium: 4 };
+  const RANKS = [
+    { name: "Hamlet", e: "🏡", at: 0, unlock: ["road", "house", "shop", "park", "school"] },
+    { name: "Village", e: "🏘️", at: 20, unlock: ["clinic", "fire", "factory"] },
+    { name: "Town", e: "🏙️", at: 50, unlock: ["flats", "library"] },
+    { name: "City", e: "🌆", at: 100, unlock: ["police", "station"] },
+    { name: "Big City", e: "🌃", at: 180, unlock: ["stadium"] }
+  ];
+  // As the town grows, families expect more. Below these sizes a missing
+  // service doesn't make anyone unhappy, so a new town can start small.
+  const WANTS = [["shop", 8], ["school", 16], ["park", 24], ["clinic", 36], ["job", 50], ["fire", 60], ["police", 110]];
+  const MEDALS = [
+    { id: "first", e: "🏠", name: "First family", text: "The first family moved in." },
+    { id: "village", e: "🏘️", name: "Village", text: "20 people live in your town." },
+    { id: "town", e: "🏙️", name: "Town", text: "50 people live in your town." },
+    { id: "city", e: "🌆", name: "City", text: "100 people live in your town." },
+    { id: "big", e: "🌃", name: "Big City", text: "180 people live in your town." },
+    { id: "allhappy", e: "😀", name: "Everyone happy", text: "Every family was happy at the end of a year (12 people or more)." },
+    { id: "saver", e: "🐷", name: "Piggy bank", text: "200 coins in the treasury." },
+    { id: "debtfree", e: "🏦", name: "Paid it back", text: "Paid back a whole loan." },
+    { id: "storms", e: "🌩️", name: "Storm survivor", text: "Got through 3 storms." },
+    { id: "firesafe", e: "🚒", name: "Fire safe", text: "A fire started, but the fire fighters put it out." },
+    { id: "helper", e: "✉️", name: "Good neighbour", text: "Did 3 things residents asked for." },
+    { id: "ten", e: "🎖️", name: "10 years as mayor", text: "Ran one town for 10 years." },
+    { id: "elected", e: "🗳️", name: "Re-elected", text: "Won an election." },
+    { id: "landslide", e: "🏆", name: "Landslide", text: "Won an election with 3 out of every 4 votes." }
+  ];
+  // Every 4 years the town votes. Two rivals stand against the mayor, each
+  // promising what the most families are missing, so the campaign year is a
+  // year to fix it.
+  const TERM = 4;
+  const RIVALS = [{ e: "🦊", name: "Fiona Fox" }, { e: "🐻", name: "Barry Bear" }, { e: "🦉", name: "Olive Owl" }, { e: "🐸", name: "Frank Frog" }, { e: "🐧", name: "Penny Penguin" }, { e: "🦘", name: "Kip Kangaroo" }];
+  const PROMISE = {
+    road: "Roads to every house!", shop: "Shops for everyone!", school: "A school near every home!", park: "More parks for the kids!",
+    clinic: "A clinic close to every street!", fire: "Fire stations to keep us safe!", police: "More police!", job: "Jobs for everybody!",
+    noise: "Move the noisy factories away from homes!", repair: "Fix everything the storm broke!", loan: "Pay back the bank loan!", slide: "A giant water slide!"
+  };
+  const homes = Sim.homes;
+  const capOf = (t) => (T[t] && T[t].people) || 0;
+  const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+
+  // A small seeded random number generator (mulberry32).
+  function rng(seed) {
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const pickOf = (r, list) => list[Math.floor(r() * list.length)];
+
+  // ── A new map ──────────────────────────────────────────────────────────────
+  // Four kinds of land, so no two towns start the same.
+  const LANDS = [{ id: "river", name: "River town", e: "🏞️" }, { id: "lake", name: "Lake town", e: "🏝️" }, { id: "sea", name: "Seaside town", e: "🏖️" }, { id: "forest", name: "Forest town", e: "🌲" }];
+  function makeMap(seed) {
+    const r = rng(seed * 7 + 1);
+    const g = Array.from({ length: H }, () => Array(W).fill(null));
+    const ey = 3 + Math.floor(r() * 2);
+    const land = pickOf(r, LANDS);
+    const free = (x, y) => g[y] && x >= 0 && x < W && !g[y][x] && !(y === ey && x < 3);
+    if (land.id === "river") {
+      let x = 6 + Math.floor(r() * 3);
+      for (let y = 0; y < H; y++) {
+        g[y][x] = y === ey ? { t: "road", fixed: true } : { t: "water" };
+        if (y !== ey && y !== ey - 1 && r() < 0.3) x = Math.max(5, Math.min(W - 2, x + (r() < 0.5 ? -1 : 1)));
+      }
+    } else if (land.id === "lake") {
+      const cx = 5 + Math.floor(r() * 4), cy = ey < 4 ? 6 : 1;
+      [[0, 0], [1, 0], [-1, 0], [0, 1], [1, 1], [0, -1], [2, 0], [-1, 1]].forEach(([dx, dy]) => { if (free(cx + dx, cy + dy)) g[cy + dy][cx + dx] = { t: "water" }; });
+    } else if (land.id === "sea") {
+      for (let x = 0; x < W; x++) { g[H - 1][x] = { t: "water" }; if (x > 3 + Math.floor(r() * 3) && r() < 0.7) g[H - 2][x] = { t: "water" }; }
+    } else {
+      for (let k = 0; k < 3; k++) {
+        const cx = 2 + Math.floor(r() * (W - 3)), cy = Math.floor(r() * H);
+        [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0]].forEach(([dx, dy]) => { if (free(cx + dx, cy + dy) && r() < 0.8) g[cy + dy][cx + dx] = { t: "trees" }; });
+      }
+    }
+    for (let k = 0; k < 4; k++) { const x = 1 + Math.floor(r() * (W - 1)), y = Math.floor(r() * H); if (free(x, y) && y !== ey) g[y][x] = { t: "trees" }; }
+    g[ey][0] = { t: "road", fixed: true, entry: true };
+    return { grid: g, land };
+  }
+
+  function create(name, mode, seed) {
+    const m = makeMap(seed);
+    return {
+      v: 1, id: Date.now(), name, mode, seed, land: m.land.id, grid: m.grid,
+      year: 1, coins: START_COINS, loan: 0, request: null, offer: null, over: false,
+      streak: {}, stats: { storms: 0, helped: 0, fireSaved: 0, repaid: 0, best: 0 },
+      wants: 0, rank: 0, medals: [], history: [], last: null,
+      term: 1, campaign: null, snap: null, elections: []
+    };
+  }
+
+  // ── What the town looks like right now ─────────────────────────────────────
+  const people = (town) => town.grid.flat().reduce((n, c) => n + (c && homes(c.t) ? c.live || 0 : 0), 0);
+  const rankOf = (n) => RANKS.reduce((k, rk, i) => (n >= rk.at ? i : k), 0);
+  const unlocked = (town) => RANKS.slice(0, town.rank + 1).flatMap((rk) => rk.unlock);
+  function wantsFor(n) { return ["road", "noise"].concat(WANTS.filter(([, at]) => n >= at).map(([w]) => w)); }
+  function covered(g, x, y, t) {
+    const R = T[t].range || (T[t].jobs ? LC.JOB_RANGE : 0);
+    return g.some((row, yy) => row.some((c, xx) => c && c.t === t && !c.damaged && Math.abs(xx - x) + Math.abs(yy - y) <= R));
+  }
+
+  // Everything the mayor's screen shows: each home's face and what it's
+  // missing, what each shop and factory would earn, and the year's sums.
+  function look(town) {
+    const g = town.grid, pop = people(town);
+    // Damaged buildings don't work: hand the checker a copy without them.
+    const working = g.map((row) => row.map((c) => (c && c.damaged && !homes(c.t) ? { t: "trees" } : c)));
+    const ev = Sim.evaluate(working, wantsFor(pop));
+    const roads = Sim.reach(g);
+    const on = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => roads.has(x + dx + "," + (y + dy)));
+    const hs = ev.houses.map((h) => {
+      const c = g[h.y][h.x], missing = h.missing.slice();
+      if (c.damaged) missing.push("repair");
+      const face = c.damaged ? "sad" : h.face;
+      const bonus = ["library", "stadium"].filter((t) => covered(working, h.x, h.y, t)).length;
+      return { x: h.x, y: h.y, t: c.t, cap: capOf(c.t), live: c.live || 0, face, missing, bonus };
+    });
+    const out = { people: pop, homes: hs, houses: hs, happy: 0, shops: [], works: [], tax: 0, earn: 0, upkeep: 0 };
+    hs.forEach((h) => { if (h.face === "happy") out.happy += h.live; });
+    g.forEach((row, y) => row.forEach((c, x) => {
+      if (!c || !T[c.t] || c.damaged || !on(x, y)) return;
+      const Ty = T[c.t];
+      out.upkeep += UPKEEP[c.t] || 0;
+      if (c.t === "shop") {
+        const customers = hs.reduce((n, h) => n + (dist(h, { x, y }) <= Ty.range ? h.live : 0), 0);
+        const coins = Math.min(5, Math.floor(customers / 5));
+        out.shops.push({ x, y, customers, coins });
+        out.earn += coins;
+      }
+      if (c.t === "factory" || c.t === "station") {
+        const workers = hs.reduce((n, h) => n + (dist(h, { x, y }) <= LC.JOB_RANGE ? h.live : 0), 0);
+        const coins = c.t === "factory" ? Math.min(8, Math.floor(workers / 4)) : Ty.income;
+        out.works.push({ x, y, t: c.t, workers, coins });
+        out.earn += coins;
+      }
+    }));
+    // Everyone pays TAX coins. Happy families and ones near a library or
+    // stadium pay a little more, because they're doing well.
+    out.tax = TAX * pop + Math.floor(out.happy / 3) + hs.reduce((n, h) => n + (h.live ? h.bonus : 0), 0);
+    out.interest = Math.ceil(town.loan * INTEREST);
+    out.balance = out.tax + out.earn - out.upkeep - out.interest;
+    out.allHappy = hs.length > 0 && hs.every((h) => h.face === "happy");
+    return out;
+  }
+
+  // ── Building ───────────────────────────────────────────────────────────────
+  // Returns null if it worked, or a kid-readable reason why not.
+  function build(town, t, x, y) {
+    const g = town.grid, c = g[y][x];
+    if (!unlocked(town).includes(t)) return "🔒 That unlocks when your town is bigger.";
+    if (c) return t === "road" ? "skip" : "That square is taken. Pick an empty grass square.";
+    if (town.coins < T[t].cost) return "Not enough coins! Borrow from the 🏦 bank, or wait for next year's taxes.";
+    town.coins -= T[t].cost;
+    g[y][x] = homes(t) ? { t, live: 0 } : { t };
+    return null;
+  }
+  // You get half back: a building has already been paid for and used.
+  function bulldoze(town, x, y) {
+    const c = town.grid[y][x];
+    if (!c) return "skip";
+    if (c.t === "trees") { if (town.coins < 2) return "Clearing trees costs 2 coins."; town.coins -= 2; town.grid[y][x] = null; return null; }
+    if (!T[c.t] || c.fixed) return c.fixed ? "🔒 That was here first: you can't bulldoze it." : "You can't bulldoze water!";
+    town.coins += Math.floor(T[c.t].cost / 2);
+    town.grid[y][x] = null;
+    return null;
+  }
+  const repairCost = (c) => Math.ceil(T[c.t].cost / 2);
+  function repair(town, x, y) {
+    const c = town.grid[y][x];
+    if (!c || !c.damaged) return "skip";
+    if (town.coins < repairCost(c)) return "Not enough coins to repair it yet.";
+    town.coins -= repairCost(c);
+    delete c.damaged;
+    return null;
+  }
+
+  // ── The bank ───────────────────────────────────────────────────────────────
+  const loanLimit = (town) => 60 + 2 * people(town);
+  function borrow(town, n) {
+    const can = loanLimit(town) - town.loan;
+    if (can <= 0) return "The bank says: pay some back first!";
+    const amt = Math.min(n, can);
+    town.loan += amt;
+    town.coins += amt;
+    return null;
+  }
+  function repay(town, n) {
+    const amt = Math.min(n, town.loan, town.coins);
+    if (amt <= 0) return town.loan ? "You need coins to pay the loan back." : "You don't owe the bank anything!";
+    town.loan -= amt;
+    town.coins -= amt;
+    // The medal is for a real loan, carried through at least one year.
+    if (!town.loan && town.stats.owed) { town.stats.repaid++; town.stats.owed = false; award(town, "debtfree"); }
+    return null;
+  }
+
+  // ── Medals ─────────────────────────────────────────────────────────────────
+  function award(town, id) {
+    if (town.medals.includes(id)) return false;
+    town.medals.push(id);
+    (town.newMedals = town.newMedals || []).push(id);
+    return true;
+  }
+
+  // ── The year's one event ───────────────────────────────────────────────────
+  const FAMILIES = ["Nguyen", "Smith", "Patel", "Kowalski", "Okafor", "Rossi", "Chen", "Murphy", "Ivanova", "Garcia"];
+  const WISH = {
+    park: "We'd love a park near our house for the kids to play in!",
+    school: "Could we have a school closer to our house?",
+    shop: "Please build a shop near us: it's a long walk for milk!",
+    clinic: "We'd feel better with a clinic nearby.",
+    library: "Our kids love books. Could you build a library near us?"
+  };
+  function event(town, r, st) {
+    const g = town.grid, pop = st.people;
+    const buildings = [];
+    g.forEach((row, y) => row.forEach((c, x) => { if (c && T[c.t] && c.t !== "road" && !c.fixed) buildings.push({ x, y, c }); }));
+    const pool = [["quiet", 3]];
+    if (town.year > 1 && buildings.length >= 4) pool.push(["storm", 1.5]);
+    if (town.year > 5 && buildings.length >= 6) pool.push(["fire", 1]);
+    if (pop >= 8) pool.push(["festival", 2], ["heat", 1], ["boom", 2]);
+    if (pop >= 4 && !town.request) pool.push(["request", 4]);
+    if (pop >= 12 && !town.offer) pool.push(["offer", 3]);
+    let roll = r() * pool.reduce((n, p) => n + p[1], 0), kind = "quiet";
+    for (const [k, w] of pool) { roll -= w; if (roll < 0) { kind = k; break; } }
+
+    if (kind === "storm") {
+      const hit = pickOf(r, buildings);
+      hit.c.damaged = true;
+      town.stats.storms++;
+      if (town.stats.storms >= 3) award(town, "storms");
+      return { e: "🌩️", title: "A big storm!", text: `The wind damaged the ${T[hit.c.t].name.toLowerCase()}. Nobody was hurt, but it won't work until you tap it and pay to repair it.`, at: hit };
+    }
+    if (kind === "fire") {
+      const unsafe = buildings.filter((b) => !covered(g, b.x, b.y, "fire"));
+      if (!unsafe.length) {
+        town.stats.fireSaved++;
+        award(town, "firesafe");
+        return { e: "🚒", title: "Fire! And the fire fighters saved the day", text: "A fire started, but your fire station was close enough to put it out straight away. Great planning!" };
+      }
+      const hit = pickOf(r, unsafe);
+      const was = T[hit.c.t].name.toLowerCase();
+      g[hit.y][hit.x] = null;
+      return { e: "🔥", title: "A fire!", text: `The ${was} burned down. Everyone got out safely, but there was no fire station close enough to save it. A 🚒 fire station protects everything nearby.`, at: hit };
+    }
+    if (kind === "festival") { const n = Math.max(5, Math.floor(pop / 3)); town.coins += n; return { e: "🎉", title: "Town festival!", text: `Everyone came to the festival and it made ${n} coins for the town!`, coins: n }; }
+    if (kind === "heat") return { e: "☀️", title: "Heatwave!", text: "It was SO hot. Families without a park nearby went to stay somewhere cooler, so their houses didn't grow this year.", heat: true };
+    if (kind === "boom") return { e: "👶", title: "Baby boom!", text: "Lots of babies were born this year! Every happy home with room got one more person.", boom: true };
+    if (kind === "request") {
+      const wants = ["park", "school", "shop", "clinic"].concat(unlocked(town).includes("library") ? ["library"] : []);
+      const asks = st.homes.filter((h) => h.live).flatMap((h) => wants.filter((w) => !covered(g, h.x, h.y, w)).map((w) => ({ h, w })));
+      if (!asks.length) return { e: "💌", title: "A thank-you letter", text: "A family wrote to say they love living here. Everything they need is close by!" };
+      const a = pickOf(r, asks), fam = pickOf(r, FAMILIES);
+      town.request = { x: a.h.x, y: a.h.y, need: a.w, fam, due: town.year + 3, reward: 15 + 5 * Math.floor(pop / 20) };
+      return { e: "✉️", title: `A letter from the ${fam} family`, text: `“${WISH[a.w]}” Build a ${T[a.w].name.toLowerCase()} close to their house (it's circled on the map) within 3 years for a thank-you of ${town.request.reward} coins.`, at: a.h };
+    }
+    if (kind === "offer") {
+      const empty = [];
+      g.forEach((row, y) => row.forEach((c, x) => { if (!c && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[y + dy] && g[y + dy][x + dx] && g[y + dy][x + dx].t === "road")) empty.push({ x, y }); }));
+      if (!empty.length) return { e: "🌤️", title: "A quiet year", text: "Nothing special happened. A lovely, peaceful year!" };
+      // A noisy offer next to homes is the interesting one: money now, or
+      // happy neighbours?
+      const nearHomes = empty.filter((p) => st.homes.some((h) => Math.abs(h.x - p.x) <= 1 && Math.abs(h.y - p.y) <= 1));
+      const offers = [];
+      if (nearHomes.length && unlocked(town).includes("factory")) { const p = pickOf(r, nearHomes); offers.push({ kind: "factory", x: p.x, y: p.y, coins: 30 + Math.floor(pop / 4), text: "A juice company wants to build a factory right next to some homes. They'll pay the town {c} coins. But factories are noisy! Say yes?" }); }
+      { const p = pickOf(r, empty); offers.push({ kind: "house", x: p.x, y: p.y, coins: 0, text: "A builder offers to build a house for free on the circled square. A new home, free! Say yes?" }); }
+      const park = buildingsOf(g, "park");
+      if (park.length) { const p = pickOf(r, park); offers.push({ kind: "sellpark", x: p.x, y: p.y, coins: 25 + Math.floor(pop / 5), text: "Someone wants to buy the circled park to build a car park, for {c} coins. Families near it would lose their park. Sell it?" }); }
+      const o = pickOf(r, offers);
+      o.text = o.text.replace("{c}", o.coins);
+      town.offer = o;
+      return { e: "🤝", title: "An offer for the town", text: o.text, choice: true, at: o };
+    }
+    return { e: "🌤️", title: "A quiet year", text: "Nothing special happened. A lovely, peaceful year!" };
+  }
+  function buildingsOf(g, t) { const out = []; g.forEach((row, y) => row.forEach((c, x) => { if (c && c.t === t) out.push({ x, y }); })); return out; }
+  function answer(town, yes) {
+    const o = town.offer;
+    town.offer = null;
+    if (!o || !yes) return null;
+    const g = town.grid;
+    if (o.kind === "factory" && !g[o.y][o.x]) g[o.y][o.x] = { t: "factory" };
+    if (o.kind === "house" && !g[o.y][o.x]) g[o.y][o.x] = { t: "house", live: 0 };
+    if (o.kind === "sellpark" && g[o.y][o.x] && g[o.y][o.x].t === "park") g[o.y][o.x] = null;
+    town.coins += o.coins;
+    return o;
+  }
+
+  // ── Elections ──────────────────────────────────────────────────────────────
+  // What families are missing, most common first (weighted by how many live
+  // there), plus the loan if there is one.
+  function complaints(town, st) {
+    const n = {};
+    st.homes.forEach((h) => { if (h.face !== "happy") h.missing.forEach((m) => { n[m] = (n[m] || 0) + Math.max(1, h.live); }); });
+    if (town.loan > 0) n.loan = Math.max(1, Math.floor(st.people / 4));
+    return Object.keys(n).sort((a, b) => n[b] - n[a]);
+  }
+  function startCampaign(town, r) {
+    const st = look(town), wish = complaints(town, st).concat(["slide", "slide"]);
+    const pool = RIVALS.slice();
+    const rivals = [0, 1].map((k) => { const who = pool.splice(Math.floor(r() * pool.length), 1)[0]; return { e: who.e, name: who.name, need: wish[k], promise: PROMISE[wish[k]] }; });
+    if (rivals[1].need === rivals[0].need) rivals[1].need = "slide", rivals[1].promise = PROMISE.slide;
+    town.campaign = { rivals, year: town.year, helped: town.stats.helped };
+    // A copy to go back to if the mayor loses: the start of the election
+    // year, rivals and all.
+    town.snap = JSON.stringify(Object.assign({}, town, { snap: null, last: null }));
+  }
+  // Every family with someone living there votes, one vote per person.
+  // Happy homes vote for the mayor. OK homes split their votes if a rival
+  // promises the thing they're missing (families don't all agree). Unhappy
+  // homes vote for a rival: the one promising what they need, or the one
+  // promising to pay back the loan, or anyone who isn't the mayor. Families
+  // the mayor helped this term bring their friends.
+  function tally(town) {
+    const c = town.campaign, st = look(town);
+    const votes = { mayor: 0, r0: 0, r1: 0 };
+    st.homes.forEach((h) => {
+      if (!h.live) return;
+      if (h.face === "happy") { votes.mayor += h.live; return; }
+      const k = c.rivals.findIndex((rv) => h.missing.includes(rv.need));
+      if (h.face === "meh") {
+        if (k < 0) { votes.mayor += h.live; return; }
+        const half = Math.floor(h.live / 2);
+        votes["r" + k] += h.live - half;
+        votes.mayor += half;
+        return;
+      }
+      const debt = c.rivals.findIndex((rv) => rv.need === "loan" && town.loan > 0);
+      votes["r" + (k >= 0 ? k : debt >= 0 ? debt : 0)] += h.live;
+    });
+    const thanks = 3 * Math.max(0, town.stats.helped - c.helped);
+    votes.mayor += thanks;
+    const total = votes.mayor + votes.r0 + votes.r1;
+    // Most votes wins; a tie keeps the mayor who's already there.
+    const won = votes.mayor >= votes.r0 && votes.mayor >= votes.r1;
+    return { votes, total, won, thanks, rivals: c.rivals };
+  }
+  function election(town, sum) {
+    const res = tally(town);
+    res.year = town.year;
+    town.elections.push({ year: town.year, won: res.won, share: res.total ? Math.round(100 * res.votes.mayor / res.total) : 100 });
+    if (res.won) {
+      town.term++;
+      award(town, "elected");
+      if (res.total && res.votes.mayor * 4 >= res.total * 3) award(town, "landslide");
+    } else {
+      town.over = true;
+      town.lost = true;
+      const k = res.votes.r0 >= res.votes.r1 ? 0 : 1;
+      res.winner = res.rivals[k];
+    }
+    town.campaign = null;
+    sum.election = res;
+  }
+  // Lost? Go back to the start of the election year and try again. Medals
+  // already won are kept.
+  function retry(town) {
+    if (!town.snap) return null;
+    const back = JSON.parse(town.snap);
+    back.medals = Array.from(new Set(back.medals.concat(town.medals)));
+    back.snap = town.snap;
+    return back;
+  }
+
+  // ── End the year ───────────────────────────────────────────────────────────
+  function endYear(town) {
+    if (town.over) return null;
+    const r = rng(town.seed * 1000 + town.year);
+    const before = look(town);
+    const sum = { year: town.year, inn: 0, out: 0, why: {}, news: [], upgrades: 0 };
+    town.newMedals = [];
+    const ev = event(town, r, before);
+    sum.event = ev;
+
+    // Families move in and out, a few at a time.
+    const st = look(town);
+    st.homes.forEach((h) => {
+      const c = town.grid[h.y][h.x];
+      if (!c || !homes(c.t)) return;
+      let d = 0;
+      const parked = covered(town.grid, h.x, h.y, "park");
+      if (h.missing.includes("road")) d = -h.live;
+      else if (h.face === "happy") d = ev.heat && !parked ? 0 : 2 + (h.bonus ? 1 : 0) + (ev.boom ? 1 : 0);
+      else if (h.face === "meh") d = h.live < h.cap / 2 ? 1 : 0;
+      else d = -1;
+      const nv = Math.max(0, Math.min(h.cap, h.live + d));
+      if (nv > h.live) sum.inn += nv - h.live;
+      if (nv < h.live) { sum.out += h.live - nv; h.missing.forEach((m) => { sum.why[m] = (sum.why[m] || 0) + 1; }); }
+      c.live = nv;
+      // A house that stays full and happy grows into flats once flats exist.
+      const k = h.x + "," + h.y;
+      town.streak[k] = h.face === "happy" && nv === h.cap ? (town.streak[k] || 0) + 1 : 0;
+      if (c.t === "house" && town.streak[k] >= 3 && unlocked(town).includes("flats")) { c.t = "flats"; town.streak[k] = 0; sum.upgrades++; }
+    });
+    // A train station brings new families to homes with room.
+    if (buildingsOf(town.grid, "station").some((p) => !town.grid[p.y][p.x].damaged)) {
+      let extra = 4;
+      st.homes.forEach((h) => { const c = town.grid[h.y][h.x]; if (extra && c && homes(c.t) && h.face !== "sad" && c.live < capOf(c.t)) { const n = Math.min(extra, capOf(c.t) - c.live); c.live += n; extra -= n; sum.inn += n; } });
+    }
+    if (sum.upgrades) sum.news.push(`🏢 ${sum.upgrades} happy full house${sum.upgrades > 1 ? "s" : ""} grew into flats!`);
+
+    // Money, worked out on the town as it is now.
+    const now = look(town);
+    Object.assign(sum, { tax: now.tax, earn: now.earn, upkeep: now.upkeep, interest: now.interest, balance: now.balance });
+    town.coins += now.balance;
+    if (town.coins < 0) {
+      const need = -town.coins;
+      town.loan += need;
+      town.coins = 0;
+      sum.news.push(`🏦 The town ran out of coins, so the bank lent it ${need}. Loans cost interest every year!`);
+    }
+
+    if (town.loan > 0) town.stats.owed = true;
+
+    // Did we do what a family asked?
+    const q = town.request;
+    if (q) {
+      const c = town.grid[q.y][q.x];
+      if (!c || !homes(c.t)) town.request = null;
+      else if (covered(town.grid, q.x, q.y, q.need)) {
+        town.coins += q.reward;
+        town.stats.helped++;
+        if (town.stats.helped >= 3) award(town, "helper");
+        sum.news.push(`✉️ The ${q.fam} family says THANK YOU for the ${T[q.need].name.toLowerCase()}! +${q.reward} coins.`);
+        town.request = null;
+      } else if (town.year >= q.due) {
+        c.live = Math.max(0, (c.live || 0) - 2);
+        sum.news.push(`😞 The ${q.fam} family waited 3 years for a ${T[q.need].name.toLowerCase()}. Two of them moved away.`);
+        town.request = null;
+      }
+    }
+
+    if (town.campaign && town.year % TERM === 0) election(town, sum);
+
+    // Growing up: needs, ranks, unlocks, medals.
+    town.year++;
+    const pop = people(town);
+    const later = look(town);
+    const nw = WANTS.filter(([, at]) => pop >= at).length;
+    for (let k = town.wants; k < nw; k++) {
+      const w = WANTS[k][0];
+      sum.news.push(w === "job" ? "💼 The town is growing! Families now want jobs nearby: a shop, factory or station." : `📣 The town is growing! Families now want a ${T[w].e} ${T[w].name.toLowerCase()} nearby.`);
+    }
+    town.wants = Math.max(town.wants, nw);
+    const rk = rankOf(pop);
+    if (rk > town.rank) {
+      for (let k = town.rank + 1; k <= rk; k++) sum.news.push(`${RANKS[k].e} You're a ${RANKS[k].name} now! New buildings: ${RANKS[k].unlock.map((t) => T[t].e + " " + T[t].name).join(", ")}.`);
+      town.rank = rk;
+    }
+    if (pop > 0) award(town, "first");
+    [["village", 20], ["town", 50], ["city", 100], ["big", 180]].forEach(([id, at]) => { if (pop >= at) award(town, id); });
+    if (later.allHappy && pop >= 12) award(town, "allhappy");
+    if (town.coins >= 200) award(town, "saver");
+    if (town.year > 10) award(town, "ten");
+    town.stats.best = Math.max(town.stats.best, pop);
+    town.history.push(pop);
+    if (town.history.length > 40) town.history.shift();
+    sum.people = pop;
+    sum.coins = town.coins;
+    sum.medals = town.newMedals.slice();
+    if (town.mode === "challenge" && town.year > CHALLENGE_YEARS) town.over = true;
+    if (town.over) sum.final = score(town);
+    else if (town.year % TERM === 0) {
+      startCampaign(town, r);
+      sum.news.push("🗳️ Election next year! Two rivals want to be mayor. See what they promise, and keep the families happy to win their votes.");
+    }
+    town.last = sum;
+    return sum;
+  }
+
+  // The 20-year challenge: people count most, happy people and savings help,
+  // and a loan still owed counts against you.
+  function score(town) {
+    const st = look(town);
+    const pts = st.people + st.happy + Math.floor(town.coins / 10) - town.loan;
+    return { pts, stars: pts >= 260 ? 3 : pts >= 170 ? 2 : pts >= 80 ? 1 : 0, people: st.people, happy: st.happy };
+  }
+
+  return {
+    W, H, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS,
+    create, makeMap, look, build, bulldoze, repair, repairCost, borrow, repay, loanLimit, answer, endYear, score,
+    people, unlocked, rankOf, covered, wantsFor, rng, tally, retry, complaints
+  };
+})();
