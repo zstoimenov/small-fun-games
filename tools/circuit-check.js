@@ -19,7 +19,7 @@ vm.createContext(sandbox);
 for (const f of ["circuit.js", "levels.js"]) {
   vm.runInContext(fs.readFileSync(path.join(dir, f), "utf8"), sandbox, { filename: f });
 }
-const { Circuit: C, CHAPTERS, THINGS } = sandbox.window.CL;
+const { Circuit: C, CHAPTERS, THINGS, QUIZ } = sandbox.window.CL;
 
 // A move is [key, type] to place, [key, null] to remove. Switches are all
 // flipped on at the end, which isn't a move.
@@ -41,6 +41,8 @@ const SOLUTIONS = {
 
 let fails = 0;
 const ok = (cond, msg) => { if (!cond) { fails++; console.log("  FAIL " + msg); } };
+ok(CHAPTERS.some((c) => c.safety), "there must be a Stay Safe chapter");
+ok(QUIZ[QUIZ.length - 1].every((q) => /000|power|water|kite|shock/i.test(q.q + q.a[q.right])), "the last quiz pool must be the safety questions");
 
 function board(lv) {
   const parts = {};
@@ -56,6 +58,16 @@ function check(lv, parts, tested) {
 CHAPTERS.forEach((ch) => ch.levels.forEach((lv, i) => {
   const id = ch.id + "-" + i;
   console.log(id + " " + lv.name);
+  // Stay Safe levels aren't circuits: check every item teaches something.
+  if (lv.kind) {
+    const items = lv.tiles || lv.cards || lv.qs;
+    ok(items && items.length, "no items");
+    items.forEach((t, k) => ok(t.why && t.why.length > 10, "item " + k + " has no reason"));
+    if (lv.kind === "spot") ok(lv.tiles.filter((t) => t.d).length === +lv.text.match(/(\d) of them/)[1], "danger count doesn't match the text");
+    if (lv.kind === "sort") ok(lv.cards.some((t) => t.d) && lv.cards.some((t) => !t.d), "needs both safe and danger cards");
+    if (lv.kind === "choose") lv.qs.forEach((q, k) => ok(q.a[q.right] != null, "question " + k + " has no right answer"));
+    return;
+  }
   const parts = board(lv);
   const inv = Object.assign({}, lv.inv);
   const tested = {};

@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v37";
+const CACHE = "game-box-v38";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -135,7 +135,7 @@ const ASSETS = [
   "./circuit-lab/", "./circuit-lab/index.html", "./circuit-lab/manifest.webmanifest",
   "./circuit-lab/css/style.css",
   "./circuit-lab/js/circuit.js", "./circuit-lab/js/levels.js", "./circuit-lab/js/audio.js",
-  "./circuit-lab/js/board.js", "./circuit-lab/js/ui.js", "./circuit-lab/js/app.js",
+  "./circuit-lab/js/board.js", "./circuit-lab/js/safety.js", "./circuit-lab/js/ui.js", "./circuit-lab/js/app.js",
   "./circuit-lab/icons/icon-192.png", "./circuit-lab/icons/icon-512.png",
   "./circuit-lab/icons/apple-touch-icon.png",
 ];

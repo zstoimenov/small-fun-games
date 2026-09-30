@@ -117,7 +117,7 @@ button:disabled{opacity:.45; cursor:default}
 .hero-emoji{font-size:48px; line-height:1}
 .hero p{font-size:16px}
 .chapters{display:grid; gap:12px}
-@media (min-width:700px){ .chapters{grid-template-columns:repeat(3,1fr)} }
+@media (min-width:700px){ .chapters{grid-template-columns:repeat(2,1fr)} }
 .chapter-card{
   display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left;
   min-height:var(--tap); padding:14px 16px; border-radius:20px;
@@ -227,7 +227,6 @@ button:disabled{opacity:.45; cursor:default}
 .job b{display:block; font-size:17px}
 .job small{color:var(--muted); font-size:14px; line-height:1.35; display:block}
 .ask{margin:0; font-size:15px; color:var(--muted)}
-.safety{margin:0; padding:12px 14px; border-radius:14px; font-size:15px; background:var(--wrong-bg); border:1px solid var(--wrong)}
 .lesson-job{padding:10px 12px; border-radius:14px; background:var(--chip); font-weight:600}
 
 /* ── The board ───────────────────────────────────────────────────────────── */
@@ -290,3 +289,54 @@ button:disabled{opacity:.45; cursor:default}
 .results li{padding:8px 10px; border-radius:12px; background:var(--chip); font-weight:600; font-size:15px}
 .results li.yes{background:var(--right-bg)}
 .results li.no{background:var(--wrong-bg)}
+
+
+/* ── Safety ──────────────────────────────────────────────────────────────── */
+/* Hazard stripes are the one thing on the page that looks like a real      */
+/* warning sign, so a kid learns that look means "stop and read".           */
+.hazard{
+  border-radius:18px; padding:7px;
+  background:repeating-linear-gradient(-45deg,#f5c400 0 18px,#1a1a1a 18px 36px);
+  box-shadow:0 3px 10px var(--shadow);
+}
+.hazard-in{display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:12px; background:#fff7cc; color:#1a1a1a}
+.hazard-icon{font-size:44px; line-height:1}
+.hazard-in b{font-size:20px}
+.hazard-in p{margin:4px 0 10px; font-size:16px}
+.hazard-btn{background:#1a1a1a; color:#f5c400; min-height:48px; font-size:16px}
+.badge{margin:0; padding:10px 14px; border-radius:14px; background:var(--right-bg); border:2px solid var(--right); font-size:17px}
+.spark{padding:10px 12px; border-radius:12px; background:#fff7cc; color:#1a1a1a; border-left:6px solid #f5c400; text-align:left; font-size:15px}
+.safety-strip{
+  width:100%; min-height:48px; padding:8px 12px; border-radius:12px; font-size:15px; color:#1a1a1a;
+  border:0; background:repeating-linear-gradient(-45deg,#f5c400 0 14px,#ffd84d 14px 28px);
+}
+.pledge{border:6px solid #f5c400}
+.pledge-top{font-size:56px; line-height:1}
+.rules{list-style:none; margin:10px 0; padding:0; display:grid; gap:8px; text-align:left}
+.rules li{display:flex; gap:12px; align-items:center; padding:10px 12px; border-radius:14px; background:var(--chip); font-weight:700; font-size:17px}
+.rules .re{font-size:32px; line-height:1}
+.pledge-note{font-size:15px; color:var(--muted)}
+.pledge .btn.go{width:100%; font-size:21px; min-height:62px}
+
+.spot-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px}
+.spot{
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px;
+  min-height:128px; padding:10px 6px; border-radius:16px; text-align:center;
+  border:2px solid var(--line); background:var(--card); box-shadow:0 2px 0 var(--line);
+}
+.spot-e{font-size:34px; line-height:1.1; letter-spacing:-2px}
+.spot-t{font-size:14px; font-weight:600; line-height:1.25}
+.spot.found{border-color:var(--wrong); background:var(--wrong-bg)}
+.spot.fine{border-color:var(--right); background:var(--right-bg)}
+.spot-badge{position:absolute; top:4px; right:6px; font-size:20px}
+.safety-why{margin:0; min-height:1.4em; padding:0; font-weight:600; font-size:17px; text-align:center}
+.safety-why.good,.safety-why.bad{padding:12px 14px; border-radius:14px}
+.safety-why.good{background:var(--right-bg)}
+.safety-why.bad{background:var(--wrong-bg)}
+.sort-card{display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center}
+.sort-e{font-size:60px; line-height:1.1}
+.sort-btns{display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%}
+.sort-btns .btn{min-height:64px; font-size:20px}
+.sort-safe{background:var(--right) !important; color:#fff !important}
+.sort-danger{background:#1a1a1a !important; color:#f5c400 !important}
+.goal-count{font-weight:700; color:var(--muted); font-size:15px}

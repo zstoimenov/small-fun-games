@@ -2011,6 +2011,23 @@ short circuit). A wall-power safety rule on home.
   the start isn't already won, that `par` matches the solution, and the
   brightness sums above. Stars are moves against `par` (+3 for two stars).
 
+#### Safety pass
+
+Asked for straight after it shipped: "drill the safety aspect in heavily". It is
+now in every screen rather than one note at the bottom:
+
+- **Lab Rules pledge once a day** (4 rules, "I promise" is the only way past;
+  Escape is blocked). Free build stays open, by choice.
+- **Chapter 4, Stay Safe**: two spot-the-danger rooms (4 hazards among 9 tiles),
+  safe-or-danger cards, and "what would you do?" emergencies. Every answer, right
+  or wrong, shows *why*; a bare tick teaches guessing. Emergency number is 000.
+- **Everywhere else**: hazard-striped banner top of home, a strip under every
+  board, a rotating safety tip on every win, a short-circuit dialog about house
+  fires and safety switches (once per go), a safety question in every quiz
+  (now 4 questions), and a Safety Expert badge.
+- `show()` clears the level for any screen that isn't the board, so the safety
+  screen must be shown *before* its level is set. That bit once.
+
 ### Bridge Builder — `bridge-builder/` (next)
 
 Tap two dots to add a beam, then Test: a truck drives across. Beams glow

@@ -31,7 +31,8 @@ CL.UI = (function () {
   }
 
   // ── Home ───────────────────────────────────────────────────────────────────
-  function home(starsOf, quizBest, open) {
+  function home(starsOf, quizBest, open, expert) {
+    $("badge").hidden = !expert;
     const box = $("chapters");
     box.innerHTML = "";
     CL.CHAPTERS.forEach((ch) => {
@@ -46,8 +47,9 @@ CL.UI = (function () {
         '<span class="cc-stars" aria-label="' + got + " of " + max + ' stars">★ ' + got + "/" + max + "</span>";
       box.appendChild(b);
     });
-    $("quizInfo").textContent = quizBest == null ? "3 quick questions"
-      : quizBest === 3 ? "Best: 3 of 3 \u{1F3C5} Circuit Expert!" : "Best: " + quizBest + " of 3";
+    const n = CL.QUIZ.length;
+    $("quizInfo").textContent = quizBest == null ? n + " quick questions, one about staying safe"
+      : quizBest === n ? "Best: " + n + " of " + n + " \u{1F3C5} Circuit Expert!" : "Best: " + quizBest + " of " + n;
     const jobs = $("jobs");
     jobs.innerHTML = "";
     CL.JOBS.forEach((j) => {

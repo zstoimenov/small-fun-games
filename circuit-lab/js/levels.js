@@ -139,6 +139,102 @@ window.CL = window.CL || {};
         life: "Wires are metal inside and plastic outside. The metal carries the electricity, and the plastic keeps it away from your fingers.",
         job: "\u{1F527} Electronics engineers pick the right materials so gadgets like phones and robots work and stay safe."
       }
+    },
+    {
+      id: 4,
+      emoji: "\u{1F9BA}",
+      kicker: "Chapter 4",
+      name: "Stay Safe",
+      color: "#1f9d55",
+      safety: true,
+      says: "Toy batteries are safe to learn with. The power in the walls is strong enough to badly hurt you, or even kill you.",
+      more: [
+        "Never poke anything into a <b>power point</b>.",
+        "Keep <b>water</b> away from anything that plugs in.",
+        "Stay far away from <b>power lines</b>, even ones on the ground.",
+        "If someone gets a shock, <b>don't touch them</b>. Get a grown-up and call <b>000</b>."
+      ],
+      grown: "Mains power in Australia is 230 volts, about 150 times a toy battery. Wet skin lets far more current through. Safety switches (RCDs) cut the power in a fraction of a second, but they don't make wall power safe to touch.",
+      levels: [
+        { name: "Danger at home", kind: "spot",
+          text: "Tap every danger in the house. There are 4 of them. Careful: the rest are safe!",
+          win: "You found all 4 dangers at home. Now you can help keep your family safe too.",
+          tiles: [
+            { e: "\u{1F374}\u{1F35E}", t: "Getting stuck toast out with a fork", d: true,
+              why: "Metal carries electricity from the toaster into you. A grown-up must switch it off and unplug it first." },
+            { e: "\u{1F4F1}\u{1F6C1}", t: "Using a phone on its charger in the bath", d: true,
+              why: "Water and wall power together can give a deadly shock. Never use anything plugged in near water." },
+            { e: "\u{1F50C}\u{26A1}", t: "A cord with the wires poking out", d: true,
+              why: "Bare wires can shock you. Don't touch it. Tell a grown-up so they can switch it off." },
+            { e: "\u{1F50C}\u{1F50C}\u{1F50C}", t: "Plugs piled on plugs in one power board", d: true,
+              why: "Too many plugs overload it. It gets hot and can start a fire." },
+            { e: "\u{1F4A1}", t: "A lamp switched on", why: "Lamps are made to be used. That one's fine." },
+            { e: "\u{1F4F1}\u{1F5A5}\u{FE0F}", t: "A phone charging on a dry desk", why: "A charger on a dry desk is fine." },
+            { e: "\u{1F64C}\u{1F4A1}", t: "Flicking the light switch with dry hands", why: "Switches are made for fingers. Dry hands are the safe way." },
+            { e: "\u{1F4FA}", t: "Watching TV", why: "Totally safe. Enjoy the show!" },
+            { e: "\u{1F50B}\u{1F9F8}", t: "Changing a toy's batteries", why: "Toy batteries are small and safe to handle." }
+          ] },
+        { name: "Danger outside", kind: "spot",
+          text: "Now look outside. Tap every danger. There are 4 of them.",
+          win: "You found all 4 dangers outside. Power lines are never a place to play.",
+          tiles: [
+            { e: "\u{1FA81}\u{26A1}", t: "Flying a kite near power lines", d: true,
+              why: "If the string or kite touches a line, electricity can travel down to you. Fly kites in open parks." },
+            { e: "\u{3030}\u{FE0F}\u{1F327}\u{FE0F}", t: "A power line lying on the ground after a storm", d: true,
+              why: "It might still be live. Stay at least 8 metres away and tell a grown-up to call 000." },
+            { e: "\u{1F333}\u{26A1}", t: "Climbing a tree that touches power lines", d: true,
+              why: "Electricity can jump from the line into the tree and into you." },
+            { e: "\u{1F6A7}\u{26A1}", t: "Climbing a fence that says DANGER: HIGH VOLTAGE", d: true,
+              why: "Behind that fence is enough power for a whole suburb. Never go in, even to get a ball back." },
+            { e: "\u{26BD}\u{1F333}", t: "Kicking a footy in the park, far from power lines", why: "Open space, no lines. Perfect!" },
+            { e: "\u{1F526}\u{26FA}", t: "Using a torch when camping", why: "Torches run on small batteries. Safe." },
+            { e: "\u{1F6B2}", t: "Riding a bike on the footpath", why: "No electricity danger here. Wear your helmet!" },
+            { e: "\u{1F331}\u{1F4A7}", t: "Watering the garden", why: "Water on plants is fine, as long as it's away from power points." },
+            { e: "\u{2600}\u{FE0F}\u{1F3E0}", t: "Solar panels on the roof", why: "Solar panels are fine to look at. Only electricians go up to fix them." }
+          ] },
+        { name: "Safe or danger?", kind: "sort",
+          text: "One at a time: is it safe, or is it a danger?",
+          win: "Great sorting! You know the difference between safe and dangerous.",
+          cards: [
+            { e: "\u{1F590}\u{FE0F}\u{1F4A7}\u{1F50C}", t: "Pulling out a plug with wet hands", d: true,
+              why: "Water helps electricity get into you. Always dry your hands first." },
+            { e: "\u{1F50C}\u{1F44C}", t: "Pulling out a plug by holding the plug, not the cord", why: "Right! Yanking the cord can break the wires inside." },
+            { e: "\u{1F4CD}\u{1F50C}", t: "Poking a hair clip into a power point", d: true,
+              why: "Never put anything in a power point except a plug. It can kill." },
+            { e: "\u{1F4A8}\u{1F6C1}", t: "Using a hair dryer next to a full bath", d: true,
+              why: "If it falls in the water, the water becomes electric. Keep them far apart." },
+            { e: "\u{1F50B}\u{1F4A1}", t: "Building circuits with toy batteries", why: "Toy batteries are safe to learn with. That's what this lab is for!" },
+            { e: "\u{1F329}\u{FE0F}\u{1F3CA}", t: "Swimming outside in a thunderstorm", d: true,
+              why: "Lightning is giant electricity. Get out of the water and go inside." },
+            { e: "\u{1F9D1}\u{200D}\u{1F527}\u{1F50C}", t: "A licensed electrician fixing a broken power point", why: "That's their job, and they're trained to switch the power off first." },
+            { e: "\u{1F4AD}\u{1F35E}", t: "Smoke from the toaster: telling a grown-up straight away", why: "Exactly right. Tell a grown-up fast and stay back." }
+          ] },
+        { name: "What would you do?", kind: "choose",
+          text: "Something has gone wrong. Pick the safest thing to do.",
+          win: "You know exactly what to do in an emergency. That could save someone's life.",
+          qs: [
+            { e: "\u{1F9CD}\u{26A1}", q: "Someone is stuck touching a sparking cord. What do you do?",
+              a: ["Don't touch them. Yell for a grown-up to switch off the power and call 000", "Pull them away with your hands", "Throw water on them"], right: 0,
+              why: "If you touch them, the electricity can go through you too. Power off first, then help." },
+            { e: "\u{1F327}\u{FE0F}\u{3030}\u{FE0F}", q: "After a storm you see a power line on the ground. What do you do?",
+              a: ["Stay far away and tell a grown-up to call 000", "Poke it with a stick to see if it's on", "Step over it carefully"], right: 0,
+              why: "A fallen line can still be live. Stay at least 8 metres away." },
+            { e: "\u{1F50C}\u{2728}", q: "A power point sparks and smells like burning. What do you do?",
+              a: ["Stay away and tell a grown-up straight away", "Plug something else in to test it", "Blow on it to cool it down"], right: 0,
+              why: "Sparks and burning smells mean danger. A grown-up switches it off and calls an electrician." },
+            { e: "\u{1F35E}", q: "Your toast is stuck in the toaster. What do you do?",
+              a: ["Ask a grown-up to switch it off and unplug it", "Get it out with a fork", "Shake the toaster while it's on"], right: 0,
+              why: "Never put metal in a toaster. Off and unplugged first." },
+            { e: "\u{1F198}", q: "What number do you call in an emergency in Australia?",
+              a: ["000", "123", "911"], right: 0,
+              why: "000 (triple zero) gets you police, fire or an ambulance." }
+          ] }
+      ],
+      lesson: {
+        title: "You're a Safety Expert!",
+        life: "Teach one of these rules to someone in your family tonight. Safety works best when everyone knows it.",
+        job: "\u{1F477} Electricians spend years learning to work safely. They always switch the power off before they touch anything."
+      }
     }
   ];
 
@@ -149,6 +245,29 @@ window.CL = window.CL || {};
       .reduce((o, t) => { o[t] = Infinity; return o; }, {}),
     text: "Build anything you like. Try 3 batteries on one bulb, or a fan with a switch!"
   };
+
+  // One of these ends every win, so the safety rules come round again and again.
+  CL.SPARKS = [
+    "Never poke anything into a power point. Only plugs go in there.",
+    "Keep water away from anything that plugs in.",
+    "Stay far away from power lines, even when they're on the ground.",
+    "If someone gets a shock, don't touch them. Get a grown-up and call 000.",
+    "Fly kites in open parks, far from power lines.",
+    "Pull out a plug by the plug, never by the cord.",
+    "Dry your hands before you touch a switch or a plug.",
+    "Too many plugs in one power board can start a fire.",
+    "If a cord has wires showing, don't touch it. Tell a grown-up.",
+    "Wall power is about 150 times stronger than a toy battery.",
+    "Never climb a fence that says DANGER: HIGH VOLTAGE.",
+    "In a thunderstorm, get out of the water and go inside."
+  ];
+
+  CL.RULES = [
+    { e: "\u{1F50C}", t: "Never poke anything into a power point." },
+    { e: "\u{1F4A7}", t: "Keep water away from anything that plugs in." },
+    { e: "\u{26A1}", t: "Stay far away from power lines, even ones on the ground." },
+    { e: "\u{1F198}", t: "If someone gets a shock, don't touch them. Get a grown-up and call 000." }
+  ];
 
   CL.JOBS = [
     { emoji: "\u{1F477}", name: "Electrician", does: "Puts the wires, switches and power points into houses, and makes sure nobody gets a shock." },
@@ -180,10 +299,22 @@ window.CL = window.CL || {};
         why: "Metal is a conductor. Wood and rubber are insulators." },
       { emoji: "\u{1F50C}", q: "Why are wires covered in plastic?",
         a: ["Plastic stops electricity reaching your hands", "To make them heavier", "So they can glow"], right: 0,
-        why: "Plastic is an insulator. It keeps the electricity inside the wire." },
+        why: "Plastic is an insulator. It keeps the electricity inside the wire." }
+    ],
+    // Every quiz has one safety question, whatever else it asks.
+    [
       { emoji: "\u{26A0}\u{FE0F}", q: "Where should you never poke anything?",
         a: ["Into a power point in the wall", "Into a pillow", "Into a book"], right: 0,
-        why: "Wall power is much stronger than a toy battery. Only grown-up electricians work with it." }
+        why: "Wall power is much stronger than a toy battery. Only grown-up electricians work with it." },
+      { emoji: "\u{1F6C1}", q: "Why must you keep phones and hair dryers away from the bath?",
+        a: ["Water and wall power together can give a deadly shock", "They might get a bit wet", "They are too noisy"], right: 0,
+        why: "Water lets electricity into your body. Keep anything that plugs in far from water." },
+      { emoji: "\u{1F198}", q: "Someone is getting a shock. What do you do?",
+        a: ["Don't touch them. Get a grown-up and call 000", "Grab their arm and pull", "Pour water on them"], right: 0,
+        why: "Touching them can shock you too. The power has to be switched off first." },
+      { emoji: "\u{1FA81}", q: "Where is the safe place to fly a kite?",
+        a: ["An open park, far from power lines", "Next to the power lines on your street", "On the roof"], right: 0,
+        why: "If a kite touches a power line, the electricity can run down the string to you." }
     ]
   ];
 })();

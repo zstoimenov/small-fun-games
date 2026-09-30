@@ -28,6 +28,18 @@
 
   <!-- Home: what electricity is, the chapters, free build, jobs, quiz. -->
   <section id="home" class="screen">
+    <!-- Safety comes first, above everything else on the page. -->
+    <div class="hazard" role="note">
+      <div class="hazard-in">
+        <span class="hazard-icon" aria-hidden="true">&#9889;</span>
+        <div>
+          <b>Lab rule: toy batteries only!</b>
+          <p>The power in your walls is about 150 times stronger than a toy battery. It can badly hurt you, or even kill you. Never touch it.</p>
+          <button id="rulesBtn" class="btn hazard-btn" type="button">&#129466; Read the Lab Rules</button>
+        </div>
+      </div>
+    </div>
+    <p id="badge" class="badge" hidden>&#129466; <b>Safety Expert!</b> You finished Stay Safe.</p>
     <div class="card hero">
       <span class="hero-emoji" aria-hidden="true">&#9889;</span>
       <div>
@@ -44,7 +56,6 @@
       <p class="ask">&#128172; Know a grown-up who does one of these jobs? Ask them what the best part is!</p>
     </div>
     <button id="quizBtn" class="wide-btn" type="button">&#127891; Circuit Quiz <small id="quizInfo">3 quick questions</small></button>
-    <p class="safety">&#9888;&#65039; <b>Real-life rule:</b> toy batteries are safe to learn with. Power points in the wall are <b>much</b> stronger. Never poke anything into them. Only grown-up electricians work with wall power.</p>
   </section>
 
   <!-- A chapter: the big idea, then its levels. -->
@@ -73,6 +84,18 @@
     <div class="stage" id="stage"></div>
     <p class="say" id="say" aria-live="polite"></p>
     <div class="controls" id="controls"></div>
+    <button id="safetyStrip" class="safety-strip" type="button">&#9889; This lab is toy batteries only. <b>Never touch wall power.</b></button>
+  </section>
+
+  <!-- A Stay Safe level: spot the danger, safe or danger, what would you do. -->
+  <section id="safety" class="screen" hidden>
+    <div class="goal">
+      <span class="goal-name" id="safetyName"></span>
+      <span class="goal-count" id="safetyProgress"></span>
+      <p id="safetyText"></p>
+    </div>
+    <div id="safetyBox"></div>
+    <p class="safety-why" id="safetyWhy" aria-live="polite"></p>
   </section>
 
   <!-- The quiz: one question at a time. -->
@@ -93,6 +116,7 @@
   <div class="big-stars" id="winStars" aria-hidden="true"></div>
   <h2 id="winTitle">You did it!</h2>
   <p id="winText"></p>
+  <p class="spark"><b>&#9889; Safety spark:</b> <span id="winSpark"></span></p>
   <div class="actions">
     <button id="winAgain" class="btn ghost" type="button">Play again</button>
     <button id="winNext" class="btn" type="button">Next &rsaquo;</button>
@@ -108,6 +132,24 @@
   <div class="actions"><button class="btn" type="button" id="lessonOk">Back to the lab</button></div>
 </dialog>
 
+<dialog id="pledgeDialog" class="sheet pledge" aria-labelledby="pledgeTitle">
+  <div class="pledge-top" aria-hidden="true">&#129466;</div>
+  <h2 id="pledgeTitle">Lab Rules</h2>
+  <p>Before you start, read these out loud. They keep you safe from real electricity.</p>
+  <ol class="rules" id="rules"></ol>
+  <p class="pledge-note">Toy batteries are safe to learn with. <b>Wall power is not.</b></p>
+  <button class="btn go" type="button" id="pledgeOk">&#9995; I promise!</button>
+</dialog>
+
+<dialog id="shortDialog" class="sheet" aria-labelledby="shortTitle">
+  <div class="pledge-top" aria-hidden="true">&#128293;</div>
+  <h2 id="shortTitle">Short circuit!</h2>
+  <p class="law-big">The electricity took a shortcut, so a huge amount rushed round and the battery got hot.</p>
+  <p>In a real house, this is how <b>fires</b> start. That's why houses have <b>safety switches</b> that cut the power in a flash.</p>
+  <p class="spark"><b>Never</b> try to fix a power point, a plug or a cord yourself. Tell a grown-up. Only a licensed electrician fixes wiring.</p>
+  <button class="btn" type="button" id="shortOk">I understand</button>
+</dialog>
+
 <dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
   <div class="sheet-head">
     <h2 id="helpTitle">How to play</h2>
@@ -120,6 +162,7 @@
     <li><b>&#129533; Remove</b> takes a part back. Tapping a part with the same part picked takes it back too.</li>
     <li><b>Moving yellow dots</b> show the electricity flowing.</li>
     <li><b>Stars:</b> 3 if you use the fewest moves, fewer if you use lots.</li>
+    <li><b>&#129466; Stay Safe</b> is the most important chapter. Real wall power is never a toy.</li>
   </ol>
   <button class="btn" type="button" data-close>Got it!</button>
 </dialog>
@@ -130,6 +173,7 @@
 <script src="./js/levels.js"></script>
 <script src="./js/audio.js"></script>
 <script src="./js/board.js"></script>
+<script src="./js/safety.js"></script>
 <script src="./js/ui.js"></script>
 <script src="./js/app.js"></script>
 <script>
