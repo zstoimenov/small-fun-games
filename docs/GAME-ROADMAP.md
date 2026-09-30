@@ -2008,16 +2008,23 @@ titles). The open studio is a poster maker; paints mixed there join the
 palette (8 kept). `tools/design-check.js` proves no small wrong recipe
 matches a target.
 
+### Comic Studio — `comic-studio/` ✅ built
+
+Drawn characters rather than emoji, because the key comic skill is the same
+character keeping its look while its feelings change; all art is SVG from code
+(`art.js`), one shared face with six expressions on four bodies. Three fixed
+panels (beginning, middle, end). Words are ready-made lines plus "my own
+words", so a new reader isn't blocked. Round kinds: order, choose (panels,
+faces, bubble kinds, words) and build-to-a-brief with rules such as "a worried
+face in panel 2", "the same hero in every panel" or "a new scene by the end".
+Face questions show no labels on purpose.
+
 ### More Creator ideas (not started)
 
-Asked for alongside Music Studio; build order to be decided.
-
-- **Comic Studio** - build panels from characters, backgrounds and speech
-  bubbles; levels teach beginning-middle-end and showing feelings on faces.
-  Jobs: illustrator, writer, animator. Needs art assets, so the most work.
 - **Story Builder** - pick a character, place, problem and fix, then read it
   back; levels teach story shape. Jobs: author, film director, journalist.
-  The most reading-heavy of the four.
+  The most reading-heavy of the four, and Comic Studio now covers story
+  shape, so it would need a different angle (writing, not picking).
 
 ### Career Compass — `career-compass/` ✅ built
 

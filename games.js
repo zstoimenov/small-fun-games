@@ -30,6 +30,21 @@ const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub
 // hand-write them.
 const GAMES = [
   {
+    title: "Comic Studio",
+    folder: "comic-studio",
+    compass: ["creator"],
+    hook: "Tell stories with pictures and bubbles",
+    tags: ["jobs"],
+    emoji: "💬",
+    added: "2026-09-30",
+    category: "arts",
+    players: [1, 1],
+    age: 8,
+    blurb: "Make your own comics! Put mixed-up panels in order, work out what happens next, and find the problem in every story. Read faces to see how characters feel, pick speech bubbles, thought bubbles, captions and sound words, then make comics for an editor's brief. Meet the writers, illustrators and animators who make comics and cartoons for a job!",
+    colors: ["#ff4f8b", "#3f51b5"],
+    highlights: ["😲 Faces that change", "💥 POW! words"]
+  },
+  {
     title: "Design Studio",
     folder: "design-studio",
     compass: ["creator"],

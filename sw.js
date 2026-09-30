@@ -7,12 +7,20 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v48";
+const CACHE = "game-box-v49";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png",
   "./games.js",
+
+  "./comic-studio/", "./comic-studio/index.html", "./comic-studio/manifest.webmanifest",
+  "./comic-studio/css/style.css",
+  "./comic-studio/js/art.js", "./comic-studio/js/comic.js", "./comic-studio/js/levels.js",
+  "./comic-studio/js/audio.js", "./comic-studio/js/lesson.js", "./comic-studio/js/studio.js",
+  "./comic-studio/js/ui.js", "./comic-studio/js/app.js",
+  "./comic-studio/icons/icon-192.png", "./comic-studio/icons/icon-512.png",
+  "./comic-studio/icons/apple-touch-icon.png",
 
   "./design-studio/", "./design-studio/index.html", "./design-studio/manifest.webmanifest",
   "./design-studio/css/style.css",

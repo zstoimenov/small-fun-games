@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Comic Studio</title>
+<meta name="description" content="Make comics: learn story shape, draw feelings on faces, and write speech bubbles, captions and sound words.">
+<meta name="theme-color" content="#e91e63">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Comic Studio">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Back</button>
+    <h1 id="title">Comic Studio</h1>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+  </header>
+
+  <!-- Home: one line of intro, the chapters, four tiles. -->
+  <section id="home" class="screen">
+    <p class="intro">Tell stories with pictures, faces and bubbles!</p>
+    <div id="chapters" class="chapters"></div>
+    <div class="tiles">
+      <button id="studioBtn" class="tile" type="button"><span aria-hidden="true">&#9999;&#65039;</span><b>Studio</b><small>Make a comic</small></button>
+      <button id="comicsBtn" class="tile" type="button"><span aria-hidden="true">&#128218;</span><b>My comics</b><small id="comicsTile"></small></button>
+      <button id="quizBtn" class="tile" type="button"><span aria-hidden="true">&#127891;</span><b>Quiz</b><small id="quizInfo"></small></button>
+      <button id="jobsBtn" class="tile" type="button"><span aria-hidden="true">&#128119;</span><b>Jobs</b><small>Who makes comics?</small></button>
+    </div>
+  </section>
+
+  <!-- A chapter: the big idea, then its levels. -->
+  <section id="chapter" class="screen" hidden>
+    <div class="card law-card">
+      <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
+      <p class="kicker" id="lawKicker"></p>
+      <h2 id="lawName"></h2>
+      <p class="law-big" id="lawSays"></p>
+      <div id="lawMore"></div>
+      <details class="grown-up">
+        <summary>In grown-up words</summary>
+        <p id="lawGrown"></p>
+      </details>
+    </div>
+    <div id="levels" class="levels"></div>
+  </section>
+
+  <!-- A level: lesson.js fills #stage, one round at a time. -->
+  <section id="play" class="screen" hidden>
+    <div class="goal">
+      <span class="goal-name" id="goalName"></span>
+      <span class="goal-count" id="roundCount"></span>
+      <p id="goalText"></p>
+    </div>
+    <div id="stage" class="stage"></div>
+  </section>
+
+  <!-- The studio: a comic, anything goes. -->
+  <section id="studio" class="screen" hidden>
+    <div class="studio-row">
+      <button id="sName" class="name-btn" type="button" aria-label="Rename your comic"></button>
+    </div>
+    <div id="sEditor" class="editor"></div>
+    <div class="actions studio-acts">
+      <button id="sNew" class="btn ghost" type="button">&#10024; New</button>
+      <button id="sSave" class="btn" type="button">&#128190; Save</button>
+      <button id="sComics" class="btn ghost" type="button">&#128218; My comics</button>
+    </div>
+  </section>
+
+  <!-- The gallery of saved comics. -->
+  <section id="comics" class="screen" hidden>
+    <p class="intro" id="comicsInfo"></p>
+    <div id="comicList" class="saved-list"></div>
+    <div class="actions"><button id="comicsStudio" class="btn" type="button">&#9999;&#65039; Go to the studio</button></div>
+  </section>
+
+  <!-- The quiz: one question at a time. -->
+  <section id="quiz" class="screen" hidden>
+    <div class="card quiz-card">
+      <p class="kicker" id="qCount"></p>
+      <span class="q-emoji" id="qEmoji" aria-hidden="true"></span>
+      <h2 id="qText"></h2>
+      <div class="answers" id="qAnswers"></div>
+      <p class="q-why" id="qWhy" aria-live="polite"></p>
+      <div class="actions"><button id="qNext" class="btn" type="button" hidden>Next &rsaquo;</button></div>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="winDialog" class="sheet" aria-labelledby="winTitle">
+  <div class="big-stars" id="winStars" aria-hidden="true"></div>
+  <h2 id="winTitle">You did it!</h2>
+  <p id="winText"></p>
+  <div class="actions">
+    <button id="winAgain" class="btn ghost" type="button">Play again</button>
+    <button id="winNext" class="btn" type="button">Next &rsaquo;</button>
+  </div>
+</dialog>
+
+<dialog id="lessonDialog" class="sheet lesson" aria-labelledby="lessonTitle">
+  <span class="lesson-emoji" id="lessonEmoji" aria-hidden="true"></span>
+  <h2 id="lessonTitle"></h2>
+  <p class="law-big" id="lessonSays"></p>
+  <p id="lessonLife"></p>
+  <p class="lesson-job" id="lessonJob"></p>
+  <div class="actions"><button class="btn" type="button" id="lessonOk">Back to the studio</button></div>
+</dialog>
+
+<dialog id="jobsDialog" class="sheet" aria-labelledby="jobsTitle">
+  <div class="sheet-head">
+    <h2 id="jobsTitle">&#128119; Who makes comics?</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <div id="jobs" class="job-list"></div>
+  <p class="ask">&#128172; What's your favourite comic, book or cartoon? Somebody wrote it, drew it and planned every page!</p>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
+  <div class="sheet-head">
+    <h2 id="helpTitle">How to play</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <ol class="how">
+    <li><b>Tap a panel</b> in the strip to work on it.</li>
+    <li><b>Add</b> a scene, characters, words and props with the buttons.</li>
+    <li><b>Tap a character</b> to change how they feel. Drag anything to move it.</li>
+    <li><b>Words:</b> 💬 speech is said out loud, 💭 thoughts are secret, 📜 captions tell the story, 💥 sound words are loud!</li>
+    <li><b>Briefs:</b> an editor tells you what the comic needs. Press Check when it's ready.</li>
+  </ol>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/art.js"></script>
+<script src="./js/comic.js"></script>
+<script src="./js/levels.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/lesson.js"></script>
+<script src="./js/studio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>
