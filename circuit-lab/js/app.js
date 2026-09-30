@@ -12,9 +12,16 @@ window.CL = window.CL || {};
   // ── Saved progress ─────────────────────────────────────────────────────────
   const store = { stars: {}, quiz: null, muted: false, seenHelp: false, pledged: "" };
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } report(); };
   const starsOf = (ch, i) => store.stars[ch + "-" + i] || 0;
   const unlocked = (ch, i) => i === 0 || starsOf(ch, i - 1) > 0;
+  // Tell the Game Box home page how far you've got, for its stars badge and
+  // "Keep playing" row. Opening the game counts as playing it.
+  function report() {
+    let got = 0, max = 0;
+    CL.CHAPTERS.forEach((c) => c.levels.forEach((_, i) => { got += starsOf(c.id, i); max += 3; }));
+    try { localStorage.setItem("gamebox:progress:circuit-lab", JSON.stringify({ stars: got, max, at: Date.now() })); } catch (e) { /* ignore */ }
+  }
   const chapterById = (id) => CL.CHAPTERS.find((c) => c.id === id);
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -347,6 +354,7 @@ window.CL = window.CL || {};
   $("rulesBtn").addEventListener("click", () => pledge(false));
   $("shortOk").addEventListener("click", () => $("shortDialog").close());
 
+  report();
   goHome();
   if (store.pledged !== today()) pledge(true);
   else if (!store.seenHelp) {

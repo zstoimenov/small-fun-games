@@ -6,23 +6,31 @@ no dependencies — plain HTML/CSS/JS, and it works offline once loaded.
 
 ## Games
 
-Every game belongs to exactly one **category**, and declares how many players it
-takes. The launcher filters on both, with two rows of pills at the top:
+The home page opens on **shelves**: sideways rows you swipe with a finger (or drag,
+or use the ‹ › arrows, with a mouse). A row always shows whole cards plus **half**
+of the next one, at any screen size, so it's obvious there's more. In order:
+**Keep playing** (what you opened last), **New**, **Favourites** (tap ♡ on any
+card), **Discover jobs** (the careers track), then one row per category.
 
-- **Category** — All, Board & Strategy, Coding, Puzzles, Maths, Sport, Science, Languages.
-- **Players** — Any, On my own, With a friend, 3 or more.
+A card is just the game's emoji, name and one-line `hook`, with a badge: ★ stars
+so far, ✓ Played, NEW, or "Try me!" for one never opened. Tap it for the full
+description and a big **Play** button. The name and search box stay pinned at
+the top.
 
-The two combine, so you can ask for coding games you can play on your own. A
-player pick matches against the game's **range**, not a single number: Yatzy Dice
-is a 1–3 player game, so it turns up under *on my own*, *with a friend* and
-*3 or more* alike.
+Every game belongs to exactly one **category**, may carry extra **tags**, and
+declares how many players it takes. Picking a filter, or typing in the search,
+swaps the shelves for a plain grid of matches:
 
-Each pill shows how many games it would leave you, counting the other row's pick
-too — and a pill that would empty the grid is dimmed instead of removed, so you
-can't tap your way into a dead end.
+- **Pills**: All, Favourites, Jobs, then Board & Strategy, Coding, Puzzles, Maths,
+  Science, Languages, Sport. On a phone they are one sideways row.
+- **Players**: Anyone, On my own, With a friend, 3 or more. A pick matches the
+  game's **range**, not a single number: Yatzy Dice (1–3) turns up under all three.
+- **Search** looks through names, hooks, descriptions and chips ("spy" finds
+  Morse Agent).
 
-Inside any shelf, games are ordered newest first, and the two most recent wear a
-**NEW** ribbon for a month.
+Each pill shows how many games it would leave you, and one that would empty the
+page is dimmed rather than removed. Stars, favourites and "last played" are kept
+on the device only.
 
 The picks are remembered between visits and mirrored in the URL, so
 `…/small-fun-games/#cat=board&players=duo` opens straight onto board games you
@@ -133,18 +141,21 @@ catalogue and picks a game.
      title: "My Game",
      folder: "my-game",
      emoji: "🕹️",
-     added: "2026-08-01",     // YYYY-MM-DD, drives the sort and the NEW ribbon
+     hook: "Tap secret messages like a spy",  // the one line on the card; keep it short
+     added: "2026-08-01",     // YYYY-MM-DD, drives the sort and the NEW badge
      category: "coding",      // exactly one id from the CATEGORIES list above
      players: [1, 2],         // [min, max] — the whole range the game supports
      age: 8,                  // optional, renders as "Age 8+"
-     blurb: "One or two sentences a kid would understand.",
+     blurb: "The longer story, shown when the card is opened.",
+     tags: ["jobs"],          // optional extra shelves (see TAGS), e.g. the careers track
      colors: ["#4fc3f7", "#8a7bff"],   // the thumbnail gradient
      highlights: ["🔁 Loops"]          // optional extra chips, 0–2 is plenty
    }
    ```
 
-   The chips on the card are **generated** from `category`, `players`, `age` and
-   `highlights` — don't hand-write them, or they drift from the real game.
+   Cards show only the emoji, title and `hook`. Tapping one opens the details,
+   whose chips are **generated** from `category`, `tags`, `players`, `age` and
+   `highlights`. Don't hand-write them, or they drift from the real game.
 
    Get `players` right: it drives the second filter row, so `[2, 2]` for a game
    that *needs* two people is a different claim from `[1, 2]` for one with a
@@ -154,9 +165,20 @@ catalogue and picks a game.
    Needs a category that doesn't exist yet? Add it to the `CATEGORIES` array in
    the same file (`{ id, label, emoji }`). The filter bar picks it up on its own,
    and only shows a pill once at least one game uses it.
-4. Register the shared worker from the new game with
+4. If the game has stars, report them to the home page so its card shows
+   "★ 7/12" and it joins **Keep playing**. Write, whenever progress is saved and
+   once on load:
+
+   ```js
+   localStorage.setItem("gamebox:progress:my-game",
+     JSON.stringify({ stars: got, max: possible, at: Date.now() }));
+   ```
+
+   Games without stars need nothing: tapping Play on the home page marks them
+   played.
+5. Register the shared worker from the new game with
    `navigator.serviceWorker.register('../sw.js')`.
-5. For offline use, add the game's files to the `ASSETS` list in [`sw.js`](sw.js).
+6. For offline use, add the game's files to the `ASSETS` list in [`sw.js`](sw.js).
 
 ## Offline / caching notes
 

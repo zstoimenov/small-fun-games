@@ -36,8 +36,10 @@ audio, UI and app state in separate files.
 2. Back link to the launcher: `<a href="../">&lsaquo; Games</a>`.
 3. Catalogue entry in the root `index.html` `GAMES` array. Fields and the
    category list are documented in [`README.md`](README.md#add-a-new-game) —
-   `category`, `players: [min, max]`, `age`, `highlights`. **Card chips are
-   generated from those fields; never hand-write them.**
+   `hook` (the one line on the card), `category`, `tags`, `players: [min, max]`,
+   `age`, `highlights`. **Chips are generated from those fields; never
+   hand-write them.** A game with stars also writes
+   `gamebox:progress:<folder>` so the home page can show them (README).
 4. Register the shared worker: `navigator.serviceWorker.register('../sw.js')`.
    Do not add a per-game service worker — the two that used to exist are now
    self-unregistering stubs.

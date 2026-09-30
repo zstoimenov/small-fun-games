@@ -13,151 +13,193 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Game Box">
 <style>
+  /* Layout: a pinned bar (name + search), filters that scroll away, then either
+     shelves of sideways rows (the untouched "All" view) or a plain grid as soon
+     as a filter or search narrows things down. */
   :root{
     --bg1:#f3f0ff; --bg2:#e7f6ff; --ink:#20264a; --muted:#5a6690;
-    --card:#ffffff; --cardline:#e7e3ff; --shadow:rgba(60,40,140,.16);
-    --chip:#f0edff; --chipink:#5b4bd0;
+    --card:#ffffff; --cardline:#e7e3ff; --shadow:rgba(60,40,140,.14);
+    --chip:#f0edff; --chipink:#5b4bd0; --accent:#6b4cf0; --accent-ink:#ffffff;
+    --good:#1f9d55; --good-bg:#dff5e8; --heart:#e2415a;
   }
   @media (prefers-color-scheme: dark){
-    :root{ --bg1:#12132a; --bg2:#0d1a26; --ink:#eef1ff; --muted:#9aa4cf;
-      --card:#1a1d38; --cardline:#2c2f56; --shadow:rgba(0,0,0,.5);
-      --chip:#242861; --chipink:#c7cdff; }
+    :root:not([data-theme="light"]){ --bg1:#12132a; --bg2:#0d1a26; --ink:#eef1ff; --muted:#9aa4cf;
+      --card:#1a1d38; --cardline:#2c2f56; --shadow:rgba(0,0,0,.5); --chip:#242861; --chipink:#c7cdff;
+      --accent:#8f7bff; --accent-ink:#12132a; --good:#4cc97e; --good-bg:#143325; --heart:#ff6b81; color-scheme:dark }
   }
   :root[data-theme="dark"]{ --bg1:#12132a; --bg2:#0d1a26; --ink:#eef1ff; --muted:#9aa4cf;
-    --card:#1a1d38; --cardline:#2c2f56; --shadow:rgba(0,0,0,.5); --chip:#242861; --chipink:#c7cdff; }
-  :root[data-theme="light"]{ --bg1:#f3f0ff; --bg2:#e7f6ff; --ink:#20264a; --muted:#5a6690;
-    --card:#ffffff; --cardline:#e7e3ff; --shadow:rgba(60,40,140,.16); --chip:#f0edff; --chipink:#5b4bd0; }
+    --card:#1a1d38; --cardline:#2c2f56; --shadow:rgba(0,0,0,.5); --chip:#242861; --chipink:#c7cdff;
+    --accent:#8f7bff; --accent-ink:#12132a; --good:#4cc97e; --good-bg:#143325; --heart:#ff6b81; color-scheme:dark }
 
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     min-height:100vh;min-height:100dvh;
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    color:var(--ink);
-    background:
-      radial-gradient(1200px 600px at 15% -10%, var(--bg2), transparent 60%),
-      linear-gradient(160deg, var(--bg1), var(--bg2));
-    -webkit-text-size-adjust:100%;
-    padding:max(18px,env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom));
-    touch-action:manipulation;
+    font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink);background-color:var(--bg1);
+    background-image:radial-gradient(1200px 600px at 15% -10%, var(--bg2), transparent 60%), linear-gradient(160deg, var(--bg1), var(--bg2));
+    background-attachment:fixed;
+    -webkit-text-size-adjust:100%;touch-action:manipulation;
+    padding:0 max(16px,env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
   }
-  .wrap{max-width:940px;margin:0 auto}
-  header{display:flex;align-items:center;gap:14px;margin:10px 4px 6px}
-  /* Filter bar: sticks to the top and bleeds to the screen edges so each row of
-     pills can scroll sideways on a phone without a ragged cut-off. */
-  .filterbar{
-    position:sticky;top:max(0px,env(safe-area-inset-top));z-index:5;
-    margin:16px -18px 0;padding:11px 0;
-    background:color-mix(in srgb, var(--bg1) 82%, transparent);
+  button,input{font:inherit;color:inherit}
+  button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .wrap{max-width:1100px;margin:0 auto}
+
+  /* ── The pinned bar: only the name and search stay on screen. ── */
+  .bar{
+    position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    margin:0 -16px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+    background:color-mix(in srgb, var(--bg1) 90%, transparent);
     -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
   }
-  .filters{
-    display:flex;gap:9px;padding:2px 18px;
-    overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+  .logo{width:48px;height:48px;flex:0 0 auto;border-radius:14px;display:grid;place-items:center;font-size:28px;
+    background:linear-gradient(145deg,#7b5cff,#4bc8ff);box-shadow:0 6px 16px var(--shadow)}
+  h1{margin:0;font-size:24px;letter-spacing:-.4px}
+  @media (max-width:480px){ .logo{width:40px;height:40px;font-size:24px;border-radius:12px} h1{font-size:21px} }
+  .search{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:8px;height:48px;padding:0 8px 0 14px;border-radius:999px;
+    background:var(--card);border:1px solid var(--cardline);box-shadow:0 2px 8px var(--shadow)}
+  .search input{flex:1;min-width:0;border:0;background:transparent;font-size:16px;outline:none}
+  .search input::-webkit-search-cancel-button{display:none}
+  .search button{border:0;background:var(--chip);color:var(--chipink);border-radius:999px;width:32px;height:32px;font-weight:800}
+
+  /* ── Filters ── */
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+  /* Phones: one row that scrolls sideways, fading at the edge so it's clear there's more. */
+  @media (max-width:640px){
+    .pills{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+      -webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+    .pills::-webkit-scrollbar{display:none}
   }
-  .filters::-webkit-scrollbar{display:none}
-  .filters + .filters{margin-top:8px}
-  .filter{
-    flex:0 0 auto;font:inherit;font-size:14px;font-weight:700;
-    padding:10px 16px;border-radius:999px;cursor:pointer;
-    background:var(--card);color:var(--muted);
-    border:1px solid var(--cardline);
-    -webkit-tap-highlight-color:transparent;
-    transition:transform .12s ease, opacity .12s ease;
-  }
-  .filter:active{transform:scale(.94)}
-  .filter[aria-pressed="true"]{
-    background:var(--chip);color:var(--chipink);border-color:var(--chipink);
-  }
-  /* A pick that would empty the grid is dimmed rather than removed, so the row
-     keeps its shape as you tap around. */
-  .filter:disabled{opacity:.35;cursor:default}
-  .filter:disabled:active{transform:none}
-  .filter .count{opacity:.6;font-weight:600;margin-left:5px}
-  /* Second row (players) reads as a refinement of the first, not a rival to it. */
-  .filters.secondary .filter{font-size:13px;padding:8px 14px;border-style:dashed}
-  .filters.secondary .filter[aria-pressed="true"]{border-style:solid}
-  .logo{
-    width:60px;height:60px;flex:0 0 auto;border-radius:18px;
-    display:grid;place-items:center;font-size:34px;
-    background:linear-gradient(145deg,#7b5cff,#4bc8ff);
-    box-shadow:0 8px 20px var(--shadow);
-  }
-  h1{margin:0;font-size:clamp(24px,5vw,34px);letter-spacing:-.5px}
-  .tag{margin:2px 0 0;color:var(--muted);font-size:14px}
-  .grid{
-    display:grid;gap:18px;margin-top:18px;
-    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-  }
-  .card{
-    position:relative;display:flex;flex-direction:column;
-    background:var(--card);border:1px solid var(--cardline);border-radius:20px;
-    text-decoration:none;color:inherit;overflow:hidden;
-    box-shadow:0 10px 26px var(--shadow);
-    transition:transform .12s ease, box-shadow .12s ease;
-    -webkit-tap-highlight-color:transparent;
-  }
-  /* `display:flex` above would otherwise beat the UA stylesheet's [hidden] rule. */
-  .card[hidden]{display:none}
-  .card:active{transform:scale(.975)}
-  @media (hover:hover){ .card:hover{transform:translateY(-4px);box-shadow:0 16px 34px var(--shadow)} }
-  .thumb{
-    height:150px;display:grid;place-items:center;position:relative;overflow:hidden;
-  }
-  .thumb .emoji{font-size:74px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.22));z-index:1}
-  .thumb .blob{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55}
-  .body{padding:15px 17px 17px}
-  .body h2{margin:0 0 5px;font-size:20px}
-  .body p{margin:0;color:var(--muted);font-size:14px;line-height:1.45}
-  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-  .chip{
-    font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;
-    background:var(--chip);color:var(--chipink);
-  }
-  .play{
-    position:absolute;top:12px;right:12px;z-index:2;
-    font-weight:800;font-size:13px;color:#fff;
-    padding:8px 15px;border-radius:999px;
-    background:rgba(15,18,40,.42);
-    border:1px solid rgba(255,255,255,.45);
-    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
-    box-shadow:0 4px 12px rgba(0,0,0,.25);
-  }
-  .new{
-    position:absolute;top:12px;left:12px;z-index:2;
-    font-weight:800;font-size:12px;letter-spacing:.6px;color:#20264a;
-    padding:6px 12px;border-radius:999px;background:#ffe600;
-    box-shadow:0 4px 12px rgba(0,0,0,.25);
-  }
-  .empty{margin:30px 6px;color:var(--muted);text-align:center}
+  .pill{flex:0 0 auto;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--cardline);background:var(--card);
+    color:var(--muted);font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+  .pill .n{opacity:.6;font-weight:600}
+  .pill[aria-pressed="true"]{background:var(--chip);color:var(--chipink);border-color:var(--chipink)}
+  .pill:disabled{opacity:.35;cursor:default}
+  .row2{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+  .seg{display:inline-flex;flex-wrap:wrap;padding:3px;border-radius:22px;background:var(--card);border:1px solid var(--cardline)}
+  .seg button{border:0;background:transparent;min-height:36px;padding:0 12px;border-radius:999px;font-weight:700;font-size:13px;color:var(--muted)}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+  .count{color:var(--muted);font-size:13px;margin-left:auto}
+
+  /* ── Shelves: a row always shows whole cards plus HALF of the next, at every
+     width, so it's obvious there's more to swipe to. --n is how many whole
+     cards fit; each card is (width minus the visible gaps) / (n + 0.5). ── */
+  .shelf{margin-top:22px}
+  .shelf h2{margin:0 0 8px;font-size:18px;display:flex;align-items:baseline;gap:8px}
+  .shelf h2 small{font-size:13px;font-weight:600;color:var(--muted)}
+  .lanebox{position:relative}
+  .lane{--n:2;--gap:12px;display:grid;grid-auto-flow:column;gap:var(--gap);
+    grid-auto-columns:calc((100% - var(--n) * var(--gap)) / (var(--n) + .5));
+    overflow-x:auto;padding:4px 0 10px;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;
+    cursor:grab;-webkit-user-select:none;user-select:none}
+  .lane::-webkit-scrollbar{display:none}
+  @media (min-width:560px){ .lane{--n:3} }
+  @media (min-width:820px){ .lane{--n:4} }
+  @media (min-width:1080px){ .lane{--n:5} }
+  .lane .card{scroll-snap-align:start}
+  /* Everything fits: lay it out as a normal row instead of a scroller. */
+  .lane.fits{grid-auto-flow:row;grid-template-columns:repeat(var(--n),minmax(0,1fr));grid-auto-columns:auto;cursor:auto}
+  .lane.dragging{cursor:grabbing;scroll-snap-type:none}
+  .lane.dragging .card{pointer-events:none}
+  /* Arrows only where there's a mouse; fingers just swipe. */
+  .arrow{display:none;position:absolute;top:calc(50% - 26px);width:44px;height:44px;border-radius:50%;border:1px solid var(--cardline);
+    background:var(--card);color:var(--ink);font-size:24px;font-weight:800;line-height:1;box-shadow:0 4px 12px var(--shadow);z-index:2}
+  .arrow.prev{left:-10px} .arrow.next{right:-10px}
+  @media (hover:hover) and (pointer:fine){ .lanebox.scrolls .arrow{display:grid;place-items:center} .arrow[disabled]{opacity:0;pointer-events:none} }
+  .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px}
+  @media (min-width:560px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr))} }
+  @media (min-width:820px){ .grid{grid-template-columns:repeat(4,minmax(0,1fr))} }
+  @media (min-width:1080px){ .grid{grid-template-columns:repeat(5,minmax(0,1fr))} }
+
+  /* ── A card: icon, name, one line. Tap for the details. ── */
+  .card{position:relative;display:flex;flex-direction:column;min-width:0;border-radius:18px;overflow:hidden;background:var(--card);
+    border:1px solid var(--cardline);box-shadow:0 6px 16px var(--shadow);transition:transform .15s}
+  @media (hover:hover){ .card:hover{transform:translateY(-3px)} }
+  @media (prefers-reduced-motion:reduce){ .card{transition:none} }
+  .open{all:unset;display:flex;flex-direction:column;cursor:pointer;min-width:0}
+  .open:focus-visible{outline:3px solid var(--accent);outline-offset:-3px;border-radius:18px}
+  .thumb{position:relative;aspect-ratio:16/10;display:grid;place-items:center;font-size:48px;max-width:100%}
+  .thumb span{filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))}
+  .cbody{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
+  .cbody b{font-size:16px;line-height:1.2}
+  .cbody small{color:var(--muted);font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .badge{position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:800;pointer-events:none}
+  .badge.new,.badge.try{background:#ffe600;color:#20264a}
+  .badge.played{background:var(--good-bg);color:var(--good)}
+  .badge.stars{background:rgba(15,18,40,.6);color:#ffd84d}
+  .fav{position:absolute;right:6px;top:6px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.88);
+    font-size:18px;display:grid;place-items:center;color:#8a8fb0}
+  .fav[aria-pressed="true"]{color:var(--heart)}
+  .empty{margin:40px 0;text-align:center;color:var(--muted)}
+
+  /* ── Details sheet ── */
+  dialog{border:0;padding:0;border-radius:24px;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);
+    background:var(--card);color:var(--ink);box-shadow:0 30px 60px rgba(0,0,0,.35);overflow:auto}
+  dialog::backdrop{background:rgba(10,12,30,.55)}
+  .dthumb{aspect-ratio:16/8;display:grid;place-items:center;font-size:72px;max-width:100%}
+  .dbody{padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px}
+  .dbody h2{margin:0;font-size:24px;text-wrap:balance}
+  .dbody p{margin:0;color:var(--muted);line-height:1.5}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--chipink)}
+  .progress{padding:10px 12px;border-radius:14px;background:var(--good-bg);font-weight:600}
+  .dactions{display:flex;gap:10px}
+  .playbtn{flex:1;min-height:56px;border-radius:16px;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:19px;
+    display:grid;place-items:center;text-decoration:none}
+  .dfav{min-height:56px;padding:0 16px;border-radius:16px;border:1px solid var(--cardline);background:var(--card);font-weight:700}
+  .x{position:absolute;right:10px;top:10px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.88);color:#20264a;font-size:22px}
+
   footer{margin:30px 6px 0;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
   .install{display:none}
-  .install.show{display:inline-block;margin-top:10px;cursor:pointer;
-    background:var(--chip);color:var(--chipink);border:none;font:inherit;font-weight:700;
+  .install.show{display:inline-block;margin-top:10px;background:var(--chip);color:var(--chipink);border:none;font-weight:700;
     padding:10px 18px;border-radius:999px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="logo">🎮</div>
-    <div>
-      <h1>Game Box</h1>
-      <p class="tag">A little box of fun games — tap one to play!</p>
-    </div>
-  </header>
+  <div class="bar">
+    <div class="logo" aria-hidden="true">🎮</div>
+    <h1>Game Box</h1>
+    <label class="search" for="q"><span aria-hidden="true">🔍</span>
+      <input id="q" type="search" placeholder="Find a game" autocomplete="off" enterkeyhint="search">
+      <button id="clear" type="button" aria-label="Clear search" hidden>×</button>
+    </label>
+  </div>
 
-  <div class="filterbar" id="filterbar"></div>
+  <div class="pills" id="pills" role="group" aria-label="Show games"></div>
+  <div class="row2">
+    <div class="seg" id="players" role="group" aria-label="Players"></div>
+    <span class="count" id="count" aria-live="polite"></span>
+  </div>
 
-  <main class="grid" id="grid" aria-label="Game catalogue"></main>
-  <p class="empty" id="empty" hidden>No games match both picks — try another.</p>
+  <main id="main" aria-label="Game catalogue"></main>
 
   <footer>
-    <button class="install" id="installBtn">⬇️ Install Game Box</button>
+    <button class="install" id="installBtn" type="button">⬇️ Install Game Box</button>
   </footer>
 </div>
 
+<dialog id="sheet" aria-labelledby="dTitle">
+  <div style="position:relative">
+    <div class="dthumb" id="dThumb"></div>
+    <button class="x" type="button" id="dClose" aria-label="Close">×</button>
+  </div>
+  <div class="dbody">
+    <h2 id="dTitle"></h2>
+    <div class="chips" id="dChips"></div>
+    <div class="progress" id="dProgress" hidden></div>
+    <p id="dBlurb"></p>
+    <div class="dactions">
+      <a class="playbtn" id="dPlay" href="./">▶ Play</a>
+      <button class="dfav" type="button" id="dFav"></button>
+    </div>
+  </div>
+</dialog>
+
 <script>
+
 // ---- The shelves. A game's `category` has to be one of these ids. ----
 // Add a category here and the filter bar picks it up automatically; it only
 // shows up once at least one game uses it.
@@ -166,20 +208,27 @@ const CATEGORIES = [
   { id: "coding", label: "Coding",           emoji: "🧠" },
   { id: "puzzle", label: "Puzzles",          emoji: "🧩" },
   { id: "maths",  label: "Maths",            emoji: "🔢" },
-  { id: "sport",  label: "Sport",            emoji: "⚽" },
   { id: "science", label: "Science",         emoji: "🔬" },
-  { id: "language", label: "Languages",      emoji: "🗣️" }
+  { id: "language", label: "Languages",      emoji: "🗣️" },
+  { id: "sport",  label: "Sport",            emoji: "⚽" }
 ];
+// Tags a game can carry on top of its one category. Each gets a pill and a shelf.
+const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub: "games about real jobs" } };
 
 // ---- The catalogue. Add a new game = add one entry here. ----
 // "added" is the date the game was published; the list is sorted by it below,
 // newest first, so a new entry lands at the top wherever you paste it.
-// The chips on each card are generated from `category`, `players`, `age` and
-// `highlights` — don't hand-write them, or they drift from the real thing.
+// `hook` is the one line on the card: short enough for a kid to read at a
+// glance. `blurb` is the longer story, shown when the card is opened.
+// `tags` (optional) puts a game on extra shelves, e.g. "jobs" for the careers
+// track. The chips in the details are generated from `category`, `players`,
+// `age`, `tags` and `highlights`; don't hand-write them.
 const GAMES = [
   {
     title: "Vet Clinic",
     folder: "vet-clinic",
+    hook: "Be the vet: find what's wrong and fix it",
+    tags: ["jobs"],
     emoji: "🩺",
     added: "2026-09-30",
     category: "science",
@@ -187,11 +236,13 @@ const GAMES = [
     age: 8,
     blurb: "You're the vet! Listen to what the owner says, pick your checks, and compare each result with what's normal for that animal. Find out what's wrong, treat it, and send them home happy. Guess whose heartbeat it is, then help a limping dog, an itchy cat, a koala with sore eyes and an orphaned joey. Meet the people who care for animals for a job!",
     colors: ["#2a9d8f", "#e76f51"],
-    highlights: ["🦘 Aussie wildlife", "👷 Real jobs"]
+    highlights: ["🦘 Aussie wildlife"]
   },
   {
     title: "Bridge Builder",
     folder: "bridge-builder",
+    hook: "Build a bridge, then drive a truck over",
+    tags: ["jobs"],
     emoji: "🌉",
     added: "2026-09-30",
     category: "science",
@@ -199,11 +250,13 @@ const GAMES = [
     age: 8,
     blurb: "Be a bridge engineer! Build a bridge out of road, wood and steel, then drive a truck across and watch every piece turn green, yellow or red. Find out why a long plank snaps, why squares fold and triangles don't, and where to put the steel. Meet the people who build bridges for a job!",
     colors: ["#1f6fb2", "#f29f05"],
-    highlights: ["🔺 Triangles", "👷 Real jobs"]
+    highlights: ["🔺 Triangles"]
   },
   {
     title: "Circuit Lab",
     folder: "circuit-lab",
+    hook: "Light bulbs, ring bells, stay safe",
+    tags: ["jobs"],
     emoji: "⚡",
     added: "2026-09-30",
     category: "science",
@@ -211,11 +264,12 @@ const GAMES = [
     age: 8,
     blurb: "Build real circuits with batteries, bulbs, switches and buzzers. Close the loop to light a bulb, make a doorbell, and find out why two bulbs in a row glow dimmer. Test a coin, a key and a pencil to see what lets electricity through, then fix a dangerous short circuit. Meet the people who work with circuits for a job!",
     colors: ["#0f7c7e", "#f5b301"],
-    highlights: ["💡 Build & test", "👷 Real jobs"]
+    highlights: ["💡 Build & test"]
   },
   {
     title: "Буквар",
     folder: "bulgarian-bukvar",
+    hook: "Learn to read Bulgarian, letter by letter",
     emoji: "🔤",
     added: "2026-09-30",
     category: "language",
@@ -228,6 +282,7 @@ const GAMES = [
   {
     title: "Newton's Playground",
     folder: "newtons-laws",
+    hook: "Flick, push and throw with Newton",
     emoji: "🍎",
     added: "2026-09-29",
     category: "science",
@@ -240,6 +295,7 @@ const GAMES = [
   {
     title: "Morse Agent",
     folder: "morse",
+    hook: "Tap secret messages like a spy",
     emoji: "📡",
     added: "2026-09-29",
     category: "coding",
@@ -252,6 +308,7 @@ const GAMES = [
   {
     title: "Enigma",
     folder: "enigma",
+    hook: "Scramble messages with a code machine",
     emoji: "🔐",
     added: "2026-09-29",
     category: "coding",
@@ -264,6 +321,7 @@ const GAMES = [
   {
     title: "Cube Timer",
     folder: "cube-timer",
+    hook: "Time your Rubik's cube solves",
     emoji: "⏱️",
     added: "2026-08-18",
     category: "puzzle",
@@ -276,6 +334,8 @@ const GAMES = [
   {
     title: "Bank Boss",
     folder: "bank-boss",
+    hook: "Run the bank: savers, loans and rates",
+    tags: ["jobs"],
     emoji: "🏦",
     added: "2026-08-11",
     category: "maths",
@@ -288,6 +348,7 @@ const GAMES = [
   {
     title: "Deal or No Deal",
     folder: "deal-or-no-deal",
+    hook: "Keep your box or take the deal?",
     emoji: "💼",
     added: "2026-08-03",
     category: "board",
@@ -300,6 +361,8 @@ const GAMES = [
   {
     title: "Lemonade Stand",
     folder: "lemonade-stand",
+    hook: "Run a lemonade stall for two weeks",
+    tags: ["jobs"],
     emoji: "🍋",
     added: "2026-08-03",
     category: "maths",
@@ -312,6 +375,7 @@ const GAMES = [
   {
     title: "Battleship",
     folder: "battleship",
+    hook: "Hunt down the hidden ships",
     emoji: "🚢",
     added: "2026-07-31",
     category: "board",
@@ -324,6 +388,7 @@ const GAMES = [
   {
     title: "Mastermind",
     folder: "mastermind",
+    hook: "Crack the secret colour code",
     emoji: "🎯",
     added: "2026-07-30",
     category: "puzzle",
@@ -336,6 +401,7 @@ const GAMES = [
   {
     title: "Nine Men's Morris",
     folder: "nine-mens-morris",
+    hook: "Line up three and take a piece",
     emoji: "⚫",
     added: "2026-07-30",
     category: "board",
@@ -348,6 +414,7 @@ const GAMES = [
   {
     title: "Connect Four",
     folder: "connect-four",
+    hook: "Get four in a row before they do",
     emoji: "🔴",
     added: "2026-07-29",
     category: "board",
@@ -359,6 +426,7 @@ const GAMES = [
   {
     title: "Yatzy Dice",
     folder: "yatzy-dice",
+    hook: "Roll five dice and chase a Yatzy",
     emoji: "🎲",
     added: "2026-07-28",
     category: "board",
@@ -370,6 +438,7 @@ const GAMES = [
   {
     title: "Footy Tactics Lab",
     folder: "footy-tactics-lab",
+    hook: "Code your footy players' moves",
     emoji: "🥅",
     added: "2026-07-25",
     category: "coding",
@@ -382,6 +451,7 @@ const GAMES = [
   {
     title: "Times Table Blaster",
     folder: "times-table-blaster",
+    hook: "Blast through your times tables",
     emoji: "⭐",
     added: "2026-07-23",
     category: "maths",
@@ -393,6 +463,7 @@ const GAMES = [
   {
     title: "Robo Rules",
     folder: "robo-rules",
+    hook: "Teach a robot with if-then rules",
     emoji: "🤖",
     added: "2026-07-23",
     category: "coding",
@@ -405,6 +476,7 @@ const GAMES = [
   {
     title: "AFL Goal Kick",
     folder: "afl-goal-kick",
+    hook: "Aim, run up and kick a goal",
     emoji: "🏉",
     added: "2026-07-23",
     category: "sport",
@@ -415,204 +487,311 @@ const GAMES = [
   }
 ];
 
-// The "NEW" ribbon: only the freshest couple of games, and only for a month.
-// Games tend to land in batches, and a shelf where every card shouts NEW says
-// nothing — hence the cap as well as the time limit.
+// The "NEW" badge: only the freshest few, and only for a month.
 const NEW_FOR_DAYS = 30;
-const MAX_NEW = 2;
+const MAX_NEW = 3;
 
+const $ = (id) => document.getElementById(id);
 const catById = new Map(CATEGORIES.map(c => [c.id, c]));
-
-// Newest first. Sort is stable, so games published the same day keep the order
-// they're written in above.
+const tagsOf = (g) => [g.category].concat(g.tags || []);
+// Newest first. Sort is stable, so same-day games keep the order written above.
 const shelf = GAMES.slice().sort((a, b) => (b.added || "").localeCompare(a.added || ""));
+const freshlyAdded = new Set(shelf.slice(0, MAX_NEW)
+  .filter(g => { const d = (Date.now() - Date.parse(g.added)) / 86400000; return d >= 0 && d < NEW_FOR_DAYS; })
+  .map(g => g.folder));
+
+// ---- Progress, favourites, what you played last ----
+// Games that keep stars write "gamebox:progress:<folder>" = {stars, max, at}
+// (see README). The launcher notes the time whenever Play is tapped. Both are
+// per-device and never leave it.
+const store = {
+  get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
+};
+let favs = new Set(store.get("gamebox:favs", []));
+const played = store.get("gamebox:played", {});
+const progressOf = (g) => store.get("gamebox:progress:" + g.folder, null);
+const lastPlayed = (g) => Math.max(played[g.folder] || 0, (progressOf(g) || {}).at || 0);
+
+function badge(g) {
+  const p = progressOf(g);
+  if (p && p.max) return `<span class="badge stars">★ ${p.stars}/${p.max}</span>`;
+  if (lastPlayed(g)) return '<span class="badge played">✓ Played</span>';
+  if (freshlyAdded.has(g.folder)) return '<span class="badge new">NEW</span>';
+  return '<span class="badge try">Try me!</span>';
+}
 
 function playersLabel([lo, hi]) {
   if (lo === hi) return lo === 1 ? "👤 1 player" : `👥 ${lo} players`;
   return `👥 ${lo}–${hi} players`;
 }
-
 function chipsFor(g) {
   const cat = catById.get(g.category);
   const chips = [];
   if (cat) chips.push(`${cat.emoji} ${cat.label}`);
+  (g.tags || []).forEach(t => TAGS[t] && chips.push(`${TAGS[t].emoji} ${TAGS[t].label}`));
   if (g.players) chips.push(playersLabel(g.players));
   if (g.age) chips.push(`🎯 Age ${g.age}+`);
   return chips.concat(g.highlights || []);
 }
 
-// `shelf` is already newest-first, so the candidates are just the top few.
-const freshlyAdded = new Set(
-  shelf.slice(0, MAX_NEW)
-    .filter(g => {
-      const days = (Date.now() - Date.parse(g.added)) / 86400000;
-      return days >= 0 && days < NEW_FOR_DAYS;
-    })
-    .map(g => g.folder)
-);
+// ---- Filters ----
+// A game has to match the pick in *every* group, plus the search words.
+// Player picks test the [min, max] range: Yatzy (1–3) counts as "on my own"
+// and "with a friend" alike.
+const PILLS = [{ id: "all", label: "All", emoji: "🎮", match: () => true },
+  { id: "fav", label: "Favourites", emoji: "♥", match: g => favs.has(g.folder) }]
+  .concat(Object.keys(TAGS).map(t => ({ id: t, label: TAGS[t].label, emoji: TAGS[t].emoji, match: g => tagsOf(g).includes(t) })))
+  .concat(CATEGORIES.map(c => ({ id: c.id, label: c.label, emoji: c.emoji, match: g => g.category === c.id })))
+  // Never show a shelf nothing can fill. Favourites stays, because it fills up.
+  .filter(o => o.id === "all" || o.id === "fav" || shelf.some(o.match));
+const PLAYERS = [
+  { id: "any",   label: "Anyone",        match: () => true },
+  { id: "solo",  label: "👤 On my own",   match: g => g.players[0] <= 1 },
+  { id: "duo",   label: "👥 With a friend", match: g => g.players[0] <= 2 && g.players[1] >= 2 },
+  { id: "party", label: "👨‍👩‍👦 3 or more", match: g => g.players[1] >= 3 }
+].filter((o, i) => i === 0 || shelf.some(o.match));
 
-// ---- Cards ----
-const grid = document.getElementById("grid");
-const emptyNote = document.getElementById("empty");
-const cards = shelf.map(g => {
-  const a = document.createElement("a");
-  a.className = "card";
-  a.href = "./" + g.folder + "/";
-  a.dataset.category = g.category || "";
-  a.innerHTML = `
-    <span class="play">▶ Play</span>
-    ${freshlyAdded.has(g.folder) ? '<span class="new">NEW</span>' : ""}
-    <div class="thumb" style="background:linear-gradient(145deg, ${g.colors[0]}, ${g.colors[1]})">
-      <div class="blob" style="width:120px;height:120px;background:rgba(255,255,255,.35);top:-30px;left:-20px"></div>
-      <div class="blob" style="width:90px;height:90px;background:rgba(0,0,0,.10);bottom:-24px;right:-10px"></div>
-      <div class="emoji">${g.emoji}</div>
-    </div>
-    <div class="body">
-      <h2>${g.title}</h2>
-      <p>${g.blurb}</p>
-      <div class="chips">${chipsFor(g).map(c => `<span class="chip">${c}</span>`).join("")}</div>
-    </div>`;
-  grid.appendChild(a);
-  return a;
-});
+const state = { cat: "all", players: "any", q: "" };
+const pillOf = (id) => PILLS.find(o => o.id === id) || PILLS[0];
+const playersOf = (id) => PLAYERS.find(o => o.id === id) || PLAYERS[0];
 
-// ---- Filter bar ----
-// Two rows of pills, each row one "group". A game has to match the pick in
-// *every* group to show, so you can ask for coding games you can play with a
-// friend. Each group's first option is the reset, and always matches.
-//
-// Player picks test against the [min, max] range, not a fixed number — Yatzy is
-// a 1–3 player game, so it belongs under "on my own" and "with a friend" alike.
-const FILTER_GROUPS = [
-  {
-    id: "cat",
-    label: "Filter games by category",
-    options: [{ id: "all", label: "All", emoji: "🎮", match: () => true }].concat(
-      CATEGORIES.map(c => Object.assign({}, c, { match: g => g.category === c.id }))
-    )
-  },
-  {
-    id: "players",
-    label: "Filter games by number of players",
-    secondary: true,
-    options: [
-      { id: "any",   label: "Any players",   emoji: "🙋", match: () => true },
-      { id: "solo",  label: "On my own",     emoji: "👤", match: g => g.players[0] <= 1 },
-      { id: "duo",   label: "With a friend", emoji: "👥", match: g => g.players[0] <= 2 && g.players[1] >= 2 },
-      { id: "party", label: "3 or more",     emoji: "👨‍👩‍👦", match: g => g.players[1] >= 3 }
-    ]
-  }
-];
-
-// Drop options nothing in the catalogue can ever satisfy, so the bar doesn't
-// fill up with empty shelves. The reset option always survives.
-for (const group of FILTER_GROUPS) {
-  group.options = group.options.filter((o, i) => i === 0 || shelf.some(o.match));
+function words(g) {
+  return (g.title + " " + (g.hook || "") + " " + g.blurb + " " + chipsFor(g).join(" ")).toLowerCase();
 }
-
-const state = {};
-for (const group of FILTER_GROUPS) state[group.id] = group.options[0].id;
-
-const optionIn = (group, id) =>
-  group.options.find(o => o.id === id) || group.options[0];
-
-// A game passes when every group agrees. `except` leaves one group out, which
-// is how each pill works out the count it would leave behind.
-function passes(game, except) {
-  return FILTER_GROUPS.every(gr =>
-    gr.id === except || optionIn(gr, state[gr.id]).match(game));
+function passes(g, except) {
+  if (except !== "cat" && !pillOf(state.cat).match(g)) return false;
+  if (except !== "players" && !playersOf(state.players).match(g)) return false;
+  if (state.q) { const w = words(g); if (!state.q.split(/\s+/).every(x => w.includes(x))) return false; }
+  return true;
 }
 
 // ---- Reading and writing the picks ----
 // The hash carries both groups (#cat=coding&players=duo). A bare "#coding" is
 // still understood, so links made before the players row existed keep working.
 const STORE_KEY = "gamebox:filters";
-
 function readPicks() {
   const raw = location.hash.replace("#", "");
-  let source = null;
-  if (raw && !raw.includes("=")) {
-    source = new URLSearchParams("cat=" + raw);
-  } else if (raw) {
-    source = new URLSearchParams(raw);
-  } else {
-    try { source = new URLSearchParams(localStorage.getItem(STORE_KEY) || ""); }
-    catch (e) { /* private mode — fall through to the defaults */ }
-  }
-  for (const group of FILTER_GROUPS) {
-    const wanted = source && source.get(group.id);
-    // optionIn falls back to the reset, so a stale or hand-typed id can never
-    // strand you on an empty grid.
-    state[group.id] = optionIn(group, wanted).id;
-  }
+  let src = null;
+  if (raw && !raw.includes("=")) src = new URLSearchParams("cat=" + raw);
+  else if (raw) src = new URLSearchParams(raw);
+  else { try { src = new URLSearchParams(localStorage.getItem(STORE_KEY) || ""); } catch (e) { /* defaults */ } }
+  // pillOf/playersOf fall back to the reset, so a stale id can't strand you on an empty page.
+  state.cat = pillOf(src && src.get("cat")).id;
+  state.players = playersOf(src && src.get("players")).id;
 }
-
-function serialise() {
-  const params = new URLSearchParams();
-  for (const group of FILTER_GROUPS) {
-    if (state[group.id] !== group.options[0].id) params.set(group.id, state[group.id]);
-  }
-  return params.toString();
-}
-
-// ---- Build the rows ----
-const filterbar = document.getElementById("filterbar");
-const pills = [];
-for (const group of FILTER_GROUPS) {
-  const row = document.createElement("div");
-  row.className = "filters" + (group.secondary ? " secondary" : "");
-  row.setAttribute("role", "group");
-  row.setAttribute("aria-label", group.label);
-  for (const opt of group.options) {
-    const b = document.createElement("button");
-    b.className = "filter";
-    b.type = "button";
-    b.innerHTML = `${opt.emoji} ${opt.label}<span class="count"></span>`;
-    b.addEventListener("click", () => {
-      state[group.id] = opt.id;
-      apply();
-    });
-    row.appendChild(b);
-    pills.push({ button: b, group, opt });
-  }
-  filterbar.appendChild(row);
-}
-
-function apply(remember = true) {
-  let shown = 0;
-  cards.forEach((card, i) => {
-    const match = passes(shelf[i]);
-    card.hidden = !match;
-    if (match) shown++;
-  });
-  emptyNote.hidden = shown > 0;
-
-  for (const { button, group, opt } of pills) {
-    const selected = state[group.id] === opt.id;
-    // Counts are live: each pill shows what you'd get if you tapped it *now*,
-    // with the other row's pick still applied. A pill that would empty the grid
-    // is disabled rather than hidden, so the row doesn't jump around.
-    const count = shelf.filter(g => opt.match(g) && passes(g, group.id)).length;
-    button.setAttribute("aria-pressed", String(selected));
-    button.querySelector(".count").textContent = count;
-    button.disabled = count === 0 && !selected;
-  }
-
-  if (!remember) return;
-  const query = serialise();
+function remember() {
+  const p = new URLSearchParams();
+  if (state.cat !== "all") p.set("cat", state.cat);
+  if (state.players !== "any") p.set("players", state.players);
+  const query = p.toString();
   try { localStorage.setItem(STORE_KEY, query); } catch (e) { /* ignore */ }
-  // replaceState keeps the picks bookmarkable without pushing history entries
-  // or jumping the page to a #target.
   history.replaceState(null, "", query ? "#" + query : location.pathname);
 }
 
+// ---- Cards ----
+function card(g) {
+  const c = document.createElement("div");
+  c.className = "card";
+  c.innerHTML = `
+    <button type="button" class="open" aria-label="${g.title}: ${g.hook || ""}">
+      <div class="thumb" style="background:linear-gradient(145deg, ${g.colors[0]}, ${g.colors[1]})"><span aria-hidden="true">${g.emoji}</span></div>
+      <div class="cbody"><b>${g.title}</b><small>${g.hook || ""}</small></div>
+    </button>
+    ${badge(g)}
+    <button type="button" class="fav" aria-label="Favourite ${g.title}" aria-pressed="${favs.has(g.folder)}">${favs.has(g.folder) ? "♥" : "♡"}</button>`;
+  c.querySelector(".open").addEventListener("click", () => openSheet(g));
+  c.querySelector(".fav").addEventListener("click", () => toggleFav(g.folder));
+  return c;
+}
+
+// ---- Rows that slide ----
+// Fingers already swipe natively (overflow-x plus scroll-snap). A mouse can't,
+// so it drags here: follow the pointer, then snap to the nearest card. A drag is
+// never a tap, so letting go over a card doesn't open it.
+let lanes = [];
+const step = (lane) => lane.children[0].getBoundingClientRect().width + (parseFloat(getComputedStyle(lane).columnGap) || 12);
+const smooth = () => matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+function page(lane, dir) {
+  const n = parseInt(getComputedStyle(lane).getPropertyValue("--n"), 10) || 2;
+  lane.scrollBy({ left: dir * n * step(lane), behavior: smooth() });
+}
+function swipe(lane, after) {
+  let start = null, dragged = false;
+  lane.addEventListener("pointerdown", (e) => {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    start = { x: e.clientX, left: lane.scrollLeft, t: performance.now() };
+    dragged = false;
+  });
+  addEventListener("pointermove", (e) => {
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    if (!dragged && Math.abs(dx) > 6) { dragged = true; lane.classList.add("dragging"); }
+    if (dragged) lane.scrollLeft = start.left - dx;
+  });
+  addEventListener("pointerup", (e) => {
+    if (!start) return;
+    const s = start;
+    start = null;
+    if (!dragged) return;
+    // A quick flick carries on a little, the way a finger does.
+    const v = (e.clientX - s.x) / Math.max(1, performance.now() - s.t);
+    const w = step(lane);
+    const max = lane.scrollWidth - lane.clientWidth;
+    const target = Math.max(0, Math.min(max, Math.round((lane.scrollLeft - v * 180) / w) * w));
+    lane.classList.remove("dragging");
+    lane.scrollTo({ left: target, behavior: smooth() });
+    after();
+  });
+  lane.addEventListener("click", (e) => { if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; } }, true);
+}
+function arrows(box) {
+  const lane = box.firstChild;
+  const max = lane.scrollWidth - lane.clientWidth;
+  box.classList.toggle("scrolls", max > 2);
+  box.querySelector(".prev").disabled = lane.scrollLeft < 4;
+  box.querySelector(".next").disabled = lane.scrollLeft > max - 4;
+}
+function fit() {
+  lanes.forEach(([lane, count]) => {
+    const n = parseInt(getComputedStyle(lane).getPropertyValue("--n"), 10) || 2;
+    lane.classList.toggle("fits", count <= n);
+    arrows(lane.parentNode);
+  });
+}
+addEventListener("resize", fit);
+
+function shelfRow(title, sub, list) {
+  if (!list.length) return null;
+  const s = document.createElement("section");
+  s.className = "shelf";
+  s.innerHTML = `<h2>${title}${sub ? ` <small>${sub}</small>` : ""}</h2>`;
+  const box = document.createElement("div");
+  box.className = "lanebox";
+  const lane = document.createElement("div");
+  lane.className = "lane";
+  list.forEach(g => lane.appendChild(card(g)));
+  const prev = document.createElement("button"), next = document.createElement("button");
+  prev.type = next.type = "button";
+  prev.className = "arrow prev"; next.className = "arrow next";
+  prev.innerHTML = "&lsaquo;"; next.innerHTML = "&rsaquo;";
+  prev.setAttribute("aria-label", "Back"); next.setAttribute("aria-label", "More games");
+  prev.addEventListener("click", () => page(lane, -1));
+  next.addEventListener("click", () => page(lane, 1));
+  box.append(lane, prev, next);
+  s.appendChild(box);
+  swipe(lane, () => arrows(box));
+  lane.addEventListener("scroll", () => arrows(box), { passive: true });
+  lanes.push([lane, list.length]);
+  return s;
+}
+
+// ---- Drawing the page ----
+function render() {
+  lanes = [];
+  const main = $("main");
+  main.innerHTML = "";
+  const list = shelf.filter(g => passes(g));
+  $("count").textContent = list.length + (list.length === 1 ? " game" : " games");
+
+  // Shelves only for the untouched "All" view; any narrowing shows a plain grid.
+  if (state.cat === "all" && state.players === "any" && !state.q) {
+    const keep = shelf.filter(lastPlayed).sort((a, b) => lastPlayed(b) - lastPlayed(a));
+    [shelfRow("▶ Keep playing", "where you left off", keep),
+     shelfRow("✨ New", null, shelf.filter(g => freshlyAdded.has(g.folder))),
+     shelfRow("♥ Favourites", null, shelf.filter(g => favs.has(g.folder)))]
+      .concat(Object.keys(TAGS).map(t => shelfRow(`${TAGS[t].emoji} ${TAGS[t].shelf}`, TAGS[t].sub, shelf.filter(g => tagsOf(g).includes(t)))))
+      .concat(CATEGORIES.map(c => shelfRow(`${c.emoji} ${c.label}`, null, shelf.filter(g => g.category === c.id))))
+      .forEach(s => s && main.appendChild(s));
+    fit();
+  } else if (!list.length) {
+    main.innerHTML = '<p class="empty">No games match. Try another word, or tap <b>All</b>.</p>';
+  } else {
+    const grid = document.createElement("div");
+    grid.className = "grid";
+    list.forEach(g => grid.appendChild(card(g)));
+    main.appendChild(grid);
+  }
+  paintFilters();
+}
+
+function paintFilters() {
+  const box = $("pills");
+  box.innerHTML = "";
+  PILLS.forEach(o => {
+    // Counts are live: what you'd get if you tapped it now, with the players
+    // pick and search still applied. A pill that would empty the page is dimmed.
+    const n = shelf.filter(g => o.match(g) && passes(g, "cat")).length;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "pill";
+    b.setAttribute("aria-pressed", String(state.cat === o.id));
+    b.disabled = n === 0 && state.cat !== o.id;
+    b.innerHTML = `<span aria-hidden="true">${o.emoji}</span>${o.label} <span class="n">${n}</span>`;
+    b.addEventListener("click", () => { state.cat = o.id; remember(); render(); });
+    box.appendChild(b);
+  });
+  const seg = $("players");
+  seg.innerHTML = "";
+  PLAYERS.forEach(o => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = o.label;
+    b.setAttribute("aria-pressed", String(state.players === o.id));
+    b.addEventListener("click", () => { state.players = o.id; remember(); render(); });
+    seg.appendChild(b);
+  });
+}
+
+function toggleFav(folder) {
+  favs.has(folder) ? favs.delete(folder) : favs.add(folder);
+  store.set("gamebox:favs", [...favs]);
+  // Keep each row where it was scrolled to, so a heart tap doesn't jump the page.
+  const kept = lanes.map(([l]) => l.scrollLeft);
+  render();
+  lanes.forEach(([l], i) => { if (kept[i]) l.scrollLeft = kept[i]; });
+  if ($("sheet").open && current && current.folder === folder) paintFav();
+}
+
+// ---- Details sheet ----
+let current = null;
+function paintFav() { $("dFav").textContent = favs.has(current.folder) ? "♥ Saved" : "♡ Save"; }
+function openSheet(g) {
+  current = g;
+  $("dThumb").style.background = `linear-gradient(145deg, ${g.colors[0]}, ${g.colors[1]})`;
+  $("dThumb").innerHTML = `<span aria-hidden="true">${g.emoji}</span>`;
+  $("dTitle").textContent = g.title;
+  $("dChips").innerHTML = chipsFor(g).map(c => `<span class="chip">${c}</span>`).join("");
+  const p = progressOf(g);
+  $("dProgress").hidden = !(p && p.max) && !lastPlayed(g);
+  $("dProgress").textContent = p && p.max ? `★ ${p.stars} of ${p.max} stars so far` : "✓ You've played this";
+  $("dBlurb").textContent = g.blurb;
+  $("dPlay").href = "./" + g.folder + "/";
+  paintFav();
+  $("sheet").showModal();
+}
+$("dClose").addEventListener("click", () => $("sheet").close());
+$("sheet").addEventListener("click", (e) => { if (e.target === $("sheet")) $("sheet").close(); });
+$("dFav").addEventListener("click", () => toggleFav(current.folder));
+$("dPlay").addEventListener("click", () => { played[current.folder] = Date.now(); store.set("gamebox:played", played); });
+
+// ---- Search ----
+$("q").addEventListener("input", () => {
+  state.q = $("q").value.trim().toLowerCase();
+  $("clear").hidden = !state.q;
+  render();
+});
+$("clear").addEventListener("click", () => { $("q").value = ""; state.q = ""; $("clear").hidden = true; render(); $("q").focus(); });
+
 readPicks();
-apply(false);
-addEventListener("hashchange", () => { readPicks(); apply(false); });
+render();
+addEventListener("hashchange", () => { readPicks(); render(); });
+// Coming back from a game (back button, bfcache): refresh the badges.
+addEventListener("pageshow", (e) => { if (e.persisted) render(); });
 
 // ---- PWA install prompt (Android/Chrome) ----
 let deferredPrompt = null;
-const installBtn = document.getElementById("installBtn");
+const installBtn = $("installBtn");
 addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault(); deferredPrompt = e; installBtn.classList.add("show");
 });

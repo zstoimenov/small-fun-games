@@ -9,9 +9,16 @@ window.VC = window.VC || {};
   // ── Saved progress ─────────────────────────────────────────────────────────
   const store = { stars: {}, quiz: null, muted: false, seenHelp: false };
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } report(); };
   const starsOf = (ch, i) => store.stars[ch + "-" + i] || 0;
   const unlocked = (ch, i) => i === 0 || starsOf(ch, i - 1) > 0;
+  // Tell the Game Box home page how far you've got, for its stars badge and
+  // "Keep playing" row. Opening the game counts as playing it.
+  function report() {
+    let got = 0, max = 0;
+    VC.CHAPTERS.forEach((c) => c.levels.forEach((_, i) => { got += starsOf(c.id, i); max += 3; }));
+    try { localStorage.setItem("gamebox:progress:vet-clinic", JSON.stringify({ stars: got, max, at: Date.now() })); } catch (e) { /* ignore */ }
+  }
   const chapterById = (id) => VC.CHAPTERS.find((c) => c.id === id);
 
   let screen = "home";
@@ -133,6 +140,7 @@ window.VC = window.VC || {};
   document.querySelectorAll("[data-close]").forEach((b) =>
     b.addEventListener("click", () => b.closest("dialog").close()));
 
+  report();
   goHome();
   if (!store.seenHelp) {
     store.seenHelp = true;
