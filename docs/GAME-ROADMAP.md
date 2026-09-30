@@ -1983,6 +1983,33 @@ the jobs that use it. Decisions made up front:
   replay time is not aptitude.
 - Order: Circuit Lab, then Bridge Builder. Circuit Lab had less unknown physics.
 
+### Music Studio — `music-studio/` ✅ built
+
+The first Creator game, asked for to fill the Compass gap. Levels plus an
+always-open studio, like Circuit Lab's free build, because stars need a right
+answer and making things doesn't have one. Three chapters of four levels,
+each a list of rounds of three kinds: **tap** (tap along; a fifth of a second
+either way, minus the device's output latency), **choose** (listen, pick),
+**build** (match a target on the grid, or follow rules such as "slower than 85"
+or "sad scale"). Notes use pentatonic scales so any grid sounds pleasant;
+happy/sad swaps major for minor pentatonic. A new **Arts & Music** category
+gives Creator games their own shelf. The studio keeps a draft and a gallery of
+12 songs in localStorage.
+
+### More Creator ideas (not started)
+
+Asked for alongside Music Studio; build order to be decided.
+
+- **Colour & Design Studio** - mix paints to match a colour (primary and
+  secondary, warm and cool), then design a poster or logo with a brief. Jobs:
+  graphic designer, painter, fashion designer. Stars from how close a mix gets.
+- **Comic Studio** - build panels from characters, backgrounds and speech
+  bubbles; levels teach beginning-middle-end and showing feelings on faces.
+  Jobs: illustrator, writer, animator. Needs art assets, so the most work.
+- **Story Builder** - pick a character, place, problem and fix, then read it
+  back; levels teach story shape. Jobs: author, film director, journalist.
+  The most reading-heavy of the four.
+
 ### Career Compass — `career-compass/` ✅ built
 
 Kid first, with a grown-ups corner. Six styles from Holland's RIASEC interest

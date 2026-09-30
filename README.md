@@ -22,7 +22,7 @@ declares how many players it takes. Picking a filter, or typing in the search,
 swaps the shelves for a plain grid of matches:
 
 - **Pills**: All, Favourites, Jobs, then Board & Strategy, Coding, Puzzles, Maths,
-  Science, Languages, Sport. On a phone they are one sideways row.
+  Science, Languages, Arts & Music, Sport. On a phone they are one sideways row.
 - **Players**: Anyone, On my own, With a friend, 3 or more. A pick matches the
   game's **range**, not a single number: Yatzy Dice (1–3) turns up under all three.
 - **Search** looks through names, hooks, descriptions and chips ("spy" finds
@@ -90,6 +90,12 @@ can play with someone else. (The older short form, `#coding`, still works.)
 | Game | Folder | What it is |
 | --- | --- | --- |
 | 🔤 **Буквар** | [`bulgarian-bukvar/`](bulgarian-bukvar/) | Learn to read Bulgarian, one letter at a time, the way a Буквар teaches it. Ten missions cover all 30 letters, easy ones first. Each mission has five steps: **Learn** the letter, **Blend** sounds into words, **Match** pictures to words, **Build** words from loose letters and **Read** a sentence. There is no sound on purpose, because computer voices say Bulgarian letters wrong. A grown-up says the sounds in the together steps, and the solo steps check themselves. Every word only uses letters already learned. **Tricky letters** drills the ones that look English but aren't (Р, В, Н, С, Х, У, п, и). Missions open **42 history cards**: history from Спартак to 1908, science and art, sport (ФК Левски, Гунди, Стоичков and more) and traditions. Each card is a little story book with a surprising true detail to remember it by, a Bulgarian line to read together, and a "Remember it?" question that earns a ✓. The **passport** has nine stamps for places in Bulgaria: get all 5 quiz questions right to win one, and win it with no help for gold. It works for 1 player, or 2 passing the tablet (~age 7+). |
+
+### 🎨 Arts & Music
+
+| Game | Folder | What it is |
+| --- | --- | --- |
+| 🎹 **Music Studio** | [`music-studio/`](music-studio/) | Make beats and tunes on an 8-step grid: four drum rows (Boom, Tak, Tss, Clap) and six note rows on a five-note scale, so anything you tap sounds nice. Every sound is made in the browser. **Feel the Beat** - tap along to a drum, hear fast or slow, copy rhythms by ear, make a sleepy beat and a race beat. **Patterns** - what comes next, finish the loop, spot the mistake, build a track in layers. **Melody & Mood** - higher or lower, which way a tune goes, copy a tune, and write sad music for a lost puppy by switching to the minor scale. The studio is always open (tempo slider, three instruments, happy/sad scale) with a gallery of up to 12 saved songs on the device, plus a jobs popup (musician, composer, sound designer) and a quiz. `node tools/music-check.js` proves every round can be won and none starts already won (~age 8+). |
 
 ### Planned
 

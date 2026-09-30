@@ -12,6 +12,7 @@ const CATEGORIES = [
   { id: "maths",  label: "Maths",            emoji: "🔢" },
   { id: "science", label: "Science",         emoji: "🔬" },
   { id: "language", label: "Languages",      emoji: "🗣️" },
+  { id: "arts",   label: "Arts & Music",     emoji: "🎨" },
   { id: "sport",  label: "Sport",            emoji: "⚽" }
 ];
 // Tags a game can carry on top of its one category. Each gets a pill and a shelf.
@@ -28,6 +29,21 @@ const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub
 // generated from `category`, `players`, `age`, `tags` and `highlights`; don't
 // hand-write them.
 const GAMES = [
+  {
+    title: "Music Studio",
+    folder: "music-studio",
+    compass: ["creator"],
+    hook: "Make beats and tunes on a grid",
+    tags: ["jobs"],
+    emoji: "🎹",
+    added: "2026-09-30",
+    category: "arts",
+    players: [1, 1],
+    age: 8,
+    blurb: "Tap boxes on a beat grid to make drums and tunes, then press play and hear them loop. Tap along to the beat, copy rhythms by ear, spot the pattern, and find out why some music sounds happy and some sounds sad. Save your songs in your own gallery, and meet the people who make music for a job!",
+    colors: ["#ff5d8f", "#5b3cc4"],
+    highlights: ["🥁 Beat grid", "💾 Save songs"]
+  },
   {
     title: "Career Compass",
     folder: "career-compass",

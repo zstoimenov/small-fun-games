@@ -7,12 +7,20 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v45";
+const CACHE = "game-box-v46";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png",
   "./games.js",
+
+  "./music-studio/", "./music-studio/index.html", "./music-studio/manifest.webmanifest",
+  "./music-studio/css/style.css",
+  "./music-studio/js/levels.js", "./music-studio/js/audio.js", "./music-studio/js/grid.js",
+  "./music-studio/js/lesson.js", "./music-studio/js/studio.js", "./music-studio/js/ui.js",
+  "./music-studio/js/app.js",
+  "./music-studio/icons/icon-192.png", "./music-studio/icons/icon-512.png",
+  "./music-studio/icons/apple-touch-icon.png",
 
   "./career-compass/", "./career-compass/index.html", "./career-compass/manifest.webmanifest",
   "./career-compass/css/style.css",
