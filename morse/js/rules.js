@@ -42,10 +42,14 @@ MO.Rules = (function () {
   //   hints   - 2: dots and dashes on every button; 1: only while sending;
   //             0: only after a mistake
   //   maxWord - the longest word you are asked to send or copy
+  //   stretch - Rookie only: every gap, including the one between the beeps
+  //             inside a letter, is this much longer, so a beginner hears each
+  //             beep on its own. The beeps themselves stay the same length -
+  //             stretching those would change the tune being learned.
   const LEVELS = [
-    { id: "rookie", name: "Rookie", spacing: 5,  hints: 2, maxWord: 3 },
-    { id: "agent",  name: "Agent",  spacing: 8,  hints: 1, maxWord: 4 },
-    { id: "ace",    name: "Ace",    spacing: 12, hints: 0, maxWord: 5 }
+    { id: "rookie", name: "Rookie", spacing: 5,  hints: 2, maxWord: 3, stretch: 1.25 },
+    { id: "agent",  name: "Agent",  spacing: 8,  hints: 1, maxWord: 4, stretch: 1 },
+    { id: "ace",    name: "Ace",    spacing: 12, hints: 0, maxWord: 5, stretch: 1 }
   ];
 
   // How long the key waits after the last beep, in the player's own dits, before
@@ -53,13 +57,15 @@ MO.Rules = (function () {
   // kid thinking about what comes next is not the same as a kid who is done.
   const END_GAP = 4;
 
-  // ARRL's Farnsworth sum. Returns the gap between letters and between words,
-  // in ms. At full speed it comes back to the textbook 3 and 7 dits.
+  // ARRL's Farnsworth sum, then the lever's stretch. Returns the gap between
+  // the beeps of one letter, between letters and between words, in ms. At full
+  // speed it comes back to the textbook 1, 3 and 7 dits.
   function gaps(level) {
-    const s = LEVELS[level].spacing;
-    if (s >= WPM) return { letter: 3 * DIT, word: 7 * DIT };
-    const ta = ((60 * WPM - 37.2 * s) / (s * WPM)) * 1000;
-    return { letter: (3 * ta) / 19, word: (7 * ta) / 19 };
+    const L = LEVELS[level];
+    const k = L.stretch;
+    if (L.spacing >= WPM) return { beep: DIT * k, letter: 3 * DIT * k, word: 7 * DIT * k };
+    const ta = ((60 * WPM - 37.2 * L.spacing) / (L.spacing * WPM)) * 1000;
+    return { beep: DIT * k, letter: (3 * ta) / 19 * k, word: (7 * ta) / 19 * k };
   }
 
   // Tone segments for a message: [{ at, dur }] in ms from the start, plus the
@@ -74,7 +80,7 @@ MO.Rules = (function () {
       word.split("").forEach((ch, ci) => {
         if (ci) t += g.letter;
         (CODE[ch] || "").split("").forEach((sym, si) => {
-          if (si) t += DIT;
+          if (si) t += g.beep;
           const dur = sym === "." ? DIT : 3 * DIT;
           out.push({ at: t, dur });
           t += dur;
