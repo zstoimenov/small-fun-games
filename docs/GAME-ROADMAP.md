@@ -2026,6 +2026,15 @@ now in every screen rather than one note at the bottom:
   (now 4 questions), and a Safety Expert badge.
 - `show()` clears the level for any screen that isn't the board, so the safety
   screen must be shown *before* its level is set. That bit once.
+- **Then: Stay Safe became Chapter 1 and a gate.** Every other chapter, the free
+  build and the quiz are locked until each Stay Safe level has a star (any
+  number). Chapter ids didn't change, only order and labels, so saved stars
+  still line up. The strip under the board went; the daily pledge, the chapter
+  and the tip on every win already carry it.
+- **"Too much going on"** fix, both games: the welcome card became one line,
+  chapter cards lost their sentence (the chapter page has it), the jobs card
+  became a Jobs tile with a popup, and Free build / Quiz / Jobs sit as three
+  tiles in a row.
 
 ### Bridge Builder — `bridge-builder/` ✅ built
 

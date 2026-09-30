@@ -42,13 +42,13 @@ BB.UI = (function () {
       b.innerHTML =
         '<span class="cc-emoji" aria-hidden="true">' + ch.emoji + "</span>" +
         '<span class="cc-text"><span class="kicker">' + ch.kicker + "</span>" +
-        "<b>" + ch.name + "</b><small>" + ch.says + "</small></span>" +
+        "<b>" + ch.name + "</b></span>" +
         '<span class="cc-stars" aria-label="' + got + " of " + max + ' stars">★ ' + got + "/" + max + "</span>";
       box.appendChild(b);
     });
     const n = BB.QUIZ.length;
-    $("quizInfo").textContent = quizBest == null ? n + " quick questions"
-      : quizBest === n ? "Best: " + n + " of " + n + " \u{1F3C5} Bridge Expert!" : "Best: " + quizBest + " of " + n;
+    $("quizInfo").textContent = quizBest == null ? n + " questions"
+      : quizBest === n ? "Best " + n + "/" + n + " \u{1F3C5}" : "Best " + quizBest + "/" + n;
     const jobs = $("jobs");
     jobs.innerHTML = "";
     BB.JOBS.forEach((j) => {

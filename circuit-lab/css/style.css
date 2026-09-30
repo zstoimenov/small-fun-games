@@ -118,6 +118,7 @@ button:disabled{opacity:.45; cursor:default}
 .hero p{font-size:16px}
 .chapters{display:grid; gap:12px}
 @media (min-width:700px){ .chapters{grid-template-columns:repeat(2,1fr)} }
+.chapter-card.locked{border-color:var(--line); box-shadow:none; opacity:.55}
 .chapter-card{
   display:flex; flex-direction:column; align-items:flex-start; gap:6px; text-align:left;
   min-height:var(--tap); padding:14px 16px; border-radius:20px;
@@ -340,3 +341,23 @@ button:disabled{opacity:.45; cursor:default}
 .sort-safe{background:var(--right) !important; color:#fff !important}
 .sort-danger{background:#1a1a1a !important; color:#f5c400 !important}
 .goal-count{font-weight:700; color:var(--muted); font-size:15px}
+
+/* ── Home, tidied ────────────────────────────────────────────────────────── */
+.intro{margin:0; text-align:center; color:var(--muted); font-size:16px}
+.hazard-line{
+  display:flex; align-items:center; gap:10px; padding:8px 8px 8px 14px; border-radius:14px; color:#1a1a1a; font-size:15px;
+  background:#fff7cc; border:4px solid transparent;
+  border-image:repeating-linear-gradient(-45deg,#f5c400 0 10px,#1a1a1a 10px 20px) 4;
+}
+.hazard-line span{flex:1}
+.hazard-line.done{border-image:none; border-color:var(--right); border-radius:14px; background:var(--right-bg); color:var(--ink)}
+.mini-btn{min-height:44px; padding:0 12px; border-radius:12px; border:0; background:#1a1a1a; color:#f5c400; font-weight:700; white-space:nowrap}
+.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+.tile{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:92px; padding:10px 6px;
+  border-radius:16px; border:1px solid var(--line); background:var(--card); box-shadow:0 2px 8px var(--shadow); text-align:center;
+}
+.tile span{font-size:30px; line-height:1}
+.tile b{font-size:16px}
+.tile small{font-size:12px; color:var(--muted); line-height:1.2}
+.tile.locked{opacity:.5}

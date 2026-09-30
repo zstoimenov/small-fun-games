@@ -26,24 +26,15 @@
     <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
   </header>
 
-  <!-- Home: what engineers do, the chapters, free build, jobs, quiz. -->
+  <!-- Home: one line of intro, the chapters, three tiles. -->
   <section id="home" class="screen">
-    <div class="card hero">
-      <span class="hero-emoji" aria-hidden="true">&#127753;</span>
-      <div>
-        <h2>Be a bridge engineer</h2>
-        <p>A truck needs to cross the river. Build a bridge out of road, wood and steel, then press <b>Test</b> and watch it drive over.</p>
-        <p>Will it hold, bend, or snap? Colours show how hard each piece is working.</p>
-      </div>
-    </div>
+    <p class="intro">Build a bridge, press <b>Test</b>, and watch the truck drive over. Will it hold?</p>
     <div id="chapters" class="chapters"></div>
-    <button id="freeBtn" class="wide-btn" type="button">&#128295; Free build <small>A long river, every material and any truck. Build anything!</small></button>
-    <div class="card jobs">
-      <h2>&#128119; Who builds bridges?</h2>
-      <div id="jobs" class="job-list"></div>
-      <p class="ask">&#128172; Know a grown-up who does one of these jobs? Ask them what the best part is!</p>
+    <div class="tiles">
+      <button id="freeBtn" class="tile" type="button"><span aria-hidden="true">&#128295;</span><b>Free build</b></button>
+      <button id="quizBtn" class="tile" type="button"><span aria-hidden="true">&#127891;</span><b>Quiz</b><small id="quizInfo"></small></button>
+      <button id="jobsBtn" class="tile" type="button"><span aria-hidden="true">&#128119;</span><b>Jobs</b><small>Who builds bridges?</small></button>
     </div>
-    <button id="quizBtn" class="wide-btn" type="button">&#127891; Bridge Quiz <small id="quizInfo">3 quick questions</small></button>
   </section>
 
   <!-- A chapter: the big idea, then its levels. -->
@@ -105,6 +96,16 @@
   <p id="lessonLife"></p>
   <p class="lesson-job" id="lessonJob"></p>
   <div class="actions"><button class="btn" type="button" id="lessonOk">Back to the lab</button></div>
+</dialog>
+
+<dialog id="jobsDialog" class="sheet" aria-labelledby="jobsTitle">
+  <div class="sheet-head">
+    <h2 id="jobsTitle">&#128119; Who builds bridges?</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <div id="jobs" class="job-list"></div>
+  <p class="ask">&#128172; Know a grown-up who does one of these jobs? Ask them what the best part is!</p>
+  <button class="btn" type="button" data-close>Got it!</button>
 </dialog>
 
 <dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">

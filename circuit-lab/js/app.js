@@ -43,7 +43,6 @@ window.CL = window.CL || {};
       : name === "quiz" ? "Circuit Quiz"
       : name === "chapter" ? ch.name
       : lvl < 0 ? "Free build" : "Level " + (lvl + 1);
-    $("safetyStrip").hidden = name !== "play";
     window.scrollTo(0, 0);
     if (name !== "play") { cfg = null; CL.Audio.buzz(false); }
   }
@@ -54,7 +53,16 @@ window.CL = window.CL || {};
     show("home");
   }
 
+  // Nothing but Stay Safe opens until every Stay Safe level has a star.
+  function gate() {
+    if (expert()) return false;
+    CL.UI.toast("\u{1F512} Finish Stay Safe first! \u{1F9BA}");
+    CL.Audio.nope();
+    return true;
+  }
+
   function openChapter(id) {
+    if (!chapterById(id).safety && gate()) return;
     ch = chapterById(id);
     CL.UI.chapter(ch, starsOf, unlocked, (i) => play(i));
     show("chapter");
@@ -240,9 +248,15 @@ window.CL = window.CL || {};
     $("lessonJob").textContent = ch.lesson.job;
     $("lessonDialog").showModal();
   });
-  $("lessonOk").addEventListener("click", () => { $("lessonDialog").close(); goHome(); });
+  $("lessonOk").addEventListener("click", () => {
+    $("lessonDialog").close();
+    const opened = ch && ch.safety && !store.opened;
+    goHome();
+    if (opened) { store.opened = true; save(); CL.UI.toast("\u{1F513} The whole lab is open now!"); }
+  });
 
-  $("freeBtn").addEventListener("click", () => { ch = null; play(-1); });
+  $("freeBtn").addEventListener("click", () => { if (gate()) return; ch = null; play(-1); });
+  $("jobsBtn").addEventListener("click", () => $("jobsDialog").showModal());
   $("up").addEventListener("click", () => {
     if ((screen === "play" || screen === "safety") && ch) openChapter(ch.id);
     else goHome();
@@ -283,7 +297,7 @@ window.CL = window.CL || {};
     if (quiz.score === quiz.items.length) CL.Audio.win();
     CL.UI.quizDone(quiz.score, quiz.items.length, startQuiz, goHome);
   });
-  $("quizBtn").addEventListener("click", startQuiz);
+  $("quizBtn").addEventListener("click", () => { if (!gate()) startQuiz(); });
 
   // ── Header buttons and dialogs ─────────────────────────────────────────────
   function paintMute() {
@@ -331,7 +345,6 @@ window.CL = window.CL || {};
     }
   });
   $("rulesBtn").addEventListener("click", () => pledge(false));
-  $("safetyStrip").addEventListener("click", () => pledge(false));
   $("shortOk").addEventListener("click", () => $("shortDialog").close());
 
   goHome();

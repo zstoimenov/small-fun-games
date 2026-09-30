@@ -31,25 +31,32 @@ CL.UI = (function () {
   }
 
   // ── Home ───────────────────────────────────────────────────────────────────
+  // gated: Stay Safe isn't finished, so every other chapter and tile is locked.
   function home(starsOf, quizBest, open, expert) {
-    $("badge").hidden = !expert;
+    const gated = !expert;
+    $("safeState").innerHTML = expert ? "\u{2705} <b>Safety Expert.</b> Toy batteries only, never wall power."
+      : "\u{26A1} <b>Toy batteries only.</b> Wall power can kill.";
+    $("safeState").parentNode.classList.toggle("done", expert);
     const box = $("chapters");
     box.innerHTML = "";
     CL.CHAPTERS.forEach((ch) => {
       const got = ch.levels.reduce((n, _, i) => n + starsOf(ch.id, i), 0);
       const max = ch.levels.length * 3;
-      const b = button("chapter-card", "", () => open(ch.id));
+      const locked = gated && !ch.safety;
+      const b = button("chapter-card" + (locked ? " locked" : ""), "", () => open(ch.id));
       b.style.setProperty("--law", ch.color);
       b.innerHTML =
         '<span class="cc-emoji" aria-hidden="true">' + ch.emoji + "</span>" +
-        '<span class="cc-text"><span class="kicker">' + ch.kicker + "</span>" +
-        "<b>" + ch.name + "</b><small>" + ch.says + "</small></span>" +
-        '<span class="cc-stars" aria-label="' + got + " of " + max + ' stars">★ ' + got + "/" + max + "</span>";
+        '<span class="cc-text"><span class="kicker">' + ch.kicker + "</span><b>" + ch.name + "</b>" +
+        (ch.safety && gated ? "<small>Start here! Finish this to open the lab.</small>" : "") + "</span>" +
+        (locked ? '<span class="cc-stars" aria-label="locked">\u{1F512}</span>'
+          : '<span class="cc-stars" aria-label="' + got + " of " + max + ' stars">\u{2605} ' + got + "/" + max + "</span>");
       box.appendChild(b);
     });
+    ["freeBtn", "quizBtn"].forEach((id) => $(id).classList.toggle("locked", gated));
     const n = CL.QUIZ.length;
-    $("quizInfo").textContent = quizBest == null ? n + " quick questions, one about staying safe"
-      : quizBest === n ? "Best: " + n + " of " + n + " \u{1F3C5} Circuit Expert!" : "Best: " + quizBest + " of " + n;
+    $("quizInfo").textContent = gated ? "\u{1F512}" : quizBest == null ? n + " questions"
+      : quizBest === n ? "Best " + n + "/" + n + " \u{1F3C5}" : "Best " + quizBest + "/" + n;
     const jobs = $("jobs");
     jobs.innerHTML = "";
     CL.JOBS.forEach((j) => {

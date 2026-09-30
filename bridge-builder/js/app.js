@@ -311,6 +311,7 @@ window.BB = window.BB || {};
   });
   $("lessonOk").addEventListener("click", () => { $("lessonDialog").close(); goHome(); });
   $("freeBtn").addEventListener("click", () => { ch = null; play(-1); });
+  $("jobsBtn").addEventListener("click", () => $("jobsDialog").showModal());
   $("up").addEventListener("click", () => {
     if (screen === "play" && ch) openChapter(ch.id);
     else goHome();
