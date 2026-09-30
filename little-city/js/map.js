@@ -40,12 +40,17 @@ window.LC = window.LC || {};
       else if (c.t === "road") s += road(g, x, y);
       else {
         s += `<rect x="${x * S + 2}" y="${y * S + 2}" width="${S - 4}" height="${S - 4}" rx="6" fill="#fffde7" stroke="${c.fixed ? "#6d6d6d" : "#bca56b"}" stroke-width="1.5"/>`;
-        s += `<text x="${x * S + S / 2}" y="${y * S + S / 2 + 1}" font-size="25" text-anchor="middle" dominant-baseline="central">${LC.TYPES[c.t].e}</text>`;
+        const L = LC.LEVELS[c.t], lvl = c.lv || 1;
+        s += `<text x="${x * S + S / 2}" y="${y * S + S / 2 + 1}" font-size="25" text-anchor="middle" dominant-baseline="central">${L ? L.e[lvl - 1] : LC.TYPES[c.t].e}</text>`;
+        // Upgraded buildings wear a star per extra level.
+        if (lvl > 1) s += `<text x="${x * S + 4}" y="${y * S + S - 5}" font-size="10" fill="#f9a825" stroke="#5d4037" stroke-width=".6" font-weight="900">${"★".repeat(lvl - 1)}</text>`;
       }
     }
     if (st && !o.small) st.houses.forEach((hh) => {
       s += `<circle cx="${hh.x * S + S - 9}" cy="${hh.y * S + 9}" r="9" fill="#fff" stroke="#555" stroke-width="1"/><text x="${hh.x * S + S - 9}" y="${hh.y * S + 10}" font-size="13" text-anchor="middle" dominant-baseline="central">${FACE[hh.face]}</text>`;
     });
+    // A see-through building where one is about to go, before paying for it.
+    if (o.ghost) s += `<rect x="${o.ghost.x * S + 2}" y="${o.ghost.y * S + 2}" width="${S - 4}" height="${S - 4}" rx="6" fill="#fffde7" opacity=".7" stroke="#e91e63" stroke-width="2.5" stroke-dasharray="5 3"/><text x="${o.ghost.x * S + S / 2}" y="${o.ghost.y * S + S / 2 + 1}" font-size="25" opacity=".75" text-anchor="middle" dominant-baseline="central">${o.ghost.e}</text>`;
     if (o.extra) s += o.extra;
     if (o.pick) s += `<rect x="${o.pick.x * S + 1}" y="${o.pick.y * S + 1}" width="${S - 2}" height="${S - 2}" rx="6" fill="none" stroke="#e91e63" stroke-width="3"/>`;
     return `<svg viewBox="0 0 ${w * S} ${h * S}" xmlns="http://www.w3.org/2000/svg" ${o.attrs || ""}>${s}</svg>`;
@@ -54,7 +59,7 @@ window.LC = window.LC || {};
   // ── The board you build on ─────────────────────────────────────────────────
   LC.board = function (root, g, o) {
     const lv = o.level;
-    let tool = null, pick = null, painting = false, last = null;
+    let tool = null, pick = null, painting = false, last = null, ghost = null;
     root.innerHTML = `<div class="stats card"></div>
       <div class="map-wrap"><div class="map"></div></div>
       <div class="toolbar" role="group" aria-label="Build"></div>
@@ -71,12 +76,14 @@ window.LC = window.LC || {};
       const svc = (t) => LC.TYPES[t] && (LC.TYPES[t].range || LC.TYPES[t].jobs);
       if (pick && g[pick.y][pick.x] && svc(g[pick.y][pick.x].t)) shade = LC.Sim.covers(g, pick.x, pick.y);
       else if (tool && svc(tool)) g.forEach((row, y) => row.forEach((c, x) => { if (c && c.t === tool) shade.push(...LC.Sim.covers(g, x, y)); }));
-      map.innerHTML = svg(g, st, { shade, shadeColor: color, pick, attrs: 'class="map-svg" role="img" aria-label="Your town"' });
+      if (ghost) shade = LC.previewCovers(g, tool, ghost.x, ghost.y);
+      map.innerHTML = svg(g, st, { shade, shadeColor: color, pick, ghost: ghost && { x: ghost.x, y: ghost.y, e: LC.TYPES[tool].e }, attrs: 'class="map-svg" role="img" aria-label="Your town"' });
       paintStats(st);
       paintBar();
     }
     function paintStats(st) {
-      let s = `<span title="People">👥 <b>${st.people}</b> people</span><span title="Happy people">😀 <b>${st.happy}</b> happy</span>`;
+      const room = st.houses.reduce((n, h) => n + h.people, 0);
+      let s = `<span title="People living here / room in all the homes">👥 <b>${st.people}/${room}</b> people</span><span title="Happy people">😀 <b>${st.happy}</b> happy</span>`;
       if (money) {
         const left = lv.money - st.cost;
         s += `<span class="${left < 0 ? "bad" : ""}">💰 <b>${left}</b> coins left</span>`;
@@ -97,7 +104,7 @@ window.LC = window.LC || {};
           (money && T.cost ? `<small>💰${T.cost}${T.upkeep ? " · -" + T.upkeep + "/yr" : T.income ? " · +" + T.income + "/yr" : ""}</small>` : left != null ? `<small>${left} left</small>` : T.people ? `<small>${T.people} people</small>` : "");
         b.setAttribute("aria-pressed", String(tool === t));
         b.setAttribute("aria-label", T.name);
-        b.addEventListener("click", () => { tool = tool === t ? null : t; pick = null; talk.innerHTML = hintFor(tool); paint(); });
+        b.addEventListener("click", () => { tool = tool === t ? null : t; pick = null; ghost = null; talk.innerHTML = hintFor(tool); paint(); });
         bar.appendChild(b);
       });
       const look = document.createElement("button");
@@ -106,7 +113,7 @@ window.LC = window.LC || {};
       look.innerHTML = '<span aria-hidden="true">👆</span><b>Look</b>';
       look.setAttribute("aria-pressed", String(!tool));
       look.setAttribute("aria-label", "Look");
-      look.addEventListener("click", () => { tool = null; talk.innerHTML = hintFor(null); paint(); });
+      look.addEventListener("click", () => { tool = null; ghost = null; talk.innerHTML = hintFor(null); paint(); });
       bar.prepend(look);
     }
     function hintFor(t) {
@@ -114,7 +121,7 @@ window.LC = window.LC || {};
       if (t === "bulldoze") return "<p>🧹 Tap anything you built to clear it" + (money ? " and get the coins back" : "") + ".</p>";
       if (t === "road") return "<p>🛣️ Tap or drag across the grass to build roads.</p>";
       const T = LC.TYPES[t];
-      return `<p>${T.e} Tap a grass square next to a road to build a ${T.name.toLowerCase()}.${T.range ? " The yellow squares show how far it reaches." : ""}</p>`;
+      return `<p>${T.e} Tap a grass square next to a road to build a ${T.name.toLowerCase()}.${LC.hasReach(t) ? " You'll see how far it reaches first, then tap again to build." : ""}</p>`;
     }
     function say(x, y) {
       const st = state();
@@ -137,9 +144,19 @@ window.LC = window.LC || {};
         else if (first && c) { talk.innerHTML = "<p>🔒 That was here first: you can't bulldoze it.</p>"; LC.Audio.nope(); }
         return;
       }
-      if (c) { if (first && tool !== "road") { talk.innerHTML = "<p>That square is taken. Pick an empty grass square.</p>"; LC.Audio.nope(); } return; }
+      // Tapping something already built just looks at it.
+      if (c) { if (first && tool !== "road") { ghost = null; pick = { x, y }; say(x, y); paint(); } return; }
       const lim = lv.limits && lv.limits[tool];
       if (lim != null && count(tool) >= lim) { talk.innerHTML = `<p>You can only build ${lim} here. Bulldoze it to move it.</p>`; LC.Audio.nope(); return; }
+      if (LC.hasReach(tool) && !(ghost && ghost.x === x && ghost.y === y)) {
+        ghost = { x, y };
+        pick = null;
+        const reach = LC.previewCovers(g, tool, x, y), homesIn = state().houses.filter((h) => reach.some(([a, b]) => a === h.x && b === h.y)).length;
+        talk.innerHTML = `<p>${LC.TYPES[tool].e} Here it would reach the yellow squares: <b>${homesIn}</b> home${homesIn === 1 ? "" : "s"}.</p><p>Tap the same square again to build it, or tap somewhere else to try another spot.</p>`;
+        paint();
+        return;
+      }
+      ghost = null;
       g[y][x] = { t: tool };
       LC.Audio.build(tool === "road");
       changed();
@@ -180,4 +197,16 @@ window.LC = window.LC || {};
   };
 
   LC.mapSvg = svg;
+  // Which squares a building would reach if it stood at (x, y): try it on
+  // the grid, measure, and put the square back.
+  LC.previewCovers = function (g, t, x, y) {
+    const was = g[y][x];
+    g[y][x] = { t };
+    const out = LC.Sim.covers(g, x, y);
+    g[y][x] = was;
+    return out;
+  };
+  // Tools that reach an area get a preview first: tap once to see, tap the
+  // same square again (or ✓) to build.
+  LC.hasReach = (t) => !!(LC.TYPES[t] && (LC.TYPES[t].range || LC.TYPES[t].jobs));
 })();

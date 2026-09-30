@@ -15,6 +15,7 @@ LC.TYPES = {
   road: { e: "🛣️", name: "Road", cost: 1 },
   house: { e: "🏠", name: "House", people: 4, cost: 6 },
   flats: { e: "🏢", name: "Flats", people: 10, cost: 14 },
+  tower: { e: "🏙️", name: "Tower", people: 20, cost: 30 },
   park: { e: "🌳", name: "Park", need: "park", range: 3, cost: 6, upkeep: 1 },
   shop: { e: "🏪", name: "Shop", need: "shop", range: 3, cost: 10, income: 3, jobs: true },
   school: { e: "🏫", name: "School", need: "school", range: 4, cost: 20, upkeep: 5 },
@@ -41,10 +42,30 @@ LC.NEEDS = {
   repair: "The storm broke our roof! Please fix it."
 };
 LC.HAPPY = ["I love living here!", "Everything I need is close by!", "Best town ever!", "What a lovely street!"];
+// Buildings in Be the Mayor can be upgraded. A level is stored on the cell
+// (lv: 1, 2 or 3) and mostly means "reaches further"; the lessons never set
+// it, so level 1 must match the plain numbers above.
+LC.LEVELS = {
+  shop: { names: ["Shop", "Mall", "Megamall"], e: ["🏪", "🏬", "🛍️"], ranges: [3, 5, 7], earn: [5, 10, 16] },
+  park: { names: ["Park", "Big park", "Botanic garden"], e: ["🌳", "⛲", "🌺"], ranges: [3, 4, 6] },
+  school: { names: ["School", "Big school", "College"], e: ["🏫", "🏫", "🎓"], ranges: [4, 6, 8] },
+  clinic: { names: ["Clinic", "Hospital", "Big hospital"], e: ["🏥", "🏥", "🏥"], ranges: [4, 6, 8] },
+  fire: { names: ["Fire station", "Big fire station", "Fire headquarters"], e: ["🚒", "🚒", "🚒"], ranges: [5, 7, 9] },
+  police: { names: ["Police", "Big police station", "Police headquarters"], e: ["🚓", "🚓", "🚓"], ranges: [5, 7, 9] },
+  factory: { names: ["Factory", "Big factory", "Mega factory"], e: ["🏭", "🏭", "🏭"], earn: [8, 14, 20] },
+  library: { names: ["Library", "Big library"], e: ["📚", "📚"], ranges: [4, 6] }
+};
+LC.rangeOf = function (c) {
+  const T = LC.TYPES[c.t], L = LC.LEVELS[c.t];
+  if (L && L.ranges) return L.ranges[(c.lv || 1) - 1];
+  return T.range || (T.jobs ? LC.JOB_RANGE : 0);
+};
+LC.nameOf = (c) => (LC.LEVELS[c.t] ? LC.LEVELS[c.t].names[(c.lv || 1) - 1] : LC.TYPES[c.t].name);
+
 const CODES = { r: "road", h: "house", b: "flats", p: "park", s: "shop", k: "school", c: "clinic", f: "fire", x: "factory" };
 
 LC.Sim = (function () {
-  const homes = (t) => t === "house" || t === "flats";
+  const homes = (t) => t === "house" || t === "flats" || t === "tower";
   const cells = (g) => { const out = []; g.forEach((row, y) => row.forEach((c, x) => out.push({ c, x, y }))); return out; };
   const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
   const near = (g, x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => ({ x: x + dx, y: y + dy })).filter((p) => g[p.y] && p.x >= 0 && p.x < g[0].length);
@@ -94,7 +115,7 @@ LC.Sim = (function () {
         if (n === "road") return;
         if (n === "noise") { if (all.some((o) => LC.TYPES[o.c.t].noisy && Math.abs(o.x - h.x) <= 1 && Math.abs(o.y - h.y) <= 1)) missing.push("noise"); return; }
         if (n === "job") { if (!working.some((o) => LC.TYPES[o.c.t].jobs && dist(o, h) <= LC.JOB_RANGE)) missing.push("job"); return; }
-        if (!working.some((o) => LC.TYPES[o.c.t].need === n && dist(o, h) <= LC.TYPES[o.c.t].range)) missing.push(n);
+        if (!working.some((o) => LC.TYPES[o.c.t].need === n && dist(o, h) <= LC.rangeOf(o.c))) missing.push(n);
       });
       const face = !missing.length ? "happy" : missing.length === 1 && on && missing[0] !== "noise" ? "meh" : "sad";
       const people = on ? T.people : 0;
@@ -112,8 +133,7 @@ LC.Sim = (function () {
 
   // Which squares a service reaches, for the coloured range shading.
   function covers(g, x, y) {
-    const T = LC.TYPES[g[y][x].t];
-    const r = T.range || (T.jobs ? LC.JOB_RANGE : 0);
+    const r = LC.rangeOf(g[y][x]);
     const out = [];
     g.forEach((row, yy) => row.forEach((_, xx) => { if (Math.abs(xx - x) + Math.abs(yy - y) <= r) out.push([xx, yy]); }));
     return out;

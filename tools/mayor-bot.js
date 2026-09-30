@@ -23,8 +23,9 @@ function roadSide(g) {
 function layRoads(town) {
   const g = town.grid, ey = g.findIndex((row) => row[0] && row[0].entry);
   const path = [];
-  for (let x = 1; x < M.W; x++) path.push([x, ey]);
-  [2, 5, 8].forEach((x) => { for (let y = 0; y < M.H; y++) if (y !== ey) path.push([x, y]); });
+  const W = g[0].length, H = g.length;
+  for (let x = 1; x < W; x++) path.push([x, ey]);
+  [2, 5, 8, 11].forEach((x) => { for (let y = 0; y < H; y++) if (y !== ey) path.push([x, y]); });
   path.forEach(([x, y]) => { const c = g[y][x]; if (c && c.t === "trees") M.bulldoze(town, x, y); if (!g[y][x]) M.build(town, "road", x, y); });
 }
 // Services go where they reach the most families who are missing them;
@@ -60,12 +61,11 @@ function sensible(town) {
       }
     }
     if (did) continue;
-    const home = un.includes("flats") && town.coins >= 20 ? "flats" : "house";
-    if (town.coins >= T[home].cost + 4 && place(town, home, quiet, [])) continue;
-    // Out of land: swap a small house for flats.
-    if (!quiet.length && home === "flats" && town.coins >= 24) {
-      const h = st.homes.find((q) => q.t === "house");
-      if (h) { M.bulldoze(town, h.x, h.y); M.build(town, "flats", h.x, h.y); continue; }
+    if (town.coins >= T.house.cost + 4 && place(town, "house", quiet, [])) continue;
+    // Out of land: upgrade full, happy homes (house -> flats -> tower).
+    if (!quiet.length) {
+      const h = st.homes.find((q) => q.face === "happy" && M.nextStep(town, town.grid[q.y][q.x]) && town.rank >= M.nextStep(town, town.grid[q.y][q.x]).rank && town.coins >= M.nextStep(town, town.grid[q.y][q.x]).cost + 5);
+      if (h && !M.upgrade(town, h.x, h.y)) continue;
     }
     break;
   }

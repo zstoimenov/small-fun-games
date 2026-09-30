@@ -12,7 +12,9 @@ window.LC = window.LC || {};
 
 LC.Mayor = (function () {
   const Sim = LC.Sim, T = LC.TYPES;
-  const W = 11, H = 8;
+  // Towns started before the map grew are 11 x 8; everything reads the size
+  // from the grid itself, so both kinds keep working.
+  const W = 14, H = 10;
   const START_COINS = 80, INTEREST = 0.1, CHALLENGE_YEARS = 20, TAX = 1;
   // Running costs in Be the Mayor. Lower than the lessons' numbers, because
   // here they come out of real taxes every single year.
@@ -20,9 +22,9 @@ LC.Mayor = (function () {
   const RANKS = [
     { name: "Hamlet", e: "🏡", at: 0, unlock: ["road", "house", "shop", "park", "school"] },
     { name: "Village", e: "🏘️", at: 20, unlock: ["clinic", "fire", "factory"] },
-    { name: "Town", e: "🏙️", at: 50, unlock: ["flats", "library"] },
+    { name: "Town", e: "🏙️", at: 50, unlock: ["library"] },
     { name: "City", e: "🌆", at: 100, unlock: ["police", "station"] },
-    { name: "Big City", e: "🌃", at: 180, unlock: ["stadium"] }
+    { name: "Big City", e: "🌃", at: 250, unlock: ["stadium"] }
   ];
   // As the town grows, families expect more. Below these sizes a missing
   // service doesn't make anyone unhappy, so a new town can start small.
@@ -32,7 +34,7 @@ LC.Mayor = (function () {
     { id: "village", e: "🏘️", name: "Village", text: "20 people live in your town." },
     { id: "town", e: "🏙️", name: "Town", text: "50 people live in your town." },
     { id: "city", e: "🌆", name: "City", text: "100 people live in your town." },
-    { id: "big", e: "🌃", name: "Big City", text: "180 people live in your town." },
+    { id: "big", e: "🌃", name: "Big City", text: "250 people live in your town." },
     { id: "allhappy", e: "😀", name: "Everyone happy", text: "Every family was happy at the end of a year (12 people or more)." },
     { id: "saver", e: "🐷", name: "Piggy bank", text: "200 coins in the treasury." },
     { id: "debtfree", e: "🏦", name: "Paid it back", text: "Paid back a whole loan." },
@@ -70,27 +72,27 @@ LC.Mayor = (function () {
   function makeMap(seed) {
     const r = rng(seed * 7 + 1);
     const g = Array.from({ length: H }, () => Array(W).fill(null));
-    const ey = 3 + Math.floor(r() * 2);
+    const ey = 4 + Math.floor(r() * 2);
     const land = pickOf(r, LANDS);
     const free = (x, y) => g[y] && x >= 0 && x < W && !g[y][x] && !(y === ey && x < 3);
     if (land.id === "river") {
-      let x = 6 + Math.floor(r() * 3);
+      let x = 7 + Math.floor(r() * 4);
       for (let y = 0; y < H; y++) {
         g[y][x] = y === ey ? { t: "road", fixed: true } : { t: "water" };
-        if (y !== ey && y !== ey - 1 && r() < 0.3) x = Math.max(5, Math.min(W - 2, x + (r() < 0.5 ? -1 : 1)));
+        if (y !== ey && y !== ey - 1 && r() < 0.3) x = Math.max(6, Math.min(W - 2, x + (r() < 0.5 ? -1 : 1)));
       }
     } else if (land.id === "lake") {
-      const cx = 5 + Math.floor(r() * 4), cy = ey < 4 ? 6 : 1;
+      const cx = 6 + Math.floor(r() * 5), cy = ey < 5 ? 7 : 1;
       [[0, 0], [1, 0], [-1, 0], [0, 1], [1, 1], [0, -1], [2, 0], [-1, 1]].forEach(([dx, dy]) => { if (free(cx + dx, cy + dy)) g[cy + dy][cx + dx] = { t: "water" }; });
     } else if (land.id === "sea") {
       for (let x = 0; x < W; x++) { g[H - 1][x] = { t: "water" }; if (x > 3 + Math.floor(r() * 3) && r() < 0.7) g[H - 2][x] = { t: "water" }; }
     } else {
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < 5; k++) {
         const cx = 2 + Math.floor(r() * (W - 3)), cy = Math.floor(r() * H);
         [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0]].forEach(([dx, dy]) => { if (free(cx + dx, cy + dy) && r() < 0.8) g[cy + dy][cx + dx] = { t: "trees" }; });
       }
     }
-    for (let k = 0; k < 4; k++) { const x = 1 + Math.floor(r() * (W - 1)), y = Math.floor(r() * H); if (free(x, y) && y !== ey) g[y][x] = { t: "trees" }; }
+    for (let k = 0; k < 7; k++) { const x = 1 + Math.floor(r() * (W - 1)), y = Math.floor(r() * H); if (free(x, y) && y !== ey) g[y][x] = { t: "trees" }; }
     g[ey][0] = { t: "road", fixed: true, entry: true };
     return { grid: g, land };
   }
@@ -112,8 +114,7 @@ LC.Mayor = (function () {
   const unlocked = (town) => RANKS.slice(0, town.rank + 1).flatMap((rk) => rk.unlock);
   function wantsFor(n) { return ["road", "noise"].concat(WANTS.filter(([, at]) => n >= at).map(([w]) => w)); }
   function covered(g, x, y, t) {
-    const R = T[t].range || (T[t].jobs ? LC.JOB_RANGE : 0);
-    return g.some((row, yy) => row.some((c, xx) => c && c.t === t && !c.damaged && Math.abs(xx - x) + Math.abs(yy - y) <= R));
+    return g.some((row, yy) => row.some((c, xx) => c && c.t === t && !c.damaged && Math.abs(xx - x) + Math.abs(yy - y) <= LC.rangeOf(c)));
   }
 
   // Everything the mayor's screen shows: each home's face and what it's
@@ -132,21 +133,21 @@ LC.Mayor = (function () {
       const bonus = ["library", "stadium"].filter((t) => covered(working, h.x, h.y, t)).length;
       return { x: h.x, y: h.y, t: c.t, cap: capOf(c.t), live: c.live || 0, face, missing, bonus };
     });
-    const out = { people: pop, homes: hs, houses: hs, happy: 0, shops: [], works: [], tax: 0, earn: 0, upkeep: 0 };
+    const out = { people: pop, capacity: hs.reduce((n, h) => n + h.cap, 0), homes: hs, houses: hs, happy: 0, shops: [], works: [], tax: 0, earn: 0, upkeep: 0 };
     hs.forEach((h) => { if (h.face === "happy") out.happy += h.live; });
     g.forEach((row, y) => row.forEach((c, x) => {
       if (!c || !T[c.t] || c.damaged || !on(x, y)) return;
       const Ty = T[c.t];
-      out.upkeep += UPKEEP[c.t] || 0;
+      out.upkeep += UPKEEP[c.t] ? UPKEEP[c.t] + (c.lv || 1) - 1 : 0;
       if (c.t === "shop") {
-        const customers = hs.reduce((n, h) => n + (dist(h, { x, y }) <= Ty.range ? h.live : 0), 0);
-        const coins = Math.min(5, Math.floor(customers / 5));
+        const customers = hs.reduce((n, h) => n + (dist(h, { x, y }) <= LC.rangeOf(c) ? h.live : 0), 0);
+        const coins = Math.min(LC.LEVELS.shop.earn[(c.lv || 1) - 1], Math.floor(customers / 5));
         out.shops.push({ x, y, customers, coins });
         out.earn += coins;
       }
       if (c.t === "factory" || c.t === "station") {
         const workers = hs.reduce((n, h) => n + (dist(h, { x, y }) <= LC.JOB_RANGE ? h.live : 0), 0);
-        const coins = c.t === "factory" ? Math.min(8, Math.floor(workers / 4)) : Ty.income;
+        const coins = c.t === "factory" ? Math.min(LC.LEVELS.factory.earn[(c.lv || 1) - 1], Math.floor(workers / 4)) : Ty.income;
         out.works.push({ x, y, t: c.t, workers, coins });
         out.earn += coins;
       }
@@ -177,8 +178,37 @@ LC.Mayor = (function () {
     if (!c) return "skip";
     if (c.t === "trees") { if (town.coins < 2) return "Clearing trees costs 2 coins."; town.coins -= 2; town.grid[y][x] = null; return null; }
     if (!T[c.t] || c.fixed) return c.fixed ? "🔒 That was here first: you can't bulldoze it." : "You can't bulldoze water!";
-    town.coins += Math.floor(T[c.t].cost / 2);
+    town.coins += Math.floor((T[c.t].cost + (c.paid || 0)) / 2);
     town.grid[y][x] = null;
+    return null;
+  }
+
+  // ── Upgrading ──────────────────────────────────────────────────────────────
+  // Homes step up a type (house, flats, tower); everything else goes up a
+  // level and reaches further. Bigger steps unlock as the town grows, so
+  // there's always something to save up for.
+  const HOME_UP = { house: { to: "flats", cost: 12, rank: 2 }, flats: { to: "tower", cost: 26, rank: 3 } };
+  function nextStep(town, c) {
+    if (!c || c.damaged) return null;
+    if (HOME_UP[c.t]) {
+      const u = HOME_UP[c.t], to = T[u.to];
+      return { name: to.name, e: to.e, cost: u.cost, rank: u.rank, what: `room for ${to.people} people instead of ${T[c.t].people}` };
+    }
+    const L = LC.LEVELS[c.t];
+    const lv = c.lv || 1;
+    if (!L || lv >= L.names.length) return null;
+    const cost = Math.ceil(T[c.t].cost * (lv === 1 ? 1 : 1.5));
+    const what = L.ranges ? `reaches ${L.ranges[lv]} squares instead of ${L.ranges[lv - 1]}` : `can earn up to ${L.earn[lv]} coins a year instead of ${L.earn[lv - 1]}`;
+    return { name: L.names[lv], e: L.e[lv], cost, rank: c.t === "library" ? 3 : lv, what: what + (UPKEEP[c.t] ? ", and costs 1 more coin a year to run" : "") };
+  }
+  function upgrade(town, x, y) {
+    const c = town.grid[y][x], n = nextStep(town, c);
+    if (!n) return "That can't be upgraded any more.";
+    if (town.rank < n.rank) return `🔒 Upgrading to ${n.name} unlocks when your town is a ${RANKS[n.rank].name} (${RANKS[n.rank].at} people).`;
+    if (town.coins < n.cost) return `Not enough coins: ${n.name} costs ${n.cost}.`;
+    town.coins -= n.cost;
+    c.paid = (c.paid || 0) + n.cost;
+    if (HOME_UP[c.t]) c.t = HOME_UP[c.t].to; else c.lv = (c.lv || 1) + 1;
     return null;
   }
   const repairCost = (c) => Math.ceil(T[c.t].cost / 2);
@@ -246,7 +276,7 @@ LC.Mayor = (function () {
       hit.c.damaged = true;
       town.stats.storms++;
       if (town.stats.storms >= 3) award(town, "storms");
-      return { e: "🌩️", title: "A big storm!", text: `The wind damaged the ${T[hit.c.t].name.toLowerCase()}. Nobody was hurt, but it won't work until you tap it and pay to repair it.`, at: hit };
+      return { e: "🌩️", title: "A big storm!", text: `The wind damaged the ${LC.nameOf(hit.c).toLowerCase()} (marked on the map). Nobody was hurt, but it won't work until you tap it and pay to repair it.`, at: hit };
     }
     if (kind === "fire") {
       const unsafe = buildings.filter((b) => !covered(g, b.x, b.y, "fire"));
@@ -256,7 +286,7 @@ LC.Mayor = (function () {
         return { e: "🚒", title: "Fire! And the fire fighters saved the day", text: "A fire started, but your fire station was close enough to put it out straight away. Great planning!" };
       }
       const hit = pickOf(r, unsafe);
-      const was = T[hit.c.t].name.toLowerCase();
+      const was = LC.nameOf(hit.c).toLowerCase();
       g[hit.y][hit.x] = null;
       return { e: "🔥", title: "A fire!", text: `The ${was} burned down. Everyone got out safely, but there was no fire station close enough to save it. A 🚒 fire station protects everything nearby.`, at: hit };
     }
@@ -384,10 +414,11 @@ LC.Mayor = (function () {
     if (town.over) return null;
     const r = rng(town.seed * 1000 + town.year);
     const before = look(town);
-    const sum = { year: town.year, inn: 0, out: 0, why: {}, news: [], upgrades: 0 };
+    const sum = { year: town.year, inn: 0, out: 0, why: {}, news: [], upgrades: 0, marks: [] };
     town.newMedals = [];
     const ev = event(town, r, before);
     sum.event = ev;
+    if (ev.at) sum.marks.push({ x: ev.at.x, y: ev.at.y, e: ev.e });
 
     // Families move in and out, a few at a time.
     const st = look(town);
@@ -402,12 +433,12 @@ LC.Mayor = (function () {
       else d = -1;
       const nv = Math.max(0, Math.min(h.cap, h.live + d));
       if (nv > h.live) sum.inn += nv - h.live;
-      if (nv < h.live) { sum.out += h.live - nv; h.missing.forEach((m) => { sum.why[m] = (sum.why[m] || 0) + 1; }); }
+      if (nv < h.live) { sum.out += h.live - nv; h.missing.forEach((m) => { sum.why[m] = (sum.why[m] || 0) + 1; }); sum.marks.push({ x: h.x, y: h.y, e: "🚪" }); }
       c.live = nv;
       // A house that stays full and happy grows into flats once flats exist.
       const k = h.x + "," + h.y;
       town.streak[k] = h.face === "happy" && nv === h.cap ? (town.streak[k] || 0) + 1 : 0;
-      if (c.t === "house" && town.streak[k] >= 3 && unlocked(town).includes("flats")) { c.t = "flats"; town.streak[k] = 0; sum.upgrades++; }
+      if (c.t === "house" && town.streak[k] >= 3 && town.rank >= HOME_UP.house.rank) { c.t = "flats"; town.streak[k] = 0; sum.upgrades++; sum.marks.push({ x: h.x, y: h.y, e: "🏢" }); }
     });
     // A train station brings new families to homes with room.
     if (buildingsOf(town.grid, "station").some((p) => !town.grid[p.y][p.x].damaged)) {
@@ -438,10 +469,12 @@ LC.Mayor = (function () {
         town.coins += q.reward;
         town.stats.helped++;
         if (town.stats.helped >= 3) award(town, "helper");
+        sum.marks.push({ x: q.x, y: q.y, e: "💌" });
         sum.news.push(`✉️ The ${q.fam} family says THANK YOU for the ${T[q.need].name.toLowerCase()}! +${q.reward} coins.`);
         town.request = null;
       } else if (town.year >= q.due) {
         c.live = Math.max(0, (c.live || 0) - 2);
+        sum.marks.push({ x: q.x, y: q.y, e: "😞" });
         sum.news.push(`😞 The ${q.fam} family waited 3 years for a ${T[q.need].name.toLowerCase()}. Two of them moved away.`);
         town.request = null;
       }
@@ -465,7 +498,7 @@ LC.Mayor = (function () {
       town.rank = rk;
     }
     if (pop > 0) award(town, "first");
-    [["village", 20], ["town", 50], ["city", 100], ["big", 180]].forEach(([id, at]) => { if (pop >= at) award(town, id); });
+    [["village", 20], ["town", 50], ["city", 100], ["big", 250]].forEach(([id, at]) => { if (pop >= at) award(town, id); });
     if (later.allHappy && pop >= 12) award(town, "allhappy");
     if (town.coins >= 200) award(town, "saver");
     if (town.year > 10) award(town, "ten");
@@ -481,6 +514,7 @@ LC.Mayor = (function () {
       startCampaign(town, r);
       sum.news.push("🗳️ Election next year! Two rivals want to be mayor. See what they promise, and keep the families happy to win their votes.");
     }
+    town.marks = sum.marks;
     town.last = sum;
     return sum;
   }
@@ -490,12 +524,12 @@ LC.Mayor = (function () {
   function score(town) {
     const st = look(town);
     const pts = st.people + st.happy + Math.floor(town.coins / 10) - town.loan;
-    return { pts, stars: pts >= 260 ? 3 : pts >= 170 ? 2 : pts >= 80 ? 1 : 0, people: st.people, happy: st.happy };
+    return { pts, stars: pts >= 450 ? 3 : pts >= 260 ? 2 : pts >= 100 ? 1 : 0, people: st.people, happy: st.happy };
   }
 
   return {
     W, H, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS,
-    create, makeMap, look, build, bulldoze, repair, repairCost, borrow, repay, loanLimit, answer, endYear, score,
+    create, makeMap, look, build, bulldoze, repair, upgrade, nextStep, repairCost, borrow, repay, loanLimit, answer, endYear, score,
     people, unlocked, rankOf, covered, wantsFor, rng, tally, retry, complaints
   };
 })();

@@ -2067,6 +2067,20 @@ at 8. Two measurement traps worth remembering: 2 coins a person made coins
 pile up to 1,800 with nothing to buy, and a naive voting rule (OK homes all
 defecting) lost half of all towns at the very first election.
 
+#### Third pass: tiers, previews, a bigger map
+
+From play-testing feedback. Upgrades live on the building (the Look panel),
+not the toolbar, so the toolbar stays one button per kind however many tiers
+exist; the Flats button went away for the same reason (upgrade a house).
+Levels are data (`LC.LEVELS`: names, emoji, ranges or earnings) read through
+`LC.rangeOf`, and level 1 equals the lessons' numbers so the 12 levels are
+untouched. Anything with a reach is placed in two taps (preview, then build),
+and tapping a built square with a tool in hand looks at it instead of
+erroring. The map grew from 11 × 8 to 14 × 10 (old towns keep their size:
+everything reads the grid's own dimensions). With towers and room, the bot
+reached ~236 people in 20 years, so Big City moved from 180 to 250 and the
+challenge stars from 80/170/260 to 100/260/450.
+
 Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
 Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
 

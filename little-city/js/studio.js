@@ -48,7 +48,7 @@ LC.Studio = (function () {
     $("mRank").innerHTML = `${rk.e} ${rk.name}` + (next ? `<small>${Math.max(0, next.at - st.people)} more people to ${next.name}</small>` : "");
     const happy = st.people ? Math.round(100 * st.happy / st.people) : 0;
     $("mStats").innerHTML = `<span>📅 Year <b>${t.year}</b>${t.mode === "challenge" ? ` of ${M.CHALLENGE_YEARS}` : ""}</span>` +
-      `<span>👥 <b>${st.people}</b></span><span>😀 <b>${happy}%</b></span>` +
+      `<span title="People living here / room in all the homes">👥 <b>${st.people}/${st.capacity}</b></span><span>😀 <b>${happy}%</b></span>` +
       `<span class="${t.coins < 10 ? "bad" : ""}">💰 <b>${t.coins}</b></span>` +
       `<span class="${st.balance < 0 ? "bad" : ""}" title="What the next year will add or take">📈 <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b>/yr</span>` +
       (t.loan ? `<span class="bad">🏦 owe <b>${t.loan}</b></span>` : "");
@@ -89,7 +89,9 @@ LC.Studio = (function () {
     const before = board.look();
     const sum = M.endYear(t);
     keep();
-    board.paint();
+    // A new year starts with 👆 Look, so nothing gets built by accident.
+    board.reset();
+    board.marks(sum.marks);
     board.burst(sum, before);
     header();
     LC.Audio.build();
@@ -126,6 +128,21 @@ LC.Studio = (function () {
       btn("btn ghost", "👎 No thanks", no);
       btn("btn go", "👍 Yes", yes);
     } else nextBtn();
+    // Anything the news was about is ringed on the map: this closes the card
+    // and shows it, with the headline kept beside the map.
+    if (sum.marks.length) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn ghost show-me";
+      b.textContent = "📍 Show me on the map";
+      b.addEventListener("click", () => {
+        $("yearDialog").close();
+        board.show(sum.marks);
+        board.say(`<p class="who">${ev.e} ${esc(ev.title)}</p><p>${esc(ev.text)}</p>` + sum.news.map((n) => `<p>${esc(n)}</p>`).join("") +
+          `<p class="muted">📍 The rings show where it happened. 🚪 = families moved out.</p>`);
+      });
+      acts.prepend(b);
+    }
     function nextBtn() {
       if (t.lost && t.snap) { btn("btn ghost", "Finish", () => $("yearDialog").close()); btn("btn go", "↺ Try that year again", () => { $("yearDialog").close(); retry(); }); }
       else btn("btn go", t.over ? "See my town" : `On to year ${t.year} ›`, () => $("yearDialog").close());
