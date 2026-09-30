@@ -1966,3 +1966,118 @@ decisions that shaped it were made up front:
 - The pass mark counts only *hearing* (Listen + Decode). Sending is practised in
   every mission but never blocks an unlock.
 
+
+## Буквар Quest — `bulgarian-bukvar/` 📝 planned
+
+Not on the original list. The ask was *"a game that teaches Bulgarian history and
+famous people, with a primer (буквар) that teaches reading in Bulgarian"*. The
+decisions below were made with the user before a line was written.
+
+**The premise.** The Cyrillic alphabet is itself Bulgarian history (Кирил и
+Методий, their students, the Preslav school), so the reader and the history are
+one game, not two bolted together. **The reader is the spine; history is the
+reward.** Each mission unlocks letters, and each letter set unlocks a famous
+Bulgarian: *А е за Аспарух*.
+
+### Decisions already made
+
+- **Player:** 7-9, already reads English, new to Cyrillic.
+- **UI in English, content in Bulgarian.** Every instruction is English; every
+  word the child reads is Bulgarian.
+- **No audio at all.** A speech check on Windows Chrome (Microsoft Ivan, bg-BG)
+  was unusable: single letters come out as letter *names* (М → "ем"), Я → А,
+  Ю → У, В → Б, and words drop sounds (ябълка → "абълка"). That is how speech
+  engines treat lone letters, so a better voice would not fix it. Instead a
+  **parent supplies the sounds in real life**, the way a Буквар is used in a
+  Bulgarian classroom.
+- **So every activity is either *together* or *solo*,** and the screen says
+  which. Together: the child reads aloud, the parent taps ✓ or *Try again*.
+  Solo: the tablet can check the answer without hearing anything (picture
+  match, build the word, quiz).
+- **English sound hints** on tap, for solo play: М = "m" in *mum*, Ъ = "u" in
+  *butter*, Щ = "sht" in *ashtray*. The user reviews all 30.
+- **Pictures are emoji.** No image files, works offline, both themes for free.
+- **History range: 681 to today.** Khans, the alphabet, the Revival,
+  Liberation, and modern names (Атанасов, Стоичков).
+- **Category:** a new `language` shelf, "Languages 🗣️". **Age:** 7+.
+  **Players:** `[1, 2]`, where the second player is the parent reading along
+  (and a friend in two-player quiz).
+- **No copied Буквар text.** Published primers are copyrighted. The *method*
+  (sound-first, easy letters first, syllables before words) is free to use;
+  every word list and sentence is written fresh.
+
+### The loop
+
+**Missions** (~10, three letters each, easy first: А, М, О, Т, Л, И …; the hard
+ones last: Ъ, Щ, Ю, Я, Ь). Each mission has five steps:
+
+1. **Learn the letter.** Big letter, capital and small, English hint, three
+   emoji picture words.
+2. **Blend** *(together)*. Letters light up in turn: М → А → МА → МАМА. The
+   blend is visual; nothing ever has to say a syllable aloud.
+3. **Picture match** *(solo)*. Word ↔ emoji, both directions.
+4. **Build the word** *(solo)*. Scrambled letter tiles spell the pictured word.
+5. **Read** *(together)*. One sentence, parent checks it off.
+
+Finishing a mission unlocks its **history card**, and its **quiz**.
+
+**Look-alike drill** *(solo)*. The letters that betray an English reader
+because they look Latin: Р, В, Н, С, Х, У. Unlocks once any of them is learned.
+
+**History cards.** One per mission, 10-12 in all. A two-line story written only
+with letters learned so far, so a card read early is shorter than one read late.
+Kept in the **card album** (saved on the device).
+
+### The quiz: a passport with stamps
+
+The gamified practice section. The child carries a **Bulgarian passport**
+(Паспорт), and each quiz is a **place** with a stamp to earn.
+
+- **Five questions a round. All five right = the stamp.** One miss shows the
+  right answer, finishes the round, and says *"4 out of 5, so close! Try again
+  for the stamp."* The retry draws a fresh five from a bigger pool (about 12 per
+  quiz), so a stamp cannot be won by remembering the order of answers.
+- **Gold stamp** for a perfect round with no hints tapped. Something to come
+  back for once the ink stamp is in.
+- **Each stamp is a real place** tied to the history it tests, drawn as a round
+  CSS stamp with the place name and a one-line fact: Плиска (first capital),
+  Преслав (the alphabet school), Търново, Рилски манастир, Копривщица (April
+  Uprising), Шипка, Пловдив, София, Созопол.
+- **Question kinds**, all tappable, no typing:
+  - *Letters:* "Which letter is Ж?" out of four look-alikes.
+  - *Words:* emoji ↔ word, and "which word is spelled right?"
+  - *History:* "Who am I?" from clues, "Which came first?" (two events), and a
+    3-card **timeline** drag (681, 864, 893, 1396, 1876, 1878, 1908).
+- **Quizzes unlock with missions,** and every Bulgarian answer in a quiz uses
+  only letters already learned. A question the child cannot read is a question
+  about reading, not history.
+- **Two players:** pass the tablet, same five questions each, most right wins;
+  both get the stamp if both score five. Reuses `connect-four/`'s pass-the-device
+  screen.
+
+This replaces the separate *Timeline* and *Who am I?* modes from the first
+sketch: they are question kinds inside the quiz now, which is one less screen
+and one reward system instead of three.
+
+### What has to be checked in node
+
+- **Decodability.** `tools/bukvar-check.js`: every word, sentence, card story
+  and quiz answer may use only the letters unlocked by the point it appears.
+  Any word that breaks it is printed with the offending letter. This is the
+  check that makes it a reader and not a word list.
+- **Quiz pools:** each quiz has ≥ 12 questions, each question has exactly one
+  correct answer, and no answer appears twice in one question.
+- **Stamp logic:** 5/5 stamps, 4/5 does not, gold needs zero hints.
+
+### What the user reviews before it ships
+
+The Bulgarian text, the history facts and dates, and the 30 English sound
+hints. None of these can be checked by a script.
+
+### Cost
+
+**lines ≈ 2,000 + the game's own logic.** The logic here is small (no AI, no
+search); the content is not. Missions + cards + quiz pools are mostly data.
+Estimate **3,300-4,000 lines**, with the quiz adding ~300 to the earlier figure.
+Two sessions: (1) letters, missions, look-alike drill; (2) history cards, quiz
+and passport, album.
