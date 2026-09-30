@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v34";
+const CACHE = "game-box-v35";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -123,6 +123,13 @@ const ASSETS = [
   "./newtons-laws/js/app.js",
   "./newtons-laws/icons/icon-192.png", "./newtons-laws/icons/icon-512.png",
   "./newtons-laws/icons/apple-touch-icon.png",
+
+  "./circuit-lab/", "./circuit-lab/index.html", "./circuit-lab/manifest.webmanifest",
+  "./circuit-lab/css/style.css",
+  "./circuit-lab/js/circuit.js", "./circuit-lab/js/levels.js", "./circuit-lab/js/audio.js",
+  "./circuit-lab/js/board.js", "./circuit-lab/js/ui.js", "./circuit-lab/js/app.js",
+  "./circuit-lab/icons/icon-192.png", "./circuit-lab/icons/icon-512.png",
+  "./circuit-lab/icons/apple-touch-icon.png",
 ];
 
 // Precache fresh copies — cache:"reload" bypasses the HTTP cache so the offline

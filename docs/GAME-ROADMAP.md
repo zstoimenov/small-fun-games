@@ -1966,3 +1966,60 @@ decisions that shaped it were made up front:
 - The pass mark counts only *hearing* (Listen + Decode). Sending is practised in
   every mission but never blocks an unlock.
 
+
+## Careers track
+
+Asked for as "games that teach real-world skills and show a kid which kinds of
+work they like". Each game in this track teaches one real skill **and** ends with
+the jobs that use it. Decisions made up front:
+
+- **Science shelf, age 8, one player**, and the Newton's Playground shape: chapter
+  cards, levels with stars, a lesson after each chapter, a 3-question quiz.
+- **Every chapter's lesson names a job**, and home has a "Who works with…?" card
+  with three real jobs in one kid-level sentence each, plus a nudge to ask a
+  grown-up who does one.
+- **Career Compass is deferred.** A launcher page tracking which areas a kid
+  plays most and does well in. When it's built, keep "chooses to play", "does
+  well at" and "says they liked" as three separate signals: replay time is not
+  aptitude.
+- Order: Circuit Lab, then Bridge Builder. Circuit Lab has less unknown physics,
+  and its tap-an-edge board is what Bridge Builder can reuse.
+
+### Circuit Lab — `circuit-lab/` ✅ built
+
+Three chapters of four levels plus a free build: **Full Circle** (closed loops,
+switches, a doorbell), **One Path or Two** (series is dim, parallel is bright,
+a switch per light, batteries in series), **Safe Paths** (conductors and
+insulators by testing seven things, pencil lead as a weak conductor, removing a
+short circuit). A wall-power safety rule on home.
+
+- **Parts sit on edges between dots, placed by tapping**, not by dragging wires.
+  A finger can't draw a wire accurately on a phone; it can tap an 80×60 target.
+- **Real nodal analysis** (`circuit.js`), not a loop search, because chapter 2
+  is about *how bright*. Battery = 3 V with 0.05 Ω inside (Norton form, so it
+  drops straight into the conductance matrix); a short then gives ~30 A instead
+  of infinity, which is what makes "the battery is hot" drawable.
+- **Brightness thresholds are the lesson.** One bulb 0.92, two in series 0.24,
+  two in parallel 0.90, two batteries 3.6, three batteries 8 (pops at 5). The
+  first draw used opacity `0.35 + 0.65·level`, which made 0.24 look nearly as
+  bright as 0.92 on the light theme; the glow now scales with the level itself
+  and dim bulbs get their own pale fill.
+- **Switch goals are brute-forced**: every combination of switch positions is
+  solved, and each light must follow exactly one switch of its own. So "the
+  light is on" doesn't count unless the switch actually works it.
+- `node tools/circuit-check.js` plays a written solution to every level, checks
+  the start isn't already won, that `par` matches the solution, and the
+  brightness sums above. Stars are moves against `par` (+3 for two stars).
+
+### Bridge Builder — `bridge-builder/` (next)
+
+Tap two dots to add a beam, then Test: a truck drives across. Beams glow
+green, yellow, red with strain and snap past their limit. Levels, one idea each:
+a plank sags; supports underneath help; **triangles don't squash, squares do**;
+heavier trucks; a beam budget (fewest beams = most stars, safety vs cost);
+longer gaps. Jobs: civil engineer, builder, architect.
+
+- Biggest risk is the physics: a spring-and-joint model that wobbles or
+  explodes on its own ruins it. Prove stability in a node harness (like
+  `circuit-check.js`) before designing a single level.
+- Reuse Circuit Lab's board: dots, edges, tap-to-place, SVG layers.
