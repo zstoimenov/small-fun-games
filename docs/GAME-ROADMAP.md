@@ -2032,6 +2032,21 @@ no download. The studio is a five-part story mountain with a bookshelf of 12.
 
 All four Creator ideas are now built.
 
+### Little City — `little-city/` ✅ built
+
+Shortlist #6, picked to strengthen the Compass's Leaders and Helpers. A flat
+top-down grid; money only from Chapter 3 so needs come first; residents speak
+their unmet needs (the Helper side) instead of a single score. `sim.js` is pure:
+roads must link to an OUT road, services reach by squares across + down
+(park 3, shop 3, school 4, clinic 4, fire 5, jobs 5), a factory is noisy to the
+8 squares around it, tax is people + a bonus for happy people. Placement
+puzzles were measured: 4 of 12 school spots, 1 of 13 clinic spots and 2 of 14
+factory spots work, so range shading and the families' words carry the hint.
+`tools/city-check.js` replays a worked answer for every build level.
+
+Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
+Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
+
 ### Career Compass — `career-compass/` ✅ built
 
 Kid first, with a grown-ups corner. Six styles from Holland's RIASEC interest

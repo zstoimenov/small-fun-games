@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Little City</title>
+<meta name="description" content="Build a town: roads, homes, schools and clinics. Listen to the families, balance the budget and run the town like a mayor.">
+<meta name="theme-color" content="#43a047">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Little City">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Back</button>
+    <h1 id="title">Little City</h1>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+  </header>
+
+  <!-- Home: one line of intro, the chapters, four tiles. -->
+  <section id="home" class="screen">
+    <p class="intro">Build a town where everyone is happy!</p>
+    <div id="chapters" class="chapters"></div>
+    <div class="tiles">
+      <button id="studioBtn" class="tile" type="button"><span aria-hidden="true">&#127959;&#65039;</span><b>Sandbox</b><small>Build anything</small></button>
+      <button id="townsBtn" class="tile" type="button"><span aria-hidden="true">&#127961;&#65039;</span><b>My towns</b><small id="townsTile"></small></button>
+      <button id="quizBtn" class="tile" type="button"><span aria-hidden="true">&#127891;</span><b>Quiz</b><small id="quizInfo"></small></button>
+      <button id="jobsBtn" class="tile" type="button"><span aria-hidden="true">&#128119;</span><b>Jobs</b><small>Who plans towns?</small></button>
+    </div>
+  </section>
+
+  <!-- A chapter: the big idea, then its levels. -->
+  <section id="chapter" class="screen" hidden>
+    <div class="card law-card">
+      <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
+      <p class="kicker" id="lawKicker"></p>
+      <h2 id="lawName"></h2>
+      <p class="law-big" id="lawSays"></p>
+      <div id="lawMore"></div>
+      <details class="grown-up">
+        <summary>In grown-up words</summary>
+        <p id="lawGrown"></p>
+      </details>
+    </div>
+    <div id="levels" class="levels"></div>
+  </section>
+
+  <!-- A level: lesson.js fills #stage, one round at a time. -->
+  <section id="play" class="screen" hidden>
+    <div class="goal">
+      <span class="goal-name" id="goalName"></span>
+      <span class="goal-count" id="roundCount"></span>
+      <p id="goalText"></p>
+    </div>
+    <div id="stage" class="stage"></div>
+  </section>
+
+  <!-- The sandbox: a bigger map, every building. -->
+  <section id="studio" class="screen" hidden>
+    <div class="studio-row">
+      <button id="sName" class="name-btn" type="button" aria-label="Rename your town"></button>
+      <button id="sMoney" class="btn ghost" type="button" aria-pressed="false">&#128176; Money: off</button>
+    </div>
+    <div id="sEditor" class="board"></div>
+    <div class="actions studio-acts">
+      <button id="sNew" class="btn ghost" type="button">&#10024; New</button>
+      <button id="sSave" class="btn" type="button">&#128190; Save</button>
+      <button id="sTowns" class="btn ghost" type="button">&#127961;&#65039; My towns</button>
+    </div>
+  </section>
+
+  <!-- Saved towns. -->
+  <section id="towns" class="screen" hidden>
+    <p class="intro" id="townsInfo"></p>
+    <div id="townList" class="town-list"></div>
+    <div class="actions"><button id="townsStudio" class="btn" type="button">&#127959;&#65039; Go to the sandbox</button></div>
+  </section>
+
+  <!-- The quiz: one question at a time. -->
+  <section id="quiz" class="screen" hidden>
+    <div class="card quiz-card">
+      <p class="kicker" id="qCount"></p>
+      <span class="q-emoji" id="qEmoji" aria-hidden="true"></span>
+      <h2 id="qText"></h2>
+      <div class="answers" id="qAnswers"></div>
+      <p class="q-why" id="qWhy" aria-live="polite"></p>
+      <div class="actions"><button id="qNext" class="btn" type="button" hidden>Next &rsaquo;</button></div>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="winDialog" class="sheet" aria-labelledby="winTitle">
+  <div class="big-stars" id="winStars" aria-hidden="true"></div>
+  <h2 id="winTitle">You did it!</h2>
+  <p id="winText"></p>
+  <div class="actions">
+    <button id="winAgain" class="btn ghost" type="button">Play again</button>
+    <button id="winNext" class="btn" type="button">Next &rsaquo;</button>
+  </div>
+</dialog>
+
+<dialog id="lessonDialog" class="sheet lesson" aria-labelledby="lessonTitle">
+  <span class="lesson-emoji" id="lessonEmoji" aria-hidden="true"></span>
+  <h2 id="lessonTitle"></h2>
+  <p class="law-big" id="lessonSays"></p>
+  <p id="lessonLife"></p>
+  <p class="lesson-job" id="lessonJob"></p>
+  <div class="actions"><button class="btn" type="button" id="lessonOk">Back to the studio</button></div>
+</dialog>
+
+<dialog id="jobsDialog" class="sheet" aria-labelledby="jobsTitle">
+  <div class="sheet-head">
+    <h2 id="jobsTitle">&#128119; Who plans and runs towns?</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <div id="jobs" class="job-list"></div>
+  <p class="ask">&#128172; Who decided where your school, park and shops would go? Ask a grown-up who your local councillor is!</p>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
+  <div class="sheet-head">
+    <h2 id="helpTitle">How to play</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <ol class="how">
+    <li><b>Pick a building</b> from the bar under the map, then tap a grass square.</li>
+    <li><b>Roads:</b> tap or drag your finger. Every building must touch a road that leads OUT of town.</li>
+    <li><b>👆 Look:</b> tap a house to hear what the family needs. 😀 happy, 😐 OK, 😟 unhappy.</li>
+    <li><b>Yellow squares</b> show how far a school, clinic or park reaches.</li>
+    <li><b>🧹 Bulldoze</b> clears anything you built.</li>
+  </ol>
+  <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="./js/sim.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/map.js"></script>
+<script src="./js/levels.js"></script>
+<script src="./js/lesson.js"></script>
+<script src="./js/studio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>

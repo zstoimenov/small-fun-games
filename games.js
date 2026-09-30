@@ -30,6 +30,21 @@ const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub
 // hand-write them.
 const GAMES = [
   {
+    title: "Little City",
+    folder: "little-city",
+    compass: ["leader", "helper"],
+    hook: "Build a town where everyone is happy",
+    tags: ["jobs"],
+    emoji: "🏙️",
+    added: "2026-09-30",
+    category: "science",
+    players: [1, 1],
+    age: 8,
+    blurb: "Build roads, homes, schools, clinics, parks and shops, and tap every house to hear what the family needs. Keep the noisy factory off people's doorsteps, balance the town's budget, read residents' letters and hold a town vote. Then build your own town in the sandbox, and meet the people who plan and run towns for a job!",
+    colors: ["#66bb6a", "#1e88e5"],
+    highlights: ["🗳️ Town vote", "💰 Budget"]
+  },
+  {
     title: "Story Builder",
     folder: "story-builder",
     compass: ["creator"],
