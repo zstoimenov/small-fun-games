@@ -1,0 +1,296 @@
+/* Буквар Quest - one stylesheet, no framework.                                  */
+/*                                                                              */
+/* A school primer: notebook paper with ruled lines under every big letter, and */
+/* the green, white and red of the Bulgarian flag. Green is progress, red marks */
+/* what is new, and stars are gold.                                             */
+
+:root{
+  --bg:#eef3ee; --ink:#18241d; --muted:#5a6b60;
+  --card:#ffffff; --line:#d3ddd5; --shadow:rgba(20,50,35,.16);
+  --accent:#00966e; --accent2:#007556; --accent-ink:#ffffff;
+  --red:#d62612; --gold:#e3a008; --gold-bg:#fff4d6;
+  --right:#1f9d55; --right-bg:#dff5e8; --wrong:#d03b3b; --wrong-bg:#fde3e3;
+  --chip:#eef3ef; --tile:#f8fbf8; --rule:#b9d2e6; --margin:#f0a8a0;
+  --tap:56px;
+  --emoji:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1612; --ink:#e6efe9; --muted:#95a89c;
+    --card:#16211b; --line:#27362d; --shadow:rgba(0,0,0,.55);
+    --accent:#2fbf8f; --accent2:#1f9a72; --accent-ink:#08130e;
+    --red:#ff6b57; --gold:#f5c542; --gold-bg:#3a2f10;
+    --right:#4cc97e; --right-bg:#143325; --wrong:#f07070; --wrong-bg:#3a1a1a;
+    --chip:#1b2821; --tile:#19251f; --rule:#2c4458; --margin:#6b3a35;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1612; --ink:#e6efe9; --muted:#95a89c;
+  --card:#16211b; --line:#27362d; --shadow:rgba(0,0,0,.55);
+  --accent:#2fbf8f; --accent2:#1f9a72; --accent-ink:#08130e;
+  --red:#ff6b57; --gold:#f5c542; --gold-bg:#3a2f10;
+  --right:#4cc97e; --right-bg:#143325; --wrong:#f07070; --wrong-bg:#3a1a1a;
+  --chip:#1b2821; --tile:#19251f; --rule:#2c4458; --margin:#6b3a35;
+}
+:root[data-theme="light"]{
+  --bg:#eef3ee; --ink:#18241d; --muted:#5a6b60;
+  --card:#ffffff; --line:#d3ddd5; --shadow:rgba(20,50,35,.16);
+  --accent:#00966e; --accent2:#007556; --accent-ink:#ffffff;
+  --red:#d62612; --gold:#e3a008; --gold-bg:#fff4d6;
+  --right:#1f9d55; --right-bg:#dff5e8; --wrong:#d03b3b; --wrong-bg:#fde3e3;
+  --chip:#eef3ef; --tile:#f8fbf8; --rule:#b9d2e6; --margin:#f0a8a0;
+}
+
+*{box-sizing:border-box}
+/* .card and friends are display:flex/grid; without this they would beat the
+   hidden attribute and a "hidden" screen would still be on the page. */
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+button{font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.emoji{font-family:var(--emoji); line-height:1}
+
+.page{
+  max-width:760px; margin:0 auto; min-height:100dvh;
+  padding:calc(8px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:12px;
+}
+.screen{display:flex; flex-direction:column; gap:12px}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.top{display:flex; align-items:center; gap:6px}
+.top h1{
+  margin:0; flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  text-align:center; font-size:clamp(20px,5.5vw,27px);
+}
+#back,.link-btn{
+  white-space:nowrap; display:inline-flex; align-items:center; min-height:var(--tap); padding:0 6px;
+  color:var(--ink); font-weight:600; text-decoration:none; border:0; background:none;
+}
+.icon-btn{
+  flex:0 0 auto; width:46px; height:46px; border-radius:50%; padding:0;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:19px; font-weight:700; line-height:1;
+}
+
+/* ── Buttons and cards ───────────────────────────────────────────────────── */
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 16px;
+  box-shadow:0 2px 8px var(--shadow);
+}
+.card h2{margin:0; font-size:19px}
+.card-head{display:flex; align-items:center; gap:10px; margin-bottom:8px}
+.card-head h2{flex:1}
+.card p{margin:0 0 10px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.btn{
+  min-height:var(--tap); padding:0 22px; border-radius:14px;
+  border:1px solid transparent; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:18px;
+  box-shadow:0 3px 0 var(--accent2);
+}
+.btn.ghost{background:var(--card); color:var(--ink); border-color:var(--line); box-shadow:0 3px 0 var(--line)}
+.btn:active,.small-btn:active,.tile:active,.abc button:active,.map button:active{transform:translateY(2px); box-shadow:none}
+.small-btn{
+  min-height:46px; padding:0 14px; border-radius:12px; font-weight:600; font-size:15px;
+  border:1px solid var(--line); background:var(--chip); color:var(--ink);
+}
+.small-btn.danger{background:var(--wrong-bg); color:var(--wrong); border-color:var(--wrong)}
+.actions{display:flex; flex-wrap:wrap; justify-content:center; gap:10px}
+.actions .btn{flex:1 1 150px; max-width:300px}
+
+/* ── Home ────────────────────────────────────────────────────────────────── */
+.big-btn{
+  display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; padding:18px 20px; text-align:left;
+  border:0; border-radius:22px; color:#fff;
+  background:linear-gradient(135deg,#00a67a,#00735a);
+  box-shadow:0 6px 18px var(--shadow), inset 0 -8px 0 #d62612, inset 0 8px 0 rgba(255,255,255,.9);
+}
+.big-btn .kicker{margin-top:6px; font-size:14px; letter-spacing:.12em; text-transform:uppercase; opacity:.9}
+.big-btn .new{font-size:40px; font-weight:800; letter-spacing:.12em}
+.big-btn .go{margin:4px 0 8px; align-self:flex-end; padding:8px 18px; border-radius:12px; background:#fff; color:#00604a; font-weight:800}
+.big-btn:active{transform:translateY(2px)}
+
+.map{display:grid; grid-template-columns:repeat(5,1fr); gap:8px}
+.map button{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  min-height:74px; padding:6px 2px; border-radius:14px;
+  border:1px solid var(--line); background:var(--tile); box-shadow:0 3px 0 var(--line);
+}
+.map b{font-size:13px; color:var(--muted)}
+.map .ls{font-size:17px; font-weight:800; letter-spacing:.04em}
+.map .st{font-size:13px; color:var(--gold); letter-spacing:1px; min-height:1em}
+.map .done{background:var(--right-bg); border-color:var(--right)}
+.map .now{border:2px solid var(--red); box-shadow:0 3px 0 var(--red)}
+.map .locked{opacity:.4; box-shadow:none}
+
+.abc{display:grid; grid-template-columns:repeat(auto-fill,minmax(52px,1fr)); gap:6px}
+.abc button{
+  min-height:54px; border-radius:12px; border:1px solid var(--line); background:var(--chip);
+  font-size:21px; font-weight:800; box-shadow:0 3px 0 var(--line);
+}
+.abc button small{font-size:15px; font-weight:600; opacity:.8}
+.abc .known{background:var(--card); border-color:var(--accent)}
+.abc .locked{opacity:.3; box-shadow:none}
+
+.wide-btn{
+  display:flex; flex-direction:column; align-items:center; width:100%; min-height:64px; padding:10px;
+  border:1px solid var(--line); border-radius:18px; background:var(--card); font-weight:700; font-size:18px;
+  box-shadow:0 2px 8px var(--shadow);
+}
+.wide-btn small{font-weight:500; font-size:14px; color:var(--muted)}
+.wide-btn:disabled{opacity:.55; cursor:default}
+
+/* ── Play: steps and who's playing ───────────────────────────────────────── */
+.steps{display:flex; gap:6px; justify-content:center; flex-wrap:wrap}
+.step{
+  min-width:36px; padding:4px 10px; border-radius:20px; font-size:13px; font-weight:700; text-align:center;
+  background:var(--chip); color:var(--muted); border:1px solid var(--line);
+}
+.step.done{background:var(--right-bg); color:var(--right); border-color:transparent}
+.step.now{background:var(--accent); color:var(--accent-ink); border-color:transparent}
+.who{margin:0; text-align:center; font-weight:700; font-size:15px; padding:6px 12px; border-radius:12px; align-self:center}
+.who.together{background:var(--gold-bg); color:var(--ink)}
+.who.solo{background:var(--chip); color:var(--ink)}
+.who:empty{display:none}
+
+.stage{display:flex; flex-direction:column; gap:14px}
+.bar{display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:46px}
+.count{font-weight:800; font-size:18px}
+.say{margin:0; text-align:center; font-size:19px}
+
+/* Notebook paper: blue ruled lines and a red margin, the page of a primer. */
+.ruled{
+  position:relative; border-radius:20px; border:1px solid var(--line); background-color:var(--card);
+  background-image:
+    linear-gradient(90deg,transparent 38px,var(--margin) 38px 40px,transparent 40px),
+    repeating-linear-gradient(180deg,transparent 0 35px,var(--rule) 35px 36px);
+  padding:20px 16px 20px 52px; box-shadow:0 2px 10px var(--shadow);
+}
+
+/* Learn: one letter, as big as the page allows. */
+.letter-big{display:flex; align-items:baseline; justify-content:center; gap:18px; font-weight:800; line-height:1}
+.letter-big .up{font-size:clamp(110px,30vw,180px)}
+.letter-big .lo{font-size:clamp(80px,22vw,130px); color:var(--red)}
+.hint{margin:6px 0 0; text-align:center; font-size:20px}
+.hint b{color:var(--accent)}
+.example{display:flex; align-items:center; justify-content:center; gap:14px; margin-top:10px; font-size:34px; font-weight:800}
+.example .emoji{font-size:54px}
+.example mark{background:none; color:var(--red)}
+
+/* Blend: letters that light up one by one, left to right. */
+.blend{display:flex; justify-content:center; flex-wrap:wrap; gap:6px; padding:8px 0; border:0; background:none; width:100%}
+.blend span{
+  min-width:64px; padding:10px 6px; border-radius:14px; text-align:center;
+  font-size:clamp(46px,11vw,72px); font-weight:800; line-height:1;
+  color:var(--muted); background:var(--chip); border:2px dashed var(--line);
+  transition:background .15s, color .15s;
+}
+.blend span.lit{color:var(--ink); background:var(--gold-bg); border:2px solid var(--gold)}
+.blend span.next{border-color:var(--red)}
+.blend.whole span{background:var(--right-bg); border-color:var(--right); color:var(--ink)}
+.blend-pic{text-align:center; font-size:64px; min-height:72px}
+
+/* Answer tiles, for pictures and words alike. */
+.prompt{display:flex; align-items:center; justify-content:center; min-height:120px; text-align:center}
+.prompt .emoji{font-size:96px}
+.prompt .w{font-size:clamp(44px,11vw,64px); font-weight:800}
+.prompt .s{font-size:24px; font-weight:700}
+.tiles{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+/* Sounds are phrases, and there are three of them: one per row reads better. */
+.tiles.one{grid-template-columns:1fr}
+.tiles.one .tile{min-height:64px}
+.tile{
+  display:flex; align-items:center; justify-content:center; min-height:84px; padding:8px; border-radius:16px;
+  border:2px solid var(--line); background:var(--tile); box-shadow:0 3px 0 var(--line);
+  font-size:30px; font-weight:800;
+}
+.tile.pic{font-size:54px}
+.tile.snd{font-size:19px; font-weight:700}
+.tile.right{background:var(--right-bg); border-color:var(--right)}
+.tile.wrong{background:var(--wrong-bg); border-color:var(--wrong); animation:shake .3s}
+.tile:disabled{cursor:default}
+@keyframes shake{25%{transform:translateX(-6px)} 75%{transform:translateX(6px)}}
+
+/* Build: empty slots on top, loose letter tiles underneath. */
+.slots{display:flex; justify-content:center; flex-wrap:wrap; gap:6px}
+.slots span{
+  width:clamp(44px,11vw,64px); height:clamp(54px,13vw,76px); display:flex; align-items:center; justify-content:center;
+  border-bottom:4px solid var(--line); font-size:clamp(34px,9vw,50px); font-weight:800;
+}
+.slots span.full{border-color:var(--right)}
+.slots span.next{border-color:var(--red)}
+.loose{display:flex; justify-content:center; flex-wrap:wrap; gap:8px}
+.loose .tile{min-width:62px; min-height:66px; font-size:34px}
+.loose .tile.used{visibility:hidden}
+.loose .tile.glow{border-color:var(--gold); background:var(--gold-bg)}
+
+/* Read: one sentence, big, each word tappable to keep a finger on the place. */
+.sentence{display:flex; flex-wrap:wrap; justify-content:center; gap:4px 14px; margin:0; padding:10px 0}
+.sentence button{
+  border:0; background:none; padding:2px 4px; border-radius:10px;
+  font-size:clamp(36px,8vw,52px); font-weight:800;
+}
+.sentence button.on{background:var(--gold-bg); box-shadow:inset 0 -4px 0 var(--gold)}
+
+/* The grown-up's buttons: set apart, and saying who they're for. */
+.grownup{display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:16px; background:var(--gold-bg)}
+.grownup p{margin:0; text-align:center; font-size:14px; font-weight:700; color:var(--ink)}
+
+/* Mission and drill results. */
+.result{text-align:center; display:flex; flex-direction:column; gap:10px; align-items:center}
+.result h2{margin:0; font-size:28px}
+.result .stars{font-size:54px; letter-spacing:6px; color:var(--gold)}
+.result .stars i{font-style:normal; color:var(--line)}
+.result .got{font-size:34px; font-weight:800; letter-spacing:.14em}
+.result p{margin:0; font-size:18px}
+.result .actions{width:100%}
+
+/* ── Pop-ups ─────────────────────────────────────────────────────────────── */
+.sheet{
+  width:min(560px, calc(100vw - 24px)); max-height:min(85dvh, 700px); padding:16px;
+  border:1px solid var(--line); border-radius:18px; background:var(--card); color:var(--ink);
+  box-shadow:0 12px 40px var(--shadow);
+}
+.sheet::backdrop{background:rgba(5,15,10,.6)}
+.sheet-head{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+.sheet-head h2{flex:1; margin:0; font-size:20px}
+.sheet > .btn{width:100%; margin-top:12px}
+.how{margin:0; padding-left:1.3em}
+.how li{margin:6px 0}
+.tip{margin:10px 0 0; padding:8px 12px; border-radius:10px; background:var(--chip)}
+.reset{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+
+.toast{
+  position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom));
+  transform:translate(-50%,20px); opacity:0; pointer-events:none;
+  padding:10px 18px; border-radius:22px; background:#00604a; color:#fff; font-weight:600;
+  transition:opacity .2s, transform .2s; max-width:90vw; text-align:center;
+}
+.toast.show{opacity:1; transform:translate(-50%,0)}
+
+@media (max-width:480px){
+  .page{padding-inline:12px}
+  .map{gap:6px}
+  .map button{min-height:66px}
+  .map .ls{font-size:14px}
+  .tile{min-height:72px; font-size:26px}
+  .tile.pic{font-size:44px}
+  .ruled{padding-left:44px}
+  .ruled{background-image:
+    linear-gradient(90deg,transparent 30px,var(--margin) 30px 32px,transparent 32px),
+    repeating-linear-gradient(180deg,transparent 0 35px,var(--rule) 35px 36px)}
+  .loose .tile{min-width:52px; min-height:58px; font-size:28px}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .tile.wrong{animation:none}
+  .blend span{transition:none}
+}
+.prompt .w.huge{font-size:110px}
