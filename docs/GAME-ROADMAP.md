@@ -2159,11 +2159,11 @@ now in every screen rather than one note at the bottom:
 
 ### Bridge Builder — `bridge-builder/` ✅ built
 
-Tap a dot, then a neighbouring dot, to lay road (flat, on the road line only),
-wood or steel; the selection carries on from the dot you reached, so a road is
-dot, dot, dot. Test drives the truck over while every piece is coloured by how
-close it is to breaking. Three chapters of three levels, a free build with any
-of four trucks, jobs (civil engineer, builder, architect) and a quiz.
+Drag from dot to dot to lay road (flat, on the road line only), wood or steel,
+or tap a dot then a neighbour. Building never removes a piece: only the Remove
+tool does, and Undo steps back. Test drives the truck over while every piece is
+coloured by how close it is to breaking. Three chapters of three levels, the
+Bridge Trail, a free build with any truck, jobs and a quiz.
 
 - **Static, not dynamic.** Each frame the truck moves and the bridge is solved
   for where it settles (direct stiffness method). Nothing can jiggle itself to
@@ -2182,6 +2182,26 @@ of four trucks, jobs (civil engineer, builder, architect) and a quiz.
   and became a level: the riverbank is one side of a triangle.
 - A snapped road is usually where some *other* failure shows, so a level can
   set `fail` to say what it really means ("the squares folded").
+
+**Bridge Trail** (`js/trail.js`): six worlds of five levels, starting where
+Chapter 3 ends. Each world adds one rule, all level data handled in physics.js:
+coins on a budget (Farm Creek), pins only where the canyon rock is solid and
+missing dots (Desert Canyon), a boat lane with nothing below the road (Big
+River), snow load and weak old wood (Snowy Peaks), ropes that only pull, hung
+from stone towers (Jungle Gorge), and islands plus convoys (City Harbour).
+
+- **Ropes are tension-only**: solve, slacken any rope being pushed, take back any
+  slack rope that would stretch, solve again until nothing changes. A rope may
+  reach 4 dots, so it is one long element, not a chain of floppy joints.
+- **The stiffness matrix is factorised once per structure** and reused while
+  the truck rolls, which made the solver about 6x faster.
+- **Pars came from a level lab, not by hand**: trim a generous seed (truss over,
+  truss under, grid below, rope fans) by removing, cheapening or swapping pieces
+  while it still holds with 3% headroom, from several seeds; keep the best.
+  Trimming from "every piece" got stuck (17 pieces where 7 do); shaped seeds don't.
+  The lab writes trail.js and the solutions in `tools/bridge-check.js`.
+- Uneven banks and return trips were left out: the grid only gives 45-degree
+  ramps, and a convoy already puts two loads on the bridge at once.
 
 
 ### Vet Clinic — `vet-clinic/` ✅ built

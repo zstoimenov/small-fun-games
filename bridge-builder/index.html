@@ -32,13 +32,20 @@
     <p class="intro">Build a bridge, press <b>Test</b>, and watch the truck drive over. Will it hold?</p>
     <div id="chapters" class="chapters"></div>
     <div class="tiles">
+      <button id="trailBtn" class="tile" type="button" hidden><span aria-hidden="true">&#128506;&#65039;</span><b>Bridge Trail</b><small id="trailInfo"></small></button>
       <button id="freeBtn" class="tile" type="button"><span aria-hidden="true">&#128295;</span><b>Free build</b></button>
       <button id="quizBtn" class="tile" type="button"><span aria-hidden="true">&#127891;</span><b>Quiz</b><small id="quizInfo"></small></button>
       <button id="jobsBtn" class="tile" type="button"><span aria-hidden="true">&#128119;</span><b>Jobs</b><small>Who builds bridges?</small></button>
     </div>
   </section>
 
-  <!-- A chapter: the big idea, then its levels. -->
+  <!-- The Bridge Trail: six worlds of harder puzzles, each with a new rule. -->
+  <section id="trail" class="screen" hidden>
+    <p class="intro">Six worlds, each with a new rule. Best after Chapter 3!</p>
+    <div id="worlds" class="chapters"></div>
+  </section>
+
+  <!-- A chapter (or a Trail world): the big idea, then its levels. -->
   <section id="chapter" class="screen" hidden>
     <div class="card law-card">
       <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
@@ -122,6 +129,7 @@
     <li><b>Oops?</b> Press &#8630; Undo. Or pick &#129533; Remove and tap a piece to take it back.</li>
     <li><b>Test it!</b> Green means easy, yellow means working hard, red means about to break.</li>
     <li><b>Stars:</b> 3 if you use the fewest pieces.</li>
+    <li><b>&#128506;&#65039; Bridge Trail:</b> harder puzzles. Each world has a new rule: coins, crumbly cliffs, boats, snow and ropes.</li>
   </ol>
   <button class="btn" type="button" data-close>Got it!</button>
 </dialog>
@@ -130,6 +138,7 @@
 
 <script src="./js/physics.js"></script>
 <script src="./js/levels.js"></script>
+<script src="./js/trail.js"></script>
 <script src="./js/audio.js"></script>
 <script src="./js/board.js"></script>
 <script src="./js/ui.js"></script>

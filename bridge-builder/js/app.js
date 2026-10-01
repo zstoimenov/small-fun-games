@@ -20,10 +20,17 @@ window.BB = window.BB || {};
   // "Keep playing" row. Opening the game counts as playing it.
   function report() {
     let got = 0, max = 0;
-    BB.CHAPTERS.forEach((c) => c.levels.forEach((_, i) => { got += starsOf(c.id, i); max += 3; }));
+    BB.CHAPTERS.concat(BB.TRAIL).forEach((c) => c.levels.forEach((_, i) => { got += starsOf(c.id, i); max += 3; }));
     try { localStorage.setItem("gamebox:progress:bridge-builder", JSON.stringify({ stars: got, max, at: Date.now() })); } catch (e) { /* ignore */ }
   }
-  const chapterById = (id) => BB.CHAPTERS.find((c) => c.id === id);
+  const chapterById = (id) => BB.CHAPTERS.concat(BB.TRAIL).find((c) => c.id === id);
+  // A Bridge Trail world opens once 3 levels of the one before have a star,
+  // so one hard level never blocks the trail.
+  function worldOpen(k) {
+    if (k === 0) return true;
+    const prev = BB.TRAIL[k - 1];
+    return prev.levels.filter((_, i) => starsOf(prev.id, i) > 0).length >= 3;
+  }
 
   // ── State ──────────────────────────────────────────────────────────────────
   let screen = "home";
@@ -39,12 +46,13 @@ window.BB = window.BB || {};
 
   function show(name) {
     screen = name;
-    ["home", "chapter", "play", "quiz"].forEach((s) => { $(s).hidden = s !== name; });
+    ["home", "trail", "chapter", "play", "quiz"].forEach((s) => { $(s).hidden = s !== name; });
     $("back").hidden = name !== "home";
     $("up").hidden = name === "home";
-    $("up").innerHTML = "&lsaquo; " + (name === "play" && ch ? ch.kicker : "Home");
+    $("up").innerHTML = "&lsaquo; " + (name === "play" && ch ? ch.kicker : name === "chapter" && ch.trail ? "Trail" : "Home");
     $("title").textContent = name === "home" ? "Bridge Builder"
       : name === "quiz" ? "Bridge Quiz"
+      : name === "trail" ? "Bridge Trail"
       : name === "chapter" ? ch.name
       : lvl < 0 ? "Free build" : "Level " + (lvl + 1);
     window.scrollTo(0, 0);
@@ -56,6 +64,11 @@ window.BB = window.BB || {};
     BB.UI.home(starsOf, store.quiz, openChapter);
     show("home");
   }
+  function openTrail() {
+    ch = null;
+    BB.UI.trail(starsOf, worldOpen, openChapter);
+    show("trail");
+  }
   function openChapter(id) {
     ch = chapterById(id);
     BB.UI.chapter(ch, starsOf, unlocked, (i) => play(i));
@@ -65,6 +78,13 @@ window.BB = window.BB || {};
   // ── Building ───────────────────────────────────────────────────────────────
   const parse = (s) => { const [a, b, mat] = s.split(" "); return { a, b, mat, locked: true }; };
   const used = () => members.filter((m) => !m.locked).length;
+  const spent = () => Ph.cost(members);
+  const coins = () => cfg.budget != null;
+  // Stars: 3 at par or better. Budget levels count coins, the rest pieces.
+  function starsFor() {
+    const n = coins() ? spent() : used();
+    return n <= cfg.par ? 3 : n <= cfg.par + (coins() ? Math.max(2, Math.round(cfg.par * 0.15)) : 2) ? 2 : 1;
+  }
   const find = (a, b) => members.find((m) => Ph.key(m.a, m.b) === Ph.key(a, b));
 
   function play(i) {
@@ -81,7 +101,7 @@ window.BB = window.BB || {};
     $("goalText").textContent = cfg.text;
     show("play");
     history = [];
-    BB.Board.build($("stage"), cfg, { dot: tapDot, piece: tapPiece, empty: tapEmpty, dragStart, dragOver, dragEnd });
+    BB.Board.build($("stage"), cfg, { dot: tapDot, piece: tapPiece, empty: tapEmpty, dragStart, dragOver, dragEnd }, ch && ch.theme);
     say("");
     paint();
   }
@@ -93,7 +113,9 @@ window.BB = window.BB || {};
     const T = Ph.TRUCKS[truckKind];
     const who = '<span class="who">' + T.emoji + " " + T.label + "</span>";
     if (lvl < 0) { g.innerHTML = who; return; }
-    g.innerHTML = BB.UI.starRow(starsOf(ch.id, lvl)) + " <small>Pieces: " + used() + " \u{00B7} 3\u{2605} in " + cfg.par + "</small> " + who;
+    const count = coins() ? "\u{1FA99} " + spent() + " of " + cfg.budget + " \u{00B7} 3\u{2605} for " + cfg.par
+      : "Pieces: " + used() + " \u{00B7} 3\u{2605} in " + cfg.par;
+    g.innerHTML = BB.UI.starRow(starsOf(ch.id, lvl)) + " <small>" + count + "</small> " + who;
   }
 
   // Reachable dots from the picked one, for the glow that shows where to tap.
@@ -104,13 +126,14 @@ window.BB = window.BB || {};
 
   function paint() {
     BB.Board.render({ members, selected, near: near(), building: tool !== "remove" });
-    BB.UI.controls({ inv, tool, free: !!cfg.free, truck: truckKind, testing: false, undo: history.length > 0 }, act);
+    BB.UI.controls({ inv, tool, free: !!cfg.free, truck: truckKind, testing: false, undo: history.length > 0, coins: coins() }, act);
     goalStars();
   }
 
+  // Ropes reach further than a dot away; everything else joins neighbours.
   const nextTo = (a, b) => {
-    const [x1, y1] = Ph.xy(a), [x2, y2] = Ph.xy(b);
-    return a !== b && Math.abs(x1 - x2) <= 1 && Math.abs(y1 - y2) <= 1;
+    const [x1, y1] = Ph.xy(a), [x2, y2] = Ph.xy(b), r = tool === "rope" ? Ph.ROPE : 1;
+    return a !== b && Math.abs(x1 - x2) <= r && Math.abs(y1 - y2) <= r;
   };
 
   // Every change goes through here so Undo can play it backwards. One step
@@ -144,6 +167,7 @@ window.BB = window.BB || {};
     if (old && old.mat === tool) return null;
     if (old && old.locked) return "That piece is bolted down. Build around it!";
     if (!(inv[tool] > 0)) return "No " + Ph.MAT[tool].label.toLowerCase() + " left. Take a piece back with \u{1F9FD} Remove.";
+    if (coins() && spent() - (old ? Ph.COST[old.mat] : 0) + Ph.COST[tool] > cfg.budget) return "Not enough coins! Use cheaper pieces, or take some back.";
     if (old) del(old);
     add({ a, b, mat: tool });
     BB.Audio.place();
@@ -168,7 +192,8 @@ window.BB = window.BB || {};
     const why = join(selected, id);
     commit();
     if (why) { nope(why); return; }
-    selected = id;
+    // A rope is one long piece, so there's nothing to carry on from.
+    selected = tool === "rope" ? null : id;
     paint();
   }
 
@@ -199,18 +224,24 @@ window.BB = window.BB || {};
 
   // Drag from a dot: every neighbouring dot the finger reaches gets a piece
   // from the last one. Returns the dot the next piece will start from.
-  let dragLast = null, dragSaid = "";
+  let dragLast = null, dragSaid = "", ropeTo = null;
   function dragStart(id) {
     if (test || tool === "remove") return null;
     BB.Audio.ready();
     begin();
     dragLast = selected = id;
     dragSaid = "";
+    ropeTo = null;
     BB.Audio.pick();
     paint();
     return id;
   }
   function dragOver(id) {
+    // A rope stays fixed at its first dot and goes wherever the finger lets go.
+    if (tool === "rope") {
+      ropeTo = nextTo(dragLast, id) ? id : ropeTo;
+      return dragLast;
+    }
     const [x1, y1] = Ph.xy(dragLast), [x2, y2] = Ph.xy(id);
     const dx = x2 - x1, dy = y2 - y1;
     // A quick finger can skip a dot on a straight line: fill it in. Anything
@@ -231,6 +262,11 @@ window.BB = window.BB || {};
     return dragLast;
   }
   function dragEnd() {
+    if (tool === "rope" && ropeTo && !test) {
+      const why = join(dragLast, ropeTo);
+      if (why) nope(why);
+      ropeTo = null;
+    }
     const built = change && change.length;
     commit();
     // A drag that built nothing leaves its dot picked, like a tap.
@@ -254,11 +290,12 @@ window.BB = window.BB || {};
     selected = null;
     test = {
       ms: members.map((m) => ({ a: m.a, b: m.b, mat: m.mat, locked: m.locked })),
-      x: -1.4, move: {}, falling: [], splashes: [], truck: null,
+      x: -1.4, move: {}, falling: [], splashes: [], trucks: [],
       state: "drive", first: "", creak: 0, done: false
     };
-    test.truck = { kind: truckKind, x: test.x, y: -12, rot: 0, vy: 0 };
-    say("Here comes the " + Ph.TRUCKS[truckKind].label.toLowerCase() + "!");
+    test.trucks = Ph.trucksAt(cfg, truckKind, test.x).map((t) => ({ kind: t.kind, x: t.x, y: -12, rot: 0, vy: 0 }));
+    const T = Ph.TRUCKS[truckKind];
+    say("Here comes the " + T.label.toLowerCase() + (cfg.convoy ? " and friends" : "") + "!");
     BB.Audio.horn();
     BB.Audio.motor(true);
     step(0);
@@ -297,43 +334,50 @@ window.BB = window.BB || {};
 
   function step(dt) {
     const t = test;
-    const tr = t.truck;
     if (t.state === "drive") {
       t.x += SPEED * dt;
-      const L = Ph.truckLoads(t.ms, 0, [0, cfg.gap], tr.kind, t.x);
-      let res = null;
+      const L = Ph.loadsAt(cfg, t.ms, truckKind, t.x);
       if (!L.air) {
-        res = Ph.settle(t.ms, Ph.anchors(cfg), L.loads);
+        const res = Ph.settle(t.ms, Ph.anchors(cfg), L.loads);
         t.move = res.move;
         drop(res.broke);
       }
-      const L2 = L.air ? L : Ph.truckLoads(t.ms, 0, [0, cfg.gap], tr.kind, t.x);
-      const y = BB.Board.roadY(t.ms, t.move, t.x);
-      if (L2.air || y == null) {
+      // A truck falls when either axle is over thin air; the rest stop.
+      const pos = Ph.trucksAt(cfg, truckKind, t.x);
+      const over = (x) => BB.Board.roadY(t.ms, t.move, x) == null;
+      let fell = false;
+      pos.forEach((p, i) => {
+        const tr = t.trucks[i], half = Ph.TRUCKS[p.kind].len / 2;
+        if (over(p.x - half) || over(p.x + half) || over(p.x)) { tr.falling = true; tr.vy = 0; fell = true; return; }
+        tr.x = p.x;
+        tr.y = BB.Board.roadY(t.ms, t.move, p.x);
+      });
+      if (!fell && Ph.loadsAt(cfg, t.ms, truckKind, t.x).air) { t.trucks[0].falling = true; fell = true; }
+      if (fell) {
         t.state = "fall";
-        tr.vy = 0;
         BB.Audio.motor(false);
         if (!t.first) t.first = "There's a gap in the road! The truck needs road all the way across.";
       } else {
-        tr.x = t.x;
-        tr.y = y;
         const worst = Math.max(0, ...t.ms.filter((m) => !m.gone).map((m) => m.strain || 0));
         t.creak -= dt;
         if (worst > 0.85 && t.creak <= 0) { BB.Audio.creak(); t.creak = 0.6; }
       }
-      if (t.x > cfg.gap + 1.4) finish(true);
+      if (t.x > Ph.finishX(cfg)) finish(true);
     } else if (t.state === "fall") {
-      tr.vy += 900 * dt;
-      tr.y += tr.vy * dt;
-      tr.x += 0.4 * dt;
-      tr.rot += 70 * dt;
-      if (tr.y > BB.Board.water + 80) t.state = "sunk";
-      if (tr.y > BB.Board.water && !t.splashed) {
-        t.splashed = true;
-        t.splashes.push({ x: tr.x * U, t: 0 });
-        BB.Audio.splash();
-        finish(false);
-      }
+      t.trucks.forEach((tr) => {
+        if (!tr.falling) return;
+        tr.vy += 900 * dt;
+        tr.y += tr.vy * dt;
+        tr.x += 0.4 * dt;
+        tr.rot += 70 * dt;
+        if (tr.y > BB.Board.water && !tr.splashed) {
+          tr.splashed = true;
+          t.splashes.push({ x: tr.x * U, t: 0 });
+          BB.Audio.splash();
+          finish(false);
+        }
+      });
+      if (t.trucks.every((tr) => !tr.falling || tr.y > BB.Board.water + 80)) t.state = "sunk";
     }
     t.falling.forEach((f) => {
       f.vy += 900 * dt;
@@ -344,7 +388,7 @@ window.BB = window.BB || {};
     t.falling = t.falling.filter((f) => f.y < BB.Board.water + 300);
     t.splashes.forEach((s) => { s.t += dt * 1.4; });
     t.splashes = t.splashes.filter((s) => s.t < 1);
-    BB.Board.render({ members: t.ms, move: t.move, testing: true, truck: tr.y < BB.Board.water + 60 ? tr : null, falling: t.falling, splashes: t.splashes });
+    BB.Board.render({ members: t.ms, move: t.move, testing: true, trucks: t.trucks.filter((tr) => tr.y < BB.Board.water + 60), falling: t.falling, splashes: t.splashes });
   }
 
   function finish(ok) {
@@ -353,7 +397,7 @@ window.BB = window.BB || {};
     t.done = true;
     BB.Audio.motor(false);
     if (!ok) {
-      say("\u{1F4A6} Splash! " + (t.first || "The bridge wasn't strong enough."));
+      say((ch && ch.theme === "desert" ? "\u{1F4A5} Crash! " : "\u{1F4A6} Splash! ") + (t.first || "The bridge wasn't strong enough."));
       BB.UI.controls({ testing: true, done: true }, act);
       return;
     }
@@ -364,8 +408,8 @@ window.BB = window.BB || {};
       BB.UI.controls({ testing: true, done: true }, act);
       return;
     }
-    const n = used();
-    const got = n <= cfg.par ? 3 : n <= cfg.par + 2 ? 2 : 1;
+    const n = coins() ? spent() : used();
+    const got = starsFor();
     const k = ch.id + "-" + lvl;
     store.stars[k] = Math.max(got, store.stars[k] || 0);
     save();
@@ -380,7 +424,8 @@ window.BB = window.BB || {};
     $("winStars").innerHTML = BB.UI.starRow(got);
     [0, 1, 2].forEach((i) => { if (i < got) setTimeout(() => BB.Audio.star(i), 150 + i * 180); });
     $("winTitle").textContent = got === 3 ? "Brilliant!" : got === 2 ? "Well done!" : "You did it!";
-    $("winText").textContent = cfg.win + (got < 3 ? " (You used " + n + " pieces. Can you do it with " + cfg.par + "?)" : "");
+    $("winText").textContent = cfg.win + (got < 3 ? coins() ? " (You spent " + n + " coins. Can you do it for " + cfg.par + "?)"
+      : " (You used " + n + " pieces. Can you do it with " + cfg.par + "?)" : "");
     const last = lvl === ch.levels.length - 1;
     $("winNext").innerHTML = last ? "What I learned &rsaquo;" : "Next level &rsaquo;";
     $("winDialog").showModal();
@@ -397,11 +442,16 @@ window.BB = window.BB || {};
     $("lessonJob").textContent = ch.lesson.job;
     $("lessonDialog").showModal();
   });
-  $("lessonOk").addEventListener("click", () => { $("lessonDialog").close(); goHome(); });
+  $("lessonOk").addEventListener("click", () => {
+    $("lessonDialog").close();
+    if (ch && ch.trail) openTrail(); else goHome();
+  });
+  $("trailBtn").addEventListener("click", openTrail);
   $("freeBtn").addEventListener("click", () => { ch = null; play(-1); });
   $("jobsBtn").addEventListener("click", () => $("jobsDialog").showModal());
   $("up").addEventListener("click", () => {
     if (screen === "play" && ch) openChapter(ch.id);
+    else if (screen === "chapter" && ch.trail) openTrail();
     else goHome();
   });
 

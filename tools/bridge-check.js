@@ -4,7 +4,8 @@
 /* tunes the physics against the ideas the chapters teach (a long plank snaps, */
 /* a pillar saves it, squares fold, triangles hold). Part two builds a written */
 /* solution for every level and checks it holds, that the starting bridge      */
-/* does NOT, and that the solution uses exactly `par` pieces.                  */
+/* does NOT, and that the solution uses exactly `par` pieces. Part three does */
+/* the same for the Bridge Trail (trail.js), where par is coins on a budget.  */
 /*                                                                              */
 /*   node tools/bridge-check.js                                                 */
 "use strict";
@@ -16,7 +17,7 @@ const dir = path.join(__dirname, "..", "bridge-builder", "js");
 const sandbox = { Math, console };
 sandbox.window = sandbox;
 vm.createContext(sandbox);
-for (const f of ["physics.js", "levels.js"]) {
+for (const f of ["physics.js", "levels.js", "trail.js"]) {
   const p = path.join(dir, f);
   if (fs.existsSync(p)) vm.runInContext(fs.readFileSync(p, "utf8"), sandbox, { filename: f });
 }
@@ -121,7 +122,265 @@ if (BB.CHAPTERS) {
   }));
 }
 
-module.exports = { drive, M, roadAcross, anchorsFor, report, ok };
+// ── The Bridge Trail ───────────────────────────────────────────────────────
+// The same truck drive, but every Trail rule counts: ground and islands,
+// snow, the convoy behind the first truck.
+function driveLevel(lv, members) {
+  const ms = members.map((m) => Object.assign({}, m));
+  const A = Ph.anchors(lv);
+  let peak = 0;
+  for (let x = -1; x <= Ph.finishX(lv); x += 0.05) {
+    const t = Ph.loadsAt(lv, ms, lv.truck, x);
+    if (t.air) return { held: false, at: x, peak, why: "fell" };
+    const res = Ph.settle(ms, A, t.loads);
+    if (res.broke.length) return { held: false, at: x, peak, why: res.broke[0].gone + " " + res.broke[0].a + "-" + res.broke[0].b };
+    ms.forEach((m) => { if (!m.gone) peak = Math.max(peak, m.strain); });
+  }
+  return { held: true, peak };
+}
+
+// TRAIL SOLUTIONS START (written by the level lab; one real design per level)
+const TRAIL_SOLUTIONS = {
+  "t1-0": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "2,1 3,1 beam",
+    "1,0 0,1 steel",
+    "1,0 2,1 beam",
+    "3,0 2,1 beam",
+    "3,0 3,1 beam",
+    "4,0 3,1 beam"
+  ],
+  "t1-1": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "2,1 3,1 beam",
+    "1,0 0,1 steel",
+    "1,0 1,1 beam",
+    "1,1 2,1 beam",
+    "2,0 1,1 beam",
+    "3,0 2,1 beam",
+    "3,0 3,1 beam",
+    "4,0 3,1 beam"
+  ],
+  "t1-2": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "3,0 4,1 beam",
+    "1,0 0,1 beam",
+    "4,0 3,1 beam",
+    "3,1 4,1 beam",
+    "3,1 3,2 beam",
+    "4,1 3,2 beam"
+  ],
+  "t1-3": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "2,-1 3,-1 beam",
+    "2,-1 1,0 beam",
+    "2,-1 2,0 beam",
+    "3,-1 4,-1 beam",
+    "3,-1 4,0 beam",
+    "4,-1 5,0 beam",
+    "4,-1 4,0 beam",
+    "1,0 0,1 steel",
+    "5,0 6,1 steel"
+  ],
+  "t2-0": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "3,1 4,2 beam",
+    "2,0 3,1 beam",
+    "4,0 3,1 beam"
+  ],
+  "t2-1": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "1,-1 2,-1 beam",
+    "1,-1 0,0 beam",
+    "1,-1 2,0 beam",
+    "2,-1 3,0 beam",
+    "3,-1 4,-1 beam",
+    "3,-1 2,0 beam",
+    "2,-1 3,-1 beam",
+    "4,-1 3,0 beam",
+    "4,-1 5,0 beam"
+  ],
+  "t2-2": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "1,0 0,1 steel",
+    "1,0 2,1 beam",
+    "2,0 1,1 beam",
+    "3,0 2,1 beam",
+    "3,0 4,1 beam",
+    "5,0 4,1 beam",
+    "5,0 6,1 beam",
+    "6,0 5,1 beam",
+    "0,1 1,1 beam",
+    "1,1 2,1 beam",
+    "4,1 5,1 beam",
+    "5,1 6,1 beam"
+  ],
+  "t3-0": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "1,0 0,1 steel",
+    "1,0 1,1 beam",
+    "1,0 2,1 beam",
+    "2,0 1,1 beam",
+    "2,0 2,1 beam",
+    "1,1 2,1 beam",
+    "5,0 6,1 beam",
+    "0,1 1,1 beam"
+  ],
+  "t3-1": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "2,-1 3,-1 beam",
+    "2,-1 1,0 beam",
+    "2,-1 3,0 beam",
+    "3,-1 4,-1 beam",
+    "3,-1 4,0 beam",
+    "4,-1 5,-1 beam",
+    "4,-1 3,0 beam",
+    "5,-1 4,0 beam",
+    "5,-1 6,0 beam",
+    "1,0 0,1 steel"
+  ],
+  "t4-0": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "0,0 1,1 beam",
+    "1,0 0,1 beam",
+    "2,0 1,1 beam",
+    "2,0 2,1 beam",
+    "4,0 3,1 beam",
+    "3,0 2,1 beam",
+    "3,0 4,1 beam",
+    "4,0 5,1 beam",
+    "5,0 4,1 beam",
+    "0,1 1,1 beam",
+    "1,1 2,1 beam",
+    "2,1 3,1 beam",
+    "3,1 4,1 beam"
+  ],
+  "t4-1": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "1,-1 0,0 old",
+    "1,-1 1,0 old",
+    "1,-1 2,0 old",
+    "1,0 0,1 beam",
+    "1,0 1,1 old",
+    "2,0 1,1 old",
+    "2,0 2,1 old",
+    "2,0 3,1 old",
+    "3,0 2,1 old",
+    "3,0 3,1 old",
+    "3,0 4,1 beam",
+    "4,0 3,1 old",
+    "1,1 2,1 old"
+  ],
+  "t5-0": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "0,-2 1,0 rope",
+    "4,-2 3,0 rope"
+  ],
+  "t6-0": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "5,0 6,0 road",
+    "6,0 7,0 road",
+    "7,0 8,0 road",
+    "2,0 3,1 beam",
+    "7,0 8,1 beam"
+  ],
+  "t6-1": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "3,-1 2,0 beam",
+    "3,-1 3,0 steel",
+    "3,-1 4,0 beam",
+    "1,0 1,1 beam",
+    "2,0 2,1 beam",
+    "3,0 2,1 beam",
+    "4,0 5,1 steel",
+    "0,0 1,1 beam",
+    "1,1 2,1 beam"
+  ]
+};
+// TRAIL SOLUTIONS END
+
+if (BB.TRAIL) {
+  console.log("bridge trail");
+  BB.TRAIL.forEach((w) => w.levels.forEach((lv, i) => {
+    const id = w.id + "-" + i;
+    const base = lv.parts.map(parse);
+    ok(!driveLevel(lv, base).held, id + " holds before the kid builds anything");
+    const sol = (TRAIL_SOLUTIONS[id] || []).map(parse);
+    ok(sol.length, id + " has no solution written");
+    const inv = Object.assign({}, lv.inv);
+    const seen = new Set(base.map((m) => Ph.key(m.a, m.b)));
+    sol.forEach((m) => {
+      const why = Ph.canJoin(lv, m.a, m.b, m.mat);
+      ok(!why, id + " " + m.a + "-" + m.b + ": " + why);
+      ok(!seen.has(Ph.key(m.a, m.b)), id + " " + m.a + "-" + m.b + " is already there");
+      seen.add(Ph.key(m.a, m.b));
+      ok((inv[m.mat] || 0) > 0, id + " runs out of " + m.mat);
+      inv[m.mat]--;
+    });
+    const n = lv.budget != null ? Ph.cost(sol) : sol.length;
+    ok(n === lv.par, id + " par is " + lv.par + " but the solution " + (lv.budget != null ? "costs " : "uses ") + n);
+    if (lv.budget != null) ok(Ph.cost(sol) <= lv.budget, id + " solution is over budget");
+    const r = driveLevel(lv, base.concat(sol));
+    console.log("  " + (r.held ? "holds" : "FAILS") + "  peak " + r.peak.toFixed(2) + "  " + id + " " + lv.name + " (" + lv.truck + (lv.convoy ? "+" + lv.convoy.join("+") : "") + ")" + (r.held ? "" : " " + r.why));
+    ok(r.held, id + " solution should hold");
+  }));
+}
+
+module.exports = { drive, driveLevel, M, roadAcross, anchorsFor, report, ok };
 if (require.main === module) {
   console.log(fails ? fails + " failure(s)" : "all good");
   process.exit(fails ? 1 : 0);

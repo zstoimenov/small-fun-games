@@ -10,7 +10,7 @@
   --right:#1f9d55; --right-bg:#dff5e8; --wrong:#d03b3b; --wrong-bg:#fde3e3;
   --chip:#eaf0f8; --star:#f4b400;
   --sky:#bfe3ff; --sky2:#eaf6ff; --water:#3f8fd0; --ripple:rgba(255,255,255,.45); --bank:#9a6a3f; --grass:#5fb14a; --tarmac:#4a4f58;
-  --rock:#8d939c; --dot:#6f7c90; --pin:#39424f; --road:#3c4048; --road-mid:#f2f2f2; --wood:#b0703a; --steel:#6d8397; --bolt:#2a2f37;
+  --rock:#8d939c; --dot:#6f7c90; --pin:#39424f; --road:#3c4048; --road-mid:#f2f2f2; --wood:#b0703a; --steel:#6d8397; --bolt:#2a2f37; --old:#8f7b5a; --rope:#a07c45; --tower:#a39a8c; --lane:rgba(255,255,255,.22); --lane-edge:rgba(255,255,255,.75);
   --ok:#2fbf5a; --warn:#f2b705; --bad:#e2412d; --near:rgba(31,111,178,.25); --picked:#1f6fb2;
   --tap:56px;
 }
@@ -22,7 +22,7 @@
     --right:#4cc97e; --right-bg:#143325; --wrong:#f07070; --wrong-bg:#3a1a1a;
     --chip:#1c2740;
     --sky:#15233f; --sky2:#223458; --water:#1d4f80; --ripple:rgba(255,255,255,.18); --bank:#5e4128; --grass:#3b7a2c; --tarmac:#2b2f36;
-    --rock:#5d646e; --dot:#8d9bb2; --pin:#c4cedd; --road:#2a2d33; --road-mid:#c8c8c8; --wood:#c98a52; --steel:#9db3c7; --bolt:#dfe6ef;
+    --rock:#5d646e; --dot:#8d9bb2; --pin:#c4cedd; --road:#2a2d33; --road-mid:#c8c8c8; --wood:#c98a52; --steel:#9db3c7; --bolt:#dfe6ef; --old:#a8946f; --rope:#c9a06a; --tower:#6f675c; --lane:rgba(255,255,255,.12); --lane-edge:rgba(255,255,255,.5);
     --ok:#3fd46e; --warn:#ffcc33; --bad:#ff5a45; --near:rgba(90,162,230,.3); --picked:#5aa2e6;
   }
 }
@@ -33,7 +33,7 @@
   --right:#4cc97e; --right-bg:#143325; --wrong:#f07070; --wrong-bg:#3a1a1a;
   --chip:#1c2740;
   --sky:#15233f; --sky2:#223458; --water:#1d4f80; --ripple:rgba(255,255,255,.18); --bank:#5e4128; --grass:#3b7a2c; --tarmac:#2b2f36;
-  --rock:#5d646e; --dot:#8d9bb2; --pin:#c4cedd; --road:#2a2d33; --road-mid:#c8c8c8; --wood:#c98a52; --steel:#9db3c7; --bolt:#dfe6ef;
+  --rock:#5d646e; --dot:#8d9bb2; --pin:#c4cedd; --road:#2a2d33; --road-mid:#c8c8c8; --wood:#c98a52; --steel:#9db3c7; --bolt:#dfe6ef; --old:#a8946f; --rope:#c9a06a; --tower:#6f675c; --lane:rgba(255,255,255,.12); --lane-edge:rgba(255,255,255,.5);
   --ok:#3fd46e; --warn:#ffcc33; --bad:#ff5a45; --near:rgba(90,162,230,.3); --picked:#5aa2e6;
 }
 :root[data-theme="light"]{
@@ -43,7 +43,7 @@
   --right:#1f9d55; --right-bg:#dff5e8; --wrong:#d03b3b; --wrong-bg:#fde3e3;
   --chip:#eaf0f8; --star:#f4b400;
   --sky:#bfe3ff; --sky2:#eaf6ff; --water:#3f8fd0; --ripple:rgba(255,255,255,.45); --bank:#9a6a3f; --grass:#5fb14a; --tarmac:#4a4f58;
-  --rock:#8d939c; --dot:#6f7c90; --pin:#39424f; --road:#3c4048; --road-mid:#f2f2f2; --wood:#b0703a; --steel:#6d8397; --bolt:#2a2f37;
+  --rock:#8d939c; --dot:#6f7c90; --pin:#39424f; --road:#3c4048; --road-mid:#f2f2f2; --wood:#b0703a; --steel:#6d8397; --bolt:#2a2f37; --old:#8f7b5a; --rope:#a07c45; --tower:#a39a8c; --lane:rgba(255,255,255,.22); --lane-edge:rgba(255,255,255,.75);
   --ok:#2fbf5a; --warn:#f2b705; --bad:#e2412d; --near:rgba(31,111,178,.25); --picked:#1f6fb2;
 }
 
@@ -252,6 +252,10 @@ button:disabled{opacity:.45; cursor:default}
   background:var(--accent); color:var(--accent-ink); font-size:13px;
 }
 .part.out .n{background:var(--muted)}
+.part .cost{font-size:13px; font-weight:700; color:var(--muted)}
+.pe.old{background:var(--old); background-image:repeating-linear-gradient(90deg,transparent 0 14px,rgba(0,0,0,.35) 14px 16px)}
+.pe.rope{height:5px; background:var(--rope); margin:11px 0}
+.world-card.locked{opacity:.6}
 .x-results{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:6px; margin:0; padding:0; list-style:none}
 .x-results li{padding:8px 10px; border-radius:12px; background:var(--chip); font-weight:600; font-size:15px}
 .x-results li.yes{background:var(--right-bg)}
@@ -282,6 +286,29 @@ button:disabled{opacity:.45; cursor:default}
 .building .dot{r:11px}
 .ghost-piece{stroke:var(--picked); stroke-width:10; stroke-linecap:round; stroke-dasharray:4 18; opacity:.8; pointer-events:none}
 .splash{fill:#fff}
+.old{stroke:var(--old); stroke-width:12; stroke-linecap:round; stroke-dasharray:22 5}
+.rope{stroke:var(--rope); stroke-width:5; stroke-linecap:round; fill:none}
+.road-snow{stroke:#fff; stroke-width:6; stroke-linecap:round; opacity:.85; transform:translateY(-9px)}
+.tower{fill:var(--tower); stroke:rgba(0,0,0,.25); stroke-width:3}
+.lane{fill:var(--lane); stroke:var(--lane-edge); stroke-width:4; stroke-dasharray:14 10}
+.deco{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; pointer-events:none}
+.dusk{fill:#0a1430; opacity:0}
+.snowy .grass{fill:#fff}
+
+/* ── Bridge Trail worlds ─────────────────────────────────────────────────────
+   Each world's river is a picture with its own colours. In dark mode the
+   same picture is shown at dusk rather than recoloured. */
+.theme-farm{--sky:#bfe8ff; --water:#4aa3df; --bank:#8a5a32; --grass:#6cc04a; --rock:#9a9a8a}
+.theme-desert{--sky:#ffe2ad; --water:#d9a75e; --ripple:rgba(150,90,30,.35); --bank:#c8743a; --grass:#e9a85c; --rock:#b5683a}
+.theme-river{--sky:#c9e9ff; --water:#2f7fc4; --bank:#7d5a3c; --grass:#4fa64a; --rock:#8d939c}
+.theme-snow{--sky:#dceefc; --water:#8fc7ea; --ripple:rgba(255,255,255,.75); --bank:#7b8796; --grass:#ffffff; --rock:#9aa6b4}
+.theme-jungle{--sky:#c6f0d0; --water:#2e9b8f; --bank:#6b4a2b; --grass:#2f9e44; --rock:#6f7a5c}
+.theme-city{--sky:#1d2752; --water:#1b3e6e; --ripple:rgba(255,255,255,.25); --bank:#4a4f5c; --grass:#6b7280; --rock:#59606c; --dot:#b9c6dc; --pin:#e3e8f0; --bolt:#dfe6ef; --old:#a8946f; --rope:#c9a06a; --tower:#6f675c; --lane:rgba(255,255,255,.12); --lane-edge:rgba(255,255,255,.5); --tarmac:#2b2f36}
+.board[class*="theme-"]{--dot:#5f6b80; --pin:#2f3744}
+.theme-city.board{--dot:#b9c6dc; --pin:#e3e8f0}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .dusk{opacity:.38} }
+:root[data-theme="dark"] .dusk{opacity:.38}
+.theme-city .dusk{opacity:0 !important}
 
 /* The material swatch in the parts box is the piece itself, not an emoji. */
 .pe{display:block; width:46px; height:12px; border-radius:6px; margin:8px 0}
@@ -301,7 +328,8 @@ button:disabled{opacity:.45; cursor:default}
 
 /* ── Home, tidied ────────────────────────────────────────────────────────── */
 .intro{margin:0; text-align:center; color:var(--muted); font-size:16px}
-.tiles{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+.tiles{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+@media (min-width:640px){ .tiles{grid-template-columns:repeat(4,1fr)} }
 .tile{
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-height:92px; padding:10px 6px;
   border-radius:16px; border:1px solid var(--line); background:var(--card); box-shadow:0 2px 8px var(--shadow); text-align:center;

@@ -46,6 +46,9 @@ BB.UI = (function () {
         '<span class="cc-stars" aria-label="' + got + " of " + max + ' stars">★ ' + got + "/" + max + "</span>";
       box.appendChild(b);
     });
+    let tg = 0, tm = 0;
+    BB.TRAIL.forEach((w) => w.levels.forEach((_, i) => { tg += starsOf(w.id, i); tm += 3; }));
+    $("trailInfo").textContent = tg ? "\u{2605} " + tg + "/" + tm : "Harder puzzles";
     const n = BB.QUIZ.length;
     $("quizInfo").textContent = quizBest == null ? n + " questions"
       : quizBest === n ? "Best " + n + "/" + n + " \u{1F3C5}" : "Best " + quizBest + "/" + n;
@@ -54,6 +57,27 @@ BB.UI = (function () {
     BB.JOBS.forEach((j) => {
       jobs.appendChild(el("div", "job", '<span class="job-emoji" aria-hidden="true">' + j.emoji + "</span>" +
         "<span><b>" + j.name + "</b><small>" + j.does + "</small></span>"));
+    });
+  }
+
+  // ── Bridge Trail: one card per world, locked until the one before is played ─
+  function trail(starsOf, worldOpen, open) {
+    const box = $("worlds");
+    box.innerHTML = "";
+    BB.TRAIL.forEach((w, k) => {
+      const got = w.levels.reduce((n, _, i) => n + starsOf(w.id, i), 0);
+      const max = w.levels.length * 3;
+      const ok = worldOpen(k);
+      const b = button("chapter-card world-card" + (ok ? "" : " locked"), "", () => {
+        if (ok) open(w.id); else toast("Get a star on 3 levels of " + BB.TRAIL[k - 1].name + " first!");
+      });
+      b.style.setProperty("--law", w.color);
+      b.innerHTML =
+        '<span class="cc-emoji" aria-hidden="true">' + (ok ? w.emoji : "\u{1F512}") + "</span>" +
+        '<span class="cc-text"><span class="kicker">' + w.kicker + "</span>" +
+        "<b>" + w.name + "</b><small>" + w.rule + "</small></span>" +
+        '<span class="cc-stars" aria-label="' + got + " of " + max + ' stars">\u{2605} ' + got + "/" + max + "</span>";
+      box.appendChild(b);
     });
   }
 
@@ -103,9 +127,10 @@ BB.UI = (function () {
       const n = st.inv[t];
       const b = button("part" + (st.tool === t ? " on" : "") + (n === 0 ? " out" : ""),
         '<span class="pe ' + t + '" aria-hidden="true"></span>' + M[t].label +
+        (st.coins ? '<span class="cost">\u{1FA99} ' + BB.Physics.COST[t] + "</span>" : "") +
         (n === Infinity ? "" : '<span class="n">' + n + "</span>"), () => act("tool", t));
       b.setAttribute("aria-pressed", st.tool === t ? "true" : "false");
-      b.setAttribute("aria-label", M[t].label + (n === Infinity ? "" : ", " + n + " left"));
+      b.setAttribute("aria-label", M[t].label + (st.coins ? ", " + BB.Physics.COST[t] + " coins" : "") + (n === Infinity ? "" : ", " + n + " left"));
       grid.appendChild(b);
     });
     const rm = button("part" + (st.tool === "remove" ? " on" : ""),
@@ -178,5 +203,6 @@ BB.UI = (function () {
     box.appendChild(r);
   }
 
-  return { $, toast, home, chapter, controls, question, quizDone, starRow };
+  return {
+    trail, $, toast, home, chapter, controls, question, quizDone, starRow };
 })();

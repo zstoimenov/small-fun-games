@@ -15,7 +15,7 @@ BB.Board = (function () {
   const Ph = BB.Physics;
   const EMOJI = 'font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif"';
 
-  let svg, live, ghost, lv, hooks, box, water;
+  let svg, live, ghost, lv, hooks, box, water, boat;
 
   function mk(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
@@ -25,21 +25,42 @@ BB.Board = (function () {
   }
   const P = (id) => Ph.xy(id).map((v) => v * U);
 
+  // Each Bridge Trail world has its own look: colours from the theme class,
+  // and a few emoji on the banks and in the sky.
+  const LOOKS = {
+    farm:   { sky: "\u{2600}\u{FE0F}", bank: ["\u{1F404}", "\u{1F33B}"] },
+    desert: { sky: "\u{2600}\u{FE0F}", bank: ["\u{1F335}", "\u{1F98E}"] },
+    river:  { sky: "\u{26C5}", bank: ["\u{1F333}", "\u{1F986}"] },
+    snow:   { sky: "\u{2744}\u{FE0F}", bank: ["\u{1F332}", "\u{26C4}"] },
+    jungle: { sky: "\u{1F324}\u{FE0F}", bank: ["\u{1F334}", "\u{1F99C}"] },
+    city:   { sky: "\u{1F319}", bank: ["\u{1F3E2}", "\u{1F3EC}"] }
+  };
+
   // on: { dot, piece, empty, dragStart, dragOver, dragEnd } - see app.js.
-  function build(host, level, on) {
+  function build(host, level, on, theme) {
     lv = level;
     hooks = on;
     press = null;
     fingers = 0;
     host.innerHTML = "";
+    // The frame round the board shows the world's sky too, not the default one.
+    host.className = host.className.replace(/\s*theme-\w+/g, "") + (LOOKS[theme] ? " theme-" + theme : "");
     const x0 = -1.8, x1 = lv.gap + 1.8, y0 = lv.rows[0] - 0.9, y1 = Math.max(lv.rows[1], 1) + 1.1;
     box = { x0: x0 * U, y0: y0 * U, w: (x1 - x0) * U, h: (y1 - y0) * U };
     water = (Math.max(lv.rows[1], 1) + 0.55) * U;
-    svg = mk("svg", { viewBox: [box.x0, box.y0, box.w, box.h].join(" "), class: "board", role: "img", "aria-label": "River and bridge" }, host);
+    const look = LOOKS[theme];
+    svg = mk("svg", { viewBox: [box.x0, box.y0, box.w, box.h].join(" "), role: "img", "aria-label": "River and bridge",
+      class: "board" + (look ? " theme-" + theme : "") + (lv.snow ? " snowy" : "") }, host);
 
-    // Scenery: sky, water, the two banks, any rocks.
-    mk("rect", { x: box.x0, y: box.y0, width: box.w, height: box.h, class: "sky" }, svg);
-    mk("rect", { x: box.x0, y: water, width: box.w, height: box.y0 + box.h - water, class: "water" }, svg);
+    // Scenery: sky, water, the banks and islands, any rocks and towers. When
+    // the board is height-bound it is wider than its picture, so the sky,
+    // water and banks carry on past the edges (wide) instead of leaving strips.
+    const wide = { x: box.x0 - 3000, w: box.w + 6000 };
+    mk("rect", { x: wide.x, y: box.y0, width: wide.w, height: box.h, class: "sky" }, svg);
+    // Dark mode turns a world's daytime sky into evening.
+    if (look) mk("rect", { x: wide.x, y: box.y0, width: wide.w, height: box.h, class: "dusk" }, svg);
+    if (look) mk("text", { x: box.x0 + 60, y: box.y0 + 80, "font-size": 56, class: "deco" }, svg).textContent = look.sky;
+    mk("rect", { x: wide.x, y: water, width: wide.w, height: box.y0 + box.h - water, class: "water" }, svg);
     for (let i = 0; i < 3; i++) {
       mk("path", { d: "M" + box.x0 + " " + (water + 18 + i * 22) + " q 40 -10 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0", class: "ripple" }, svg);
     }
@@ -49,8 +70,26 @@ BB.Board = (function () {
       mk("rect", { x: Math.min(xa, xb), y: -8, width: Math.abs(xb - xa), height: 16, rx: 6, class: "grass" }, svg);
       mk("rect", { x: Math.min(xa, xb), y: -12, width: Math.abs(xb - xa), height: 12, class: "tarmac" }, svg);
     };
-    bank(box.x0, 0);
-    bank(lv.gap * U, box.x0 + box.w);
+    bank(wide.x, 0);
+    bank(lv.gap * U, wide.x + wide.w);
+    (lv.islands || []).forEach(([a, b]) => bank(a * U, b * U));
+    if (look) {
+      const deco = (x, e) => { mk("text", { x, y: -14, "font-size": 64, "text-anchor": "middle", class: "deco" }, svg).textContent = e; };
+      deco(-1.25 * U, look.bank[0]);
+      deco((lv.gap + 1.25) * U, look.bank[1]);
+    }
+    // Stone towers on the bank side of the edge, up to their anchor.
+    (lv.towers || []).forEach((id) => {
+      const [x, y] = P(id), left = x <= 0 || x < lv.gap / 2 * U;
+      mk("rect", { x: left ? x - 46 : x - 8, y: y - 10, width: 54, height: -y - 2, rx: 6, class: "tower" }, svg);
+    });
+    // The boat lane: marked down to the water, with its boat.
+    if (lv.lane) {
+      const [a, b] = lv.lane.map((v) => v * U);
+      mk("rect", { x: a, y: 14, width: b - a, height: water - 14, class: "lane" }, svg);
+      boat = mk("text", { x: (a + b) / 2, y: water + 6, "font-size": Math.min(110, (b - a) * 0.7), "text-anchor": "middle", class: "deco" }, svg);
+      boat.textContent = "\u{26F5}";
+    } else boat = null;
     (lv.rocks || []).forEach(([x, y]) => {
       const cx = x * U, cy = y * U;
       mk("path", { d: "M" + (cx - 50) + " " + (water + 30) + " Q" + (cx - 44) + " " + (cy + 6) + " " + cx + " " + (cy - 4) +
@@ -167,9 +206,11 @@ BB.Board = (function () {
     return s < 0.5 ? "var(--ok)" : s < 0.8 ? "var(--warn)" : "var(--bad)";
   }
 
-  // st: { members, move, selected, near, building, testing, truck, falling, splashes }
+  // st: { members, move, selected, near, building, testing, trucks, falling, splashes }
   function render(st) {
     svg.classList.toggle("building", !!st.building);
+    // The boat bobs while the truck drives.
+    if (boat) boat.setAttribute("transform", st.testing ? "translate(0 " + Math.sin(performance.now() / 300) * 5 + ")" : "");
     pieces = st.members.filter((m) => !m.gone);
     const mv = st.move || {};
     const at = (id) => {
@@ -179,12 +220,17 @@ BB.Board = (function () {
     };
     let h = "";
     // Beams first, the road over them: that's how a real deck sits.
-    const order = { beam: 0, steel: 0, road: 1 };
+    const order = { rope: 0, beam: 0, old: 0, steel: 0, road: 1 };
     pieces.slice().sort((a, b) => order[a.mat] - order[b.mat]).forEach((m) => {
       const [ax, ay] = at(m.a), [bx, by] = at(m.b);
       const line = 'x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '"';
       if (m.mat === "road") {
         h += "<line " + line + ' class="road"/><line ' + line + ' class="road-mid"/>';
+        if (lv.snow) h += "<line " + line + ' class="road-snow"/>';
+      } else if (m.mat === "rope" && m.slack) {
+        // A slack rope sags.
+        const sag = Math.hypot(bx - ax, by - ay) * 0.12;
+        h += '<path d="M' + ax + " " + ay + " Q" + (ax + bx) / 2 + " " + ((ay + by) / 2 + sag) + " " + bx + " " + by + '" class="rope"/>';
       } else {
         h += "<line " + line + ' class="' + m.mat + (m.locked ? " locked" : "") + '"/>';
       }
@@ -211,18 +257,17 @@ BB.Board = (function () {
       h += '<ellipse cx="' + s.x + '" cy="' + water + '" rx="' + (20 + s.t * 90) + '" ry="' + (6 + s.t * 16) + '" class="splash" style="opacity:' + (1 - s.t) + '"/>';
     });
 
-    if (st.truck) {
-      const t = st.truck;
+    (st.trucks || []).forEach((t) => {
       const size = BB.Physics.TRUCKS[t.kind].len * 78;
       // Truck emoji face left; flip them so they drive off to the right.
       h += '<g transform="translate(' + t.x * U + " " + t.y + ") rotate(" + t.rot + ') scale(-1 1)"><text x="0" y="-4" font-size="' + size + '" text-anchor="middle" ' + EMOJI + ">" + BB.Physics.TRUCKS[t.kind].emoji + "</text></g>";
-    }
+    });
     live.innerHTML = h;
   }
 
   // Where the road surface is at x (in grid units), bent as drawn.
   function roadY(members, move, x) {
-    if (x <= 0 || x >= lv.gap) return -12;
+    if (Ph.ground(lv, x)) return -12;
     const m = members.find((r) => !r.gone && r.mat === "road" && Math.min(Ph.xy(r.a)[0], Ph.xy(r.b)[0]) <= x && Math.max(Ph.xy(r.a)[0], Ph.xy(r.b)[0]) >= x);
     if (!m) return null;
     const [xa] = Ph.xy(m.a), [xb] = Ph.xy(m.b);
