@@ -637,6 +637,23 @@ const TRAIL_SOLUTIONS = {
     "2,1 3,1 steel",
     "4,1 5,1 beam",
     "5,1 6,1 steel"
+  ],
+  "t6-4": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "6,0 7,0 road",
+    "7,0 8,0 road",
+    "8,-3 6,0 rope",
+    "8,-3 7,0 rope",
+    "1,-1 1,0 beam",
+    "1,-1 2,-1 beam",
+    "1,-1 0,0 beam",
+    "2,-1 2,0 beam",
+    "2,-1 3,0 beam",
+    "8,-3 5,0 rope"
   ]
 };
 // TRAIL SOLUTIONS END

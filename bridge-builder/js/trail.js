@@ -217,7 +217,11 @@ BB.TRAIL = [
       { name: "Night buses", gap: 6, rows: [-2, 1], convoy: ["bus"], truck: "bus", parts: [],
         inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 54, par: 43,
         text: "Two full buses, one behind the other. Strong enough for both, cheap enough for the city.",
-        win: "The night buses rolled home safely." }
+        win: "The night buses rolled home safely." },
+      { name: "Grand opening", gap: 8, rows: [-3, 1], islands: [[3, 4]], towers: ["8,-3"], lane: [5, 7], convoy: ["truck", "car"], truck: "big", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity, rope: Infinity }, budget: 28, par: 22,
+        text: "Opening day! The big truck leads a parade across the harbour. Build the city's best bridge.",
+        win: "The city cheers! You've finished the whole Bridge Trail. You're a real bridge engineer!" }
     ],
     lesson: {
       title: "You finished the Bridge Trail!",
