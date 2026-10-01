@@ -115,8 +115,16 @@ BB.Board = (function () {
   // A tap counts when the finger lifts, not when it lands, so a palm or a
   // half-tap does nothing. Pressing a dot and moving builds as you drag; a
   // second finger cancels the gesture.
-  let pieces = [], press = null, fingers = 0;
+  let pieces = [], press = null, fingers = 0, building = true;
   const DRAG = 0.2;       // grid steps the finger moves before a press becomes a drag
+
+  // Reaches are in grid steps, but a fingertip is the same size on every
+  // screen: on a phone a grid step is only ~25px, so each reach also has a
+  // floor in screen pixels.
+  function reach(steps, px) {
+    const scale = svg.getScreenCTM().a * U;
+    return Math.max(steps, px / scale);
+  }
 
   function at(ev) {
     const pt = svg.createSVGPoint();
@@ -134,8 +142,8 @@ BB.Board = (function () {
     });
     return best;
   }
-  function pieceAt(x, y) {
-    let hit = null, hd = 0.25;
+  function pieceAt(x, y, hd) {
+    let hit = null;
     pieces.forEach((m) => {
       const [ax, ay] = Ph.xy(m.a), [bx, by] = Ph.xy(m.b);
       const L2 = (bx - ax) ** 2 + (by - ay) ** 2;
@@ -165,7 +173,9 @@ BB.Board = (function () {
       fingers = ev.isPrimary ? 1 : fingers + 1;
       if (fingers > 1) { endPress(); return; }
       const [x, y] = at(ev);
-      press = { id: ev.pointerId, x, y, dot: dotAt(x, y, 0.42), drag: false, from: null };
+      // With Remove picked, dots don't count: they would swallow the ends of
+      // every short piece, and a wobble would turn the press into a drag.
+      press = { id: ev.pointerId, x, y, dot: building ? dotAt(x, y, 0.42) : null, drag: false, from: null };
       try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* not every browser */ }
     });
     svg.addEventListener("pointermove", (ev) => {
@@ -189,8 +199,8 @@ BB.Board = (function () {
       if (!press.drag && ev.type === "pointerup") {
         const [x, y] = at(ev);
         // Finger slid off what it pressed: not a tap.
-        if (Math.hypot(x - press.x, y - press.y) < 0.4) {
-          const piece = press.dot ? null : pieceAt(press.x, press.y);
+        if (Math.hypot(x - press.x, y - press.y) < reach(0.4, 16)) {
+          const piece = press.dot ? null : pieceAt(press.x, press.y, building ? 0.25 : reach(0.45, 22));
           if (press.dot) hooks.dot(press.dot);
           else if (piece) hooks.piece(piece);
           else hooks.empty();
@@ -208,7 +218,8 @@ BB.Board = (function () {
 
   // st: { members, move, selected, near, building, testing, trucks, falling, splashes }
   function render(st) {
-    svg.classList.toggle("building", !!st.building);
+    building = !!st.building;
+    svg.classList.toggle("building", building);
     // The boat bobs while the truck drives.
     if (boat) boat.setAttribute("transform", st.testing ? "translate(0 " + Math.sin(performance.now() / 300) * 5 + ")" : "");
     pieces = st.members.filter((m) => !m.gone);
