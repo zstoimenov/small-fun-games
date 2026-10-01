@@ -30,6 +30,8 @@ LC.Lesson = (function () {
     const r = lv.rounds[ri];
     $("roundCount").textContent = lv.rounds.length > 1 ? "Round " + (ri + 1) + " of " + lv.rounds.length : "";
     box.innerHTML = "";
+    // The layout differs: a build round is a map with tools, a choose round a question.
+    $("play").dataset.kind = r.kind;
     ({ build, choose })[r.kind](r);
   }
   function nextButton() {

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="ui-zoom">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
@@ -46,7 +46,8 @@
   button,input{font:inherit;color:inherit}
   button{cursor:pointer;-webkit-tap-highlight-color:transparent}
   :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-  .wrap{max-width:1100px;margin:0 auto}
+  /* Wide screens use the width: more cards in a row, not a narrow strip. */
+  .wrap{max-width:1760px;margin:0 auto}
 
   /* ── The pinned bar: only the name and search stay on screen. ── */
   .bar{
@@ -79,10 +80,13 @@
   .pill[aria-pressed="true"]{background:var(--chip);color:var(--chipink);border-color:var(--chipink)}
   .pill:disabled{opacity:.35;cursor:default}
   .row2{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
-  .seg{display:inline-flex;flex-wrap:wrap;padding:3px;border-radius:22px;background:var(--card);border:1px solid var(--cardline)}
-  .seg button{border:0;background:transparent;min-height:max(40px,calc(var(--tap) - 8px));padding:0 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
+  .seg-label{font-weight:700;font-size:14px;color:var(--muted)}
+  .seg{display:inline-flex;flex-wrap:nowrap;padding:3px;border-radius:22px;background:var(--card);border:1px solid var(--cardline)}
+  .seg button{border:0;background:transparent;min-height:max(40px,calc(var(--tap) - 8px));min-width:48px;padding:0 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
   .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
   .count{color:var(--muted);font-size:14px;margin-left:auto}
+  /* A phone keeps the players row to one line; the count is the part it can spare. */
+  @media (max-width:420px){ .count{display:none} }
 
   /* ── Shelves: a row always shows whole cards plus HALF of the next, at every
      width, so it's obvious there's more to swipe to. --n is how many whole
@@ -99,8 +103,8 @@
   @media (min-width:560px){ .lane{--n:3} }
   @media (min-width:820px){ .lane{--n:4} }
   @media (min-width:1080px){ .lane{--n:5} }
-  /* Big screens are scaled up by shared/screen.css, so a wider box still fits. */
-  @media (min-width:1500px) and (hover:hover){ .wrap{max-width:1240px} .lane{--n:6} }
+  @media (min-width:1400px){ .lane{--n:6} }
+  @media (min-width:1700px){ .lane{--n:7} }
   .lane .card{scroll-snap-align:start}
   /* Everything fits: lay it out as a normal row instead of a scroller. */
   .lane.fits{grid-auto-flow:row;grid-template-columns:repeat(var(--n),minmax(0,1fr));grid-auto-columns:auto;cursor:auto}
@@ -115,7 +119,8 @@
   @media (min-width:560px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr))} }
   @media (min-width:820px){ .grid{grid-template-columns:repeat(4,minmax(0,1fr))} }
   @media (min-width:1080px){ .grid{grid-template-columns:repeat(5,minmax(0,1fr))} }
-  @media (min-width:1500px) and (hover:hover){ .grid{grid-template-columns:repeat(6,minmax(0,1fr))} }
+  @media (min-width:1400px){ .grid{grid-template-columns:repeat(6,minmax(0,1fr))} }
+  @media (min-width:1700px){ .grid{grid-template-columns:repeat(7,minmax(0,1fr))} }
 
   /* ── A card: icon, name, one line. Tap for the details. ── */
   .card{position:relative;display:flex;flex-direction:column;min-width:0;border-radius:18px;overflow:hidden;background:var(--card);
@@ -195,6 +200,7 @@
 
   <div class="pills" id="pills" role="group" aria-label="Show games"></div>
   <div class="row2">
+    <span class="seg-label" aria-hidden="true">👥 Players</span>
     <div class="seg" id="players" role="group" aria-label="Players"></div>
     <span class="count" id="count" aria-live="polite"></span>
   </div>
@@ -285,10 +291,10 @@ const PILLS = [{ id: "all", label: "All", emoji: "🎮", match: () => true },
   // Never show a shelf nothing can fill. Favourites stays, because it fills up.
   .filter(o => o.id === "all" || o.id === "fav" || shelf.some(o.match));
 const PLAYERS = [
-  { id: "any",   label: "Anyone",        match: () => true },
-  { id: "solo",  label: "👤 On my own",   match: g => g.players[0] <= 1 },
-  { id: "duo",   label: "👥 With a friend", match: g => g.players[0] <= 2 && g.players[1] >= 2 },
-  { id: "party", label: "👨‍👩‍👦 3 or more", match: g => g.players[1] >= 3 }
+  { id: "any",   label: "All", say: "Any number of players", match: () => true },
+  { id: "solo",  label: "1",   say: "1 player",              match: g => g.players[0] <= 1 },
+  { id: "duo",   label: "2",   say: "2 players",             match: g => g.players[0] <= 2 && g.players[1] >= 2 },
+  { id: "party", label: "3+",  say: "3 or more players",     match: g => g.players[1] >= 3 }
 ].filter((o, i) => i === 0 || shelf.some(o.match));
 
 const state = { cat: "all", players: "any", q: "" };
@@ -350,9 +356,6 @@ function card(g) {
 // never a tap, so letting go over a card doesn't open it.
 let lanes = [];
 const step = (lane) => lane.children[0].getBoundingClientRect().width + (parseFloat(getComputedStyle(lane).columnGap) || 12);
-// Big screens scale the page up (shared/screen.css), but the pointer still moves
-// in screen pixels, so a drag is divided back down to keep the row under it.
-const zoom = () => parseFloat(getComputedStyle(document.body).zoom) || 1;
 const smooth = () => matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 function page(lane, dir) {
   const n = parseInt(getComputedStyle(lane).getPropertyValue("--n"), 10) || 2;
@@ -367,7 +370,7 @@ function swipe(lane, after) {
   });
   addEventListener("pointermove", (e) => {
     if (!start) return;
-    const dx = (e.clientX - start.x) / zoom();
+    const dx = e.clientX - start.x;
     if (!dragged && Math.abs(dx) > 6) { dragged = true; lane.classList.add("dragging"); }
     if (dragged) lane.scrollLeft = start.left - dx;
   });
@@ -377,7 +380,7 @@ function swipe(lane, after) {
     start = null;
     if (!dragged) return;
     // A quick flick carries on a little, the way a finger does.
-    const v = (e.clientX - s.x) / zoom() / Math.max(1, performance.now() - s.t);
+    const v = (e.clientX - s.x) / Math.max(1, performance.now() - s.t);
     const w = step(lane);
     const max = lane.scrollWidth - lane.clientWidth;
     const target = Math.max(0, Math.min(max, Math.round((lane.scrollLeft - v * 180) / w) * w));
@@ -479,6 +482,7 @@ function paintFilters() {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = o.label;
+    b.setAttribute("aria-label", o.say);
     b.setAttribute("aria-pressed", String(state.players === o.id));
     b.addEventListener("click", () => { state.players = o.id; remember(); render(); });
     seg.appendChild(b);

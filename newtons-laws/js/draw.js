@@ -21,10 +21,7 @@ NL.Draw = (function () {
     if (!cv) return;
     const w = cv.parentElement.clientWidth;
     const h = Math.round(Math.max(190, Math.min(380, w * 0.46)));
-    // A scaled-up page (shared/screen.css) stretches the canvas too, so it
-    // needs that many more pixels to stay sharp.
-    const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
-    const dpr = Math.min((window.devicePixelRatio || 1) * zoom, 4);
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
     cv.style.height = h + "px";
     cv.width = Math.round(w * dpr);
     cv.height = Math.round(h * dpr);

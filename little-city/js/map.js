@@ -65,6 +65,8 @@ window.LC = window.LC || {};
       <div class="toolbar" role="group" aria-label="Build"></div>
       <div class="talk card" aria-live="polite"></div>`;
     const stats = root.querySelector(".stats"), map = root.querySelector(".map"), bar = root.querySelector(".toolbar"), talk = root.querySelector(".talk");
+    // Its shape, so the stylesheet can fit the map to the space without cropping it.
+    map.style.setProperty("--ar", g[0].length / g.length);
     const state = () => LC.Sim.evaluate(g, lv.needs);
     const count = (t) => g.flat().filter((c) => c && c.t === t && !c.fixed).length;
     const money = lv.money != null;

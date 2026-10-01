@@ -53,7 +53,7 @@ function measure() {
     .filter((e) => e.type !== "range")
     .filter((e) => { const r = e.getBoundingClientRect(); return Math.min(r.width, r.height) < 40; });
   const text = [...document.querySelectorAll("body *")].filter((e) => [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && seen(e))
-    .filter((e) => parseFloat(getComputedStyle(e).fontSize) * (parseFloat(getComputedStyle(document.body).zoom) || 1) < 13);
+    .filter((e) => parseFloat(getComputedStyle(e).fontSize) < 13);
   return { wide: document.documentElement.scrollWidth - innerWidth, taps: taps.map(name), text: text.map(name) };
 }
 

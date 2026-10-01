@@ -13,7 +13,7 @@ Read that before starting a new game.
 index.html      the launcher — shelves, filters, search
 games.js        the GAMES catalogue, shared by the launcher and career-compass/
 sw.js           ONE service worker for the whole site, launcher and games alike
-shared/         screen.css: screen sizes, linked by the launcher and every game
+shared/         screen.css: screen-size tokens, linked by the launcher and every game
 <game>/         one folder per game
 docs/           planning notes
 ```
@@ -60,16 +60,23 @@ audio, UI and app state in separate files.
 
 ## Screen sizes
 
-Design for the tablet first, then make it work on a phone held either way and
-on a laptop. Link `shared/screen.css` **before** the game's own stylesheet and
-put `class="ui-zoom"` on `<html>`:
+Every game must look designed for the screen it is on: phone held either way,
+tablet, laptop, desktop. Link `shared/screen.css` **before** the game's own
+stylesheet (it holds `--tap`, `--gutter` and `--app-h`, the window height).
 
-- Laptops and desktops scale the whole page up (`zoom`), so a tablet layout
-  keeps its proportions instead of sitting small in the middle. Size full-height
-  layouts with `var(--app-h)`, never `100dvh` (zoom scales vh too). Pointer maths
-  that turns screen pixels into page pixels must divide by the body's zoom.
-- Phones are never scaled down. Phones held sideways (`max-height:520px`) get a
-  tighter layout instead: slim header, board beside its controls (`.ui-split`).
+- **Play screens fit the window.** The board, round or studio, its controls and
+  the setup sheet are all visible at once: nothing to scroll, nothing that moves
+  when text changes. Size the screen to `var(--app-h)`, give the board the
+  space that is left (a grid row of `minmax(0,1fr)`; container units against
+  the board's aspect ratio when it must keep its shape) and keep the chrome slim.
+  Lists that can grow (catalogue, galleries, chapter lists) may scroll.
+- **Wider than tall** (`min-aspect-ratio:5/4`: sideways phone, sideways tablet,
+  desktop): board on the left at full height, everything to read or tap on the
+  right. **Taller than wide:** stacked, board in the middle.
+- **Desktop is a full-screen app,** not a scaled-up tablet: the board fills the
+  window, panels get desktop-sized type. Never `zoom` the page.
+- Phones held sideways (`max-height:520px`) have about 360px of height: header
+  into the side column, two-column setup sheets.
 - Tap targets use `var(--tap)`; nothing tappable under 40px, no text under 13px.
 
 `NODE_PATH=$(npm root -g) node tools/screen-check.js [folder ...]` opens pages at

@@ -24,6 +24,9 @@ window.LC = window.LC || {};
     const map = root.querySelector(".map"), anim = root.querySelector(".anim"), bar = root.querySelector(".toolbar"), talk = root.querySelector(".talk");
     const g = () => town.grid;
     const GW = () => g()[0].length, GH = () => g().length;
+    // Its shape, so the stylesheet can fit the map to the space without cropping
+    // it (and the cars and rings drawn over it stay on their squares).
+    root.querySelector(".map-box").style.setProperty("--ar", GW() / GH());
 
     // Extra marks on the map: how full each home is, broken buildings, sleepy
     // shops, and a ring round anything a letter or an offer is about.

@@ -164,9 +164,7 @@ window.NL = window.NL || {};
   });
   cv.addEventListener("pointermove", (e) => {
     if (!pull || e.pointerId !== pull.id || !scene) return;
-    // The pointer moves in screen pixels; a scaled-up page measures in fewer.
-    const zoom = parseFloat(getComputedStyle(document.body).zoom) || 1;
-    scene.setAim(Math.hypot(e.clientX - pull.x, e.clientY - pull.y) / zoom / fullPull());
+    scene.setAim(Math.hypot(e.clientX - pull.x, e.clientY - pull.y) / fullPull());
   });
   const letGo = (e) => {
     if (!pull || e.pointerId !== pull.id) return;

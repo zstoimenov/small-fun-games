@@ -1,44 +1,21 @@
 /* Screen sizes, shared by the launcher and every game.                        */
 /*                                                                             */
-/* Games are designed for a tablet first. Rather than redesign each one for a  */
-/* laptop, a page that opts in with <html class="ui-zoom"> is scaled up as a   */
-/* whole on big screens, so a tablet layout keeps its proportions instead of   */
-/* sitting small in the middle. Phones are never scaled down: text would get   */
-/* too small to read, so short and narrow screens get tighter layouts instead. */
+/* A play screen is an app screen: it fills the window exactly and never       */
+/* scrolls, on a phone held either way, a tablet or a desktop. The board takes */
+/* whatever space is left and its controls sit beside it when the screen is    */
+/* wider than tall, under it when taller than wide.                            */
 /*                                                                             */
 /* Link it BEFORE the game's own stylesheet so the game can override it.       */
 
 :root{
-  --ui:1;          /* how much a ui-zoom page is scaled up */
   --tap:48px;      /* smallest comfortable tap target */
   --gutter:16px;   /* side padding */
-  --app-h:100vh;   /* full screen height; use this, not 100dvh, in ui-zoom pages */
+  --app-h:100vh;   /* the window's height, without the phone's browser bars */
 }
 @supports (height:100dvh){ :root{ --app-h:100dvh } }
 
-/* Laptops and desktops. Height matters as much as width: a short laptop
-   screen scaled up too far would push the game below the fold. */
-@media (min-width:1200px) and (min-height:720px) and (hover:hover){ :root{ --ui:1.15; --gutter:24px } }
-@media (min-width:1500px) and (min-height:860px) and (hover:hover){ :root{ --ui:1.3; --gutter:32px } }
-@media (min-width:2200px) and (min-height:1200px) and (hover:hover){ :root{ --ui:1.6; --gutter:40px } }
-
 /* Phones held sideways: every pixel of height counts. */
 @media (max-height:520px) and (orientation:landscape){ :root{ --tap:44px; --gutter:12px } }
-
-/* Scaling the body also scales vh, so height has to be divided back down or
-   a full-height game would overflow by the zoom factor. */
-html.ui-zoom body{ zoom:var(--ui) }
-html.ui-zoom{ --app-h:calc(100vh / var(--ui)) }
-@supports (height:100dvh){ html.ui-zoom{ --app-h:calc(100dvh / var(--ui)) } }
+@media (min-width:1200px) and (min-height:700px){ :root{ --gutter:24px } }
 
 [hidden]{ display:none !important }
-
-/* ── Layout helpers games can use ──────────────────────────────────────────
-   .ui-split   a board and its controls: stacked on a phone held upright,
-               side by side when the screen is wider than it is tall.
-   .ui-short-hide   decoration that can go when a phone is held sideways. */
-.ui-split{ display:grid; gap:var(--gutter); grid-template-columns:minmax(0,1fr) }
-@media (orientation:landscape) and (min-width:700px){
-  .ui-split{ grid-template-columns:minmax(0,1.4fr) minmax(260px,1fr); align-items:start }
-}
-@media (max-height:520px) and (orientation:landscape){ .ui-short-hide{ display:none !important } }

@@ -86,7 +86,8 @@ C4.Ui = (function () {
     // Guess from the spare width, measure what that actually cost in height,
     // then shrink if it doesn't fit. Two passes beats restating the board's
     // padding ratio here, where it could quietly drift from the stylesheet.
-    const size = Math.min(availW, 560);
+    // No fixed cap: on a big screen the board should fill the space it has.
+    const size = availW;
     el.board.style.width = Math.floor(size) + "px";
     const tall = el.board.offsetHeight;
     if (tall > availH) {
