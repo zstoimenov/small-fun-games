@@ -35,7 +35,11 @@ BB.TRAIL = [
       { name: "Wide creek", gap: 6, rows: [-1, 1], truck: "bus", parts: [],
         inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 31, par: 25,
         text: "A wide creek and a full bus. Test cheap ideas first, then add strength where it breaks.",
-        win: "A long bridge for a heavy bus, on a farmer's budget!" }
+        win: "A long bridge for a heavy bus, on a farmer's budget!" },
+      { name: "Harvest home", gap: 7, rows: [-2, 1], truck: "big", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 53, par: 42,
+        text: "The harvest is in! Get the big truck home over the widest creek yet, without going broke.",
+        win: "The harvest got home, and you still have coins left over. Brilliant engineering!" }
     ],
     lesson: {
       title: "You finished Farm Creek!",
@@ -65,7 +69,15 @@ BB.TRAIL = [
       { name: "Missing dots", gap: 6, rows: [-2, 1], holes: ["2,-1", "4,-1", "3,1"], truck: "truck", parts: [],
         inv: { road: 6, beam: 13, steel: 2 }, par: 18,
         text: "Some dots have fallen away. Build around the gaps!",
-        win: "You found a shape that works with the dots you've got." }
+        win: "You found a shape that works with the dots you've got." },
+      { name: "Cactus gap", gap: 6, rows: [-1, 3], pins: ["0,3", "6,3"], truck: "bus", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 44, par: 35,
+        text: "A deep canyon and a heavy bus. The pins are right at the bottom. Mind your coins!",
+        win: "Tall props all the way from the canyon floor. That's a lot of bridge for the price!" },
+      { name: "Deep canyon", gap: 7, rows: [-2, 3], pins: ["0,3", "7,2"], holes: ["3,-1", "4,1"], truck: "big", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 58, par: 46,
+        text: "The deepest canyon of all, the big truck, missing dots and a budget. Good luck, engineer!",
+        win: "You beat the Deep Canyon! Only a real engineer could build that." }
     ],
     lesson: {
       title: "You finished Desert Canyon!",
@@ -85,13 +97,25 @@ BB.TRAIL = [
     grown: "River bridges must leave clearance for shipping. With no supports allowed in the channel, the span gets longer, so the truss above the deck has to work harder.",
     levels: [
       { name: "Boat lane", gap: 6, rows: [-1, 2], lane: [2, 4], truck: "truck", parts: [],
-        inv: { road: 6, beam: 9, steel: 2 }, par: 14,
+        inv: { road: 6, beam: 7, steel: 4 }, par: 14,
         text: "Boats sail through the striped lane. Nothing can go below the road there!",
         win: "The boats sail under, and the truck drives over." },
       { name: "Tall ship", gap: 6, rows: [-2, 1], lane: [1, 5], truck: "truck", parts: [],
         inv: { road: 6, beam: 11, steel: 2 }, par: 16,
         text: "A tall ship needs a wide lane. You'll have to build up, not down.",
-        win: "A truss above the road holds it up, so the ship has all the room it needs." }
+        win: "A truss above the road holds it up, so the ship has all the room it needs." },
+      { name: "Rocks and boats", gap: 8, rows: [-1, 2], rocks: [[2, 2], [6, 2]], lane: [3, 5], truck: "bus", parts: [],
+        inv: { road: 8, beam: 14, steel: 3 }, par: 22,
+        text: "Two rocks, one boat lane and a bus. Use the rocks, but keep the lane clear.",
+        win: "Pillars on the rocks, and a clear lane in the middle. Just like a real river bridge!" },
+      { name: "Ferry port", gap: 7, rows: [-2, 1], lane: [2, 5], truck: "truck", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 36, par: 29,
+        text: "The ferry needs a wide lane. Build above the road, and watch your coins.",
+        win: "The ferry fits, and the bridge didn't cost a fortune." },
+      { name: "The big river", gap: 8, rows: [-2, 1], lane: [2, 6], truck: "big", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 63, par: 50,
+        text: "The widest river and the heaviest truck, with a huge boat lane. Can you span it on a budget?",
+        win: "You crossed the Big River! Ships under, trucks over." }
     ],
     lesson: {
       title: "You finished Big River!",
@@ -117,7 +141,11 @@ BB.TRAIL = [
       { name: "Old wood", gap: 4, rows: [-1, 1], truck: "bus", parts: [],
         inv: { road: 4, old: 13, beam: 3 }, par: 17,
         text: "Most of your wood is old and weak, and the bus is heavy. Save the new wood for the hardest jobs.",
-        win: "Old wood for the easy jobs, new wood for the hard ones. Clever!" }
+        win: "Old wood for the easy jobs, new wood for the hard ones. Clever!" },
+      { name: "Snowy cliffs", gap: 5, rows: [-1, 2], pins: ["0,2", "5,2"], snow: 0.4, truck: "truck", parts: [],
+        inv: { road: 5, old: 10, beam: 8 }, par: 17,
+        text: "Snowy cliffs with only two pins, and the old wood is weak. Where does each piece go?",
+        win: "Every piece doing the job it's strong enough for." }
     ],
     lesson: {
       title: "You finished Snowy Peaks!",
@@ -139,7 +167,15 @@ BB.TRAIL = [
       { name: "Hang it up", gap: 4, rows: [-2, 0], towers: ["0,-2", "4,-2"], truck: "bus", parts: [],
         inv: { road: 4, rope: 4 }, par: 6,
         text: "Hang the road from the stone towers with ropes. Drag a rope from a tower to the road.",
-        win: "The ropes pull the road up from above, like a swing." }
+        win: "The ropes pull the road up from above, like a swing." },
+      { name: "Ropes pull", gap: 5, rows: [-2, 0], towers: ["0,-2"], truck: "truck", parts: [],
+        inv: { road: 5, rope: 4, beam: 4 }, par: 7,
+        text: "Only one tower this time, and just 4 beams. Can ropes from one side hold up the whole road?",
+        win: "One tower, a few ropes, and the whole road hangs safely." },
+      { name: "Wide gorge", gap: 6, rows: [-2, 0], towers: ["0,-2", "6,-2"], truck: "bus", parts: [],
+        inv: { road: 6, rope: 6, beam: 4 }, par: 10,
+        text: "A wide gorge and a heavy bus. Beams are scarce, so let the towers and ropes do the work.",
+        win: "That's a cable-stayed bridge, like the ones over big rivers." }
     ],
     lesson: {
       title: "You finished Jungle Gorge!",
@@ -163,7 +199,7 @@ BB.TRAIL = [
         text: "There's an island in the harbour. It's solid ground, so build from it!",
         win: "Two short bridges are much easier than one long one." },
       { name: "Rush hour", gap: 5, rows: [-1, 1], convoy: ["car"], truck: "truck", parts: [],
-        inv: { road: 5, beam: 9, steel: 3 }, par: 14,
+        inv: { road: 5, beam: 6, steel: 2 }, par: 10,
         text: "Rush hour! A truck and a car cross together, so the bridge carries both at once.",
         win: "Strong enough for a traffic jam!" }
     ],
