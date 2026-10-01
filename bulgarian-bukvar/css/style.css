@@ -57,7 +57,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
 .emoji{font-family:var(--emoji); line-height:1}
 
 .page{
-  max-width:760px; margin:0 auto; min-height:100dvh;
+  max-width:760px; margin:0 auto; min-height:var(--app-h);
   padding:calc(8px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
   display:flex; flex-direction:column; gap:12px;
 }
@@ -254,7 +254,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
 
 /* ── Pop-ups ─────────────────────────────────────────────────────────────── */
 .sheet{
-  width:min(560px, calc(100vw - 24px)); max-height:min(85dvh, 700px); padding:16px;
+  width:min(560px, calc(100vw - 24px)); max-height:min(calc(var(--app-h) * .85), 700px); padding:16px;
   border:1px solid var(--line); border-radius:18px; background:var(--card); color:var(--ink);
   box-shadow:0 12px 40px var(--shadow);
 }
@@ -299,16 +299,16 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
 /* A rubber stamp: round, double ring, slightly crooked, in its own ink. The   */
 /* ink colour comes from the stamp's data as --ink. An empty slot is a dashed  */
 /* circle waiting for one.                                                     */
-.passport{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px}
+.passport{display:grid; grid-template-columns:repeat(auto-fill,minmax(108px,1fr)); gap:10px}
 .passport button{border:0; background:none; padding:0; display:flex; flex-direction:column; align-items:center; gap:4px}
 .passport button:disabled{cursor:default}
-.passport small{font-size:12px; color:var(--muted); text-align:center; line-height:1.2}
+.passport small{font-size:13px; color:var(--muted); text-align:center; line-height:1.2}
 .stamp{
   --ink:var(--accent);
-  width:92px; height:92px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  width:104px; height:104px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
   border:3px solid var(--ink); box-shadow:inset 0 0 0 3px var(--card), inset 0 0 0 5px var(--ink);
   color:var(--ink); text-align:center; padding:8px; transform:rotate(-8deg);
-  font-weight:800; font-size:12px; line-height:1.1; text-transform:uppercase; letter-spacing:.03em;
+  font-weight:800; font-size:13px; line-height:1.1; text-transform:uppercase; letter-spacing:.03em;
 }
 .stamp .se{font-size:26px; line-height:1}
 .stamp.gold{--ink:var(--gold); background:radial-gradient(circle,var(--gold-bg),transparent 70%)}
@@ -327,7 +327,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
 }
 .album .ce{font-size:34px}
 .album b{font-size:14px; line-height:1.15}
-.album small{font-size:12px; color:var(--muted)}
+.album small{font-size:13px; color:var(--muted)}
 .album .locked{opacity:.45; box-shadow:none}
 .album .locked .ce{font-size:28px; color:var(--muted); font-weight:800}
 .album .new{border:2px solid var(--red)}
@@ -397,3 +397,34 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
 .page-dots{display:flex; gap:7px}
 .page-dots i{width:9px; height:9px; border-radius:50%; background:var(--line)}
 .page-dots i.on{background:var(--accent); transform:scale(1.25)}
+
+/* ── Phones held sideways ────────────────────────────────────────────────────
+   Only about 360px of height: a slimmer header, the mission steps and who
+   plays on one row, and each card laid out across instead of down. */
+@media (max-height:520px) and (orientation:landscape){
+  .page{max-width:none; gap:8px; padding:calc(4px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))}
+  .screen,.stage{gap:8px}
+  .top h1{font-size:20px}
+  .icon-btn{width:42px; height:42px; font-size:17px}
+  .big-btn{padding:10px 18px}
+  .big-btn .new{font-size:30px}
+  .card{padding:10px 14px}
+  #play{display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:8px 12px}
+  #play > .stage{grid-column:1 / -1}
+  #play > .who{justify-self:end}
+  .bar{min-height:40px}
+  .say{font-size:17px}
+  .ruled{padding:12px 14px 12px 52px}
+  /* Learn: the letter on the left, its sound and picture beside it. */
+  .ruled:has(.letter-big){display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; column-gap:24px}
+  .ruled:has(.letter-big) .letter-big{grid-row:span 2}
+  .letter-big .up{font-size:calc(var(--app-h) * .34)}
+  .letter-big .lo{font-size:calc(var(--app-h) * .25)}
+  .example{margin-top:4px; font-size:28px}
+  .example .emoji{font-size:44px}
+  .prompt{min-height:80px}
+  .prompt .emoji{font-size:64px}
+  .tiles:not(.one):not(.cards){grid-template-columns:repeat(4,1fr)}
+  .tile{min-height:64px}
+  .tile.pic{font-size:40px}
+}
