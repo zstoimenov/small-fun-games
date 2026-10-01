@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v66";
+const CACHE = "game-box-v67";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -224,12 +224,14 @@ self.addEventListener("activate", (e) => {
 });
 
 // Network-first with a cache fallback. A successful same-origin response also
-// refreshes the cache so the offline copy stays current.
+// refreshes the cache so the offline copy stays current. "no-cache" makes the
+// browser ask the server whether a file changed: GitHub Pages lets browsers
+// keep files for 10 minutes, which would run old code just after a fix.
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: "no-cache" })
       .then((res) => {
         if (res && res.ok && res.type === "basic") {
           const copy = res.clone();
