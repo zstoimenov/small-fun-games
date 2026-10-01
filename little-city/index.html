@@ -55,54 +55,73 @@
     <div id="levels" class="levels"></div>
   </section>
 
-  <!-- A level: lesson.js fills #stage, one round at a time. -->
-  <section id="play" class="screen" hidden>
-    <div class="goal">
-      <span class="goal-name" id="goalName"></span>
-      <span class="goal-count" id="roundCount"></span>
-      <p id="goalText"></p>
+  <!-- Every play screen (a level, the Mayor's town, the quiz) has the same four
+       parts: the board to look at, and a panel of info, controls and actions. -->
+
+  <!-- A level: lesson.js fills the parts, one round at a time. -->
+  <section id="play" class="screen play" hidden>
+    <div class="play-board" id="playBoard"></div>
+    <div class="play-panel">
+      <div class="panel-info">
+        <div class="goal">
+          <span class="goal-name" id="goalName"></span>
+          <span class="goal-count" id="roundCount"></span>
+          <p id="goalText"></p>
+        </div>
+        <div id="playInfo" class="info-extra"></div>
+      </div>
+      <div class="panel-controls" id="playControls"></div>
+      <div class="panel-acts" id="playActs"></div>
     </div>
-    <div id="stage" class="stage"></div>
   </section>
 
   <!-- Be the Mayor: a town that changes every year. -->
-  <section id="studio" class="screen" hidden>
-    <div class="card mayor-top">
+  <section id="studio" class="screen play" hidden>
+    <div class="play-board" id="mBoard"></div>
+    <div class="play-panel">
+    <div class="panel-info card mayor-top">
       <div class="studio-row">
         <button id="sName" class="name-btn" type="button" aria-label="Rename your town"></button>
         <span id="mRank" class="rank-chip"></span>
       </div>
       <div id="mStats" class="stats"></div>
-      <div id="mCampaign" class="campaign" hidden></div>
-      <div id="mRequest" class="request" hidden></div>
-      <div id="mOffer" class="offer" hidden></div>
+      <!-- The town's news: one row of chips; tap one to read it in the talk panel. -->
+      <div class="news">
+        <button id="mCampaign" class="news-chip campaign" type="button" hidden></button>
+        <button id="mRequest" class="news-chip request" type="button" hidden></button>
+        <button id="mOffer" class="news-chip offer" type="button" hidden></button>
+      </div>
       <div id="mOver" class="over" hidden></div>
     </div>
-    <div id="sEditor" class="board"></div>
-    <div class="actions studio-acts">
+    <div id="sEditor" class="panel-controls"></div>
+    <div class="panel-acts studio-acts">
       <button id="mayorTown" class="btn ghost" type="button" aria-label="Towns">&#127961;&#65039;<span class="lbl"> Towns</span></button>
       <button id="mBank" class="btn ghost" type="button" aria-label="Bank">&#127974;<span class="lbl"> Bank</span></button>
       <button id="mMedals" class="btn ghost" type="button" aria-label="Medals">&#127941;<span class="lbl"> Medals</span></button>
       <button id="mEnd" class="btn go" type="button">&#9654;<span class="lbl"> End year</span></button>
     </div>
+    </div>
   </section>
 
   <!-- Towns in progress. -->
-  <section id="towns" class="screen" hidden>
+  <section id="towns" class="screen list" hidden>
     <p class="intro" id="townsInfo"></p>
-    <div id="townList" class="town-list"></div>
-    <div class="actions"><button id="townsStudio" class="btn go" type="button">&#10024; Start a new town</button></div>
+    <div class="list-scroll"><div id="townList" class="town-list"></div></div>
+    <div class="panel-acts"><button id="townsStudio" class="btn go" type="button">&#10024; Start a new town</button></div>
   </section>
 
   <!-- The quiz: one question at a time. -->
-  <section id="quiz" class="screen" hidden>
-    <div class="card quiz-card">
-      <p class="kicker" id="qCount"></p>
-      <span class="q-emoji" id="qEmoji" aria-hidden="true"></span>
-      <h2 id="qText"></h2>
-      <div class="answers" id="qAnswers"></div>
-      <p class="q-why" id="qWhy" aria-live="polite"></p>
-      <div class="actions"><button id="qNext" class="btn" type="button" hidden>Next &rsaquo;</button></div>
+  <section id="quiz" class="screen play" hidden>
+    <div class="play-board">
+      <div class="quiz-board"><span class="q-emoji" id="qEmoji" aria-hidden="true"></span><div class="answers" id="qAnswers"></div></div>
+    </div>
+    <div class="play-panel">
+      <div class="panel-info">
+        <div class="goal"><span class="goal-name" id="qCount"></span></div>
+        <h2 class="q" id="qText"></h2>
+      </div>
+      <div class="panel-controls"><p class="why" id="qWhy" aria-live="polite"></p></div>
+      <div class="panel-acts"><button id="qNext" class="btn go" type="button" hidden>Next &rsaquo;</button></div>
     </div>
   </section>
 
@@ -188,7 +207,7 @@
     <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
   </div>
   <ol class="how">
-    <li><b>Pick a building</b> from the bar under the map, then tap a grass square. Roads: tap or drag.</li>
+    <li><b>Pick a building</b> from the tools, then tap a grass square. Roads: tap or drag.</li>
     <li><b>Every building</b> must touch a road that leads OUT of town.</li>
     <li><b>👆 Look:</b> tap a house to hear what the family needs. 😀 happy, 😐 OK, 😟 unhappy.</li>
     <li><b>Be the Mayor:</b> build, then press ▶ End year. Happy homes fill up, unhappy ones empty out, and taxes come in.</li>

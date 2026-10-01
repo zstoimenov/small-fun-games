@@ -89,7 +89,9 @@ LC.UI = (function () {
     $("qEmoji").textContent = item.emoji;
     $("qText").textContent = item.q;
     $("qWhy").textContent = "";
+    $("qWhy").className = "why";
     $("qNext").hidden = true;
+    $("qNext").parentElement.querySelectorAll(".quiz-end").forEach((b) => b.remove());
     const box = $("qAnswers");
     box.innerHTML = "";
     // Answers are stored right-first; shuffle so the right one isn't always on top.
@@ -101,6 +103,7 @@ LC.UI = (function () {
         b.classList.add(ok ? "right" : "wrong");
         if (!ok) box.querySelectorAll("button")[order.indexOf(item.right)].classList.add("right");
         $("qWhy").textContent = (ok ? "Yes! " : "Not quite. ") + item.why;
+        $("qWhy").className = "why " + (ok ? "good" : "bad");
         $("qNext").hidden = false;
         onAnswer(ok);
       });
@@ -113,13 +116,13 @@ LC.UI = (function () {
     $("qEmoji").textContent = score === total ? "\u{1F3C5}" : score ? "\u{1F31F}" : "\u{1F4AA}";
     $("qText").textContent = "You got " + score + " of " + total + "!";
     $("qWhy").textContent = score === total ? "Mayor material! Time to build your own town. 🏙️" : "Have another go, or play some more levels first.";
+    $("qWhy").className = "why good";
     $("qNext").hidden = true;
-    const box = $("qAnswers");
-    box.innerHTML = "";
-    const r = el("div", "actions");
-    r.appendChild(button("btn ghost", "Try again", again));
-    r.appendChild(button("btn", "Home", home));
-    box.appendChild(r);
+    $("qAnswers").innerHTML = "";
+    // The end buttons go where Next was, like every other screen's actions.
+    const acts = $("qNext").parentElement;
+    acts.appendChild(button("btn ghost quiz-end", "Try again", again));
+    acts.appendChild(button("btn go quiz-end", "Home", home));
   }
 
   return { $, toast, home, chapter, question, quizDone, starRow };

@@ -27,6 +27,9 @@ window.LC = window.LC || {};
     // Its shape, so the stylesheet can fit the map to the space without cropping
     // it (and the cars and rings drawn over it stay on their squares).
     root.querySelector(".map-box").style.setProperty("--ar", GW() / GH());
+    // The map lives on the play screen's board; the tools and talk stay here.
+    const wrap = root.querySelector(".map-wrap");
+    if (o.board) { o.board.innerHTML = ""; o.board.appendChild(wrap); }
 
     // Extra marks on the map: how full each home is, broken buildings, sleepy
     // shops, and a ring round anything a letter or an offer is about.
@@ -278,7 +281,7 @@ window.LC = window.LC || {};
     }
     function show(list) {
       marks(list, true);
-      root.querySelector(".map-wrap").scrollIntoView({ behavior: "smooth", block: "center" });
+      wrap.scrollIntoView({ behavior: "smooth", block: "center" });
     }
     function reset() { tool = null; ghost = null; pick = null; hint(); paint(); }
 

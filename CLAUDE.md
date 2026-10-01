@@ -78,6 +78,15 @@ stylesheet (it holds `--tap`, `--gutter` and `--app-h`, the window height).
 - Phones held sideways (`max-height:520px`) have about 360px of height: header
   into the side column, two-column setup sheets.
 - Tap targets use `var(--tap)`; nothing tappable under 40px, no text under 13px.
+- **One layout pattern, every screen.** `little-city/` is the reference. Every
+  play screen (a level, a studio, a quiz) has the same four parts in the same
+  order: the **board**, then a panel of **info** (what's going on), **controls**
+  (tools, the talk panel, the verdict) and **actions** (the main buttons, last,
+  full width, the main one green). Wider than tall: board left, panel right with
+  the actions pinned to its bottom. Taller than wide: info, board, controls,
+  actions. Menu screens fill the width the same way. Panel text is left-aligned.
+  News and long stories go in the talk panel, not in new boxes that squeeze the
+  board. On phones, tools are pictures and picking one names it.
 
 `NODE_PATH=$(npm root -g) node tools/screen-check.js [folder ...]` opens pages at
 six sizes in both themes, flags those problems and saves a contact sheet.

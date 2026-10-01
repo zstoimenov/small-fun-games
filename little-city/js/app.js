@@ -30,9 +30,9 @@ window.LC = window.LC || {};
   function show(name) {
     screen = name;
     ["home", "chapter", "play", "studio", "towns", "quiz"].forEach((s) => { $(s).hidden = s !== name; });
-    // Playing a level or running the town is an app screen: it fills the
-    // window exactly and never scrolls (see "Play screens fit" in the CSS).
-    document.body.classList.toggle("app", name === "play" || name === "studio");
+    // Every screen fills the window exactly; only the towns list scrolls,
+    // inside itself (see "The frame" in the CSS).
+    document.body.classList.add("fit");
     $("back").hidden = name !== "home";
     $("up").hidden = name === "home";
     $("up").innerHTML = "&lsaquo; " + (name === "play" && ch ? ch.kicker : name === "towns" && back === "studio" ? "Mayor" : "Home");

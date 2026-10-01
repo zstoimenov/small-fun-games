@@ -85,11 +85,12 @@ window.LC = window.LC || {};
     }
     function paintStats(st) {
       const room = st.houses.reduce((n, h) => n + h.people, 0);
-      let s = `<span title="People living here / room in all the homes">👥 <b>${st.people}/${room}</b> people</span><span title="Happy people">😀 <b>${st.happy}</b> happy</span>`;
+      // The words (class w) can step aside on a phone; the pictures and numbers stay.
+      let s = `<span title="People living here / room in all the homes">👥 <b>${st.people}/${room}</b><span class="w"> people</span></span><span title="Happy people">😀 <b>${st.happy}</b><span class="w"> happy</span></span>`;
       if (money) {
         const left = lv.money - st.cost;
-        s += `<span class="${left < 0 ? "bad" : ""}">💰 <b>${left}</b> coins left</span>`;
-        s += `<span class="${st.balance < 0 ? "bad" : ""}" title="Each year: taxes and shops in, running costs out">📅 each year <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b></span>`;
+        s += `<span class="${left < 0 ? "bad" : ""}" title="Coins left to spend">💰 <b>${left}</b><span class="w"> coins left</span></span>`;
+        s += `<span class="${st.balance < 0 ? "bad" : ""}" title="Each year: taxes and shops in, running costs out">📅<span class="w"> each year</span> <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b></span>`;
       }
       stats.innerHTML = s;
     }

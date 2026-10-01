@@ -279,12 +279,6 @@ button:disabled{opacity:.45; cursor:default}
 .talk p{margin:0}
 .talk .who{font-weight:800; margin-bottom:4px}
 .talk .bubble{margin:4px 0 0; padding:8px 12px; border-radius:14px 14px 14px 4px; background:var(--chip); font-weight:600}
-@media (min-width:860px){
-  /* Tablet sideways: map on the left, tools and talk on the right. */
-  .board{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr); align-items:start}
-  .board .stats{grid-column:1/-1}
-  .board .map-wrap{grid-row:span 2}
-}
 
 /* ── Sandbox and saved towns ─────────────────────────────────────────────── */
 .studio-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px}
@@ -312,8 +306,6 @@ button:disabled{opacity:.45; cursor:default}
 .rank-chip{display:flex; flex-direction:column; align-items:flex-end; font-weight:800; font-size:17px; white-space:nowrap}
 .rank-chip small{font-weight:600; font-size:13px; color:var(--muted)}
 .mayor-top .stats{box-shadow:none; border:0; padding:0; background:none}
-.campaign{display:flex; flex-direction:column; gap:6px; padding:10px 12px; border-radius:14px; background:color-mix(in srgb, #1e88e5 12%, var(--card)); border:2px solid #1e88e5}
-.campaign .kicker{color:#1e88e5}
 .cand{display:grid; grid-template-columns:34px 1fr auto; align-items:center; gap:8px}
 .cand .ce{font-size:26px; text-align:center}
 .cand b{font-size:15px}
@@ -322,7 +314,6 @@ button:disabled{opacity:.45; cursor:default}
 .cand .bar i{display:block; height:100%; background:#90a4ae; border-radius:4px; transition:width .5s}
 .cand.you .bar i{background:var(--accent)}
 .cand .pc{font-weight:800; font-size:14px; min-width:44px; text-align:right}
-.request{padding:10px 12px; border-radius:14px; background:color-mix(in srgb, #e91e63 10%, var(--card)); border:2px dashed #e91e63; font-weight:600; font-size:15px}
 .over{padding:10px 12px; border-radius:14px; background:var(--chip); display:flex; flex-direction:column; gap:8px; align-items:flex-start}
 .over p{margin:0}
 .tool.locked{opacity:.55}
@@ -399,199 +390,326 @@ button:disabled{opacity:.45; cursor:default}
 .show-me{margin-right:auto}
 
 /* An offer waiting for an answer, on the main screen. */
-.offer{padding:10px 12px; border-radius:14px; background:color-mix(in srgb, #ff9800 12%, var(--card)); border:2px solid #ff9800; display:flex; flex-direction:column; gap:4px}
-.offer p{margin:0}
-.offer-acts{display:flex; gap:8px; justify-content:flex-end; margin-top:4px}
 
-/* ── Phones held sideways ────────────────────────────────────────────────────
-   Only about 360px of height, so a slimmer header and less padding; each
-   game's own board-beside-controls layout follows below this. */
+/* ══ Layout ═══════════════════════════════════════════════════════════════════
+   One frame and one set of rules for every screen, so things are always in
+   the same place:
+
+   - The frame. The header and the screen share the same edges, and together
+     fill the window exactly. Nothing scrolls except a list that can grow
+     (the towns), and that scrolls inside itself.
+   - Play screens (a level, the Mayor's town, the quiz) have four parts:
+     the board, then a panel of info (what's going on), controls (tools, the
+     talk panel, the verdict) and actions (the main buttons, always last and
+     full width). Wider than tall: board left, panel right with the actions
+     pinned to its bottom. Taller than wide: info, board, controls, actions,
+     top to bottom.
+   - Text in panels is left-aligned; cards and buttons are one style. */
+
+/* ── The frame ── */
+.page{max-width:1800px; padding:calc(8px + env(safe-area-inset-top)) var(--gutter) calc(12px + env(safe-area-inset-bottom))}
+body.fit{overflow:hidden}
+body.fit .page{height:var(--app-h); overflow:hidden}
+body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
+.top{min-height:var(--tap)}
+
+/* ── Buttons: the main action is green and full width; others share a row. ── */
+.panel-acts{display:flex; gap:8px; flex:0 0 auto}
+.panel-acts:empty{display:none}
+.panel-acts .btn{flex:1 1 0; min-width:0; max-width:none; min-height:52px; padding:0 10px; white-space:nowrap}
+.sheet .actions .btn{max-width:none}
+
+/* ── Play screens ── */
+.play{display:grid; gap:12px}
+.play-board{min-width:0; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:12px}
+.play-panel{display:flex; flex-direction:column; gap:10px; min-width:0; min-height:0}
+.panel-info{display:flex; flex-direction:column; gap:8px; flex:0 0 auto}
+.panel-info:empty{display:none}
+.info-extra{display:flex; flex-direction:column; gap:8px}
+.info-extra:empty{display:none}
+.panel-controls{display:flex; flex-direction:column; gap:10px; min-height:0}
+.goal{gap:2px 10px}
+.goal-name{font-size:19px}
+.goal p{font-size:16px; line-height:1.35}
+.q{text-align:left; font-size:20px; line-height:1.3}
+.why{text-align:left}
+.why:empty{display:none}
+.stats{justify-content:flex-start}
+
+/* The talk panel and the verdict share one spot, at a fixed height, so a
+   verdict appearing never shifts the board. */
+.slot{display:grid; flex:0 0 auto}
+.slot > *{grid-area:1 / 1; margin:0}
+.slot .why{display:flex; align-items:center; z-index:1}
+.slot .why:empty{display:none}
+.slot:not(:has(.talk)){min-height:52px}
+
+/* The map fills the board and keeps its shape (--ar is set from the grid). */
+.play-board .map-wrap{flex:1 1 0; container-type:size; min-height:0; display:grid; place-items:center}
+.play-board .map-box,.play-board .map-wrap > .map{width:min(100cqw, 100cqh * var(--ar)); aspect-ratio:var(--ar); max-width:none}
+.play-board .map-svg{width:100%; height:100%}
+
+/* A question: the answers are the board, as big cards. */
+.play-board .options{grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr)); align-content:center}
+.play-board .option{min-height:clamp(96px,22vh,220px); font-size:18px}
+.play-board .opt-e{font-size:clamp(40px,8vh,72px)}
+.play-board .options.maps{grid-template-columns:repeat(3,minmax(0,1fr))}
+.play-board .letters{grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}
+
+/* The quiz: the picture and the answers are the board. */
+.quiz-board{display:flex; flex-direction:column; align-items:center; gap:16px}
+.quiz-board .q-emoji{font-size:clamp(48px,10vh,96px)}
+.quiz-board .answers{width:100%; max-width:720px; grid-template-columns:1fr}
+.quiz-board .answer{text-align:center; min-height:clamp(52px,9vh,80px); font-size:clamp(17px,2.4vh,22px)}
+
+/* Tools. */
+.toolbar{grid-template-columns:repeat(auto-fill,minmax(66px,1fr)); gap:6px}
+.tool{position:relative; min-height:58px; padding:4px 2px; gap:0}
+.tool span{font-size:22px}
+.tool b{font-size:13px; line-height:1.15}
+/* A tool is its picture and its name, at every size. Picking one says what
+   it costs (or what unlocks it) in the talk panel. */
+.tool small{display:none}
+.talk{padding:10px 14px; overflow:auto}
+
+/* The Mayor's panel. */
+.mayor-top{padding:10px 14px; gap:6px}
+.mayor-top .studio-row{flex-wrap:nowrap}
+.mayor-top .name-btn{min-height:44px; font-size:18px}
+.mayor-top .stats{padding:0; gap:2px 14px}
+.rank-chip small{display:none}
+.over{padding:8px 12px; font-size:15px}
+/* The town's news: one row of chips, whatever the screen. Tapping one tells
+   the whole story in the talk panel. */
+.news{display:flex; flex-wrap:wrap; gap:6px}
+.news:not(:has(.news-chip:not([hidden]))){display:none}
+.news-chip{min-height:40px; padding:0 12px; border-radius:999px; font-weight:700; font-size:15px; border:2px solid; background:var(--card); color:var(--ink); white-space:nowrap}
+.news-chip.campaign{border-color:#1e88e5; background:color-mix(in srgb, #1e88e5 12%, var(--card))}
+.news-chip.request{border-color:#e91e63; border-style:dashed; background:color-mix(in srgb, #e91e63 10%, var(--card))}
+.news-chip.offer{border-color:#ff9800; background:color-mix(in srgb, #ff9800 16%, var(--card)); animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:none} 50%{transform:scale(1.05)}}
+@media (prefers-reduced-motion: reduce){ .news-chip.offer{animation:none} }
+.talk .cand{margin-top:6px}
+.offer-acts{display:flex; gap:8px; margin-top:8px}
+.offer-acts .btn{flex:1 1 0; min-height:48px; min-width:0}
+
+/* Wider than tall: board left at full height, panel right. */
+@media (min-aspect-ratio:5/4){
+  .play{--panel:clamp(300px,28vw,460px); grid-template-columns:minmax(0,1fr) var(--panel); column-gap:20px}
+  /* If the panel runs out of room, the news scrolls inside itself: the tools
+     and the buttons always stay in sight. */
+  .panel-info{flex:0 1 auto; min-height:0; overflow:auto}
+  .panel-controls{flex:0 0 auto}
+  .panel-acts{margin-top:auto}
+  .play .talk{max-height:180px}
+  #studio .toolbar{grid-template-columns:repeat(auto-fill,minmax(56px,1fr))}
+  #studio .panel-acts .lbl{display:none}
+  #studio .panel-acts .btn{font-size:20px}
+  #studio #mEnd{flex:2.4 1 0; font-size:18px}
+  #studio #mEnd .lbl{display:inline}
+}
+/* Taller than wide: info, board, controls, actions. */
+@media (max-aspect-ratio:5/4){
+  .play{grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto auto; gap:8px}
+  .play-panel{display:contents}
+  /* Info and controls never shrink under their words (they'd overlap the
+     buttons); the board is the part that gives way. */
+  .panel-info,.panel-controls{min-height:auto}
+  .panel-info{grid-row:1}
+  .play-board{grid-row:2}
+  .panel-controls{grid-row:3}
+  .panel-acts{grid-row:4}
+  .play .talk{min-height:60px; max-height:200px}
+  .goal-name{overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0}
+  #play .brief,#play .stats{padding:0; border:0; box-shadow:none; background:none; font-size:15px}
+  #play .brief .kicker{display:none}
+  #play .brief ul{margin:0; padding-left:0; list-style:none}
+  #play .brief li{margin:0}
+  .goal p{font-size:15px; line-height:1.3}
+  .panel-info,.info-extra{gap:4px}
+}
+
+/* ── Menu screens ── */
+/* Home: the chapters fill the space, the four tiles sit under them. */
+#home{display:grid; grid-template-rows:auto auto auto; align-content:center; gap:12px}
+.chapters{grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; min-height:0}
+.chapter-card{justify-content:center; flex-direction:column; align-items:center; text-align:center; padding:16px 20px; min-height:clamp(140px,30vh,340px)}
+.chapter-card .cc-text{flex:0 0 auto; align-items:center}
+.cc-emoji{font-size:clamp(36px,7vh,72px)}
+.cc-text b{font-size:clamp(19px,2.6vh,28px)}
+.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+.tile{min-height:clamp(80px,12vh,130px)}
+.tile span{font-size:clamp(26px,4vh,40px)}
+.tile b{font-size:clamp(16px,2vh,20px)}
+/* A chapter: the idea on one side, the levels on the other. */
+#chapter{display:grid; gap:12px; grid-template-rows:minmax(0,1fr) auto}
+#chapter .law-card{overflow:auto; min-height:0}
+.levels{grid-template-columns:repeat(2,minmax(0,1fr)); grid-auto-rows:minmax(96px,auto); align-content:center; gap:12px; min-height:0}
+.level-tile{justify-content:center; min-height:96px}
+.lt-num{width:clamp(40px,6vh,60px); height:clamp(40px,6vh,60px); font-size:clamp(20px,3vh,28px)}
+.lt-name{font-size:clamp(16px,2.2vh,22px)}
+@media (min-aspect-ratio:5/4){
+  #chapter{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-rows:minmax(0,1fr)}
+  .levels{grid-auto-rows:minmax(96px,220px)}
+}
+/* The towns: the list scrolls inside itself, the button stays put. */
+#towns{display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:12px}
+#towns > .intro{grid-row:1}
+#towns > .list-scroll{grid-row:2}
+#towns > .panel-acts{grid-row:3}
+.list-scroll{overflow:auto; min-height:0}
+.town-list{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+#towns .panel-acts{max-width:480px; width:100%; justify-self:center}
+
+/* Upright phone: every line counts. */
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  .chapters{grid-template-columns:1fr}
+  .chapter-card{flex-direction:row; align-items:center; text-align:left; padding:10px 14px; min-height:0}
+  .chapter-card .cc-text{flex:1; align-items:flex-start}
+  .cc-emoji{font-size:36px}
+  .cc-text b{font-size:19px}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .tile{min-height:76px}
+  .top h1{font-size:19px}
+  /* Tools in rows of seven: just the pictures. Picking one names it (and
+     says what it costs) in the talk panel. */
+  .toolbar,#studio .toolbar{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
+  .tool{min-height:46px}
+  .tool b{display:none}
+  .tool span{font-size:24px}
+  .stats .w{display:none}
+  #play .brief,#play .stats,.goal p{font-size:14px}
+  .play .talk{max-height:90px; font-size:14px; padding:8px 12px}
+  /* Locked tools are just padlocks: on a phone the map needs the room more. */
+  #studio .tool.locked{display:none}
+  .mayor-top .name-btn{min-height:40px; font-size:17px}
+  .mayor-top{padding:8px 12px}
+  #studio .tool{min-height:46px}
+  #studio .tool b,#studio .tool small{display:none}
+  #studio .tool span{font-size:24px}
+  #studio .panel-acts .lbl{display:none}
+  #studio .panel-acts .btn{font-size:20px}
+  #studio #mEnd{flex:1.8 1 0; font-size:17px}
+  #studio #mEnd .lbl{display:inline}
+  .mayor-top .stats{gap:0 10px; font-size:14px}
+  .q{font-size:18px}
+  /* Answers as rows: picture, then words, so three fit with room to spare. */
+  .play-board .options:not(.maps){grid-template-columns:1fr; gap:8px}
+  .play-board .options:not(.maps) .option{flex-direction:row; justify-content:flex-start; text-align:left; min-height:60px; padding:8px 14px; gap:12px}
+  .play-board .options:not(.maps) .opt-e{font-size:32px}
+  .level-tile{min-height:84px}
+}
+
+/* A phone held sideways: about 360px of height. Play screens move the header
+   into the top of the panel so the board keeps all of it. */
 @media (max-height:520px) and (orientation:landscape){
-  .page{max-width:none; gap:8px; padding:calc(4px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom))}
-  .screen{gap:8px}
-  .top h1{font-size:20px}
+  .page{position:relative; gap:8px; padding-top:calc(4px + env(safe-area-inset-top)); padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .top h1{font-size:18px}
   .icon-btn{width:42px; height:42px; font-size:17px}
+  #back,#up{min-height:42px}
   .intro{display:none}
-  .chapter-card{padding:10px 12px; gap:4px}
+  .play{--panel:330px}
+  .page:has(> .play:not([hidden])) > .top{position:absolute; top:calc(4px + env(safe-area-inset-top)); right:var(--gutter); width:330px; z-index:2}
+  .play-panel{padding-top:46px; gap:6px}
+  .panel-info,.info-extra{gap:4px}
+  .goal-name{font-size:16px}
+  .goal p,.q{font-size:14px}
+  .top{min-height:42px}
+  #play .brief,#play .stats{padding:0; border:0; box-shadow:none; background:none; font-size:14px}
+  #play .brief .kicker{display:none}
+  #play .brief ul{margin:0; padding-left:0; list-style:none}
+  #play .brief li{margin:0}
+  /* The talk panel takes whatever height is left and scrolls inside itself
+     if a family has a lot to say. */
+  .panel-controls{flex:1 1 auto; min-height:0; overflow:visible}
+  .panel-controls .slot{flex:1 1 0; min-height:48px}
+  .play .talk{max-height:none; height:100%; font-size:14px; padding:6px 10px}
+  .tool{min-height:50px}
+  .tool small{display:none}
+  .panel-acts .btn{min-height:46px}
+  #studio .tool.locked{display:none}
+  #studio .toolbar{grid-template-columns:repeat(auto-fill,minmax(40px,1fr)); gap:4px}
+  /* The name and rank step aside here; the year card and the toasts still
+     announce a new rank. */
+  .mayor-top .studio-row{display:none}
+  .offer-acts{margin-top:4px}
+  .offer-acts .btn{min-height:42px}
+  .news-chip{min-height:36px; padding:0 9px; font-size:14px}
+  .news{gap:4px}
+  #studio .tool{min-height:46px}
+  #studio .tool b{display:none}
+  #studio .tool span{font-size:24px}
+  #studio .panel-acts{display:flex}
+  #studio .panel-acts .lbl{display:none}
+  #studio #mEnd{flex:2.4 1 0}
+  #studio #mEnd .lbl{display:inline}
+  .mayor-top{padding:6px 10px; gap:2px}
+  .mayor-top .name-btn{min-height:40px; font-size:17px}
+  .mayor-top .stats{font-size:14px; gap:0 10px}
+  .play-board .option{min-height:80px; font-size:15px}
+  .play-board .opt-e{font-size:34px}
+  .chapter-card{padding:8px 12px}
   .cc-emoji{font-size:30px}
-  .cc-text b{font-size:18px}
-  .tile{min-height:74px; padding:6px}
-  .tile span{font-size:24px}
-  .level-tile{min-height:88px; padding:8px 6px}
+  .tile{min-height:64px; padding:4px}
+  .tile span{font-size:22px}
+  .level-tile{min-height:70px; padding:6px}
   .card{padding:10px 14px}
-  .goal p{font-size:15px}
   .sheet{max-height:calc(var(--app-h) - 16px); padding:12px 16px}
 }
 
-/* ── Play screens fit the window ─────────────────────────────────────────────
-   A level and the Mayor's town are app screens: exactly one window tall on
-   every device, nothing to scroll. The map takes whatever space is left and
-   keeps its shape (container units against --ar, set from the grid). On a
-   screen wider than tall the map sits on the left and everything to read or
-   tap stacks on the right; taller than wide, it all stacks under the map. */
-body.app{overflow:hidden}
-body.app .page{height:var(--app-h); max-width:none; overflow:hidden}
-body.app .screen:not([hidden]){flex:1 1 0; min-height:0}
-body.app #stage,body.app #sEditor,body.app #play .board{display:contents}
-body.app .map-wrap{container-type:size; min-height:0; min-width:0; display:grid; place-items:center}
-body.app .map-box,body.app .map-wrap > .map{width:min(100cqw, 100cqh * var(--ar)); aspect-ratio:var(--ar); max-width:none}
-body.app .map-svg{width:100%; height:100%}
-body.app .toolbar{grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:5px}
-body.app .tool{min-height:56px; padding:4px 2px; gap:0}
-body.app .tool span{font-size:22px}
-body.app .tool b{font-size:13px; line-height:1.15}
-body.app .tool{position:relative}
-body.app .tool small{position:absolute; top:1px; right:2px; font-size:13px; line-height:1; padding:2px 4px; border-radius:8px; background:var(--chip); color:var(--ink)}
-body.app .tool.locked small{background:none; color:var(--muted); position:static}
-body.app .talk{min-height:0; padding:8px 12px; overflow:auto}
-body.app .why{margin:0}
-body.app .btn.wide{min-height:52px}
+/* A big desktop window: desktop-sized type in the panels. */
+@media (min-width:1600px) and (min-height:900px){
+  .play-panel{font-size:18px}
+  .goal-name{font-size:24px}
+  .goal p,.q,.talk,.stats,#play .brief,.why{font-size:19px}
+  .q{font-size:24px}
+  .tool{min-height:66px}
+  .tool span{font-size:28px}
+  .tool b{font-size:15px}
+  .panel-acts .btn{min-height:60px; font-size:20px}
+  .top h1{font-size:30px}
+}
 
-/* A level: a build round is the map and its tools, a choose round the question. */
-body.app #play{display:grid; gap:8px; grid-template-columns:minmax(0,1fr); align-content:start}
-body.app #play[data-kind="build"]{
-  align-content:stretch;
-  grid-template-rows:auto auto auto minmax(0,1fr) auto auto auto auto;
-  grid-template-areas:"goal" "brief" "stats" "map" "tools" "talk" "why" "act";
-}
-body.app #play[data-kind="choose"]{overflow:auto}
-body.app #play > .goal{grid-area:goal}
-body.app #play .brief{grid-area:brief}
-body.app #play .stats{grid-area:stats; padding:6px 12px}
-body.app #play .map-wrap{grid-area:map}
-body.app #play .toolbar{grid-area:tools}
-body.app #play .talk{grid-area:talk; height:64px}
-body.app #play[data-kind="build"] .why{grid-area:why; min-height:0}
-body.app #play[data-kind="build"] .why:empty{display:none}
-body.app #play[data-kind="build"] #stage > .btn.go,body.app #play[data-kind="build"] #stage > .tail{grid-area:act}
-body.app #play .tail:empty{display:none}
-body.app #play .brief ul{display:flex; flex-wrap:wrap; gap:2px 16px; padding-left:0; list-style:none}
-body.app #play .brief .kicker{display:none}
+/* Jobs read best as rows inside a dialog, at every size. */
+.sheet .job-list{grid-template-columns:1fr}
 
-/* Be the Mayor. */
-body.app #studio{
-  display:grid; gap:8px; grid-template-columns:minmax(0,1fr);
-  grid-template-rows:auto minmax(0,1fr) auto auto auto;
-  grid-template-areas:"top" "map" "tools" "talk" "acts";
-}
-body.app #studio > .mayor-top{grid-area:top; padding:8px 12px; gap:6px}
-body.app #studio .map-wrap{grid-area:map}
-body.app #studio .toolbar{grid-area:tools}
-body.app #studio .talk{grid-area:talk; height:72px}
-body.app #studio > .studio-acts{grid-area:acts; margin:0; flex-wrap:nowrap}
-body.app #studio .studio-acts .btn{min-height:48px; flex:1 1 0; min-width:0; padding:0 6px; font-size:16px}
-body.app #studio #mEnd{flex:1.6 1 0}
-body.app .mayor-top .studio-row{flex-wrap:nowrap}
-body.app .mayor-top .name-btn{min-height:44px; font-size:18px}
-body.app .rank-chip small{display:none}
-body.app .campaign,body.app .request,body.app .offer,body.app .over{padding:6px 10px; font-size:14px}
-body.app .campaign{gap:3px}
-body.app .offer .muted{display:none}
-
-/* Wider than tall: the map on the left at full height, the rest on the right. */
-@media (min-aspect-ratio:5/4){
-  body.app #play[data-kind="build"]{
-    grid-template-columns:minmax(0,1fr) minmax(280px,380px);
-    grid-template-rows:auto auto auto auto auto auto auto minmax(0,1fr);
-    grid-template-areas:"map goal" "map brief" "map stats" "map tools" "map talk" "map why" "map act" "map .";
-    column-gap:16px;
-  }
-  body.app #play .toolbar{align-self:start}
-  body.app #play .talk{height:auto; max-height:120px}
-  body.app #studio{
-    grid-template-columns:minmax(0,1fr) minmax(300px,400px);
-    grid-template-rows:auto auto minmax(0,1fr) auto;
-    grid-template-areas:"map top" "map talk" "map tools" "map acts";
-    column-gap:16px;
-  }
-  body.app #studio .toolbar{align-self:start; overflow:auto; max-height:100%}
-  body.app #studio .talk{height:auto; max-height:140px}
-  body.app #studio > .studio-acts{display:grid; grid-template-columns:repeat(3,minmax(0,1fr))}
-  body.app #studio .studio-acts .btn{max-width:none}
-  body.app #studio #mEnd{grid-column:1 / -1}
-}/* Taller than wide (a phone or tablet held upright): every line above and
-   below the map is a line the map loses, so the chrome goes slim. The level's
-   name and round share a line, the brief and the score are plain lines, Check
-   sits beside the tools, and the verdict appears where the talk panel was. */
-@media (max-aspect-ratio:5/4){
-  body.app #play[data-kind="build"]{
-    grid-template-columns:minmax(0,1fr) auto;
-    grid-template-rows:auto auto auto minmax(0,1fr) auto auto;
-    grid-template-areas:"goal goal" "brief brief" "stats stats" "map map" "talk talk" "tools act";
-    gap:6px 8px;
-  }
-  body.app #play[data-kind="build"] .why{grid-area:talk; z-index:1; display:flex; align-items:center; justify-content:center}
-  body.app #play[data-kind="build"] #stage > .btn.go{width:auto; min-width:120px; padding:0 18px}
-  body.app #play[data-kind="build"] .tail .btn{width:auto; min-width:120px}
-  body.app #play .toolbar{grid-template-columns:repeat(auto-fill,minmax(60px,1fr))}
-  body.app .goal{gap:0 10px}
-  body.app .goal-name{overflow:hidden; white-space:nowrap; text-overflow:ellipsis; min-width:0}
-  body.app .goal p{font-size:15px; line-height:1.3}
-  body.app #play .brief{padding:0; border:0; box-shadow:none; background:none; font-size:15px}
-  body.app #play .stats{padding:2px 0; border:0; box-shadow:none; background:none; font-size:15px}
-  body.app .talk{font-size:15px}
-  body.app #play .talk,body.app #studio .talk{height:58px}
-}
-@media (max-aspect-ratio:5/4) and (max-width:600px){
-  /* Fourteen tools in two rows: just the pictures. Picking one names it and
-     says what it costs in the talk panel. */
-  body.app #studio .toolbar{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
-  body.app #studio .tool{min-height:46px}
-  body.app #studio .tool b,body.app #studio .tool small{display:none}
-  body.app #studio .tool span{font-size:24px}
-  body.app #studio .studio-acts .lbl{display:none}
-  body.app #studio .studio-acts .btn{font-size:20px}
-  body.app #studio #mEnd .lbl{display:inline}
-  body.app #studio #mEnd{font-size:17px}
-  body.app .mayor-top .stats{gap:2px 10px; font-size:14px}
-  body.app .top h1{font-size:19px}
-}
-/* A phone held sideways has about 360px of height. The map keeps all of it:
-   the header moves into the top of the right-hand column, Check sits beside
-   the tools, and the Mayor's locked tools (just padlocks) step aside. */
+/* Dialogs keep their main button in view: if the words run long, they scroll
+   under it rather than pushing it off the screen. */
+.sheet > .btn:last-child{position:sticky; bottom:0; z-index:1; width:100%; margin-top:12px; box-shadow:0 0 0 12px var(--card)}
+.sheet > .actions:last-child{position:sticky; bottom:-18px; z-index:1; background:var(--card); padding:10px 0 12px; margin-bottom:-12px}
 @media (max-height:520px) and (orientation:landscape){
-  body.app .page{position:relative; --side:330px; padding-bottom:calc(6px + env(safe-area-inset-bottom))}
-  body.app .page:has(#play[data-kind="build"]:not([hidden])) .top,
-  body.app .page:has(#studio:not([hidden])) .top{position:absolute; top:calc(4px + env(safe-area-inset-top)); right:12px; width:var(--side); z-index:2}
-  body.app .top h1{font-size:18px}
-  body.app #back,body.app #up{min-height:42px}
-  body.app #play[data-kind="build"]{
-    grid-template-columns:minmax(0,1fr) calc(var(--side) - 128px) 120px;
-    grid-template-rows:38px auto auto auto minmax(0,1fr) auto;
-    grid-template-areas:"map . ." "map goal goal" "map brief brief" "map stats stats" "map talk talk" "map tools act";
-    gap:6px 8px;
-  }
-  body.app #play[data-kind="build"] .why{grid-area:talk; z-index:1; display:flex; align-items:center; justify-content:center}
-  body.app #play[data-kind="build"] #stage > .btn.go,body.app #play[data-kind="build"] .tail .btn{width:100%; min-width:0; padding:0 8px}
-  body.app #play .talk{height:auto; max-height:none}
-  body.app .goal p{font-size:14px; line-height:1.3}
-  body.app #play .brief,body.app #play .stats{padding:0; border:0; box-shadow:none; background:none; font-size:14px}
-  body.app .tool{min-height:50px}
-  body.app .tool small{display:none}
-  body.app .btn.wide{min-height:46px}
-  body.app #studio{
-    grid-template-columns:minmax(0,1fr) var(--side);
-    grid-template-rows:38px auto minmax(0,1fr) auto auto;
-    grid-template-areas:"map ." "map top" "map talk" "map tools" "map acts";
-    gap:6px 12px;
-  }
-  body.app #studio .talk{height:auto; max-height:none}
-  body.app #studio .tool.locked{display:none}
-  body.app #studio .toolbar{grid-template-columns:repeat(auto-fill,minmax(52px,1fr)); overflow:visible}
-  body.app #studio > .studio-acts{flex-wrap:nowrap}
-  body.app #studio .studio-acts .btn{flex:1 1 0; min-height:44px}
-  body.app #studio .studio-acts .lbl{display:none}
-  body.app #studio #mEnd .lbl{display:inline}
-  body.app #studio #mEnd{flex:2.4 1 0; font-size:16px}
-  body.app .mayor-top .stats{gap:0 10px; font-size:14px}
-  body.app .mayor-top .name-btn{min-height:40px; font-size:17px}
+  .sheet > .actions:last-child{bottom:-12px; padding:8px 0}
+  .sheet .job-list{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sheet{width:min(720px,calc(100vw - 24px))}
+  /* A new town: the name and the kind of game on the left, the map on the right. */
+  #newDialog[open]{display:grid; grid-template-columns:1fr 1fr; column-gap:16px; align-content:start}
+  #newDialog > .sheet-head,#newDialog > .actions{grid-column:1 / -1}
+  #newDialog > .new-row,#newDialog > .modes{grid-column:1}
+  #newDialog > .new-map{grid-column:2; grid-row:2 / span 2; margin:0}
+  #newDialog .new-map svg{max-height:calc(var(--app-h) - 190px); width:auto; max-width:100%}
 }
-/* A big desktop window: a roomier side panel with slightly bigger type. */
-@media (min-width:1600px) and (min-height:900px) and (min-aspect-ratio:5/4){
-  body.app #play[data-kind="build"]{grid-template-columns:minmax(0,1fr) 460px}
-  body.app #studio{grid-template-columns:minmax(0,1fr) 460px}
-  body.app #play,body.app #studio{font-size:18px}
-  body.app .talk,body.app #play .brief,body.app .stats{font-size:18px}
-  body.app .tool{min-height:64px}
-  body.app .tool span{font-size:26px}
+
+/* The brief's short rules, two to a line, wherever height is tight: an
+   upright phone or any phone held sideways. */
+.brief .short{display:none}
+@media (max-aspect-ratio:5/4) and (max-width:600px), (max-height:520px) and (orientation:landscape){
+  /* Phones either way up: tools are pictures (picking one names it in the
+     talk panel) and the score is pictures and numbers. */
+  #play .toolbar{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
+  .tool{min-height:46px}
+  .tool b{display:none}
+  .tool span{font-size:24px}
+  .stats .w{display:none}
+  .brief .long{display:none}
+  .brief .short{display:inline}
+  #play .brief ul{display:grid; grid-template-columns:1fr 1fr; gap:0 10px}
 }
+@media (max-height:520px) and (orientation:landscape){
+  .play-board .letters{grid-template-columns:1fr 1fr; gap:6px}
+  .play-board .letter{font-size:13px; padding:6px 8px; line-height:1.3}
+  .play-board .options{gap:6px}
+  .play-board .option{min-height:64px}
+}
+/* An offer's Yes and No are never scrolled out of sight: the talk panel grows
+   for them and the map gives way. */
+.play .talk:has(.offer-acts){max-height:none}

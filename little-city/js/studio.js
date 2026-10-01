@@ -36,9 +36,47 @@ LC.Studio = (function () {
     const t = town();
     if (!t) { newTown(); return false; }
     $("sName").innerHTML = `${esc(t.name)} <small aria-hidden="true">✏️</small>`;
-    board = LC.mayorBoard($("sEditor"), t, { onChange: () => { keep(); header(); }, locked: () => t.over });
+    board = LC.mayorBoard($("sEditor"), t, { board: $("mBoard"), onChange: () => { keep(); header(); }, locked: () => t.over });
     header();
     return true;
+  }
+  // The whole story behind a news chip, told in the talk panel.
+  let shownOffer = null;
+  function news(kind) {
+    const t = town();
+    if (kind === "campaign" && t.campaign) {
+      const poll = M.tally(t), tot = poll.total || 1;
+      const row = (e, name, v, promise, you) => `<div class="cand${you ? " you" : ""}"><span class="ce">${e}</span><div><b>${name}</b>${promise ? `<small>“${esc(promise)}”</small>` : ""}<div class="bar"><i style="width:${Math.round(100 * v / tot)}%"></i></div></div><span class="pc">${Math.round(100 * v / tot)}%</span></div>`;
+      board.say(`<p class="who">🗳️ Election at the end of this year!</p>` +
+        row("🧑‍💼", "You", poll.votes.mayor, "", true) + t.campaign.rivals.map((rv, k) => row(rv.e, rv.name, poll.votes["r" + k], rv.promise)).join("") +
+        `<p class="muted">This poll changes as you build. Fix what the rivals promise to win those families back!</p>`);
+    }
+    if (kind === "request" && t.request) {
+      const q = t.request;
+      board.say(`<p class="who">✉️ A letter from the ${q.fam} family</p><p class="bubble">“Please build a ${T[q.need].e} ${T[q.need].name.toLowerCase()} near our house (circled) by the end of year ${q.due}!”</p><p>Thank-you: <b>${q.reward}</b> coins.</p>`);
+    }
+    if (kind === "offer" && t.offer && !t.over) {
+      const off = t.offer;
+      // The short version: the year card told the whole story.
+      const short = { factory: `A juice company wants a noisy factory next to homes (circled). They'll pay ${off.coins} coins.`, house: "A builder will build a house for free on the circled square.", sellpark: `Someone will pay ${off.coins} coins to turn the circled park into a car park.` }[off.kind] || esc(off.text);
+      board.say(`<p class="who">🤝 An offer: say yes?</p><p>${short}</p>`);
+      const row = document.createElement("div");
+      row.className = "offer-acts";
+      const mk = (cls, text, yes) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = cls; b.textContent = text;
+        b.addEventListener("click", () => {
+          const o = M.answer(t, yes);
+          keep(); board.paint(); header();
+          board.say(yes ? `<p>👍 You said yes!${o && o.coins ? ` +${o.coins} coins.` : ""}</p>` : "<p>👎 You said no, thank you.</p>");
+          if (yes) LC.Audio.right(); else LC.Audio.click();
+        });
+        row.appendChild(b);
+      };
+      mk("btn ghost small", "👎 No thanks", false);
+      mk("btn go small", "👍 Yes", true);
+      $("sEditor").querySelector(".talk").appendChild(row);
+    }
   }
   function header() {
     const t = town();
@@ -52,43 +90,22 @@ LC.Studio = (function () {
       `<span class="${t.coins < 10 ? "bad" : ""}">💰 <b>${t.coins}</b></span>` +
       `<span class="${st.balance < 0 ? "bad" : ""}" title="What the next year will add or take">📈 <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b>/yr</span>` +
       (t.loan ? `<span class="bad">🏦 owe <b>${t.loan}</b></span>` : "");
-    // The campaign: who's standing, what they promise, and a live poll that
-    // moves as the mayor builds.
-    const c = t.campaign;
+    // The news: a chip each for the election, a family's letter and an offer.
+    // A chip is one short line; tapping it tells the whole story in the talk
+    // panel, next to the map, so the news never squeezes the map out.
+    const c = t.campaign, q = t.request, off = t.over ? null : t.offer;
     $("mCampaign").hidden = !c;
     if (c) {
       const poll = M.tally(t), tot = poll.total || 1;
-      const row = (e, name, v, promise, you) => `<div class="cand${you ? " you" : ""}"><span class="ce">${e}</span><div><b>${name}</b>${promise ? `<small>“${esc(promise)}”</small>` : ""}<div class="bar"><i style="width:${Math.round(100 * v / tot)}%"></i></div></div><span class="pc">${Math.round(100 * v / tot)}%</span></div>`;
-      $("mCampaign").innerHTML = `<p class="kicker">🗳️ Election at the end of this year!</p>` +
-        row("🧑‍💼", "You", poll.votes.mayor, "", true) + c.rivals.map((rv, k) => row(rv.e, rv.name, poll.votes["r" + k], rv.promise)).join("") +
-        `<p class="muted">This poll changes as you build. Fix what the rivals promise to win those families back!</p>`;
+      $("mCampaign").innerHTML = `🗳️ You <b>${Math.round(100 * poll.votes.mayor / tot)}%</b>`;
+      $("mCampaign").setAttribute("aria-label", "Election this year: tap to see the poll");
     }
-    const q = t.request;
     $("mRequest").hidden = !q;
-    if (q) $("mRequest").innerHTML = `✉️ The ${q.fam} family (circled) wants a ${T[q.need].e} ${T[q.need].name.toLowerCase()} nearby by the end of year ${q.due}. Thank-you: ${q.reward} coins.`;
-    // An offer stays here, next to the map, until it's answered, so there's
-    // time to look at the circled square before saying yes or no.
-    const off = t.offer;
-    $("mOffer").hidden = !off || t.over;
-    if (off && !t.over) {
-      $("mOffer").innerHTML = `<p><b>🤝 An offer for the town</b> (circled on the map)</p><p>${esc(off.text)}</p><p class="muted">Answer before you end the year, or they'll go to another town.</p>`;
-      const row = document.createElement("div");
-      row.className = "offer-acts";
-      const mk = (cls, text, yes) => {
-        const b = document.createElement("button");
-        b.type = "button"; b.className = cls; b.textContent = text;
-        b.addEventListener("click", () => {
-          const o = M.answer(t, yes);
-          keep(); board.paint(); header();
-          LC.UI.toast(yes ? `You said yes!${o && o.coins ? ` +${o.coins} coins.` : ""}` : "You said no, thank you.");
-          if (yes) LC.Audio.right(); else LC.Audio.click();
-        });
-        row.appendChild(b);
-      };
-      mk("btn ghost small", "👎 No thanks", false);
-      mk("btn go small", "👍 Yes", true);
-      $("mOffer").appendChild(row);
-    }
+    if (q) { $("mRequest").innerHTML = `✉️ ${T[q.need].e} yr ${q.due}`; $("mRequest").setAttribute("aria-label", "A letter from the " + q.fam + " family: tap to read it"); }
+    $("mOffer").hidden = !off;
+    if (off) $("mOffer").innerHTML = "🤝 Offer!";
+    // A new offer opens itself, so its Yes and No are in sight straight away.
+    if (off && shownOffer !== off) { shownOffer = off; news("offer"); }
     $("mOver").hidden = !t.over;
     if (t.over) {
       const sc = M.score(t);
@@ -145,7 +162,7 @@ LC.Studio = (function () {
     body.innerHTML = h;
     acts.innerHTML = "";
     const btn = (cls, text, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); acts.appendChild(b); return b; };
-    if (ev.choice && t.offer) body.insertAdjacentHTML("beforeend", '<p class="why">🤝 The offer waits on the main screen, next to the map: look at the circled square, then answer 👍 or 👎 before you end the year.</p>');
+    if (ev.choice && t.offer) body.insertAdjacentHTML("beforeend", '<p class="why">🤝 The offer waits next to the map: look at the circled square, then answer 👍 or 👎 before you end the year.</p>');
     nextBtn();
     // Anything the news was about is ringed on the map: this closes the card
     // and shows it, with the headline kept beside the map.
@@ -157,6 +174,7 @@ LC.Studio = (function () {
       b.addEventListener("click", () => {
         $("yearDialog").close();
         board.show(sum.marks);
+        if (ev.choice && t.offer) { news("offer"); return; }
         board.say(`<p class="who">${ev.e} ${esc(ev.title)}</p><p>${esc(ev.text)}</p>` + sum.news.map((n) => `<p>${esc(n)}</p>`).join("") +
           `<p class="muted">📍 The rings show where it happened. 🚪 = families moved out.</p>`);
       });
@@ -277,6 +295,7 @@ LC.Studio = (function () {
 
   function wire() {
     $("mEnd").addEventListener("click", endYear);
+    ["campaign", "request", "offer"].forEach((k) => $("m" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => { LC.Audio.click(); news(k); }));
     $("mBank").addEventListener("click", bank);
     $("mMedals").addEventListener("click", medals);
     $("bBorrow").addEventListener("click", () => bankDo((t) => M.borrow(t, 20)));
