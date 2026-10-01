@@ -15,7 +15,7 @@ BB.Board = (function () {
   const Ph = BB.Physics;
   const EMOJI = 'font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif"';
 
-  let svg, live, lv, onDot, onPiece, box, water;
+  let svg, live, ghost, lv, hooks, box, water;
 
   function mk(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
@@ -25,10 +25,12 @@ BB.Board = (function () {
   }
   const P = (id) => Ph.xy(id).map((v) => v * U);
 
-  function build(host, level, dot, piece) {
+  // on: { dot, piece, empty, dragStart, dragOver, dragEnd } - see app.js.
+  function build(host, level, on) {
     lv = level;
-    onDot = dot;
-    onPiece = piece;
+    hooks = on;
+    press = null;
+    fingers = 0;
     host.innerHTML = "";
     const x0 = -1.8, x1 = lv.gap + 1.8, y0 = lv.rows[0] - 0.9, y1 = Math.max(lv.rows[1], 1) + 1.1;
     box = { x0: x0 * U, y0: y0 * U, w: (x1 - x0) * U, h: (y1 - y0) * U };
@@ -65,25 +67,35 @@ BB.Board = (function () {
     });
     live = mk("g", {}, svg);
 
-    svg.addEventListener("pointerdown", (ev) => {
-      const pt = svg.createSVGPoint();
-      pt.x = ev.clientX;
-      pt.y = ev.clientY;
-      const p = pt.matrixTransform(svg.getScreenCTM().inverse());
-      tap(p.x / U, p.y / U);
-    });
+    ghost = mk("line", { class: "ghost-piece", x1: 0, y1: 0, x2: 0, y2: 0 }, svg);
+    ghost.style.display = "none";
+    listen();
   }
 
-  // A finger lands: nearest dot if it's close, else the nearest piece.
-  let pieces = [];
-  function tap(x, y) {
-    let best = null, bd = 0.42;
+  // ── Fingers ────────────────────────────────────────────────────────────────
+  // A tap counts when the finger lifts, not when it lands, so a palm or a
+  // half-tap does nothing. Pressing a dot and moving builds as you drag; a
+  // second finger cancels the gesture.
+  let pieces = [], press = null, fingers = 0;
+  const DRAG = 0.2;       // grid steps the finger moves before a press becomes a drag
+
+  function at(ev) {
+    const pt = svg.createSVGPoint();
+    pt.x = ev.clientX;
+    pt.y = ev.clientY;
+    const p = pt.matrixTransform(svg.getScreenCTM().inverse());
+    return [p.x / U, p.y / U];
+  }
+  function dotAt(x, y, reach) {
+    let best = null, bd = reach;
     Ph.dots(lv).forEach((id) => {
       const [dx, dy] = Ph.xy(id);
       const d = Math.hypot(dx - x, dy - y);
       if (d < bd) { bd = d; best = id; }
     });
-    if (best) { onDot(best); return; }
+    return best;
+  }
+  function pieceAt(x, y) {
     let hit = null, hd = 0.25;
     pieces.forEach((m) => {
       const [ax, ay] = Ph.xy(m.a), [bx, by] = Ph.xy(m.b);
@@ -92,15 +104,72 @@ BB.Board = (function () {
       const d = Math.hypot(ax + t * (bx - ax) - x, ay + t * (by - ay) - y);
       if (d < hd) { hd = d; hit = m; }
     });
-    if (hit) onPiece(hit);
+    return hit;
+  }
+  function showGhost(from, x, y) {
+    if (!from) { ghost.style.display = "none"; return; }
+    const [ax, ay] = P(from);
+    ghost.setAttribute("x1", ax); ghost.setAttribute("y1", ay);
+    ghost.setAttribute("x2", x * U); ghost.setAttribute("y2", y * U);
+    ghost.style.display = "";
+  }
+  function endPress() {
+    if (press && press.drag) hooks.dragEnd();
+    press = null;
+    showGhost(null);
+  }
+
+  function listen() {
+    svg.addEventListener("pointerdown", (ev) => {
+      // The first finger down starts the count afresh, so a lost "up" can't
+      // leave the board thinking two fingers are on it.
+      fingers = ev.isPrimary ? 1 : fingers + 1;
+      if (fingers > 1) { endPress(); return; }
+      const [x, y] = at(ev);
+      press = { id: ev.pointerId, x, y, dot: dotAt(x, y, 0.42), drag: false, from: null };
+      try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* not every browser */ }
+    });
+    svg.addEventListener("pointermove", (ev) => {
+      if (!press || ev.pointerId !== press.id) return;
+      const [x, y] = at(ev);
+      if (!press.drag) {
+        if (!press.dot || Math.hypot(x - press.x, y - press.y) < DRAG) return;
+        press.from = hooks.dragStart(press.dot);
+        if (!press.from) { press = null; return; }
+        press.drag = true;
+      }
+      // Dots need a closer finger while dragging, so passing near one
+      // on the way somewhere else doesn't build to it.
+      const d = dotAt(x, y, 0.32);
+      if (d && d !== press.from) press.from = hooks.dragOver(d) || press.from;
+      showGhost(press.from, x, y);
+    });
+    const up = (ev) => {
+      fingers = Math.max(0, fingers - 1);
+      if (!press || ev.pointerId !== press.id) return;
+      if (!press.drag && ev.type === "pointerup") {
+        const [x, y] = at(ev);
+        // Finger slid off what it pressed: not a tap.
+        if (Math.hypot(x - press.x, y - press.y) < 0.4) {
+          const piece = press.dot ? null : pieceAt(press.x, press.y);
+          if (press.dot) hooks.dot(press.dot);
+          else if (piece) hooks.piece(piece);
+          else hooks.empty();
+        }
+      }
+      endPress();
+    };
+    svg.addEventListener("pointerup", up);
+    svg.addEventListener("pointercancel", up);
   }
 
   function strainColour(s) {
     return s < 0.5 ? "var(--ok)" : s < 0.8 ? "var(--warn)" : "var(--bad)";
   }
 
-  // st: { members, move, selected, near, testing, truck, falling, splashes }
+  // st: { members, move, selected, near, building, testing, truck, falling, splashes }
   function render(st) {
+    svg.classList.toggle("building", !!st.building);
     pieces = st.members.filter((m) => !m.gone);
     const mv = st.move || {};
     const at = (id) => {

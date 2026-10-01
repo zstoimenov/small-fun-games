@@ -80,7 +80,8 @@ window.BB = window.BB || {};
     $("goalName").textContent = i < 0 ? "\u{1F527} Free build" : "Level " + (i + 1) + ": " + cfg.name;
     $("goalText").textContent = cfg.text;
     show("play");
-    BB.Board.build($("stage"), cfg, tapDot, tapPiece);
+    history = [];
+    BB.Board.build($("stage"), cfg, { dot: tapDot, piece: tapPiece, empty: tapEmpty, dragStart, dragOver, dragEnd });
     say("");
     paint();
   }
@@ -102,67 +103,147 @@ window.BB = window.BB || {};
   }
 
   function paint() {
-    BB.Board.render({ members, selected, near: near() });
-    BB.UI.controls({ inv, tool, free: !!cfg.free, truck: truckKind, testing: false }, act);
+    BB.Board.render({ members, selected, near: near(), building: tool !== "remove" });
+    BB.UI.controls({ inv, tool, free: !!cfg.free, truck: truckKind, testing: false, undo: history.length > 0 }, act);
     goalStars();
   }
 
+  const nextTo = (a, b) => {
+    const [x1, y1] = Ph.xy(a), [x2, y2] = Ph.xy(b);
+    return a !== b && Math.abs(x1 - x2) <= 1 && Math.abs(y1 - y2) <= 1;
+  };
+
+  // Every change goes through here so Undo can play it backwards. One step
+  // is a list of { add } / { del } changes: a drag is one step however many
+  // pieces it built.
+  let history = [], change = null;
+  function add(m) { members.push(m); inv[m.mat]--; change.push({ add: m }); }
+  function del(m) { members.splice(members.indexOf(m), 1); inv[m.mat] = (inv[m.mat] || 0) + 1; change.push({ del: m }); }
+  function begin() { change = []; }
+  function commit() { if (change && change.length) history.push(change); change = null; }
+  function undo() {
+    const last = history.pop();
+    if (!last) return;
+    last.slice().reverse().forEach((c) => {
+      if (c.add) { members.splice(members.indexOf(c.add), 1); inv[c.add.mat]++; }
+      else { members.push(c.del); inv[c.del.mat]--; }
+    });
+    selected = null;
+    BB.Audio.unplace();
+    paint();
+  }
+
+  // Build a piece between two neighbouring dots with the picked tool.
+  // Building never takes a piece away: the same piece is already there, and
+  // a piece in another material swaps (its old one goes back in the box).
+  // Returns null when the piece is there now, else what stopped it.
+  function join(a, b) {
+    const why = Ph.canJoin(cfg, a, b, tool);
+    if (why) return why;
+    const old = find(a, b);
+    if (old && old.mat === tool) return null;
+    if (old && old.locked) return "That piece is bolted down. Build around it!";
+    if (!(inv[tool] > 0)) return "No " + Ph.MAT[tool].label.toLowerCase() + " left. Take a piece back with \u{1F9FD} Remove.";
+    if (old) del(old);
+    add({ a, b, mat: tool });
+    BB.Audio.place();
+    say("");
+    return null;
+  }
+  function nope(why) { BB.UI.toast(why); BB.Audio.nope(); }
+
+  // Tap one dot, then a neighbour. The second dot stays picked so roads go
+  // dot, dot, dot; tap it again or tap the sky to let go.
   function tapDot(id) {
     if (test) return;
     BB.Audio.ready();
-    if (tool === "remove") { BB.UI.toast("Tap the middle of a piece to take it back."); return; }
-    if (!selected || selected === id) {
+    if (tool === "remove") { BB.UI.toast("Tap a piece to take it back."); return; }
+    if (!selected || selected === id || !nextTo(selected, id)) {
       selected = selected === id ? null : id;
       if (selected) BB.Audio.pick();
       paint();
       return;
     }
-    const why = Ph.canJoin(cfg, selected, id, tool);
-    if (why) {
-      // Too far away is just "pick this one instead"; anything else is a rule.
-      const [x1, y1] = Ph.xy(selected), [x2, y2] = Ph.xy(id);
-      if (Math.abs(x1 - x2) > 1 || Math.abs(y1 - y2) > 1) { selected = id; BB.Audio.pick(); paint(); return; }
-      BB.UI.toast(why);
-      BB.Audio.nope();
-      return;
-    }
-    const old = find(selected, id);
-    if (old && old.locked) { BB.UI.toast("That piece is bolted down. Build around it!"); BB.Audio.nope(); return; }
-    if (old && old.mat === tool) { takeBack(old); selected = id; paint(); return; }
-    if (!(inv[tool] > 0)) {
-      BB.UI.toast("No " + Ph.MAT[tool].label.toLowerCase() + " left. Take a piece back with \u{1F9FD} Remove.");
-      BB.Audio.nope();
-      return;
-    }
-    if (old) takeBack(old);
-    members.push({ a: selected, b: id, mat: tool });
-    inv[tool]--;
-    BB.Audio.place();
-    // Keep going from the dot you just reached: roads are built dot, dot, dot.
+    begin();
+    const why = join(selected, id);
+    commit();
+    if (why) { nope(why); return; }
     selected = id;
-    say("");
     paint();
   }
 
-  function takeBack(m) {
-    members.splice(members.indexOf(m), 1);
-    inv[m.mat] = (inv[m.mat] || 0) + 1;
-    BB.Audio.unplace();
-  }
-
+  // Taking a piece back is only ever the Remove tool's job, so a stray tap
+  // on a finished bridge never breaks it.
   function tapPiece(m) {
     if (test) return;
     BB.Audio.ready();
-    if (m.locked) { BB.UI.toast("That piece is bolted down."); BB.Audio.nope(); return; }
-    takeBack(m);
+    if (tool !== "remove") {
+      selected = null;
+      paint();
+      BB.UI.toast("To take a piece back, pick \u{1F9FD} Remove first.");
+      return;
+    }
+    if (m.locked) { nope("That piece is bolted down."); return; }
+    begin();
+    del(m);
+    commit();
+    BB.Audio.unplace();
+    paint();
+  }
+
+  function tapEmpty() {
+    if (test || !selected) return;
     selected = null;
     paint();
+  }
+
+  // Drag from a dot: every neighbouring dot the finger reaches gets a piece
+  // from the last one. Returns the dot the next piece will start from.
+  let dragLast = null, dragSaid = "";
+  function dragStart(id) {
+    if (test || tool === "remove") return null;
+    BB.Audio.ready();
+    begin();
+    dragLast = selected = id;
+    dragSaid = "";
+    BB.Audio.pick();
+    paint();
+    return id;
+  }
+  function dragOver(id) {
+    const [x1, y1] = Ph.xy(dragLast), [x2, y2] = Ph.xy(id);
+    const dx = x2 - x1, dy = y2 - y1;
+    // A quick finger can skip a dot on a straight line: fill it in. Anything
+    // else waits for the finger to come closer.
+    if (!nextTo(dragLast, id) && !(dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy))) return dragLast;
+    const n = Math.max(Math.abs(dx), Math.abs(dy));
+    for (let i = 1; i <= n; i++) {
+      const to = Ph.xy(dragLast)[0] + Math.sign(dx) + "," + (Ph.xy(dragLast)[1] + Math.sign(dy));
+      const why = join(dragLast, to);
+      if (why) {
+        // Say each problem once, not on every wiggle of the finger.
+        if (why !== dragSaid) { nope(why); dragSaid = why; }
+        break;
+      }
+      dragLast = selected = to;
+    }
+    paint();
+    return dragLast;
+  }
+  function dragEnd() {
+    const built = change && change.length;
+    commit();
+    // A drag that built nothing leaves its dot picked, like a tap.
+    selected = built ? null : dragLast;
+    dragLast = null;
+    if (!test) paint();
   }
 
   function act(what, v) {
     BB.Audio.ready();
     if (what === "tool") { tool = v; if (v === "remove") selected = null; BB.Audio.click(); paint(); }
     else if (what === "truck") { truckKind = v; BB.Audio.click(); paint(); }
+    else if (what === "undo") undo();
     else if (what === "reset") { BB.Audio.click(); play(lvl); }
     else if (what === "test") startTest();
     else if (what === "stop") stopTest();

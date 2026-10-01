@@ -131,6 +131,10 @@ BB.UI = (function () {
 
     const row = el("div", "actions");
     row.appendChild(button("btn ghost", st.free ? "\u{1F5D1}\u{FE0F} Clear" : "\u{21BA} Start again", () => act("reset")));
+    const un = button("btn ghost undo", '\u{21B6}<span class="lbl"> Undo</span>', () => act("undo"));
+    un.setAttribute("aria-label", "Undo");
+    un.disabled = !st.undo;
+    row.appendChild(un);
     row.appendChild(button("btn go", "\u{25B6}\u{FE0F} Test it!", () => act("test")));
     box.appendChild(row);
   }

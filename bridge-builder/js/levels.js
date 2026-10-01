@@ -36,7 +36,7 @@ window.BB = window.BB || {};
       levels: [
         { name: "First bridge", gap: 2, rows: [-1, 1], truck: "car", parts: [],
           inv: { road: 2 }, par: 2,
-          text: "Tap a dot on the riverbank, then the next dot along, to lay a piece of road. Reach the other side, then press Test!",
+          text: "Drag from the dot on the riverbank to the next dot along to lay road. Reach the other side, then press Test!",
           win: "The car made it! A short gap only needs a plank." },
         { name: "Too long!", gap: 4, rows: [-1, 2], rocks: [[2, 2]], truck: "car", parts: [],
           inv: { road: 4, beam: 2 }, par: 6, fail: "A plank this long bends too far and snaps. Use the rock to hold up the middle!",

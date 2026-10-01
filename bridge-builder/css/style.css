@@ -103,6 +103,15 @@ button:disabled{opacity:.45; cursor:default}
 .btn:active:not(:disabled),.answer:active:not(:disabled),.seg button:active:not(:disabled){transform:translateY(2px); box-shadow:none}
 .actions{display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:4px}
 .actions .btn{flex:1 1 140px; max-width:280px}
+/* Undo sits between Start again and Test it, as small as it can be. */
+.actions .btn.undo{flex:0 0 auto; min-width:var(--tap); padding-inline:14px}
+/* Narrow phones: the three build buttons stay on one row, Undo as its arrow. */
+@media (max-width:480px){
+  #controls .actions{flex-wrap:nowrap; gap:8px}
+  #controls .actions .btn{flex:1 1 auto; min-width:0; padding-inline:10px; font-size:16px}
+  #controls .actions .btn.undo{flex:0 0 auto; min-width:var(--tap); font-size:20px}
+  #controls .undo .lbl{display:none}
+}
 
 .wide-btn{
   display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; min-height:64px;
@@ -268,6 +277,10 @@ button:disabled{opacity:.45; cursor:default}
 .bolt{fill:var(--bolt)}
 .near{fill:var(--near)}
 .picked{fill:none; stroke:var(--picked); stroke-width:6}
+/* While a build tool is picked the dots grow, so they are easy to land on. */
+.dot{transition:r .15s}
+.building .dot{r:11px}
+.ghost-piece{stroke:var(--picked); stroke-width:10; stroke-linecap:round; stroke-dasharray:4 18; opacity:.8; pointer-events:none}
 .splash{fill:#fff}
 
 /* The material swatch in the parts box is the piece itself, not an emoji. */
