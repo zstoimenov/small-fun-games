@@ -187,7 +187,11 @@ BB.TRAIL = [
       { name: "Suspension", gap: 8, rows: [-3, 0], towers: ["0,-3", "8,-3"], truck: "big", parts: [],
         inv: { road: 8, rope: 9, beam: 6, steel: 2 }, par: 15,
         text: "The longest gorge yet. Hang the road from both towers. Ropes reach up to 4 dots!",
-        win: "A real suspension bridge, holding the big truck high over the gorge!" }
+        win: "A real suspension bridge, holding the big truck high over the gorge!" },
+      { name: "Vine bridge", gap: 8, rows: [-3, 1], towers: ["0,-3"], lane: [4, 7], truck: "big", parts: [],
+        inv: { road: Infinity, rope: Infinity, beam: Infinity, steel: Infinity }, budget: 54, par: 43,
+        text: "One tower, and boats need the right side clear. Ropes can hang the left half. What holds up the right?",
+        win: "You built a vine bridge fit for a jungle king!" }
     ],
     lesson: {
       title: "You finished Jungle Gorge!",
