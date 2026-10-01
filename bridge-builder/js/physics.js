@@ -40,7 +40,13 @@ BB.Physics = (function () {
   const LOOSE = 0.6;   // a joint that moves further than this has come apart
 
   // A member is { a, b, mat } where a and b are "c,r" joint ids.
-  const xy = (id) => id.split(",").map(Number);
+  // Parsed once per id: the solver asks for the same few dozen thousands of times.
+  const xyMemo = new Map();
+  const xy = (id) => {
+    let p = xyMemo.get(id);
+    if (!p) { p = Object.freeze(id.split(",").map(Number)); xyMemo.set(id, p); }
+    return p;
+  };
 
   // LU factorisation with partial pivoting, then solving with it. The
   // stiffness only changes when a piece breaks or a rope goes slack, so one
@@ -172,10 +178,10 @@ BB.Physics = (function () {
       const g = m._g;
       const ia = index[m.a] * 3, ib = index[m.b] * 3;
       const d = toLocal(g, [D[ia], D[ia + 1], D[ia + 2], D[ib], D[ib + 1], D[ib + 2]]);
-      const k = local(P.EA, P.EI, g.L);
-      const f = k.map((row) => row.reduce((s, v, j) => s + v * d[j], 0));
-      const N = f[3];                      // + pulling, - squashing
-      const M = Math.max(Math.abs(f[2]), Math.abs(f[5]));
+      // The end forces of local(), written out: no 6x6 matrix per frame.
+      const L = g.L, c = 6 * P.EI / (L * L), k4 = 4 * P.EI / L, k2 = 2 * P.EI / L;
+      const N = P.EA / L * (d[3] - d[0]);  // + pulling, - squashing
+      const M = Math.max(Math.abs(c * (d[1] - d[4]) + k4 * d[2] + k2 * d[5]), Math.abs(c * (d[1] - d[4]) + k2 * d[2] + k4 * d[5]));
       return { N, M, x: Math.abs(N) / P.N + (P.M ? M / P.M : 0) };
     });
     return { move, strain };
