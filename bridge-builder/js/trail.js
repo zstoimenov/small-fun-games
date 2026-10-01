@@ -209,7 +209,15 @@ BB.TRAIL = [
       { name: "Rush hour", gap: 5, rows: [-1, 1], convoy: ["car"], truck: "truck", parts: [],
         inv: { road: 5, beam: 6, steel: 2 }, par: 10,
         text: "Rush hour! A truck and a car cross together, so the bridge carries both at once.",
-        win: "Strong enough for a traffic jam!" }
+        win: "Strong enough for a traffic jam!" },
+      { name: "Harbour lane", gap: 8, rows: [-3, 1], islands: [[2, 3]], towers: ["8,-3"], lane: [4, 7], truck: "bus", parts: [],
+        inv: { road: 7, beam: 4, steel: 2, rope: 3 }, par: 11,
+        text: "An island, a boat lane and a tower. Hang the long side, prop the short side.",
+        win: "Every trick in one bridge: an island, a clear lane and ropes." },
+      { name: "Night buses", gap: 6, rows: [-2, 1], convoy: ["bus"], truck: "bus", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 54, par: 43,
+        text: "Two full buses, one behind the other. Strong enough for both, cheap enough for the city.",
+        win: "The night buses rolled home safely." }
     ],
     lesson: {
       title: "You finished the Bridge Trail!",

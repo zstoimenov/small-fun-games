@@ -599,6 +599,44 @@ const TRAIL_SOLUTIONS = {
     "2,0 1,1 beam",
     "4,0 5,1 beam",
     "0,1 1,1 beam"
+  ],
+  "t6-2": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "6,0 7,0 road",
+    "7,0 8,0 road",
+    "8,-3 5,0 rope",
+    "1,0 2,1 beam",
+    "4,0 3,1 beam",
+    "7,0 8,1 steel"
+  ],
+  "t6-3": [
+    "0,0 1,0 road",
+    "1,0 2,0 road",
+    "2,0 3,0 road",
+    "3,0 4,0 road",
+    "4,0 5,0 road",
+    "5,0 6,0 road",
+    "1,0 0,1 steel",
+    "1,0 2,1 steel",
+    "2,0 1,1 beam",
+    "2,0 3,1 steel",
+    "3,0 2,1 beam",
+    "3,0 4,1 beam",
+    "4,0 3,1 steel",
+    "4,0 4,1 beam",
+    "4,0 5,1 beam",
+    "5,0 4,1 beam",
+    "5,0 6,1 steel",
+    "6,0 5,1 beam",
+    "0,1 1,1 beam",
+    "1,1 2,1 beam",
+    "2,1 3,1 steel",
+    "4,1 5,1 beam",
+    "5,1 6,1 steel"
   ]
 };
 // TRAIL SOLUTIONS END
