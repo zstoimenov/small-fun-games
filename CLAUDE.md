@@ -13,6 +13,7 @@ Read that before starting a new game.
 index.html      the launcher — shelves, filters, search
 games.js        the GAMES catalogue, shared by the launcher and career-compass/
 sw.js           ONE service worker for the whole site, launcher and games alike
+shared/         screen.css: screen sizes, linked by the launcher and every game
 <game>/         one folder per game
 docs/           planning notes
 ```
@@ -56,6 +57,23 @@ audio, UI and app state in separate files.
   `touch-action:manipulation`, `-webkit-tap-highlight-color:transparent`.
 - **Kid-readable copy.** Short sentences, no jargon, in the blurbs and in-game.
 - Comments explain *why*, not what. Match the density of the file you're in.
+
+## Screen sizes
+
+Design for the tablet first, then make it work on a phone held either way and
+on a laptop. Link `shared/screen.css` **before** the game's own stylesheet and
+put `class="ui-zoom"` on `<html>`:
+
+- Laptops and desktops scale the whole page up (`zoom`), so a tablet layout
+  keeps its proportions instead of sitting small in the middle. Size full-height
+  layouts with `var(--app-h)`, never `100dvh` (zoom scales vh too). Pointer maths
+  that turns screen pixels into page pixels must divide by the body's zoom.
+- Phones are never scaled down. Phones held sideways (`max-height:520px`) get a
+  tighter layout instead: slim header, board beside its controls (`.ui-split`).
+- Tap targets use `var(--tap)`; nothing tappable under 40px, no text under 13px.
+
+`NODE_PATH=$(npm root -g) node tools/screen-check.js [folder ...]` opens pages at
+six sizes in both themes, flags those problems and saves a contact sheet.
 
 ## Running and checking
 

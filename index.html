@@ -1,11 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="ui-zoom">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Game Box — Small Fun Games</title>
 <meta name="description" content="A little box of fun games. Tap one to play!">
 <meta name="theme-color" content="#6c4cf0">
+<link rel="stylesheet" href="./shared/screen.css">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
@@ -34,7 +35,7 @@
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
-    min-height:100vh;min-height:100dvh;
+    min-height:var(--app-h);
     font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     color:var(--ink);background-color:var(--bg1);
     background-image:radial-gradient(1200px 600px at 15% -10%, var(--bg2), transparent 60%), linear-gradient(160deg, var(--bg1), var(--bg2));
@@ -60,28 +61,28 @@
   @media (max-width:480px){ .logo{width:40px;height:40px;font-size:24px;border-radius:12px} h1{font-size:21px} }
   .search{flex:1 1 240px;min-width:0;display:flex;align-items:center;gap:8px;height:48px;padding:0 8px 0 14px;border-radius:999px;
     background:var(--card);border:1px solid var(--cardline);box-shadow:0 2px 8px var(--shadow)}
-  .search input{flex:1;min-width:0;border:0;background:transparent;font-size:16px;outline:none}
+  .search input{flex:1;min-width:0;align-self:stretch;border:0;background:transparent;font-size:16px;outline:none}
   .search input::-webkit-search-cancel-button{display:none}
-  .search button{border:0;background:var(--chip);color:var(--chipink);border-radius:999px;width:32px;height:32px;font-weight:800}
+  .search button{border:0;background:var(--chip);color:var(--chipink);border-radius:999px;width:40px;height:40px;font-weight:800;font-size:18px}
 
   /* ── Filters ── */
   .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
   /* Phones: one row that scrolls sideways, fading at the edge so it's clear there's more. */
-  @media (max-width:640px){
+  @media (max-width:640px), (max-height:520px) and (orientation:landscape){
     .pills{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
       -webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
     .pills::-webkit-scrollbar{display:none}
   }
-  .pill{flex:0 0 auto;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--cardline);background:var(--card);
+  .pill{flex:0 0 auto;min-height:var(--tap);padding:0 14px;border-radius:999px;border:1px solid var(--cardline);background:var(--card);
     color:var(--muted);font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:6px}
   .pill .n{opacity:.6;font-weight:600}
   .pill[aria-pressed="true"]{background:var(--chip);color:var(--chipink);border-color:var(--chipink)}
   .pill:disabled{opacity:.35;cursor:default}
   .row2{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
   .seg{display:inline-flex;flex-wrap:wrap;padding:3px;border-radius:22px;background:var(--card);border:1px solid var(--cardline)}
-  .seg button{border:0;background:transparent;min-height:36px;padding:0 12px;border-radius:999px;font-weight:700;font-size:13px;color:var(--muted)}
+  .seg button{border:0;background:transparent;min-height:max(40px,calc(var(--tap) - 8px));padding:0 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
   .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-  .count{color:var(--muted);font-size:13px;margin-left:auto}
+  .count{color:var(--muted);font-size:14px;margin-left:auto}
 
   /* ── Shelves: a row always shows whole cards plus HALF of the next, at every
      width, so it's obvious there's more to swipe to. --n is how many whole
@@ -98,6 +99,8 @@
   @media (min-width:560px){ .lane{--n:3} }
   @media (min-width:820px){ .lane{--n:4} }
   @media (min-width:1080px){ .lane{--n:5} }
+  /* Big screens are scaled up by shared/screen.css, so a wider box still fits. */
+  @media (min-width:1500px) and (hover:hover){ .wrap{max-width:1240px} .lane{--n:6} }
   .lane .card{scroll-snap-align:start}
   /* Everything fits: lay it out as a normal row instead of a scroller. */
   .lane.fits{grid-auto-flow:row;grid-template-columns:repeat(var(--n),minmax(0,1fr));grid-auto-columns:auto;cursor:auto}
@@ -112,6 +115,7 @@
   @media (min-width:560px){ .grid{grid-template-columns:repeat(3,minmax(0,1fr))} }
   @media (min-width:820px){ .grid{grid-template-columns:repeat(4,minmax(0,1fr))} }
   @media (min-width:1080px){ .grid{grid-template-columns:repeat(5,minmax(0,1fr))} }
+  @media (min-width:1500px) and (hover:hover){ .grid{grid-template-columns:repeat(6,minmax(0,1fr))} }
 
   /* ── A card: icon, name, one line. Tap for the details. ── */
   .card{position:relative;display:flex;flex-direction:column;min-width:0;border-radius:18px;overflow:hidden;background:var(--card);
@@ -124,12 +128,12 @@
   .thumb span{filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))}
   .cbody{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
   .cbody b{font-size:16px;line-height:1.2}
-  .cbody small{color:var(--muted);font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .badge{position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:800;pointer-events:none}
+  .cbody small{color:var(--muted);font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .badge{position:absolute;left:8px;top:8px;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:800;pointer-events:none}
   .badge.new,.badge.try{background:#ffe600;color:#20264a}
   .badge.played{background:var(--good-bg);color:var(--good)}
   .badge.stars{background:rgba(15,18,40,.6);color:#ffd84d}
-  .fav{position:absolute;right:6px;top:6px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.88);
+  .fav{position:absolute;right:4px;top:4px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.88);
     font-size:18px;display:grid;place-items:center;color:#8a8fb0}
   .fav[aria-pressed="true"]{color:var(--heart)}
   .empty{margin:40px 0;text-align:center;color:var(--muted)}
@@ -143,15 +147,36 @@
   .dbody h2{margin:0;font-size:24px;text-wrap:balance}
   .dbody p{margin:0;color:var(--muted);line-height:1.5}
   .chips{display:flex;flex-wrap:wrap;gap:6px}
-  .chip{font-size:12px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--chipink)}
+  .chip{font-size:13px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--chip);color:var(--chipink)}
   .progress{padding:10px 12px;border-radius:14px;background:var(--good-bg);font-weight:600}
   .dactions{display:flex;gap:10px}
   .playbtn{flex:1;min-height:56px;border-radius:16px;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:19px;
     display:grid;place-items:center;text-decoration:none}
   .dfav{min-height:56px;padding:0 16px;border-radius:16px;border:1px solid var(--cardline);background:var(--card);font-weight:700}
-  .x{position:absolute;right:10px;top:10px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(255,255,255,.88);color:#20264a;font-size:22px}
+  .x{position:absolute;right:10px;top:10px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.88);color:#20264a;font-size:22px}
 
-  footer{margin:30px 6px 0;color:var(--muted);font-size:13px;text-align:center;line-height:1.6}
+  /* ── Phones held sideways: the bar, filters and the sheet's picture would
+     otherwise fill the whole screen before a single game shows. ── */
+  @media (max-height:520px) and (orientation:landscape){
+    .bar{padding-top:calc(6px + env(safe-area-inset-top));padding-bottom:6px;flex-wrap:nowrap}
+    .logo{width:40px;height:40px;font-size:24px;border-radius:12px}
+    h1{font-size:21px}
+    .search{height:44px}
+    .shelf{margin-top:14px}
+    .lane{--n:4} .grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+    /* The sheet turns sideways too: picture on the left, words on the right,
+       and Play pinned to the bottom so it never needs a scroll to reach. */
+    dialog{width:min(760px,calc(100vw - 24px))}
+    dialog[open]{display:grid;grid-template-columns:150px minmax(0,1fr);overflow:hidden}
+    dialog[open] > div:first-child{height:100%}
+    .dthumb{aspect-ratio:auto;height:100%;font-size:60px}
+    .dbody{overflow:auto;max-height:calc(var(--app-h) - 24px);padding-bottom:0}
+    .dbody h2{padding-right:4px}
+    .dactions{position:sticky;bottom:0;margin-top:auto;padding:10px 0 12px;background:var(--card)}
+    .playbtn,.dfav{min-height:50px}
+  }
+
+  footer{margin:30px 6px 0;color:var(--muted);font-size:14px;text-align:center;line-height:1.6}
   .install{display:none}
   .install.show{display:inline-block;margin-top:10px;background:var(--chip);color:var(--chipink);border:none;font-weight:700;
     padding:10px 18px;border-radius:999px}
@@ -325,6 +350,9 @@ function card(g) {
 // never a tap, so letting go over a card doesn't open it.
 let lanes = [];
 const step = (lane) => lane.children[0].getBoundingClientRect().width + (parseFloat(getComputedStyle(lane).columnGap) || 12);
+// Big screens scale the page up (shared/screen.css), but the pointer still moves
+// in screen pixels, so a drag is divided back down to keep the row under it.
+const zoom = () => parseFloat(getComputedStyle(document.body).zoom) || 1;
 const smooth = () => matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 function page(lane, dir) {
   const n = parseInt(getComputedStyle(lane).getPropertyValue("--n"), 10) || 2;
@@ -339,7 +367,7 @@ function swipe(lane, after) {
   });
   addEventListener("pointermove", (e) => {
     if (!start) return;
-    const dx = e.clientX - start.x;
+    const dx = (e.clientX - start.x) / zoom();
     if (!dragged && Math.abs(dx) > 6) { dragged = true; lane.classList.add("dragging"); }
     if (dragged) lane.scrollLeft = start.left - dx;
   });
@@ -349,7 +377,7 @@ function swipe(lane, after) {
     start = null;
     if (!dragged) return;
     // A quick flick carries on a little, the way a finger does.
-    const v = (e.clientX - s.x) / Math.max(1, performance.now() - s.t);
+    const v = (e.clientX - s.x) / zoom() / Math.max(1, performance.now() - s.t);
     const w = step(lane);
     const max = lane.scrollWidth - lane.clientWidth;
     const target = Math.max(0, Math.min(max, Math.round((lane.scrollLeft - v * 180) / w) * w));
