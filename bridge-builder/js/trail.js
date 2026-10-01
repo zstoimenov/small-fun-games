@@ -145,7 +145,15 @@ BB.TRAIL = [
       { name: "Snowy cliffs", gap: 5, rows: [-1, 2], pins: ["0,2", "5,2"], snow: 0.4, truck: "truck", parts: [],
         inv: { road: 5, old: 10, beam: 8 }, par: 17,
         text: "Snowy cliffs with only two pins, and the old wood is weak. Where does each piece go?",
-        win: "Every piece doing the job it's strong enough for." }
+        win: "Every piece doing the job it's strong enough for." },
+      { name: "Blizzard", gap: 6, rows: [-2, 1], snow: 1.2, truck: "bus", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 54, par: 43, fail: "All that snow is heavy. Hold up every bit of road.",
+        text: "A blizzard! Deep snow on the road and a full bus. Strong but cheap, please.",
+        win: "Your bridge laughs at blizzards!" },
+      { name: "Mountain pass", gap: 7, rows: [-2, 2], rocks: [[4, 2]], snow: 0.8, truck: "big", parts: [],
+        inv: { road: 7, old: 10, beam: 9, steel: 7 }, par: 28,
+        text: "The mountain pass: snow, old wood, a rock and the big truck. Use everything you know.",
+        win: "You conquered the Mountain Pass!" }
     ],
     lesson: {
       title: "You finished Snowy Peaks!",
