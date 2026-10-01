@@ -58,7 +58,7 @@
 [hidden]{display:none !important}
 html,body{margin:0;padding:0}
 body{
-  min-height:100vh;min-height:100dvh;
+  min-height:var(--app-h);
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   color:var(--ink);
   background:
@@ -124,7 +124,7 @@ body{
 .sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
 .muted{color:var(--muted);font-weight:500}
 .pill{
-  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+  font-size:13px;font-weight:800;padding:6px 12px;border-radius:999px;
   background:var(--chip);color:var(--chipink);
 }
 .sheet-buttons{display:flex;gap:10px;margin-top:16px}
@@ -143,7 +143,7 @@ body{
 }
 .row:first-of-type{border-top:none}
 .row-label{font-size:14px;font-weight:700;flex:0 1 auto}
-.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.row-note{margin:-2px 0 8px;font-size:13px;line-height:1.45;color:var(--muted)}
 .seg{
   display:flex;gap:3px;padding:3px;border-radius:13px;
   background:var(--bg1);border:1px solid var(--line);flex:0 0 auto;
@@ -188,7 +188,7 @@ body{
 /* The page itself never scrolls in a game — the board is sized to the space
    that's left rather than pushing anything off the bottom. */
 body.in-game{
-  height:100dvh;overflow:hidden;
+  height:var(--app-h);overflow:hidden;
   padding-left:6px;padding-right:6px;
   padding-bottom:calc(8px + env(safe-area-inset-bottom));
 }
@@ -207,7 +207,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 .topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
 .turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
 .turn-info strong{display:block;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.turn-info span{display:block;font-size:12px;color:var(--muted)}
+.turn-info span{display:block;font-size:13px;color:var(--muted)}
 #turnName.cpu{color:var(--accent2)}
 
 .coach{
@@ -270,12 +270,12 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   box-shadow:0 12px 30px var(--shadow);
 }
 .grid-head{
-  font-size:12px;font-weight:800;color:var(--muted);
+  font-size:13px;font-weight:800;color:var(--muted);
   text-align:center;margin-bottom:6px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .mini-card{padding:8px;align-self:center}
-.mini-card .grid-head{font-size:11px;margin-bottom:5px}
+.mini-card .grid-head{font-size:13px;margin-bottom:5px}
 
 /* ── The grid ───────────────────────────────────────────────────────────── */
 
@@ -367,9 +367,9 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   background:var(--card);border:1px solid var(--line);border-radius:16px;
   padding:8px 10px;min-width:0;flex:0 1 auto;
 }
-.fleet-box h4{margin:0 0 5px;font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.fleet-box h4{margin:0 0 5px;font-size:13px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .fleet-list{display:flex;flex-direction:column;gap:3px}
-.fleet-item{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;line-height:1.2}
+.fleet-item{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;line-height:1.2}
 .fleet-item .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fleet-item .pips{display:flex;gap:2px;flex:0 0 auto}
 .fleet-item .pips i{width:7px;height:7px;border-radius:2px;background:var(--ship);display:block}
@@ -381,7 +381,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 
 .tray{
   display:flex;gap:7px;flex-wrap:wrap;justify-content:center;flex:0 0 auto;
-  max-height:32vh;overflow:auto;
+  max-height:calc(var(--app-h) * .32);overflow:auto;
 }
 .ship-chip{
   font:inherit;display:flex;align-items:center;gap:7px;cursor:pointer;
@@ -446,13 +446,13 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 .sea-panel{flex:0 0 auto}
 .sea-meta{
   margin-top:7px;text-align:center;
-  font-size:12px;font-weight:700;color:var(--muted);
+  font-size:13px;font-weight:700;color:var(--muted);
   font-variant-numeric:tabular-nums;
 }
 
 .reveal{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:2px 0 14px}
 .reveal .grid-card{box-shadow:none;padding:8px}
-.reveal .grid-head{font-size:11px}
+.reveal .grid-head{font-size:13px}
 
 .tally{margin-top:4px}
 .tally-row{
@@ -475,7 +475,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   padding:11px 13px;border-radius:14px;font-size:13.5px;
 }
 .howto-example{margin:12px 0;display:flex;flex-direction:column;align-items:center}
-.howto-caption{margin:7px 0 0 !important;font-size:12.5px !important;color:var(--muted);text-align:center}
+.howto-caption{margin:7px 0 0 !important;font-size:13px !important;color:var(--muted);text-align:center}
 .dots{display:flex;justify-content:center;gap:7px;margin-top:12px}
 .dots .dot{
   width:9px;height:9px;border-radius:50%;background:var(--line);cursor:pointer;
@@ -486,11 +486,11 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 /* ── What the computer was thinking ─────────────────────────────────────── */
 
 .brain{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
-.brain .muted{font-size:12.5px;line-height:1.5;margin:0 0 10px}
+.brain .muted{font-size:13px;line-height:1.5;margin:0 0 10px}
 .brain-grid{display:flex;gap:8px;text-align:center;margin-bottom:10px}
 .brain-grid div{flex:1;background:var(--bg1);border-radius:14px;padding:11px 6px}
 .brain-grid b{display:block;font-size:19px;font-variant-numeric:tabular-nums}
-.brain-grid span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.brain-grid span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
 .heat-wrap{display:flex;justify-content:center}
 .heat-wrap .grid-card{box-shadow:none;padding:8px}
 
@@ -503,11 +503,11 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   .board-buttons .btn{min-height:46px;font-size:15px;flex:1 1 0}
   .grid-card{padding:7px}
   .fleet-box{padding:6px 7px}
-  .fleet-item{font-size:10.5px;gap:4px}
+  .fleet-item{font-size:13px;gap:4px}
   .fleet-item .pips i{width:6px;height:6px}
-  .fleet-box h4{font-size:10px}
+  .fleet-box h4{font-size:13px}
   .ship-chip{padding:7px 9px;min-height:42px}
-  .ship-chip .cname{font-size:12px}
+  .ship-chip .cname{font-size:13px}
 }
 
 /* Short and wide — a phone on its side. The board is already sized to whatever
@@ -517,7 +517,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   #game,#place{gap:6px}
   .icon-btn{width:40px;height:40px;font-size:17px}
   .turn-info strong{font-size:16px}
-  .turn-info span{font-size:11px}
+  .turn-info span{font-size:13px}
   .coach{padding:8px 11px;font-size:13px;border-radius:13px}
   .board-buttons .ghost-btn{min-height:40px;padding:8px 10px;font-size:13px}
   .board-buttons .btn{min-height:42px;padding:9px 14px}
@@ -535,10 +535,10 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   .side{flex-direction:row;width:clamp(160px,38vw,320px)}
   .fleet-boxes{flex-direction:column;flex:1 1 auto}
   .fleet-list{gap:2px}
-  .fleet-item{font-size:10px;gap:4px;line-height:1.15}
+  .fleet-item{font-size:13px;gap:4px;line-height:1.15}
   .fleet-item .pips i{width:5px;height:5px}
   .fleet-box{padding:5px 7px}
-  .fleet-box h4{font-size:9px;margin-bottom:3px}
+  .fleet-box h4{font-size:13px;margin-bottom:3px}
 }
 
 /* ── Putting the end card aside ─────────────────────────────────────────── */
@@ -558,3 +558,46 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 /* The game is over while the card is put aside, so the board buttons have
    nothing to do — standing them down is what leaves room for the pill. */
 body.peeking .board-buttons{visibility:hidden}
+
+
+/* A name inside the bold turn line is part of it, not the small note under it. */
+.turn-info strong span{font-size:inherit}
+
+/* Big enough for small fingers: the back link, the choice buttons and the
+   switches are all at least 40px, and the notes under them at least 13px. */
+#back{display:inline-flex; align-items:center; min-height:44px; padding:0 16px; font-size:14px}
+.seg .opt{min-width:44px; min-height:44px}
+.switch{width:66px; height:40px}
+.switch .knob{width:34px; height:34px}
+.switch[aria-checked="true"] .knob{transform:translateX(26px)}
+.row-note{font-size:13.5px}
+
+/* ── Phones held sideways ────────────────────────────────────────────────────
+   About 360px of height, and the setup sheet must fit it without scrolling:
+   it goes wide, the options sit in two columns, the back link moves to the
+   corner, and the notes under each option (there on every other screen) step
+   aside. */
+@media (max-height:520px) and (orientation:landscape){
+  .overlay{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
+  .sheet{padding:10px 18px; border-radius:18px}
+  .setup-sheet{max-width:760px; position:relative; display:grid; grid-template-columns:1fr 1fr; column-gap:24px; align-content:start}
+  .setup-sheet > *{grid-column:1 / -1}
+  .setup-sheet > .row{grid-column:auto; padding:4px 0}
+  .setup-sheet > .row-note{display:none}
+  .setup-sheet #back{position:absolute; top:8px; right:14px; margin:0}
+  .setup-sheet h1{font-size:22px; padding-right:110px}
+  .setup-sheet .sub{margin:0 0 4px; font-size:13px}
+  .setup-sheet .more{margin-top:4px}
+  .setup-sheet .sheet-buttons{margin-top:8px}
+}
+
+/* Sideways, hiding the fleet: the sea takes the left and all the height; the
+   ships to place and the buttons stack on the right. */
+@media (max-height:520px) and (orientation:landscape){
+  #place{max-width:none; display:grid; grid-template-columns:minmax(0,1.1fr) minmax(230px,1fr); grid-template-rows:auto auto 1fr auto; gap:6px 14px}
+  #place > .topbar{grid-column:2; grid-row:1}
+  #place > .coach{grid-column:2; grid-row:2}
+  #place > .board-wrap{grid-column:1; grid-row:1 / span 4; min-height:0}
+  #place > .tray{grid-column:2; grid-row:3; flex-wrap:wrap; overflow:auto; align-content:flex-start}
+  #place > .board-buttons{grid-column:2; grid-row:4; flex-wrap:wrap}
+}

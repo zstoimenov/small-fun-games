@@ -67,7 +67,7 @@
 [hidden]{display:none !important}
 html,body{margin:0;padding:0}
 body{
-  min-height:100vh;min-height:100dvh;
+  min-height:var(--app-h);
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   color:var(--ink);
   background:
@@ -137,7 +137,7 @@ body{
 .sheet h2{margin:0 0 6px;font-size:22px}
 .sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
 .muted{color:var(--muted);font-weight:500}
-.pill{font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+.pill{font-size:13px;font-weight:800;padding:6px 12px;border-radius:999px;
   background:var(--chip);color:var(--chipink)}
 .sheet-buttons{display:flex;gap:10px;margin-top:16px}
 .sheet-buttons .btn{flex:1}
@@ -153,7 +153,7 @@ body{
   padding:9px 0;border-top:1px solid var(--line)}
 .row:first-of-type{border-top:none}
 .row-label{font-size:14px;font-weight:700;flex:0 0 auto}
-.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.row-note{margin:-2px 0 8px;font-size:13px;line-height:1.45;color:var(--muted)}
 .seg{display:flex;gap:3px;padding:3px;border-radius:13px;
   background:var(--bg2);border:1px solid var(--line);flex:0 1 auto}
 .seg .opt{
@@ -166,7 +166,7 @@ body{
 /* ── The play area ──────────────────────────────────────────────────────── */
 
 body.in-game{
-  height:100dvh;overflow:hidden;
+  height:var(--app-h);overflow:hidden;
   padding-left:8px;padding-right:8px;
   padding-bottom:calc(8px + env(safe-area-inset-bottom));
 }
@@ -176,7 +176,7 @@ body.in-game{
 .topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
 .turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
 .turn-info strong{display:block;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.turn-info span{display:block;font-size:12px;color:var(--muted)}
+.turn-info span{display:block;font-size:13px;color:var(--muted)}
 
 /* ── The vault ──────────────────────────────────────────────────────────── */
 
@@ -186,15 +186,15 @@ body.in-game{
   padding:9px 11px 10px;box-shadow:0 6px 16px var(--shadow);
 }
 .vault-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:5px}
-.vault-who{font-size:12.5px;font-weight:800;color:var(--muted)}
-.vault-mine{font-size:11.5px;font-weight:700;color:var(--muted);text-align:right}
+.vault-who{font-size:13px;font-weight:800;color:var(--muted)}
+.vault-mine{font-size:13px;font-weight:700;color:var(--muted);text-align:right}
 .vault-mine b{font-size:19px;color:var(--own);font-variant-numeric:tabular-nums}
 /* A score with no direction on it is a number to glance at; a score with an
    arrow is a thing to play towards. */
-.vault-mine i{display:block;font-style:normal;font-size:11px;font-weight:800;margin-top:-1px}
+.vault-mine i{display:block;font-style:normal;font-size:13px;font-weight:800;margin-top:-1px}
 .vault-mine i.up{color:var(--good)}
 .vault-mine i.down{color:var(--bad)}
-.bar-label{font-size:10.5px;font-weight:800;color:var(--muted);
+.bar-label{font-size:13px;font-weight:800;color:var(--muted);
   text-transform:uppercase;letter-spacing:.4px;margin:4px 0 3px}
 
 /* Two bars of exactly the same length. The identity the whole game rests on —
@@ -223,7 +223,7 @@ body.in-game{
    "$3." is worse than a clean stripe of colour — the amount is in the line under
    the bars either way. A segment worth nothing goes altogether. */
 .bar > div.tiny i{display:none}
-.bar > div.min b{font-size:11px}
+.bar > div.min b{font-size:13px}
 .bar > div.nano b{display:none}
 .bar > div.gone{display:none}
 .bar > div:not(.gone){min-width:5px}
@@ -238,14 +238,14 @@ body.in-game{
   flex:1 1 0;min-width:0;display:flex;align-items:baseline;justify-content:space-between;
   gap:6px;padding:6px 9px;border-radius:11px;background:var(--bg2);border:1px solid var(--line);
 }
-.purse-half span{font-size:10.5px;font-weight:700;color:var(--muted);min-width:0;
+.purse-half span{font-size:13px;font-weight:700;color:var(--muted);min-width:0;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .purse-half b{font-size:15px;font-weight:900;font-variant-numeric:tabular-nums;flex:0 0 auto}
 .purse-half.free b{color:var(--own)}
 .purse.short .purse-half.free{border-color:var(--bad);background:rgba(207,70,54,.12)}
 .purse.short .purse-half.free b{color:var(--bad)}
 
-.vault-note{margin-top:6px;font-size:12px;font-weight:700;line-height:1.4;color:var(--muted)}
+.vault-note{margin-top:6px;font-size:13px;font-weight:700;line-height:1.4;color:var(--muted)}
 .vault-note.warn{color:var(--bad)}
 
 /* Coins physically leaving the vault and going out of the door. Without this
@@ -338,8 +338,8 @@ body.in-game{
 .gap-size{font-size:24px;font-weight:900;color:var(--own);line-height:1.05;
   font-variant-numeric:tabular-nums;flex:0 0 auto}
 .gap-body{min-width:0}
-.gap-say{display:block;font-size:12.5px;font-weight:700;color:var(--chipink);line-height:1.35}
-.gap-sum{display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:2px}
+.gap-say{display:block;font-size:13px;font-weight:700;color:var(--chipink);line-height:1.35}
+.gap-sum{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-top:2px}
 .gap-sum b{font-variant-numeric:tabular-nums}
 .gap-sum b.in{color:var(--good)}
 .gap-sum b.out{color:var(--bad)}
@@ -373,13 +373,13 @@ body.in-game{
 .person-who{flex:1;min-width:0}
 .person-name{display:block;font-size:19px;font-weight:900}
 .stars{display:block;font-size:14px;color:var(--gold);letter-spacing:1px}
-.stars small{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:0;margin-left:5px}
+.stars small{color:var(--muted);font-size:13px;font-weight:700;letter-spacing:0;margin-left:5px}
 .person-say{margin:11px 0 0;font-size:15.5px;line-height:1.5;font-weight:600}
 .person-say b{font-weight:900}
 /* Your own history with this person. The stars are the fact; this is the child's
    evidence for it, which is the bit that turns a badge into knowledge. */
 .person-history{
-  margin:7px 0 0;font-size:12px;font-weight:700;line-height:1.45;color:var(--chipink);
+  margin:7px 0 0;font-size:13px;font-weight:700;line-height:1.45;color:var(--chipink);
   background:var(--chip);border-radius:11px;padding:8px 10px;
 }
 
@@ -394,7 +394,7 @@ body.in-game{
 /* The working, under the answer rather than beside it as two more rows of its
    own. "$5.00 a night for 5 nights" is where $25.00 came from, and a child who
    wants it can find it — but the number they decide on is the big one. */
-.deal-line i{display:block;font-style:normal;font-size:11.5px;font-weight:600;
+.deal-line i{display:block;font-style:normal;font-size:13px;font-weight:600;
   opacity:.85;margin-top:1px}
 .deal-line.earn strong{font-size:23px;color:var(--good)}
 
@@ -430,7 +430,7 @@ body.in-game{
 .book-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
   font-size:13.5px;font-weight:700;color:var(--muted);padding:3px 0}
 .book-row strong{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
-.book-row i{font-style:normal;font-weight:600;font-size:11.5px;opacity:.8}
+.book-row i{font-style:normal;font-weight:600;font-size:13px;opacity:.8}
 .book-row.added strong{color:var(--good)}
 .book-row.gone strong{color:var(--bad)}
 .book-rule{height:2px;background:var(--line);margin:4px 0;border-radius:2px}
@@ -442,7 +442,7 @@ body.in-game{
 .settle:first-child{border-top:none}
 .settle-face{font-size:22px;line-height:1.25;flex:0 0 auto}
 .settle-what{flex:1;min-width:0;font-weight:700}
-.settle-what small{display:block;font-size:11.5px;font-weight:600;color:var(--muted)}
+.settle-what small{display:block;font-size:13px;font-weight:600;color:var(--muted)}
 .settle-amt{font-size:16px;font-weight:900;font-variant-numeric:tabular-nums;flex:0 0 auto}
 .settle.paid .settle-amt{color:var(--good)}
 .settle.bad .settle-amt{color:var(--bad)}
@@ -461,7 +461,7 @@ body.in-game{
   font-size:14px;font-weight:700;padding:5px 0}
 .sum-line strong{font-size:19px;font-variant-numeric:tabular-nums;flex:0 0 auto}
 .sum-line span{min-width:0}
-.sum-line i{display:block;font-style:normal;font-size:11.5px;font-weight:600;
+.sum-line i{display:block;font-style:normal;font-size:13px;font-weight:600;
   color:var(--muted);margin-top:1px}
 .sum-line.out strong{color:var(--bad)}
 .sum-line.in strong{color:var(--good)}
@@ -483,12 +483,12 @@ body.in-game{
 
 /* ── The books ──────────────────────────────────────────────────────────── */
 
-.shelf-head{font-size:12.5px;font-weight:800;color:var(--muted);margin:12px 0 6px}
+.shelf-head{font-size:13px;font-weight:800;color:var(--muted);margin:12px 0 6px}
 .entry{display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:6px;
   border:1px solid var(--line);border-radius:14px;font-size:13.5px}
 .entry-face{font-size:22px;line-height:1.25;flex:0 0 auto}
 .entry-what{flex:1;min-width:0;font-weight:700}
-.entry-what small{display:block;font-size:11.5px;font-weight:600;color:var(--muted)}
+.entry-what small{display:block;font-size:13px;font-weight:600;color:var(--muted)}
 .entry-amt{font-weight:900;font-variant-numeric:tabular-nums;flex:0 0 auto}
 .entry.loan{border-left:4px solid var(--out)}
 .entry.saver{border-left:4px solid var(--owed)}
@@ -501,7 +501,7 @@ body.in-game{
 .book-tabs{width:100%;margin:2px 0 12px}
 .book-tabs .opt{flex:1 1 0}
 .book-pane{min-height:120px}
-.pane-note{margin:0 0 10px;font-size:12.5px;line-height:1.5;color:var(--muted);font-weight:600}
+.pane-note{margin:0 0 10px;font-size:13px;line-height:1.5;color:var(--muted);font-weight:600}
 .empty-note{font-size:13px;color:var(--muted);font-weight:600;padding:4px 0 8px}
 
 /* ── Toast ──────────────────────────────────────────────────────────────── */
@@ -527,7 +527,7 @@ body.in-game{
 #howtoBody .minibar{display:flex;height:26px;border-radius:9px;overflow:hidden;
   border:1px solid var(--line);margin:6px 0}
 #howtoBody .minibar div{display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:800;color:#fff;min-width:0;overflow:hidden;white-space:nowrap}
+  font-size:13px;font-weight:800;color:#fff;min-width:0;overflow:hidden;white-space:nowrap}
 .dots{display:flex;gap:6px;justify-content:center;margin-top:6px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
 .dot.on{background:var(--accent);transform:scale(1.25)}
@@ -569,14 +569,14 @@ body.in-game{
 .rung-emoji{font-size:26px;line-height:1;flex:0 0 auto;filter:grayscale(1);opacity:.45}
 .rung.got .rung-emoji{filter:none;opacity:1}
 .rung-what{flex:1;min-width:0}
-.rung-miss{display:block;font-size:11.5px;font-weight:700;margin-top:1px;opacity:.85}
+.rung-miss{display:block;font-size:13px;font-weight:700;margin-top:1px;opacity:.85}
 .rung-cost{margin-left:auto;flex:0 0 auto;font-variant-numeric:tabular-nums}
 .rung-tick{font-size:15px;flex:0 0 auto}
 
 #chart{width:100%}
 #chart svg{width:100%;height:auto;display:block}
 .chart-key{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
-  font-size:12px;font-weight:700;color:var(--muted);margin:4px 0 12px}
+  font-size:13px;font-weight:700;color:var(--muted);margin:4px 0 12px}
 .key-swatch{display:inline-block;width:16px;height:4px;border-radius:2px;
   vertical-align:middle;margin-right:4px}
 .key-swatch.own{background:var(--own)}
@@ -615,4 +615,36 @@ body.in-game{
   .prize{min-height:80px}
   .prize-emoji{font-size:56px}
   #howtoBody{min-height:0}
+}
+
+
+/* A name inside the bold turn line is part of it, not the small note under it. */
+.turn-info strong span{font-size:inherit}
+
+/* Big enough for small fingers: the back link, the choice buttons and the
+   switches are all at least 40px, and the notes under them at least 13px. */
+#back{display:inline-flex; align-items:center; min-height:44px; padding:0 16px; font-size:14px}
+.seg .opt{min-width:44px; min-height:44px}
+.switch{width:66px; height:40px}
+.switch .knob{width:34px; height:34px}
+.switch[aria-checked="true"] .knob{transform:translateX(26px)}
+.row-note{font-size:13.5px}
+
+/* ── Phones held sideways ────────────────────────────────────────────────────
+   About 360px of height, and the setup sheet must fit it without scrolling:
+   it goes wide, the options sit in two columns, the back link moves to the
+   corner, and the notes under each option (there on every other screen) step
+   aside. */
+@media (max-height:520px) and (orientation:landscape){
+  .overlay{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
+  .sheet{padding:10px 18px; border-radius:18px}
+  .setup-sheet{max-width:760px; position:relative; display:grid; grid-template-columns:1fr 1fr; column-gap:24px; align-content:start}
+  .setup-sheet > *{grid-column:1 / -1}
+  .setup-sheet > .row{grid-column:auto; padding:4px 0}
+  .setup-sheet > .row-note{display:none}
+  .setup-sheet #back{position:absolute; top:8px; right:14px; margin:0}
+  .setup-sheet h1{font-size:22px; padding-right:110px}
+  .setup-sheet .sub{margin:0 0 4px; font-size:13px}
+  .setup-sheet .more{margin-top:4px}
+  .setup-sheet .sheet-buttons{margin-top:8px}
 }

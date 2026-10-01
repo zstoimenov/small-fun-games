@@ -57,7 +57,7 @@
 [hidden]{display:none !important}
 html,body{margin:0;padding:0}
 body{
-  min-height:100vh;min-height:100dvh;
+  min-height:var(--app-h);
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   color:var(--ink);
   background:
@@ -123,7 +123,7 @@ body{
 .sub{margin:0 0 16px;color:var(--muted);font-size:14px;line-height:1.5}
 .muted{color:var(--muted);font-weight:500;font-size:13px;line-height:1.5;margin:0 0 10px}
 .pill{
-  font-size:12px;font-weight:800;padding:6px 12px;border-radius:999px;
+  font-size:13px;font-weight:800;padding:6px 12px;border-radius:999px;
   background:var(--chip);color:var(--chipink);
 }
 .sheet-buttons{display:flex;gap:10px;margin-top:16px}
@@ -142,7 +142,7 @@ body{
 }
 .row:first-of-type{border-top:none}
 .row-label{font-size:14px;font-weight:700;flex:0 1 auto}
-.row-note{margin:-2px 0 8px;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.row-note{margin:-2px 0 8px;font-size:13px;line-height:1.45;color:var(--muted)}
 .seg{
   display:flex;gap:3px;padding:3px;border-radius:13px;
   background:var(--bg1);border:1px solid var(--line);flex:0 0 auto;
@@ -186,7 +186,7 @@ body{
 /* The page itself never scrolls in a game — the board is sized to the space
    that's left rather than pushing anything off the bottom. */
 body.in-game{
-  height:100dvh;overflow:hidden;
+  height:var(--app-h);overflow:hidden;
   padding-left:6px;padding-right:6px;
   padding-bottom:calc(8px + env(safe-area-inset-bottom));
 }
@@ -204,7 +204,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 .topbar{display:flex;align-items:center;gap:9px;flex:0 0 auto}
 .turn-info{flex:1;min-width:0;text-align:center;line-height:1.25}
 .turn-info strong{display:block;font-size:19px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.turn-info span{display:block;font-size:12px;color:var(--muted)}
+.turn-info span{display:block;font-size:13px;color:var(--muted)}
 #turnName.cpu{color:var(--accent2)}
 
 /* Who is still in, and what the ones who have finished walked away with. */
@@ -213,7 +213,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 }
 .score-chip{
   display:flex;align-items:baseline;gap:6px;
-  font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;
+  font-size:13px;font-weight:700;padding:5px 10px;border-radius:999px;
   background:var(--chip);color:var(--chipink);border:1px solid var(--line);
   max-width:100%;overflow:hidden;
 }
@@ -381,7 +381,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   background:linear-gradient(155deg,var(--gold),#8c6c0e);color:#2a1f05;
   box-shadow:0 5px 14px var(--shadow);
 }
-.my-box-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
+.my-box-label{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;opacity:.8}
 .my-box strong{font-size:20px;line-height:1.15;font-variant-numeric:tabular-nums}
 .board-buttons{display:flex;gap:8px;justify-content:center;flex:1 1 auto}
 .board-buttons .btn{flex:1 1 auto;max-width:340px;min-height:52px}
@@ -422,7 +422,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   position:absolute;inset:0 auto 0 0;border-radius:999px;
   background:linear-gradient(90deg,var(--accent),#e0651c);
 }
-.work-cap{font-size:11.5px;color:var(--muted);line-height:1.4}
+.work-cap{font-size:13px;color:var(--muted);line-height:1.4}
 
 .hint-line{
   margin-top:10px;text-align:left;font-size:13.5px;line-height:1.5;font-weight:600;
@@ -438,7 +438,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   box-shadow:0 6px 16px var(--shadow);
 }
 .swap-box.mine{background:linear-gradient(155deg,var(--gold),#8c6c0e);color:#2a1f05}
-.swap-box small{display:block;font-size:10px;font-weight:800;opacity:.85}
+.swap-box small{display:block;font-size:13px;font-weight:800;opacity:.85}
 
 /* ── Menu panels ────────────────────────────────────────────────────────── */
 
@@ -469,7 +469,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   background:var(--bg1);border:1px solid var(--line);border-radius:16px;
   padding:13px 10px;margin:10px 0;
 }
-.howto-cap{font-size:12px;color:var(--muted);text-align:center;line-height:1.4}
+.howto-cap{font-size:13px;color:var(--muted);text-align:center;line-height:1.4}
 .dots{display:flex;gap:6px;justify-content:center;margin-top:12px}
 .dots i{width:7px;height:7px;border-radius:50%;background:var(--line);display:block}
 .dots i.on{background:var(--accent);transform:scale(1.25)}
@@ -487,12 +487,12 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 .result-row.win{border-color:var(--gold);background:var(--chip)}
 .result-row .who{flex:1;min-width:0;font-weight:800;font-size:14.5px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.result-row .how{font-size:11.5px;color:var(--muted);font-weight:600}
+.result-row .how{font-size:13px;color:var(--muted);font-weight:600}
 .result-row .amt{font-weight:900;font-size:17px;font-variant-numeric:tabular-nums;flex:0 0 auto}
 .tally-box{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
 .tally-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
 .tally-row .tnum{font-weight:800;font-variant-numeric:tabular-nums}
-.tally-note{font-size:12px;color:var(--muted);margin-top:6px}
+.tally-note{font-size:13px;color:var(--muted);margin-top:6px}
 
 .peek-pill{
   position:fixed;left:50%;transform:translateX(-50%);z-index:60;
@@ -522,8 +522,8 @@ body.flipped .toast{transform:translateX(-50%) rotate(180deg)}
 @media (orientation:landscape) and (max-height:520px){
   .topbar .icon-btn{width:40px;height:40px;font-size:16px}
   .turn-info strong{font-size:15px}
-  .turn-info span{font-size:11px}
-  .coach{padding:7px 11px;font-size:12.5px}
+  .turn-info span{font-size:13px}
+  .coach{padding:7px 11px;font-size:13px}
   .rail{width:calc(clamp(52px,11vw,84px) * var(--rail-cols,1))}
   .my-box strong{font-size:16px}
   .my-box{padding:5px 10px}
@@ -539,9 +539,9 @@ body.flipped .toast{transform:translateX(-50%) rotate(180deg)}
   .phone{font-size:24px;margin-bottom:0}
   .offer-amount{font-size:clamp(26px,7vw,34px)}
   .offer-sheet .sub{margin-bottom:8px;font-size:13px}
-  .offer-who{font-size:12px}
-  .working{padding:8px 11px;font-size:12px}
-  .work-cap{font-size:10.5px}
+  .offer-who{font-size:13px}
+  .working{padding:8px 11px;font-size:13px}
+  .work-cap{font-size:13px}
   .sheet-buttons{margin-top:10px}
   .sheet-buttons .btn{min-height:46px;padding:10px 16px}
   #offerHintBtn{min-height:40px;padding:8px 14px;margin:6px 0 0}
@@ -557,4 +557,36 @@ body.flipped .toast{transform:translateX(-50%) rotate(180deg)}
 }
 @keyframes fall{
   to{transform:translateY(108vh) rotate(760deg);opacity:.15}
+}
+
+
+/* A name inside the bold turn line is part of it, not the small note under it. */
+.turn-info strong span{font-size:inherit}
+
+/* Big enough for small fingers: the back link, the choice buttons and the
+   switches are all at least 40px, and the notes under them at least 13px. */
+#back{display:inline-flex; align-items:center; min-height:44px; padding:0 16px; font-size:14px}
+.seg .opt{min-width:44px; min-height:44px}
+.switch{width:66px; height:40px}
+.switch .knob{width:34px; height:34px}
+.switch[aria-checked="true"] .knob{transform:translateX(26px)}
+.row-note{font-size:13.5px}
+
+/* ── Phones held sideways ────────────────────────────────────────────────────
+   About 360px of height, and the setup sheet must fit it without scrolling:
+   it goes wide, the options sit in two columns, the back link moves to the
+   corner, and the notes under each option (there on every other screen) step
+   aside. */
+@media (max-height:520px) and (orientation:landscape){
+  .overlay{padding:6px 12px calc(6px + env(safe-area-inset-bottom))}
+  .sheet{padding:10px 18px; border-radius:18px}
+  .setup-sheet{max-width:760px; position:relative; display:grid; grid-template-columns:1fr 1fr; column-gap:24px; align-content:start}
+  .setup-sheet > *{grid-column:1 / -1}
+  .setup-sheet > .row{grid-column:auto; padding:4px 0}
+  .setup-sheet > .row-note{display:none}
+  .setup-sheet #back{position:absolute; top:8px; right:14px; margin:0}
+  .setup-sheet h1{font-size:22px; padding-right:110px}
+  .setup-sheet .sub{margin:0 0 4px; font-size:13px}
+  .setup-sheet .more{margin-top:4px}
+  .setup-sheet .sheet-buttons{margin-top:8px}
 }
