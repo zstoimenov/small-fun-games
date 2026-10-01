@@ -183,7 +183,11 @@ BB.TRAIL = [
       { name: "Wide gorge", gap: 6, rows: [-2, 0], towers: ["0,-2", "6,-2"], truck: "bus", parts: [],
         inv: { road: 6, rope: 6, beam: 4 }, par: 10,
         text: "A wide gorge and a heavy bus. Beams are scarce, so let the towers and ropes do the work.",
-        win: "That's a cable-stayed bridge, like the ones over big rivers." }
+        win: "That's a cable-stayed bridge, like the ones over big rivers." },
+      { name: "Suspension", gap: 8, rows: [-3, 0], towers: ["0,-3", "8,-3"], truck: "big", parts: [],
+        inv: { road: 8, rope: 9, beam: 6, steel: 2 }, par: 15,
+        text: "The longest gorge yet. Hang the road from both towers. Ropes reach up to 4 dots!",
+        win: "A real suspension bridge, holding the big truck high over the gorge!" }
     ],
     lesson: {
       title: "You finished Jungle Gorge!",
