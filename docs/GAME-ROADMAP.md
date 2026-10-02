@@ -2185,6 +2185,29 @@ Calibrated on 40-year bot towns: the smart bot's median legacy is ~1,300
 Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
 Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
 
+#### Eighth pass: the upright phone
+
+On an upright phone (tested at a OnePlus 12's 412×790) the town was 282×200px
+with 20px squares: the wide 14×10 map could never use the phone's height.
+
+- **The map turns.** `mayor-ui.js` measures the board and draws the town a
+  quarter turn clockwise (west at the top) whenever that makes the squares
+  clearly bigger (`svg(..., { turn })` in `map.js`). Emoji are turned back
+  upright by the stylesheet, taps are measured against the turned group, and
+  cars, smoke and marks are placed through the same turn. Saved towns and
+  rules don't change; tablets, desktops and sideways phones never turn.
+- **Slim rows round it.** The header joins the news line of the info card
+  (Back, sound, help); the town's name steps aside as on a sideways phone.
+  The numbers are one line: the year rides on ▶ End year, a loan is a badge
+  on 🏦, news chips are pictures. Tools are seven to a row, so a full city's
+  14 fit in two rows.
+- **A talk panel that rises.** Two lines under the map; what a tapped square
+  says and the town's news rise over the foot of the map. Tips and tool hints
+  stay tucked with "more ▴", so they never cover the squares they point to.
+  Tap the panel to tuck or open it.
+- Result at 412×790: map 349×488 (35px squares) for a new town, 314×440
+  (31px) for a full city with two tool rows.
+
 ### Career Compass — `career-compass/` ✅ built
 
 Kid first, with a grown-ups corner. Six styles from Holland's RIASEC interest

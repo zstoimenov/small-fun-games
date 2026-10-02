@@ -20,7 +20,7 @@ window.LC = window.LC || {};
     let tool = null, pick = null, painting = false, last = null, carTimer = 0, ghost = null;
     root.innerHTML = `<div class="map-wrap"><div class="map-box"><div class="map"></div><div class="anim" aria-hidden="true"></div></div></div>
       <div class="toolbar" role="group" aria-label="Build"></div>
-      <div class="talk card" aria-live="polite"></div>`;
+      <div class="talk-slot"><div class="talk card" aria-live="polite"></div></div>`;
     const map = root.querySelector(".map"), anim = root.querySelector(".anim"), bar = root.querySelector(".toolbar"), talk = root.querySelector(".talk");
     const g = () => town.grid;
     // The talk panel never scrolls: when what it has to say doesn't fit, the
@@ -43,17 +43,55 @@ window.LC = window.LC || {};
       }
       if (over()) talk.classList.add("fit-clamp");
       if (over()) talk.classList.add("fit-tight");
+      // On an upright phone the panel rises over the foot of the map when it
+      // has more to say: a handle shows it can be tucked back down, and a
+      // tucked panel says when something is cut.
+      talk.classList.toggle("tall", talk.offsetHeight > slot.clientHeight + 4);
+      talk.classList.toggle("cut", talk.classList.contains("fit-clamp") || !!talk.querySelector(".fit-hide") || (talk.classList.contains("tucked") && (!!talk.querySelector(".btn") || talk.children.length > 1)));
       fitting = false;
     }
-    new MutationObserver(() => { if (!fitting) requestAnimationFrame(fit); }).observe(talk, { childList: true, subtree: true, characterData: true });
+    const slot = root.querySelector(".talk-slot");
+    const rises = () => getComputedStyle(slot).position === "relative";
+    // Tips and hints stay tucked to two lines (tap to read the rest), so they
+    // never cover the squares they point to. What a tapped square has to say
+    // and the town's news rise: that's what the child asked to read.
+    let rise = false;
+    new MutationObserver(() => {
+      talk.classList.toggle("tucked", !rise);
+      rise = false;
+      if (!fitting) requestAnimationFrame(fit);
+    }).observe(talk, { childList: true, subtree: true, characterData: true });
+    talk.addEventListener("click", (e) => {
+      if (!rises() || e.target.closest("button, a, input")) return;
+      if (!talk.classList.contains("tall") && !talk.classList.contains("tucked")) return;
+      talk.classList.toggle("tucked");
+      fit();
+    });
     window.addEventListener("resize", () => requestAnimationFrame(fit));
     const GW = () => g()[0].length, GH = () => g().length;
     // Its shape, so the stylesheet can fit the map to the space without cropping
     // it (and the cars and rings drawn over it stay on their squares).
-    root.querySelector(".map-box").style.setProperty("--ar", GW() / GH());
+    const box = root.querySelector(".map-box");
+    box.style.setProperty("--ar", GW() / GH());
     // The map lives on the play screen's board; the tools and talk stay here.
     const wrap = root.querySelector(".map-wrap");
     if (o.board) { o.board.innerHTML = ""; o.board.appendChild(wrap); }
+    // A wide town on a tall screen (an upright phone) gets squares twice the
+    // size turned a quarter turn, so it turns whenever that makes the squares
+    // clearly bigger. The town itself never changes, only how it is drawn.
+    let turn = false;
+    function shape() {
+      const r = wrap.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const flat = Math.min(r.width / GW(), r.height / GH()), up = Math.min(r.width / GH(), r.height / GW());
+      const t = turn ? up > flat : up > flat * 1.05;
+      if (t === turn) return;
+      turn = t;
+      box.style.setProperty("--ar", turn ? GH() / GW() : GW() / GH());
+      paint();
+      anim.querySelectorAll("span").forEach((el) => { if (el.at) spot(el, ...el.at); });
+    }
+    if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(shape)).observe(wrap);
 
     // Extra marks on the map: how full each home is, broken buildings, sleepy
     // shops, and a ring round anything a letter or an offer is about.
@@ -80,7 +118,7 @@ window.LC = window.LC || {};
       if (pick && g()[pick.y][pick.x] && svc(g()[pick.y][pick.x].t)) shade = LC.Sim.covers(g(), pick.x, pick.y);
       else if (tool && svc(tool)) g().forEach((row, y) => row.forEach((c, x) => { if (c && c.t === tool) shade.push(...LC.Sim.covers(g(), x, y)); }));
       if (ghost) shade = LC.previewCovers(g(), tool, ghost.x, ghost.y);
-      map.innerHTML = LC.mapSvg(g(), st, { shade, pick, spots: town.spots, ghost: ghost && { x: ghost.x, y: ghost.y, e: T[tool].e }, extra: decor(st), attrs: 'class="map-svg" role="img" aria-label="Your town"' });
+      map.innerHTML = LC.mapSvg(g(), st, { shade, pick, spots: town.spots, ghost: ghost && { x: ghost.x, y: ghost.y, e: T[tool].e }, extra: decor(st), turn, attrs: 'class="map-svg" role="img" aria-label="Your town"' });
       paintBar();
       smoke();
       return st;
@@ -160,6 +198,7 @@ window.LC = window.LC || {};
     }
 
     function lookAt(x, y) {
+      rise = true;
       const st = M.look(town), c = g()[y][x];
       const h = st.homes.find((q) => q.x === x && q.y === y);
       let html = "";
@@ -277,7 +316,8 @@ window.LC = window.LC || {};
     const cellAt = (e) => {
       const s = map.querySelector("svg"), pt = s.createSVGPoint();
       pt.x = e.clientX; pt.y = e.clientY;
-      const p = pt.matrixTransform(s.getScreenCTM().inverse());
+      // Measured against the town's own squares, turned or not.
+      const p = pt.matrixTransform((s.querySelector("g.turn") || s).getScreenCTM().inverse());
       const x = Math.floor(p.x / S), y = Math.floor(p.y / S);
       return y >= 0 && y < GH() && x >= 0 && x < GW() ? { x, y } : null;
     };
@@ -309,7 +349,14 @@ window.LC = window.LC || {};
 
     // ── Things that move ─────────────────────────────────────────────────────
     const reduced = () => window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-    function spot(el, x, y) { el.style.left = pct(x, GW()); el.style.top = pct(y, GH()); }
+    // Puts something on a square; sx and sy nudge it across the screen (in
+    // squares), so smoke still rises upward on a turned map.
+    function spot(el, x, y, sx = 0, sy = 0) {
+      el.at = [x, y, sx, sy];
+      const col = turn ? GH() - 1 - y : x, row = turn ? x : y;
+      el.style.left = pct(col + sx, turn ? GH() : GW());
+      el.style.top = pct(row + sy, turn ? GW() : GH());
+    }
     // Cars wander the roads that lead out of town: more people, more cars.
     let fleet = [];
     function cars(reset) {
@@ -334,7 +381,8 @@ window.LC = window.LC || {};
           const next = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([dx, dy]) => [c.x + dx, c.y + dy]).filter((p) => set.has(p.join(",")));
           if (!next.length) return;
           const [nx, ny] = next[Math.floor(Math.random() * next.length)];
-          c.el.classList.toggle("flip", nx < c.x);
+          const ahead = turn ? c.y - ny : nx - c.x;
+          if (ahead) c.el.classList.toggle("flip", ahead < 0);
           c.x = nx; c.y = ny;
           spot(c.el, nx, ny);
         });
@@ -344,7 +392,7 @@ window.LC = window.LC || {};
       anim.querySelectorAll(".puff").forEach((p) => p.remove());
       if (reduced()) return;
       g().forEach((row, y) => row.forEach((c, x) => {
-        if (c && c.t === "factory" && !c.damaged) { const p = document.createElement("span"); p.className = "puff"; p.textContent = "💨"; spot(p, x + 0.15, y - 0.35); anim.appendChild(p); }
+        if (c && c.t === "factory" && !c.damaged) { const p = document.createElement("span"); p.className = "puff"; p.textContent = "💨"; spot(p, x, y, 0.15, -0.35); anim.appendChild(p); }
       }));
     }
     // End of a year: trucks where families moved in, coins over the town hall.
@@ -386,9 +434,11 @@ window.LC = window.LC || {};
     function reset() { tool = null; ghost = null; pick = null; hint(); paint(); }
 
     hint();
+    // Turned or not from the first frame, so the first tap lands where it looks.
+    shape();
     paint();
     cars(true);
     marks(town.marks);
-    return { paint, burst, look: () => M.look(town), marks, show, reset, say: (h) => { talk.innerHTML = h; } };
+    return { paint, burst, look: () => M.look(town), marks, show, reset, say: (h) => { rise = true; talk.innerHTML = h; } };
   };
 })();

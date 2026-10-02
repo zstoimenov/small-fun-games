@@ -518,7 +518,7 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
   /* The talk panel takes the room between the tools and the buttons, so a
      family's words and an upgrade fit without a scrollbar. */
   .panel-controls{flex:1 1 auto}
-  .panel-controls > .talk,.panel-controls > .slot{flex:1 1 0; min-height:72px}
+  .panel-controls > .talk,.panel-controls > .talk-slot > .talk,.panel-controls > .slot{flex:1 1 0; min-height:72px}
   .panel-acts{margin-top:auto}
   .play .talk{max-height:none}
   #studio .toolbar{grid-template-columns:repeat(auto-fill,minmax(56px,1fr))}
@@ -870,3 +870,90 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
   .pc-years{display:none}
 }
 
+
+/* ── The Mayor on an upright phone: the map gets the room ────────────────────
+   The town is drawn turned (see mayor-ui.js) so it can use the phone's
+   height, and everything around it shrinks to slim rows: the header and the
+   town's name share one line, the numbers are one line, the news has one
+   line kept for it (so the map never jumps), and the talk panel is two lines
+   that rise over the foot of the map when a family has more to say. */
+.talk-slot{display:contents}
+.map-svg[data-turn] text{transform-box:fill-box; transform-origin:50% 50%; transform:rotate(-90deg)}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  /* The header joins the news line at the top of the info card: Back on the
+     left, sound and help on the right. The town's name steps aside, as it
+     does on a sideways phone. */
+  .page:has(> #studio:not([hidden])){position:relative}
+  .page:has(> #studio:not([hidden])) > .top{position:absolute; z-index:2; top:calc(14px + env(safe-area-inset-top)); left:calc(var(--gutter) + 6px); right:calc(var(--gutter) + 6px); min-height:44px; gap:4px; pointer-events:none}
+  .page:has(> #studio:not([hidden])) > .top > *{pointer-events:auto}
+  .page:has(> #studio:not([hidden])) > .top h1{visibility:hidden; pointer-events:none}
+  .page:has(> #studio:not([hidden])) .icon-btn{width:44px; height:44px; font-size:17px}
+  .page:has(> #studio:not([hidden])) #up,.page:has(> #studio:not([hidden])) #back{min-height:44px; min-width:44px; font-size:0; justify-content:center}
+  .page:has(> #studio:not([hidden])) #up::before,.page:has(> #studio:not([hidden])) #back::before{content:"\2039"; font-size:30px; line-height:1}
+  #studio .mayor-top .studio-row{display:none}
+  #studio .mayor-top .news,#studio .mayor-top .over,#studio .mayor-top::before{order:-1; margin-left:48px; margin-right:94px}
+  #studio .play{gap:6px}
+  #studio .mayor-top{padding:6px 10px; gap:4px}
+  #studio .mayor-top .stats{flex-wrap:nowrap; white-space:nowrap; font-size:13px; gap:0 8px; align-items:center; overflow:hidden}
+  #studio .stat-btn{min-height:40px; padding:0 8px}
+  /* One line for the news or a notice, there or not. */
+  #studio .mayor-top .news,#studio .mayor-top .over{min-height:40px}
+  #studio .mayor-top:not(:has(.news-chip:not([hidden]))):has(.over[hidden])::before{content:""; display:block; min-height:44px}
+  #studio .mayor-top .news,#studio .mayor-top .over{min-height:44px; align-items:center}
+  #studio .news{flex-wrap:nowrap; gap:4px; overflow:hidden}
+  #studio .news-chip{min-height:40px; padding:0 10px; font-size:14px}
+  #studio .over{flex-wrap:nowrap; padding:0 0 0 8px; gap:6px; font-size:13px; background:none}
+  #studio .over p{font-size:13px; line-height:1.2}
+  #studio .over .long{display:none}
+  #studio .over .short{display:inline}
+  #studio .over .btn{min-height:40px; padding:0 10px; font-size:14px}
+  /* Talk first, right under the map, so it can rise over the map's foot. */
+  #studio #sEditor{gap:6px}
+  #studio .talk-slot{display:block; position:relative; order:-1; flex:0 0 58px; height:58px; z-index:3}
+  #studio .talk-slot > .talk{position:absolute; left:0; right:0; bottom:0; min-height:100%; height:auto; max-height:calc(var(--app-h) * .45); padding:6px 10px; font-size:14px; overflow:hidden; box-shadow:0 -6px 18px var(--shadow)}
+  #studio .talk-slot > .talk.tucked{max-height:100%}
+  #studio .talk p{line-height:1.3}
+  #studio .talk .bubble{padding:4px 10px}
+  #studio .talk .who{margin-bottom:2px}
+  #studio .talk .btn{min-height:40px}
+  #studio .talk.tall{padding-top:14px; cursor:pointer}
+  #studio .talk.tucked.cut{cursor:pointer}
+  #studio .talk.tall::before{content:""; position:absolute; top:5px; left:50%; width:36px; height:4px; margin-left:-18px; border-radius:2px; background:var(--muted); opacity:.5}
+  /* Seven tools to a row: a whole city's worth (14) fits in two rows. */
+  #studio .toolbar{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
+  #studio .tool{min-height:44px; padding:0}
+  #studio .tool span{font-size:22px}
+  #studio .panel-acts .btn{min-height:48px}
+}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  /* The idle hint is the only thing to say: keep it, it's what to do next. */
+  #studio .talk > .muted:only-child:not(.fit-hide){display:block}
+  #studio .mayor-top .stats{gap:0 7px}
+  #studio .stat-btn{padding:0 6px}
+}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  /* Tucked: two clean lines, buttons wait until it's opened. */
+  #studio .talk.tucked .tip,#studio .talk.tucked .coach{padding:2px 8px; margin:0; border-width:1px}
+  #studio .talk.tucked .coach-acts,#studio .talk.tucked .btn{display:none}
+  #studio .talk.tucked p{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+  #studio .talk.tucked > * + *,#studio .talk.tucked > * + p{display:none}
+  #studio .talk.tucked.cut::after{content:"more \25B4"; position:absolute; right:6px; bottom:4px; padding:0 4px 0 10px; font-size:13px; font-weight:800; color:var(--accent); background:linear-gradient(90deg, transparent, var(--card) 10px)}
+}
+.yr-n{display:none}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  /* A full city's numbers on one line: the year moves onto End year, the
+     loan onto the bank as a badge, and the news chips are pictures. */
+  #studio .stats .yr,#studio .stats .loan{display:none}
+  #studio .yr-n{display:inline}
+  #studio .news-chip .w{display:none}
+  #studio .news-chip{padding:0 8px}
+  #mBank{position:relative}
+  #mBank:not([data-owe=""])::after{content:attr(data-owe); position:absolute; top:-6px; right:-2px; min-width:22px; padding:1px 5px; border-radius:999px; background:var(--wrong); color:#fff; font-size:13px; font-weight:800; line-height:1.3}
+}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  #studio .news-chip{flex:0 1 auto; min-width:44px; overflow:hidden; text-overflow:ellipsis}
+}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  #studio .panel-acts .btn.ghost{flex:0 0 52px; padding:0}
+  #studio #mEnd{flex:1 1 auto; padding:0 8px}
+}

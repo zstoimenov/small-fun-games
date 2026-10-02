@@ -94,13 +94,13 @@ LC.Studio = (function () {
     if (!t) return;
     const st = board.look();
     const rk = M.RANKS[t.rank], next = M.RANKS[t.rank + 1];
-    $("mRank").innerHTML = `${rk.e} ${rk.name}` + (next ? `<small>${Math.max(0, next.at - st.people)} more people to ${next.name}</small>` : "");
+    $("mRank").innerHTML = `<span>${rk.e}<span class="w"> ${rk.name}</span></span>` + (next ? `<small>${Math.max(0, next.at - st.people)} more people to ${next.name}</small>` : "");
     const happy = st.people ? Math.round(100 * st.happy / st.people) : 0;
-    $("mStats").innerHTML = `<span>📅 Year <b>${t.year}</b>${t.mode === "challenge" ? ` of ${M.CHALLENGE_YEARS}` : ""}</span>` +
+    $("mStats").innerHTML = `<span class="yr">📅<span class="w"> Year</span> <b>${t.year}</b>${t.mode === "challenge" ? ` of ${M.CHALLENGE_YEARS}` : ""}</span>` +
       `<span title="People living here / room in all the homes">👥 <b>${st.people}/${st.capacity}</b></span><span>😀 <b>${happy}%</b></span>` +
       `<span class="${t.coins < 10 ? "bad" : ""}">💰 <b>${t.coins}</b></span>` +
-      `<span class="${st.balance < 0 ? "bad" : ""}" title="What the next year will add or take">📈 <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b>/yr</span>` +
-      (t.loan ? `<span class="bad">🏦 owe <b>${t.loan}</b></span>` : "") +
+      `<span class="${st.balance < 0 ? "bad" : ""}" title="What the next year will add or take">📈 <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b><span class="w">/yr</span></span>` +
+      (t.loan ? `<span class="bad loan">🏦 owe <b>${t.loan}</b></span>` : "") +
       (t.missions ? `<button type="button" class="stat-btn" id="mMissions" aria-label="Missions: ${t.missions.filter((m) => m.done).length} of 3 done. Tap to see them">🎯 <b>${t.missions.filter((m) => m.done).length}/3</b></button>` : "");
     // The news: a chip each for the election, a family's letter and an offer.
     // A chip is one short line; tapping it tells the whole story in the talk
@@ -110,13 +110,13 @@ LC.Studio = (function () {
     $("mCampaign").hidden = !c;
     if (c) {
       const poll = M.tally(t), tot = poll.total || 1;
-      $("mCampaign").innerHTML = `🗳️ You <b>${Math.round(100 * poll.votes.mayor / tot)}%</b>`;
+      $("mCampaign").innerHTML = `🗳️<span class="w"> You</span> <b>${Math.round(100 * poll.votes.mayor / tot)}%</b>`;
       $("mCampaign").setAttribute("aria-label", "Election this year: tap to see the poll");
     }
     $("mRequest").hidden = !q;
-    if (q) { $("mRequest").innerHTML = `✉️ ${T[q.need].e} yr ${q.due}`; $("mRequest").setAttribute("aria-label", "A letter from the " + q.fam + " family: tap to read it"); }
+    if (q) { $("mRequest").innerHTML = `✉️ ${T[q.need].e}<span class="w"> yr ${q.due}</span>`; $("mRequest").setAttribute("aria-label", "A letter from the " + q.fam + " family: tap to read it"); }
     $("mOffer").hidden = !off;
-    if (off) $("mOffer").innerHTML = "🤝 Offer!";
+    if (off) $("mOffer").innerHTML = '🤝<span class="w"> Offer!</span>';
     // A new offer opens itself, so its Yes and No are in sight straight away.
     if (off && shownOffer !== off) { shownOffer = off; news("offer"); }
     $("mOver").hidden = !t.over && !t.farewell;
@@ -146,6 +146,10 @@ LC.Studio = (function () {
       }
     }
     $("mEnd").disabled = t.over || !!t.farewell;
+    // On an upright phone the year rides on this button and the loan on the
+    // bank's, so the numbers above the map fit on one line.
+    $("mEndYear").textContent = " " + t.year;
+    $("mBank").dataset.owe = t.loan ? t.loan : "";
   }
 
   // ── End the year ───────────────────────────────────────────────────────────

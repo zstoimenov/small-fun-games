@@ -25,11 +25,15 @@ window.LC = window.LC || {};
     if (g[y][x].entry && out) dirs.push(out);
     if (!dirs.length) s += `<circle cx="${cx}" cy="${cy}" r="4" fill="#f5f5f5"/>`;
     dirs.forEach(([dx, dy]) => { s += `<line x1="${cx}" y1="${cy}" x2="${cx + dx * S / 2}" y2="${cy + dy * S / 2}" stroke="#f5f5f5" stroke-width="2.5" stroke-dasharray="5 4"/>`; });
-    if (g[y][x].entry) s += `<text x="${x * S + 4}" y="${y * S + 11}" font-size="9" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">OUT</text>`;
+    // Centred near the middle of the square, so it stays inside the map when the map is turned.
+    if (g[y][x].entry) s += `<text x="${cx}" y="${cy - 9}" font-size="9" font-weight="800" fill="#fff" stroke="#8a8f98" stroke-width="3" paint-order="stroke" text-anchor="middle" dominant-baseline="central" font-family="system-ui,sans-serif">OUT</text>`;
     return s;
   }
 
-  // opts: { shade: [[x, y]...], shadeColor, pick: {x, y}, small }
+  // opts: { shade: [[x, y]...], shadeColor, pick: {x, y}, small, turn }
+  // turn: draw the town a quarter turn clockwise (west at the top), for a
+  // wide town on a tall screen. The words and emoji are turned back upright
+  // by the stylesheet, so only the squares move.
   function svg(g, st, opts) {
     const o = opts || {}, w = g[0].length, h = g.length;
     let s = `<rect width="${w * S}" height="${h * S}" fill="#9ccc65"/>`;
@@ -73,6 +77,7 @@ window.LC = window.LC || {};
     if (o.ghost) s += `<rect x="${o.ghost.x * S + 2}" y="${o.ghost.y * S + 2}" width="${S - 4}" height="${S - 4}" rx="6" fill="#fffde7" opacity=".7" stroke="#e91e63" stroke-width="2.5" stroke-dasharray="5 3"/><text x="${o.ghost.x * S + S / 2}" y="${o.ghost.y * S + S / 2 + 1}" font-size="25" opacity=".75" text-anchor="middle" dominant-baseline="central">${o.ghost.e}</text>`;
     if (o.extra) s += o.extra;
     if (o.pick) s += `<rect x="${o.pick.x * S + 1}" y="${o.pick.y * S + 1}" width="${S - 2}" height="${S - 2}" rx="6" fill="none" stroke="#e91e63" stroke-width="3"/>`;
+    if (o.turn) return `<svg viewBox="0 0 ${h * S} ${w * S}" xmlns="http://www.w3.org/2000/svg" data-turn ${o.attrs || ""}><g class="turn" transform="translate(${h * S} 0) rotate(90)">${s}</g></svg>`;
     return `<svg viewBox="0 0 ${w * S} ${h * S}" xmlns="http://www.w3.org/2000/svg" ${o.attrs || ""}>${s}</svg>`;
   }
 
