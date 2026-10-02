@@ -2162,6 +2162,26 @@ mayor did.
   least important lines (hints, likes, bonuses), then cuts bubbles to two
   lines, so it never scrolls at any size.
 
+#### Seventh pass: an ending
+
+From play-testing: an endless town at year 45 had 20,000 coins and nothing
+left to build. Every town (any version) now ends gracefully:
+
+- **Term limit.** A mayor serves at most 10 terms (40 years). Year 39 warns
+  that the next year is the last, and there's no election in it. After it,
+  End year locks and the farewell party opens (towns already past 40 get it
+  at their next end of year). From year 20 the mayor can retire any time:
+  the advisor shows a 🎉 Farewell party button under its tip.
+- **Farewell gifts** turn the treasury into something: 🌷 100 up to 🚀 15,000,
+  each worth legacy points; coins left over count a little.
+- **The legacy card**: the town's map, years served, most people, happy
+  people, elections won, missions, medals, gifts and families' thank-yous,
+  totalled into Good (0), Great (600) or Legendary (1,100) mayor. The town is
+  kept as 🎖️ Retired and the card can be reopened; two new medals.
+
+Calibrated on 40-year bot towns: the smart bot's median legacy is ~1,300
+(Legendary), the comb bot's ~700 (Great).
+
 Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
 Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
 

@@ -215,6 +215,16 @@
   <button class="btn" type="button" data-close>Got it!</button>
 </dialog>
 
+<!-- Retiring: the farewell gifts, then the legacy card (filled in by studio.js). -->
+<dialog id="farewellDialog" class="sheet farewell" aria-labelledby="fwTitle">
+  <div class="sheet-head">
+    <h2 id="fwTitle">&#127881; Your farewell party</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <div id="fwBody" class="fw-body"></div>
+  <div id="fwActs" class="actions"></div>
+</dialog>
+
 <!-- The mayor's guide: opens by itself the first time, then from ? on the Mayor's screen. -->
 <dialog id="mayorHelp" class="sheet guide" aria-labelledby="mayorHelpTitle">
   <div class="sheet-head">
@@ -253,6 +263,10 @@
     <ul class="how">
       <li>Every 4 years the town votes. Rivals point at what's wrong; fix it before the vote to win families back. The live poll shows how you're doing.</li>
       <li>Each town has 3 missions. Tap &#127919; next to the coins to see them.</li>
+    </ul>
+    <h3>&#127894;&#65039; Retiring</h3>
+    <ul class="how">
+      <li>After 20 years you can retire whenever you like; after 10 terms (40 years) you must. Your farewell party spends the treasury on gifts for the town, then shows your legacy: Good, Great or Legendary mayor.</li>
     </ul>
     <p class="muted">&#128161; Stuck? When you're not building, the panel next to the map gives you a tip.</p>
   </div>

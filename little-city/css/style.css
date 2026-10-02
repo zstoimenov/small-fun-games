@@ -825,3 +825,48 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
   #studio .over .long{display:none}
   #studio .over .short{display:inline}
 }
+
+/* The farewell party: gifts to pick, then the legacy card. */
+.farewell[open]{display:flex; flex-direction:column}
+.farewell .fw-body{overflow:auto; min-height:0; flex:1 1 auto; text-align:left}
+.farewell .actions{display:flex; gap:8px}
+.farewell .actions .btn{flex:1 1 0}
+.fw-coins{font-size:18px; margin:6px 0}
+.gift-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px}
+.gift{display:flex; flex-direction:column; align-items:center; gap:2px; min-height:96px; padding:8px 6px; border-radius:14px; border:2px solid var(--line, #ccc); background:var(--card); color:var(--ink); font:inherit; cursor:pointer; text-align:center}
+.gift .ge{font-size:30px}
+.gift b{font-size:14px; line-height:1.2}
+.gift small{font-size:13px; color:var(--muted)}
+.gift.on{border-color:#43a047; background:color-mix(in srgb, #43a047 16%, var(--card))}
+.gift:disabled{opacity:.45; cursor:default}
+.postcard{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start}
+.pc-map svg{width:100%; height:auto; border-radius:10px; display:block}
+.pc-title{font-size:18px; margin:0 0 4px}
+.pc-title .dim{opacity:.25}
+.pc-gifts{font-size:26px; margin:4px 0; letter-spacing:2px}
+.pc-parts{list-style:none; margin:6px 0; padding:0; font-size:14px}
+.pc-parts li{display:flex; justify-content:space-between; gap:8px; padding:2px 0; border-bottom:1px dashed var(--line, #ccc)}
+.pc-parts li.tot{font-weight:800; font-size:16px; border-bottom:0}
+.postcard .bubble{margin:4px 0 0; padding:6px 10px; border-radius:14px 14px 14px 4px; background:var(--chip); font-weight:600; font-size:14px}
+@media (max-width:600px){
+  .postcard{grid-template-columns:1fr; gap:6px}
+  .pc-map svg{max-height:150px; width:auto; max-width:100%; margin:0 auto}
+  .postcard .pc-text > p{margin:2px 0}
+  .postcard .bubble ~ .bubble{display:none}
+}
+/* A phone held sideways: one row of gifts, and a card without the speech. */
+@media (max-height:520px) and (orientation:landscape){
+  .farewell .fw-body p{margin:2px 0}
+  .farewell .fw-intro{display:none}
+  .gift-grid{gap:6px; grid-template-columns:repeat(7,minmax(0,1fr))}
+  .gift{min-height:0; padding:4px}
+  .gift .ge{font-size:24px}
+  .gift b{font-size:13px}
+  .postcard .bubble{display:none}
+  .pc-parts{font-size:13px; margin:2px 0}
+  .pc-parts li{padding:0}
+  .pc-gifts{font-size:20px; margin:2px 0}
+  .pc-title{font-size:16px; margin:0}
+  .pc-years{display:none}
+}
+

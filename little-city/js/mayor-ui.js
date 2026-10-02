@@ -131,6 +131,7 @@ window.LC = window.LC || {};
       return `<div class="coach"><p><b>🎓 Step ${town.tutor} of ${STEPS.length}:</b> ${st.text}</p><div class="coach-acts">${st.last ? '<button type="button" class="btn small go" data-coach="done">👍 Got it</button>' : ""}<button type="button" class="btn small ghost" data-coach="skip">Skip tips</button></div></div>`;
     }
     talk.addEventListener("click", (e) => {
+      if (e.target.closest("[data-retire]")) { LC.Audio.click(); o.onRetire(); return; }
       const b = e.target.closest("[data-coach]");
       if (!b) return;
       delete town.tutor;
@@ -140,7 +141,7 @@ window.LC = window.LC || {};
     });
     function advisor() {
       const a = M.advice(town);
-      return a ? `<div class="tip"><p><span class="tip-e" aria-hidden="true">${a.e}</span> ${esc(a.text)}</p></div>` : "";
+      return a ? `<div class="tip"><p><span class="tip-e" aria-hidden="true">${a.e}</span> ${esc(a.text)}</p>${(a.retire || M.canRetire(town)) && o.onRetire ? '<button type="button" class="btn small go" data-retire>🎉 Farewell party</button>' : ""}</div>` : "";
     }
     const say = (html) => { talk.innerHTML = coach() + `<p>${html}</p>`; };
     function hint() {

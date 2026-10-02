@@ -44,6 +44,8 @@ LC.Mayor = (function () {
     { id: "ten", e: "🎖️", name: "10 years as mayor", text: "Ran one town for 10 years." },
     { id: "elected", e: "🗳️", name: "Re-elected", text: "Won an election." },
     { id: "landslide", e: "🏆", name: "Landslide", text: "Won an election with 3 out of every 4 votes." },
+    { id: "retired", e: "🎖️", name: "Farewell party", text: "Retired as mayor with a farewell party." },
+    { id: "legend", e: "🌟", name: "Legendary mayor", text: "Retired with the title Legendary mayor." },
     { id: "mission", e: "🎯", name: "Mission done", text: "Finished one of a town's missions." },
     { id: "missions3", e: "🏅", name: "All three missions", text: "Finished all 3 missions in one town." }
   ];
@@ -763,7 +765,7 @@ LC.Mayor = (function () {
 
   // ── End the year ───────────────────────────────────────────────────────────
   function endYear(town) {
-    if (town.over) return null;
+    if (town.over || town.farewell) return null;
     const r = rng(town.seed * 1000 + town.year);
     const before = look(town);
     const sum = { year: town.year, inn: 0, out: 0, why: {}, news: [], upgrades: 0, marks: [] };
@@ -881,8 +883,17 @@ LC.Mayor = (function () {
     sum.coins = town.coins;
     sum.medals = town.newMedals.slice();
     if (town.mode === "challenge" && town.year > CHALLENGE_YEARS) town.over = true;
+    // A town that never ends: 10 terms is the most a mayor serves. The year
+    // before the last gets a warning; after the last comes the farewell party
+    // (towns already past it get theirs at the next end of year).
+    if (town.mode !== "challenge" && !town.over) {
+      if (town.year > TERM_LIMIT) { town.farewell = true; sum.farewell = true; sum.news.push(`🎖️ ${town.year - 1} years as mayor! It's time to hand over to someone new, with a farewell party.`); }
+      else if (town.year === TERM_LIMIT) sum.news.push("📣 Next year is your last as mayor: 10 terms is the most a mayor can serve. Make it a great one!");
+    }
     if (town.over) sum.final = score(town);
-    else if (town.year % TERM === 0) {
+    else if (town.farewell) { /* no more elections: the party comes next */ }
+    // No election in a mayor's very last year.
+    else if (town.year % TERM === 0 && !(town.mode !== "challenge" && town.year >= TERM_LIMIT)) {
       startCampaign(town, r);
       sum.news.push("🗳️ Election next year! Two rivals want to be mayor. See what they promise, and keep the families happy to win their votes.");
     }
@@ -929,8 +940,10 @@ LC.Mayor = (function () {
   };
   function advice(town, st) {
     st = st || look(town);
+    if (town.retired) return { e: "🎖️", text: `You retired after ${town.retired.year} years as a ${town.retired.legacy.title.toLowerCase()}. Start a new town from 🏙️ My towns whenever you like!` };
     if (town.over) return null;
     const live = st.homes.filter((h) => h.live);
+    if (town.farewell) return { e: "🎖️", text: "Your last year is over. Time for your farewell party!", retire: true };
     if (!st.homes.length) return { e: "🏠", text: "Start with a road from the OUT road, then a 🏠 house next to it." + (v2(town) ? " The badge on House shows who moves in next." : "") };
     if (st.homes.some((h) => h.missing.includes("road"))) return { e: "🛣️", text: "A home has no road! Every building must touch a road that leads OUT of town." };
     if (town.grid.some((row) => row.some((c) => c && c.damaged))) return { e: "🔧", text: NEED_TIP.repair() };
@@ -947,6 +960,7 @@ LC.Mayor = (function () {
     if (top) return { e: "💡", text: NEED_TIP[top](count[top]) };
     const q = town.request;
     if (q) return { e: "✉️", text: `The ${q.fam} family asked for a ${T[q.need].name.toLowerCase()} near them by year ${q.due}. Do it for ${q.reward} coins!` };
+    if (canRetire(town) && (town.coins > 1000 || town.year > TERM_LIMIT - 4)) return { e: "🎖️", text: `${town.year - 1} years as mayor! Your town is all grown up. Whenever you're ready, retire with a farewell party: spend the treasury on gifts for the town and see your legacy.${town.year <= TERM_LIMIT ? ` (After year ${TERM_LIMIT} you have to.)` : ""}`, retire: true };
     if (town.loan && town.coins > 40) return { e: "🏦", text: "You have coins to spare: pay back some of the loan at the 🏦 bank. Loans cost interest every year." };
     if (v2(town) && town.coins > 60 + st.people) return { e: "💰", text: "That's a lot of coins sitting still! Spend them: upgrade busy buildings (tap one with 👆 Look). Rivals notice a mayor who doesn't spend." };
     if (town.missions) {
@@ -956,6 +970,57 @@ LC.Mayor = (function () {
     if (town.nextFam) { const F = FAMS[town.nextFam]; return { e: F.e, text: `Next to move in: ${F.name}. They want ${F.likes}. Find them a good spot!` }; }
     if (!live.length) return { e: "▶", text: "Press ▶ End year. Families move in when everything they need is close by." };
     return { e: "😀", text: "Everything looks good! Build more homes to grow, and keep an eye on the families." };
+  }
+
+  // ── Retiring ───────────────────────────────────────────────────────────────
+  // From year 20 a mayor may retire; after 10 terms they must. The farewell
+  // party spends the treasury on gifts for the town, then the legacy card
+  // sums up the whole time as mayor.
+  const TERM_LIMIT = 40, RETIRE_FROM = 20;
+  const GIFTS = [
+    { id: "flowers", e: "🌷", name: "Flowers on every street", cost: 100, pts: 10 },
+    { id: "fountain", e: "⛲", name: "A grand fountain", cost: 500, pts: 30 },
+    { id: "carousel", e: "🎠", name: "A merry-go-round", cost: 1000, pts: 50 },
+    { id: "statue", e: "🗽", name: "A statue of you", cost: 2500, pts: 80 },
+    { id: "fair", e: "🎡", name: "A fun fair", cost: 5000, pts: 120 },
+    { id: "fireworks", e: "🎆", name: "Fireworks every New Year", cost: 8000, pts: 160 },
+    { id: "space", e: "🚀", name: "A space museum", cost: 15000, pts: 220 }
+  ];
+  const TITLES = [{ at: 0, name: "Good mayor", stars: 1 }, { at: 600, name: "Great mayor", stars: 2 }, { at: 1100, name: "Legendary mayor", stars: 3 }];
+  const canRetire = (town) => !town.over && town.mode !== "challenge" && (town.farewell || town.year > RETIRE_FROM);
+  function legacy(town, gifts, left) {
+    const st = look(town);
+    const won = (town.elections || []).filter((e) => e.won).length;
+    const missions = (town.missions || []).filter((m) => m.done).length;
+    const giftPts = (gifts || []).reduce((n, id) => n + (GIFTS.find((g) => g.id === id) || { pts: 0 }).pts, 0);
+    const parts = [
+      { e: "👥", name: "Most people", n: town.stats.best, pts: town.stats.best },
+      { e: "😀", name: "Happy people now", n: st.happy, pts: st.happy },
+      { e: "🗳️", name: "Elections won", n: won, pts: 15 * won },
+      { e: "🎯", name: "Missions done", n: missions, pts: 40 * missions },
+      { e: "🏅", name: "Medals", n: town.medals.length, pts: 10 * town.medals.length },
+      { e: "🎁", name: "Farewell gifts", n: (gifts || []).length, pts: giftPts },
+      { e: "💰", name: "Coins left for the next mayor", n: left, pts: Math.floor(left / 200) }
+    ].filter((p) => p.name !== "Missions done" || town.missions);
+    const pts = parts.reduce((n, p) => n + p.pts, 0);
+    const title = TITLES.reduce((t, x) => (pts >= x.at ? x : t), TITLES[0]);
+    return { pts, parts, title: title.name, stars: title.stars, years: town.year - 1, people: st.people, happy: st.happy };
+  }
+  function retire(town, gifts) {
+    if (!canRetire(town)) return "Not yet: a mayor can retire after 20 years.";
+    const list = (gifts || []).filter((id, i, a) => a.indexOf(id) === i && GIFTS.some((g) => g.id === id));
+    const cost = list.reduce((n, id) => n + GIFTS.find((g) => g.id === id).cost, 0);
+    if (cost > town.coins) return "Those gifts cost more coins than the town has.";
+    town.coins -= cost;
+    award(town, "retired");
+    const lg = legacy(town, list, town.coins);
+    if (lg.stars >= 3) award(town, "legend");
+    town.retired = { year: town.year - 1, gifts: list, legacy: legacy(town, list, town.coins) };
+    town.over = true;
+    town.farewell = false;
+    town.campaign = null;
+    town.offer = null;
+    return null;
   }
 
   // The 20-year challenge: people count most, happy people and savings help,
@@ -972,7 +1037,7 @@ LC.Mayor = (function () {
   }
 
   return {
-    W, H, V, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS, FAMS, LOUD, wantsList, isV2: v2, isV3: v3, advice, MISSIONS, CAP, WIDE, BIG, WIDEN, TRAFFIC_AT, ROAD_NAMES, capOfRoad, widen, widenStep, missionState,
+    W, H, V, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS, FAMS, LOUD, wantsList, isV2: v2, isV3: v3, advice, GIFTS, TERM_LIMIT, RETIRE_FROM, canRetire, legacy, retire, MISSIONS, CAP, WIDE, BIG, WIDEN, TRAFFIC_AT, ROAD_NAMES, capOfRoad, widen, widenStep, missionState,
     create, makeMap, look, build, bulldoze, repair, upgrade, nextStep, repairCost, borrow, repay, loanLimit, answer, endYear, score,
     people, unlocked, rankOf, covered, wantsFor, rng, tally, retry, complaints
   };

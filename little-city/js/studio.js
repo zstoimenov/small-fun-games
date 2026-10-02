@@ -36,7 +36,7 @@ LC.Studio = (function () {
     const t = town();
     if (!t) { newTown(); return false; }
     $("sName").innerHTML = `${esc(t.name)} <small aria-hidden="true">✏️</small>`;
-    board = LC.mayorBoard($("sEditor"), t, { board: $("mBoard"), onChange: () => { keep(); header(); }, locked: () => t.over, onTutorDone: () => { store.tutorDone = true; keep(); } });
+    board = LC.mayorBoard($("sEditor"), t, { board: $("mBoard"), onChange: () => { keep(); header(); }, locked: () => t.over, onRetire: () => farewell(), onTutorDone: () => { store.tutorDone = true; keep(); } });
     header();
     return true;
   }
@@ -119,8 +119,21 @@ LC.Studio = (function () {
     if (off) $("mOffer").innerHTML = "🤝 Offer!";
     // A new offer opens itself, so its Yes and No are in sight straight away.
     if (off && shownOffer !== off) { shownOffer = off; news("offer"); }
-    $("mOver").hidden = !t.over;
-    if (t.over) {
+    $("mOver").hidden = !t.over && !t.farewell;
+    if (t.farewell && !t.over) {
+      $("mOver").innerHTML = `<p><b>🎖️ <span class="long">Your time as mayor is over.</span><span class="short">Time to retire!</span></b></p>`;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "btn small go"; b.textContent = "🎉 Farewell party";
+      b.addEventListener("click", farewell);
+      $("mOver").appendChild(b);
+    } else if (t.retired) {
+      const lg = t.retired.legacy;
+      $("mOver").innerHTML = `<p><b>🎖️ Retired after ${t.retired.year} years:</b> ${lg.title} ${"⭐".repeat(lg.stars)}</p>`;
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "btn small"; b.textContent = "🖼️ Farewell card";
+      b.addEventListener("click", () => postcard(t));
+      $("mOver").appendChild(b);
+    } else if (t.over) {
       const sc = M.score(t);
       $("mOver").innerHTML = t.lost
         ? `<p><b>🗳️ <span class="long">You lost the election in year ${t.year - 1}.</span><span class="short">You lost the vote.</span></b></p>`
@@ -132,7 +145,7 @@ LC.Studio = (function () {
         $("mOver").appendChild(b);
       }
     }
-    $("mEnd").disabled = t.over;
+    $("mEnd").disabled = t.over || !!t.farewell;
   }
 
   // ── End the year ───────────────────────────────────────────────────────────
@@ -195,6 +208,7 @@ LC.Studio = (function () {
     }
     function nextBtn() {
       if (t.lost && t.snap) { btn("btn ghost", "Finish", () => $("yearDialog").close()); btn("btn go", "↺ Try that year again", () => { $("yearDialog").close(); retry(); }); }
+      else if (sum.farewell) btn("btn go", "🎉 To the farewell party", () => { $("yearDialog").close(); farewell(); });
       else btn("btn go", t.over ? "See my town" : `On to year ${t.year} ›`, () => $("yearDialog").close());
     }
     if (sum.medals.length || (sum.election && sum.election.won)) LC.Audio.win(); else if (sum.election) LC.Audio.wrong();
@@ -208,6 +222,73 @@ LC.Studio = (function () {
     keep();
     open();
     toast("Back to the start of the election year. You can do it! 🗳️");
+  }
+
+  // ── Retiring: the farewell party ───────────────────────────────────────────
+  // First the treasury buys gifts for the town (as many as the coins cover),
+  // then the legacy card sums up the mayor's whole time in office.
+  let picked = [];
+  function farewell() {
+    const t = town();
+    if (!t || !M.canRetire(t)) return;
+    picked = [];
+    paintGifts();
+    if (!$("farewellDialog").open) $("farewellDialog").showModal();
+  }
+  function paintGifts() {
+    const t = town();
+    const spent = picked.reduce((n, id) => n + M.GIFTS.find((g) => g.id === id).cost, 0), left = t.coins - spent;
+    $("fwTitle").textContent = "🎉 Your farewell party";
+    $("fwBody").innerHTML = `<p class="fw-intro">${t.farewell ? `After ${t.year - 1} years, it's time to hand ${esc(t.name)} to a new mayor.` : `You've been mayor of ${esc(t.name)} for ${t.year - 1} years.`} Spend the treasury on goodbye gifts for the town!</p>
+      <p class="fw-coins">💰 <b>${left.toLocaleString()}</b> coins left</p><div class="gift-grid"></div>`;
+    const grid = $("fwBody").querySelector(".gift-grid");
+    M.GIFTS.forEach((gf) => {
+      const on = picked.includes(gf.id), can = on || gf.cost <= left;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "gift" + (on ? " on" : "");
+      b.disabled = !can;
+      b.setAttribute("aria-pressed", String(on));
+      b.innerHTML = `<span class="ge" aria-hidden="true">${gf.e}</span><b>${gf.name}</b><small>💰 ${gf.cost.toLocaleString()}</small>`;
+      b.addEventListener("click", () => { picked = on ? picked.filter((x) => x !== gf.id) : picked.concat(gf.id); LC.Audio.click(); paintGifts(); });
+      grid.appendChild(b);
+    });
+    const acts = $("fwActs");
+    acts.innerHTML = "";
+    const mk = (cls, text, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); acts.appendChild(b); };
+    if (!t.farewell) mk("btn ghost", "Not yet", () => $("farewellDialog").close());
+    mk("btn go", picked.length ? "🎖️ Retire and give the gifts" : "🎖️ Retire", () => {
+      const err = M.retire(t, picked);
+      if (err) { toast(err); return; }
+      keep(); board.reset(); header();
+      LC.Audio.win();
+      postcard(t);
+    });
+  }
+  // The legacy card: kept on the town, so it can be looked at again later.
+  const THANKS = { grand: "Our street is so peaceful. Thank you, Mayor!", kids: "The kids love the school and the park!", workers: "Good jobs, close to home. Thanks, Mayor!", nature: "We wake up to birds and trees every day!" };
+  function postcard(t) {
+    const r = t.retired;
+    if (!r) return;
+    const lg = r.legacy, st = M.look(t);
+    const fams = Array.from(new Set(st.homes.filter((h) => h.live && h.fam).map((h) => h.fam)));
+    const said = (fams.length ? fams.slice(0, 3).map((f) => M.FAMS[f].e + " “" + THANKS[f] + "”") : LC.HAPPY.slice(0, 2).map((q) => "🏠 “" + q + "”"));
+    $("fwTitle").textContent = `🖼️ ${t.name}: ${r.year} years as mayor`;
+    $("fwBody").innerHTML = `<div class="postcard">
+      <div class="pc-map">${LC.mapSvg(t.grid, st, { spots: t.spots, attrs: 'aria-hidden="true"' })}</div>
+      <div class="pc-text">
+        <p class="pc-title">${"⭐".repeat(lg.stars)}<span class="dim">${"⭐".repeat(3 - lg.stars)}</span> <b>${lg.title}</b></p>
+        <p class="pc-years">Mayor of ${esc(t.name)} for <b>${r.year}</b> years.</p>
+        ${r.gifts.length ? `<p class="pc-gifts">${r.gifts.map((id) => M.GIFTS.find((g) => g.id === id).e).join(" ")}</p>` : ""}
+        <ul class="pc-parts">${lg.parts.map((p) => `<li><span>${p.e} ${p.name}: <b>${p.n.toLocaleString()}</b></span><span>+${p.pts}</span></li>`).join("")}<li class="tot"><span>Legacy</span><span>${lg.pts.toLocaleString()}</span></li></ul>
+        ${said.map((q) => `<p class="bubble">${esc(q)}</p>`).join("")}
+      </div></div>`;
+    const acts = $("fwActs");
+    acts.innerHTML = "";
+    const mk = (cls, text, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); acts.appendChild(b); };
+    mk("btn ghost", "Close", () => $("farewellDialog").close());
+    mk("btn go", "✨ Start a new town", () => { $("farewellDialog").close(); newTown(); });
+    if (!$("farewellDialog").open) $("farewellDialog").showModal();
   }
 
   // ── The bank ───────────────────────────────────────────────────────────────
@@ -289,7 +370,7 @@ LC.Studio = (function () {
       const st = M.look(t), rk = M.RANKS[t.rank];
       const card = document.createElement("div");
       card.className = "town card";
-      const status = t.lost ? "🗳️ Lost an election" : t.over ? `🏁 Finished · ${"⭐".repeat(M.score(t).stars)}` : t.mode === "challenge" ? `🏁 Year ${t.year} of ${M.CHALLENGE_YEARS}` : `♾️ Year ${t.year}`;
+      const status = t.retired ? `🎖️ Retired · ${t.retired.legacy.title}` : t.lost ? "🗳️ Lost an election" : t.over ? `🏁 Finished · ${"⭐".repeat(M.score(t).stars)}` : t.mode === "challenge" ? `🏁 Year ${t.year} of ${M.CHALLENGE_YEARS}` : `♾️ Year ${t.year}`;
       card.innerHTML = `<div class="thumb">${LC.mapSvg(t.grid, st, { spots: t.spots, attrs: 'aria-hidden="true"' })}</div><div class="town-body"><b>${esc(t.name)}</b><small>${rk.e} ${rk.name} · 👥 ${st.people} · 💰 ${t.coins}</small><small>${status}</small></div>`;
       const acts = document.createElement("div");
       acts.className = "town-acts";
