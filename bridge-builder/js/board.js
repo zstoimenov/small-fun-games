@@ -47,6 +47,8 @@ BB.Board = (function () {
     host.className = host.className.replace(/\s*theme-\w+/g, "") + (LOOKS[theme] ? " theme-" + theme : "");
     const x0 = -1.8, x1 = lv.gap + 1.8, y0 = lv.rows[0] - 0.9, y1 = Math.max(lv.rows[1], 1) + 1.1;
     box = { x0: x0 * U, y0: y0 * U, w: (x1 - x0) * U, h: (y1 - y0) * U };
+    // The stage keeps the river's shape while it grows to fill the screen.
+    host.style.setProperty("--ar", (box.w / box.h).toFixed(4));
     water = (Math.max(lv.rows[1], 1) + 0.55) * U;
     const look = LOOKS[theme];
     svg = mk("svg", { viewBox: [box.x0, box.y0, box.w, box.h].join(" "), role: "img", "aria-label": "River and bridge",
@@ -105,6 +107,7 @@ BB.Board = (function () {
       else mk("circle", { cx: x, cy: y, r: 7, class: "dot" }, grid);
     });
     live = mk("g", {}, svg);
+    hov = mk("g", { class: "hover-layer" }, svg);
 
     ghost = mk("line", { class: "ghost-piece", x1: 0, y1: 0, x2: 0, y2: 0 }, svg);
     ghost.style.display = "none";
@@ -115,7 +118,7 @@ BB.Board = (function () {
   // A tap counts when the finger lifts, not when it lands, so a palm or a
   // half-tap does nothing. Pressing a dot and moving builds as you drag; a
   // second finger cancels the gesture.
-  let pieces = [], press = null, fingers = 0, building = true;
+  let pieces = [], press = null, fingers = 0, building = true, hov = null, last = {};
   const DRAG = 0.2;       // grid steps the finger moves before a press becomes a drag
 
   // Reaches are in grid steps, but a fingertip is the same size on every
@@ -179,6 +182,7 @@ BB.Board = (function () {
       try { svg.setPointerCapture(ev.pointerId); } catch (e) { /* not every browser */ }
     });
     svg.addEventListener("pointermove", (ev) => {
+      if (!press && ev.pointerType === "mouse") { hover(ev); return; }
       if (!press || ev.pointerId !== press.id) return;
       const [x, y] = at(ev);
       if (!press.drag) {
@@ -209,6 +213,7 @@ BB.Board = (function () {
       endPress();
     };
     svg.addEventListener("pointerup", up);
+    svg.addEventListener("pointerleave", () => { if (hov) hov.innerHTML = ""; });
     svg.addEventListener("pointercancel", up);
   }
 
@@ -217,7 +222,39 @@ BB.Board = (function () {
   }
 
   // st: { members, move, selected, near, building, testing, trucks, falling, splashes }
+  // ── A mouse ────────────────────────────────────────────────────────────────
+  // Hovering shows what a click would do: the dot it would pick (and, with a
+  // dot already picked, the piece it would build), the piece Remove would
+  // take, or after a test how hard a piece was working.
+  function hover(ev) {
+    if (!hov) return;
+    const [x, y] = at(ev);
+    let h = "";
+    const line = (m, cls) => { const [ax, ay] = P(m.a), [bx, by] = P(m.b); return '<line x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '" class="' + cls + '"/>'; };
+    if (last.testing) {
+      const m = pieceAt(x, y, reach(0.3, 14));
+      if (m && m.strain != null) {
+        const pct = Math.round(m.strain * 100), label = Ph.MAT[m.mat].label + ": " + pct + "%";
+        const tx = x * U, ty = y * U - 30, w = label.length * 15 + 24;
+        h += line(m, "hover-piece") + '<rect x="' + (tx - w / 2) + '" y="' + (ty - 30) + '" width="' + w + '" height="40" rx="12" class="tip-box"/>' +
+          '<text x="' + tx + '" y="' + (ty - 3) + '" text-anchor="middle" class="tip-text">' + label + "</text>";
+      }
+    } else if (building) {
+      const d = dotAt(x, y, 0.42);
+      if (d) { const [dx, dy] = P(d); h += '<circle cx="' + dx + '" cy="' + dy + '" r="20" class="hover-dot"/>'; }
+      if (last.selected && d !== last.selected) {
+        const [ax, ay] = P(last.selected), [bx, by] = d ? P(d) : [x * U, y * U];
+        h += '<line x1="' + ax + '" y1="' + ay + '" x2="' + bx + '" y2="' + by + '" class="ghost-piece"/>';
+      }
+    } else {
+      const m = pieceAt(x, y, reach(0.45, 22));
+      if (m) h += line(m, "hover-remove");
+    }
+    hov.innerHTML = h;
+  }
   function render(st) {
+    last = st;
+    if (hov && press) hov.innerHTML = "";
     building = !!st.building;
     svg.classList.toggle("building", building);
     // The boat bobs while the truck drives.

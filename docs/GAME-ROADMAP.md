@@ -2305,6 +2305,20 @@ from stone towers (Jungle Gorge), and islands plus convoys (City Harbour).
   ramps, and a convoy already puts two loads on the bridge at once.
 
 
+#### Desktop pass: the house layout
+
+The play screen was a fixed 820px column (the river 786 x 409 at any size,
+and 1280 x 720 had to scroll). It now follows the shared pattern: river on
+the left at full height (the stage keeps the river's shape via `--ar` from
+board.js and grows with container units), a panel on the right with the
+brief, the parts, the message line and the buttons pinned to the bottom
+(Test it full width). Taller than wide stacks them; phones held sideways
+put the header in the panel, the parts in one row and ↺ ↶ as icons. Menus
+keep a 1200px width, centred; a chapter shows its idea beside its levels.
+With a mouse: hover rings a dot, shows the piece a click would build or the
+piece Remove would take, and during a test names a piece and its strain.
+Keys: 1-9 parts, R Remove, Ctrl+Z, Space test, Esc let go or stop.
+
 ### Vet Clinic — `vet-clinic/` ✅ built
 
 Case-based: owner's story, pick checks, read each against that species' normal

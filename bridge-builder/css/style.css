@@ -61,12 +61,18 @@ body{
 button{font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; cursor:pointer}
 button:disabled{opacity:.45; cursor:default}
 
+/* The frame: header and screen fill the window exactly. Play screens never
+   scroll; menu screens (home, the Trail, a chapter, the quiz) scroll inside
+   themselves if they must, and keep a readable width on a big screen. */
 .page{
-  max-width:820px; margin:0 auto; min-height:var(--app-h);
-  padding:calc(8px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
-  display:flex; flex-direction:column; gap:12px;
+  max-width:1800px; margin:0 auto; height:var(--app-h); overflow:hidden;
+  padding:calc(8px + env(safe-area-inset-top)) var(--gutter) calc(12px + env(safe-area-inset-bottom));
+  display:flex; flex-direction:column; gap:12px; position:relative;
 }
+.top{width:100%; max-width:1800px; margin:0 auto}
 .screen{display:flex; flex-direction:column; gap:12px}
+.screen:not([hidden]){flex:1 1 0; min-height:0}
+.screen.menu{overflow:auto; width:100%; max-width:1200px; margin:0 auto; padding:2px 2px 8px; justify-content:safe center}
 
 /* ── Header ──────────────────────────────────────────────────────────────── */
 .top{display:flex; align-items:center; gap:6px}
@@ -107,10 +113,10 @@ button:disabled{opacity:.45; cursor:default}
 .actions .btn.undo{flex:0 0 auto; min-width:var(--tap); padding-inline:14px}
 /* Narrow phones: the three build buttons stay on one row, Undo as its arrow. */
 @media (max-width:480px){
-  #controls .actions{flex-wrap:nowrap; gap:8px}
-  #controls .actions .btn{flex:1 1 auto; min-width:0; padding-inline:10px; font-size:16px}
-  #controls .actions .btn.undo{flex:0 0 auto; min-width:var(--tap); font-size:20px}
-  #controls .undo .lbl{display:none}
+  #acts{gap:8px}
+  #acts .btn{padding-inline:10px; font-size:16px}
+  #acts .btn.undo{font-size:20px}
+  #acts .undo .lbl{display:none}
 }
 
 .wide-btn{
@@ -166,7 +172,43 @@ button:disabled{opacity:.45; cursor:default}
 .lt-stars,.goal-stars,.big-stars{color:var(--star); letter-spacing:.1em}
 .dim{opacity:.25; color:var(--muted)}
 
-/* ── Play ────────────────────────────────────────────────────────────────── */
+/* ── Play ──────────────────────────────────────────────────────────────────
+   Wider than tall: the river on the left at full height, the panel on the
+   right with the buttons pinned to its bottom. Taller than wide: brief,
+   river, parts, buttons, top to bottom. The river keeps its shape (--ar,
+   set by board.js) and grows to fill whatever room there is. */
+.play{display:grid; gap:12px}
+.play-board{min-width:0; min-height:0; container-type:size; display:grid; place-items:center}
+.stage{width:min(100cqw, 100cqh * var(--ar, 2)); aspect-ratio:var(--ar, 2)}
+.stage .board{width:100%; height:100%; max-height:none}
+.play-panel{display:flex; flex-direction:column; gap:12px; min-width:0; min-height:0}
+.panel-info{flex:0 0 auto}
+.panel-controls{display:flex; flex-direction:column; gap:10px; flex:0 0 auto}
+.panel-acts{display:flex; gap:10px; flex:0 0 auto}
+.panel-acts .btn{flex:1 1 0; min-width:0; max-width:none; padding-inline:12px; white-space:nowrap}
+.panel-acts .btn.undo{flex:0 0 auto; min-width:var(--tap); padding-inline:14px}
+.panel-acts .btn.go{min-width:0}
+@media (min-aspect-ratio:5/4){
+  .play{--panel:clamp(300px,26vw,420px); grid-template-columns:minmax(0,1fr) var(--panel); column-gap:20px}
+  .panel-info{flex:0 1 auto; min-height:0; overflow:auto}
+  /* Start again and Undo share a row; Test it is the full-width last line. */
+  .panel-acts{margin-top:auto; flex-wrap:wrap}
+  .panel-acts .btn.test,.panel-acts .btn:only-child{flex:1 1 100%; order:2; min-height:60px; font-size:20px}
+  .say{text-align:left}
+  #play .goal{flex-direction:column; align-items:flex-start; text-align:left}
+  .goal-name{font-size:21px; flex:0 0 auto}
+  .goal p{font-size:17px}
+  .goal-stars small{font-size:15px}
+  .parts{grid-template-columns:repeat(auto-fill,minmax(88px,1fr))}
+}
+@media (max-aspect-ratio:5/4){
+  .play{grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto auto; gap:10px}
+  .play-panel{display:contents}
+  .panel-info{grid-row:1}
+  .play-board{grid-row:2}
+  .panel-controls{grid-row:3}
+  .panel-acts{grid-row:4}
+}
 .goal{display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px}
 .goal-name{font-weight:800; font-size:18px; flex:1}
 .goal-stars small{color:var(--muted); letter-spacing:0; font-size:13px}
@@ -175,7 +217,8 @@ button:disabled{opacity:.45; cursor:default}
   border-radius:18px; overflow:hidden; border:1px solid var(--line); box-shadow:0 2px 8px var(--shadow);
   background:var(--sky);
 }
-.say{min-height:1.45em; margin:0; font-weight:700; font-size:17px; text-align:center}
+.say{min-height:2.9em; margin:0; font-weight:700; font-size:17px; text-align:center}
+.say:empty{min-height:2.9em}
 .controls{display:flex; flex-direction:column; gap:10px}
 .hint{margin:0; text-align:center; color:var(--muted)}
 .question{margin:0; font-weight:700; text-align:center; font-size:18px}
@@ -263,7 +306,7 @@ button:disabled{opacity:.45; cursor:default}
 
 
 /* ── The river ───────────────────────────────────────────────────────────── */
-.board{display:block; width:100%; height:auto; max-height:calc(var(--app-h) * .62); touch-action:none; -webkit-user-select:none; user-select:none}
+.board{display:block; width:100%; height:auto; touch-action:none; -webkit-user-select:none; user-select:none}
 .sky{fill:var(--sky)}
 .water{fill:var(--water)}
 .ripple{fill:none; stroke:var(--ripple); stroke-width:4}
@@ -286,6 +329,15 @@ button:disabled{opacity:.45; cursor:default}
 .building .dot{r:11px}
 .ghost-piece{stroke:var(--picked); stroke-width:10; stroke-linecap:round; stroke-dasharray:4 18; opacity:.8; pointer-events:none}
 .splash{fill:#fff}
+/* What a mouse is pointing at. */
+.hover-layer{pointer-events:none}
+.hover-dot{fill:none; stroke:var(--picked); stroke-width:4; opacity:.7}
+.hover-remove{stroke:var(--bad); stroke-width:18; stroke-linecap:round; opacity:.45}
+.hover-piece{stroke:var(--ink); stroke-width:18; stroke-linecap:round; opacity:.2}
+.tip-box{fill:var(--card); stroke:var(--line); stroke-width:2}
+.tip-text{fill:var(--ink); font:700 24px system-ui,sans-serif}
+.board{cursor:default}
+.board.building{cursor:crosshair}
 .old{stroke:var(--old); stroke-width:12; stroke-linecap:round; stroke-dasharray:22 5}
 .rope{stroke:var(--rope); stroke-width:5; stroke-linecap:round; fill:none}
 .road-snow{stroke:#fff; stroke-width:6; stroke-linecap:round; opacity:.85; transform:translateY(-9px)}
@@ -316,8 +368,10 @@ button:disabled{opacity:.45; cursor:default}
 .pe.beam{background:var(--wood)}
 .pe.steel{background:var(--steel)}
 .pe-e{font-size:28px; line-height:1}
-.legend{margin:0; text-align:center; font-weight:600; display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap}
-.sw{display:inline-block; width:22px; height:8px; border-radius:4px}
+.legend{margin:0; font-weight:600; display:flex; gap:6px 14px; align-items:center; flex-wrap:wrap; padding:10px 12px; border-radius:14px; background:var(--chip)}
+.legend b{flex:1 1 100%}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.sw{display:inline-block; width:26px; height:9px; border-radius:5px}
 .sw.ok{background:var(--ok)} .sw.warn{background:var(--warn)} .sw.bad{background:var(--bad)}
 .who{white-space:nowrap; font-weight:700; color:var(--ink); letter-spacing:0; font-size:15px}
 .row-set{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center}
@@ -358,13 +412,49 @@ button:disabled{opacity:.45; cursor:default}
   .sheet{max-height:calc(var(--app-h) - 16px); padding:12px 16px}
 }
 
-/* Sideways: the board takes the left, the brief and its buttons the right,
-   so nothing needs a scroll while building. */
+/* Sideways phone: the header moves into the top of the panel so the river
+   gets the whole height. */
 @media (max-height:520px) and (orientation:landscape){
-  #play{display:grid; grid-template-columns:minmax(0,1.45fr) minmax(230px,1fr); grid-template-rows:auto auto 1fr; gap:6px 14px; align-items:start}
-  #play > .goal{grid-column:2; grid-row:1}
-  #play > .say{grid-column:2; grid-row:2; margin:0}
-  #play > .controls{grid-column:2; grid-row:3}
-  #play > .stage{grid-column:1; grid-row:1 / span 3; position:sticky; top:4px}
-  .board{max-height:calc(var(--app-h) - 64px)}
+  .play{--panel:300px; column-gap:12px}
+  .page:has(> .play:not([hidden])) > .top{position:absolute; top:calc(4px + env(safe-area-inset-top)); right:var(--gutter); width:300px; z-index:2}
+  .play-panel{padding-top:48px; gap:8px}
+  .goal-name{font-size:16px}
+  .goal p{font-size:14px}
+  /* Parts in one row of four, buttons in one row: the brief keeps its room. */
+  .parts{gap:4px; grid-template-columns:repeat(4,minmax(0,1fr))}
+  .part{min-height:54px; font-size:13px; padding:4px 2px}
+  .part .pe{margin:4px 0}
+  .panel-acts{flex-wrap:nowrap}
+  .panel-acts .btn.again,.panel-acts .btn.undo{flex:0 0 auto; min-width:46px; padding-inline:10px}
+  .panel-acts .again .lbl,.panel-acts .undo .lbl{display:none}
+  .panel-acts .btn.test{order:0; flex:1 1 auto}
+  .say{font-size:15px; min-height:2.6em}
+  .panel-acts{gap:6px}
+  .panel-acts .btn{min-height:46px; font-size:16px}
+  .panel-acts .btn.test,.panel-acts .btn:only-child{min-height:48px; font-size:17px}
+  .legend{padding:6px 10px; font-size:14px}
+}
+
+/* ── Menus on a big screen ───────────────────────────────────────────────── */
+/* A chapter's big idea shows on its card only where there's room for it. */
+.cc-says{display:none}
+@media (min-width:1000px){
+  .cc-says{display:block}
+  .chapter-card{min-height:200px; padding:20px 22px; gap:8px}
+  .cc-emoji{font-size:54px}
+  .cc-text b{font-size:24px}
+  .cc-text small{font-size:16px}
+  .tile{min-height:120px}
+  .tile span{font-size:38px}
+  .tile b{font-size:18px}
+  .tile small{font-size:14px}
+  #worlds{grid-template-columns:repeat(3,1fr)}
+  #worlds .chapter-card{min-height:170px}
+  /* A chapter: its big idea on the left, the levels beside it. */
+  #chapter:not([hidden]){display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; align-items:start}
+  #chapter .levels{grid-template-columns:repeat(2,1fr); gap:12px}
+  #chapter .level-tile{min-height:132px}
+  .lt-name{font-size:18px}
+  .law-card h2{font-size:30px}
+  .law-big{font-size:22px}
 }

@@ -42,7 +42,7 @@ BB.UI = (function () {
       b.innerHTML =
         '<span class="cc-emoji" aria-hidden="true">' + ch.emoji + "</span>" +
         '<span class="cc-text"><span class="kicker">' + ch.kicker + "</span>" +
-        "<b>" + ch.name + "</b></span>" +
+        "<b>" + ch.name + "</b>" + '<small class="cc-says">' + ch.says + "</small></span>" +
         '<span class="cc-stars" aria-label="' + got + " of " + max + ' stars">★ ' + got + "/" + max + "</span>";
       box.appendChild(b);
     });
@@ -109,21 +109,24 @@ BB.UI = (function () {
 
   // ── Under the river: parts box, Test, and (free build) the truck ─────────
   // st: { inv, tool, used, par, testing, done, free, truck }
+  // The parts and messages go in the panel's controls; the buttons in its
+  // actions, last, so they sit at the bottom beside the river.
   function controls(st, act) {
-    const box = $("controls");
+    const box = $("controls"), acts = $("acts");
     box.innerHTML = "";
+    acts.innerHTML = "";
     const M = BB.Physics.MAT;
     if (st.testing) {
-      box.appendChild(el("p", "legend", '<span class="sw ok"></span> easy <span class="sw warn"></span> working hard <span class="sw bad"></span> about to break'));
-      const row = el("div", "actions");
-      row.appendChild(button("btn ghost", st.done ? "\u{1F527} Fix my bridge" : "\u{23F9}\u{FE0F} Stop", () => act("stop")));
-      box.appendChild(row);
+      box.appendChild(el("div", "legend", '<b>While the truck drives:</b><span><i class="sw ok"></i> easy</span><span><i class="sw warn"></i> working hard</span><span><i class="sw bad"></i> about to break</span>'));
+      const stop = button("btn" + (st.done ? " go" : " ghost"), st.done ? "\u{1F527} Fix my bridge" : "\u{23F9}\u{FE0F} Stop", () => act("stop"));
+      stop.title = st.done ? "Fix my bridge (Esc)" : "Stop (Esc)";
+      acts.appendChild(stop);
       return;
     }
     const grid = el("div", "parts");
     grid.setAttribute("role", "group");
     grid.setAttribute("aria-label", "Parts box");
-    Object.keys(st.inv).forEach((t) => {
+    Object.keys(st.inv).forEach((t, k) => {
       const n = st.inv[t];
       const b = button("part" + (st.tool === t ? " on" : "") + (n === 0 ? " out" : ""),
         '<span class="pe ' + t + '" aria-hidden="true"></span>' + M[t].label +
@@ -131,12 +134,14 @@ BB.UI = (function () {
         (n === Infinity ? "" : '<span class="n">' + n + "</span>"), () => act("tool", t));
       b.setAttribute("aria-pressed", st.tool === t ? "true" : "false");
       b.setAttribute("aria-label", M[t].label + (st.coins ? ", " + BB.Physics.COST[t] + " coins" : "") + (n === Infinity ? "" : ", " + n + " left"));
+      b.title = M[t].label + " (" + (k + 1) + ")";
       grid.appendChild(b);
     });
     const rm = button("part" + (st.tool === "remove" ? " on" : ""),
       '<span class="pe-e" aria-hidden="true">\u{1F9FD}</span>Remove', () => act("tool", "remove"));
     rm.setAttribute("aria-pressed", st.tool === "remove" ? "true" : "false");
     rm.setAttribute("aria-label", "Remove");
+    rm.title = "Remove (R)";
     grid.appendChild(rm);
     box.appendChild(grid);
 
@@ -154,14 +159,17 @@ BB.UI = (function () {
       box.appendChild(g);
     }
 
-    const row = el("div", "actions");
-    row.appendChild(button("btn ghost", st.free ? "\u{1F5D1}\u{FE0F} Clear" : "\u{21BA} Start again", () => act("reset")));
+    const again = button("btn ghost again", st.free ? '\u{1F5D1}\u{FE0F}<span class="lbl"> Clear</span>' : '\u{21BA}<span class="lbl"> Start again</span>', () => act("reset"));
+    again.setAttribute("aria-label", st.free ? "Clear" : "Start again");
+    acts.appendChild(again);
     const un = button("btn ghost undo", '\u{21B6}<span class="lbl"> Undo</span>', () => act("undo"));
     un.setAttribute("aria-label", "Undo");
+    un.title = "Undo (Ctrl+Z)";
     un.disabled = !st.undo;
-    row.appendChild(un);
-    row.appendChild(button("btn go", "\u{25B6}\u{FE0F} Test it!", () => act("test")));
-    box.appendChild(row);
+    acts.appendChild(un);
+    const go = button("btn go test", "\u{25B6}\u{FE0F} Test it!", () => act("test"));
+    go.title = "Test it (Space)";
+    acts.appendChild(go);
   }
 
   // ── Quiz ───────────────────────────────────────────────────────────────────

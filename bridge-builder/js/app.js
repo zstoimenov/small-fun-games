@@ -506,6 +506,25 @@ window.BB = window.BB || {};
     if (test && !test.done) BB.Audio.motor(true);
   });
   $("help").addEventListener("click", () => $("helpDialog").showModal());
+
+  // ── Keyboard ───────────────────────────────────────────────────────────────
+  // 1-9 pick a part, R Remove, Ctrl+Z undo, Space test, Esc let go of a dot
+  // (or stop a test). Enter on a focused button still presses that button.
+  document.addEventListener("keydown", (e) => {
+    if (screen !== "play" || document.querySelector("dialog[open]")) return;
+    if (e.target.closest && e.target.closest("input, textarea, select")) return;
+    const k = e.key;
+    if ((e.ctrlKey || e.metaKey) && k.toLowerCase() === "z") { e.preventDefault(); if (!test) act("undo"); return; }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (test) {
+      if (k === "Escape" || (test.done && k === " ")) { e.preventDefault(); act("stop"); }
+      return;
+    }
+    if (/^[1-9]$/.test(k)) { const t = Object.keys(inv)[+k - 1]; if (t) act("tool", t); return; }
+    if (k === "r" || k === "R") { act("tool", "remove"); return; }
+    if (k === "Escape") { tapEmpty(); return; }
+    if (k === " " || (k === "Enter" && !(e.target.closest && e.target.closest("button")))) { e.preventDefault(); act("test"); }
+  });
   document.querySelectorAll("[data-close]").forEach((b) =>
     b.addEventListener("click", () => b.closest("dialog").close()));
 

@@ -28,7 +28,7 @@
   </header>
 
   <!-- Home: one line of intro, the chapters, three tiles. -->
-  <section id="home" class="screen">
+  <section id="home" class="screen menu">
     <p class="intro">Build a bridge, press <b>Test</b>, and watch the truck drive over. Will it hold?</p>
     <div id="chapters" class="chapters"></div>
     <div class="tiles">
@@ -40,13 +40,13 @@
   </section>
 
   <!-- The Bridge Trail: six worlds of harder puzzles, each with a new rule. -->
-  <section id="trail" class="screen" hidden>
+  <section id="trail" class="screen menu" hidden>
     <p class="intro">Six worlds, each with a new rule. Best after Chapter 3!</p>
     <div id="worlds" class="chapters"></div>
   </section>
 
   <!-- A chapter (or a Trail world): the big idea, then its levels. -->
-  <section id="chapter" class="screen" hidden>
+  <section id="chapter" class="screen menu" hidden>
     <div class="card law-card">
       <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
       <p class="kicker" id="lawKicker"></p>
@@ -62,19 +62,26 @@
   </section>
 
   <!-- The river, for every level and the free build. Controls come from ui.js. -->
-  <section id="play" class="screen" hidden>
-    <div class="goal">
-      <span class="goal-name" id="goalName"></span>
-      <span class="goal-stars" id="goalStars"></span>
-      <p id="goalText"></p>
+  <!-- Same four parts as every play screen in Game Box: the board, then info
+       (the brief), controls (parts, messages) and actions (the buttons). -->
+  <section id="play" class="screen play" hidden>
+    <div class="play-board"><div class="stage" id="stage"></div></div>
+    <div class="play-panel">
+      <div class="goal panel-info">
+        <span class="goal-name" id="goalName"></span>
+        <span class="goal-stars" id="goalStars"></span>
+        <p id="goalText"></p>
+      </div>
+      <div class="panel-controls">
+        <div class="controls" id="controls"></div>
+        <p class="say" id="say" aria-live="polite"></p>
+      </div>
+      <div class="panel-acts" id="acts"></div>
     </div>
-    <div class="stage" id="stage"></div>
-    <p class="say" id="say" aria-live="polite"></p>
-    <div class="controls" id="controls"></div>
   </section>
 
   <!-- The quiz: one question at a time. -->
-  <section id="quiz" class="screen" hidden>
+  <section id="quiz" class="screen menu" hidden>
     <div class="card quiz-card">
       <p class="kicker" id="qCount"></p>
       <span class="q-emoji" id="qEmoji" aria-hidden="true"></span>
@@ -129,6 +136,7 @@
     <li><b>Oops?</b> Press &#8630; Undo. Or pick &#129533; Remove and tap a piece to take it back.</li>
     <li><b>Test it!</b> Green means easy, yellow means working hard, red means about to break.</li>
     <li><b>Stars:</b> 3 if you use the fewest pieces.</li>
+    <li><b>On a computer:</b> keys <b>1</b>-<b>5</b> pick a part, <b>R</b> picks Remove, <b>Ctrl+Z</b> undoes, <b>Space</b> tests, <b>Esc</b> lets go of a dot.</li>
     <li><b>&#128506;&#65039; Bridge Trail:</b> harder puzzles. Each world has a new rule: coins, crumbly cliffs, boats, snow and ropes.</li>
   </ol>
   <button class="btn" type="button" data-close>Got it!</button>
