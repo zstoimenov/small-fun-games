@@ -40,7 +40,7 @@ window.LC = window.LC || {};
         s += `<rect x="${h.x * S + 6}" y="${h.y * S + S - 8}" width="${w}" height="4" rx="2" fill="#0003"/><rect x="${h.x * S + 6}" y="${h.y * S + S - 8}" width="${(w * f).toFixed(1)}" height="4" rx="2" fill="#2e7d32"/>`;
       });
       g().forEach((row, y) => row.forEach((c, x) => {
-        if (c && c.damaged) s += `<text x="${x * S + 9}" y="${y * S + 10}" font-size="14" text-anchor="middle" dominant-baseline="central">🔧</text>`;
+        if (c && c.damaged) s += `<text x="${x * S + S / 2}" y="${y * S + S / 2}" font-size="16" text-anchor="middle" dominant-baseline="central">🔧</text>`;
       }));
       st.shops.forEach((sh) => { if (!sh.coins) s += `<text x="${sh.x * S + S - 9}" y="${sh.y * S + 10}" font-size="12" text-anchor="middle" dominant-baseline="central">💤</text>`; });
       const ring = (p, col) => { s += `<circle cx="${p.x * S + S / 2}" cy="${p.y * S + S / 2}" r="${S * 0.62}" fill="none" stroke="${col}" stroke-width="3" stroke-dasharray="6 4"/>`; };
@@ -56,7 +56,7 @@ window.LC = window.LC || {};
       if (pick && g()[pick.y][pick.x] && svc(g()[pick.y][pick.x].t)) shade = LC.Sim.covers(g(), pick.x, pick.y);
       else if (tool && svc(tool)) g().forEach((row, y) => row.forEach((c, x) => { if (c && c.t === tool) shade.push(...LC.Sim.covers(g(), x, y)); }));
       if (ghost) shade = LC.previewCovers(g(), tool, ghost.x, ghost.y);
-      map.innerHTML = LC.mapSvg(g(), st, { shade, pick, ghost: ghost && { x: ghost.x, y: ghost.y, e: T[tool].e }, extra: decor(st), attrs: 'class="map-svg" role="img" aria-label="Your town"' });
+      map.innerHTML = LC.mapSvg(g(), st, { shade, pick, spots: town.spots, ghost: ghost && { x: ghost.x, y: ghost.y, e: T[tool].e }, extra: decor(st), attrs: 'class="map-svg" role="img" aria-label="Your town"' });
       paintBar();
       smoke();
       return st;
@@ -68,9 +68,10 @@ window.LC = window.LC || {};
         const b = document.createElement("button");
         b.type = "button";
         b.className = "tool" + (on ? " on" : "") + (lockedTo ? " locked" : "");
-        b.innerHTML = `<span aria-hidden="true">${lockedTo ? "🔒" : e}</span><b>${name}</b>${sub ? `<small>${sub}</small>` : ""}`;
+        const fam = id === "house" && !lockedTo && town.nextFam ? M.FAMS[town.nextFam] : null;
+        b.innerHTML = `<span aria-hidden="true">${lockedTo ? "🔒" : e}</span><b>${name}</b>${sub ? `<small>${sub}</small>` : ""}${fam ? `<i class="fam-badge" aria-hidden="true">${fam.e}</i>` : ""}`;
         b.setAttribute("aria-pressed", String(!!on));
-        b.setAttribute("aria-label", name + (lockedTo ? ", locked" : ""));
+        b.setAttribute("aria-label", name + (lockedTo ? ", locked" : "") + (fam ? ", next family: " + fam.name : ""));
         b.addEventListener("click", () => {
           if (lockedTo) { say(`🔒 The ${name.toLowerCase()} unlocks when your town is a ${lockedTo.name} (${lockedTo.at} people).`); return; }
           tool = id === "look" ? null : tool === id ? null : id;
@@ -95,6 +96,13 @@ window.LC = window.LC || {};
       if (tool === "bulldoze") return say("🧹 Tap something to clear it. You get half the coins back. Trees cost 2 coins to clear.");
       if (tool === "road") return say("🛣️ Tap or drag across the grass to build roads. 1 coin each.");
       const t = T[tool];
+      const v2 = M.isV2(town);
+      if (tool === "house" && town.nextFam) {
+        const F = M.FAMS[town.nextFam];
+        return say(`🏠 Next to move in: <b>${F.e} ${F.name}</b>. They want ${esc(F.likes)}. Tap a grass square next to a road to build their house for ${t.cost} coins.`);
+      }
+      if (v2 && tool === "factory" && (town.spots || []).some((p) => p.k === "rocks")) return say(`🏭 Factories give jobs but are noisy. Build one on 🪨 rocky ground and it earns double! ${t.cost} coins.`);
+      if (v2 && tool === "shop") return say(`🏪 Shops sell to homes close by. Two shops side by side make a high street and earn more. ${t.cost} coins. First you'll see how far it reaches (yellow), then tap the same square again to build.`);
       say(`${t.e} Tap a grass square next to a road to build a ${t.name.toLowerCase()} for ${t.cost} coins.${LC.hasReach(tool) ? " First you'll see how far it reaches (yellow), then tap the same square again to build." : ""}${M.UPKEEP[tool] ? ` It costs ${M.UPKEEP[tool]} coins a year to run.` : ""}`);
     }
 
@@ -104,13 +112,23 @@ window.LC = window.LC || {};
       let html = "";
       if (h) {
         const lines = h.missing.length ? h.missing.map((m) => LC.NEEDS[m]) : [h.live ? LC.HAPPY[(x * 7 + y * 3) % LC.HAPPY.length] : "This home is ready. Families move in when everything they need is close by!"];
-        const q = town.request && town.request.x === x && town.request.y === y ? `<p class="bubble">✉️ We asked for a ${T[town.request.need].name.toLowerCase()} by year ${town.request.due}!</p>` : "";
-        html = `<p class="who">${FACE[h.face]} ${T[h.t].name}: 👥 <b>${h.live}/${h.cap}</b> people</p>` + lines.map((l) => `<p class="bubble">“${esc(l)}”</p>`).join("") + q;
+        const q = town.request && town.request.x === x && town.request.y === y ? `<p class="perk">✉️ They asked for a ${T[town.request.need].name.toLowerCase()} by year ${town.request.due}.</p>` : "";
+        const F = h.fam && M.FAMS[h.fam];
+        const nice = { park: "🌳 a park next door", view: "🌊 a water view" };
+        const perks = (h.extras || []).map((k) => nice[k]).filter(Boolean);
+        html = `<p class="who">${FACE[h.face]} ${F ? `${F.e} ${F.name}` : T[h.t].name}: 👥 <b>${h.live}/${h.cap}</b> people</p>` + `<p class="bubble">“${lines.map(esc).join(" ")}”</p>` + q +
+          (F ? `<p class="likes">They want ${esc(F.likes)}.</p>` : "") +
+          (perks.length ? `<p class="perk love">💛 They love ${perks.join(" and ")}.</p>` : "");
+      } else if (c && c.t === "castle") {
+        html = `<p class="who">🏰 The old castle</p><p>${st.tourists ? "A road reaches it, so tourists visit: <b>+3</b> coins a year. Shops within 3 squares earn +2 from them." : "Build a road right next to it and tourists will come: +3 coins a year, and shops nearby earn more."}</p>`;
+      } else if (!c && (town.spots || []).some((p) => p.k === "rocks" && p.x === x && p.y === y)) {
+        html = `<p class="who">🪨 Rocky ground</p><p>A 🏭 factory built here digs up what it needs, so it earns double.</p>`;
       } else if (c && T[c.t] && c.t !== "road") {
         const t = T[c.t], L = LC.LEVELS[c.t], lvl = c.lv || 1;
         const sh = st.shops.find((q) => q.x === x && q.y === y), wk = st.works.find((q) => q.x === x && q.y === y);
         html = `<p class="who">${L ? L.e[lvl - 1] : t.e} ${LC.nameOf(c)}${L ? ` <small class="lvl">${"★".repeat(lvl)}${"☆".repeat(L.names.length - lvl)}</small>` : ""}</p>`;
         if (sh) html += `<p>${sh.customers} customers live close by, so it earns <b>${sh.coins}</b> coins a year.${sh.coins ? "" : " 💤 Build homes near it!"}</p>`;
+        ((sh || wk || {}).why || []).forEach((w) => { if ((sh || wk).coins) html += `<p class="perk">➕ ${w.coins}: ${esc(w.text)}</p>`; });
         if (wk) html += wk.t === "factory" ? `<p>${wk.workers} workers live close enough, so it earns <b>${wk.coins}</b> coins a year. It's noisy for next-door homes.</p>` : `<p>Trains bring 4 new people a year, and it earns <b>${wk.coins}</b> coins.</p>`;
         if (t.range) html += `<p>It reaches ${LC.rangeOf(c)} squares (shown in yellow).${t.bonus ? " Families near it are extra happy and pay a little more tax." : ""}</p>`;
         if (M.UPKEEP[c.t]) html += `<p class="muted">Costs ${M.UPKEEP[c.t] + lvl - 1} coins a year to run.</p>`;
@@ -127,7 +145,7 @@ window.LC = window.LC || {};
         const b = document.createElement("button");
         b.type = "button";
         b.className = "btn small" + (need ? " ghost" : "");
-        b.textContent = need ? `🔒 Unlocks at ${need.name} (${need.at} people)` : `⬆️ Upgrade for ${up.cost} coins`;
+        b.textContent = need ? `🔒 ${up.name} at ${need.name} (${need.at} people)` : `⬆️ ${up.name} for ${up.cost} coins`;
         b.disabled = !!need;
         b.addEventListener("click", () => { const err = M.upgrade(town, x, y); if (err) { say(err); LC.Audio.nope(); } else { LC.Audio.build(); changed(); lookAt(x, y); } });
         box.appendChild(b);

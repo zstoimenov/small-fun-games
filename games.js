@@ -42,7 +42,7 @@ const GAMES = [
     age: 8,
     blurb: "Build roads, homes, schools, clinics, parks and shops, and tap every house to hear what the family needs. Then be the mayor: every year families move in or out, storms and festivals happen, and residents write letters. Every 4 years you face an election against rival candidates, so keep your town happy! Meet the people who plan and run towns for a job.",
     colors: ["#66bb6a", "#1e88e5"],
-    highlights: ["🗳️ Elections", "📅 Year by year"]
+    highlights: ["🗳️ Elections", "📅 Year by year", "👵 Different families"]
   },
   {
     title: "Story Builder",

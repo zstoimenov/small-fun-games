@@ -53,8 +53,25 @@ LC.Mayor = (function () {
   const PROMISE = {
     road: "Roads to every house!", shop: "Shops for everyone!", school: "A school near every home!", park: "More parks for the kids!",
     clinic: "A clinic close to every street!", fire: "Fire stations to keep us safe!", police: "More police!", job: "Jobs for everybody!",
-    noise: "Move the noisy factories away from homes!", repair: "Fix everything the storm broke!", loan: "Pay back the bank loan!", slide: "A giant water slide!"
+    noise: "Move the noisy factories away from homes!", repair: "Fix everything the storm broke!", loan: "Pay back the bank loan!", slide: "A giant water slide!",
+    quiet: "Peace and quiet for grandparents!", green: "More nature next to homes!"
   };
+  // Towns started from version 2 on play with families, special land, a road
+  // out on any side, shuffled wishes and rivals with real platforms. Older
+  // saved towns keep the rules they were started with.
+  const V = 2;
+  const v2 = (town) => (town.v || 1) >= 2;
+  // Every house gets a family, shown before it's built so the mayor can pick
+  // a spot that suits them. `extra` needs count from the start (once that
+  // building exists in the town); `skip` needs never bother them.
+  const FAMS = {
+    grand: { e: "👵", name: "Grandparents", likes: "a clinic nearby, and peace and quiet: no shops or factories next door. No school needed", extra: ["clinic", "quiet"], skip: ["school"] },
+    kids: { e: "👨‍👩‍👧", name: "Young family", likes: "a school and a park nearby", extra: ["school", "park"], skip: [] },
+    workers: { e: "👷", name: "Workers", likes: "jobs nearby (a shop, factory or station). Factory noise doesn't bother them", extra: ["job"], skip: ["noise"] },
+    nature: { e: "🌿", name: "Nature lovers", likes: "trees, water or a park right next door", extra: ["green"], skip: [] }
+  };
+  const FAM_IDS = Object.keys(FAMS);
+  const LOUD = ["shop", "factory", "station", "stadium"];
   const homes = Sim.homes;
   const capOf = (t) => (T[t] && T[t].people) || 0;
   const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -69,7 +86,57 @@ LC.Mayor = (function () {
   // ── A new map ──────────────────────────────────────────────────────────────
   // Four kinds of land, so no two towns start the same.
   const LANDS = [{ id: "river", name: "River town", e: "🏞️" }, { id: "lake", name: "Lake town", e: "🏝️" }, { id: "sea", name: "Seaside town", e: "🏖️" }, { id: "forest", name: "Forest town", e: "🌲" }];
-  function makeMap(seed) {
+  const SIDES = ["west", "north", "east", "south"];
+  // The square on a side's edge, `k` along it.
+  const edgeAt = (side, k) => side === "west" ? { x: 0, y: k } : side === "east" ? { x: W - 1, y: k } : side === "north" ? { x: k, y: 0 } : { x: k, y: H - 1 };
+  function makeMap(seed, v) {
+    if ((v || V) < 2) return makeMap1(seed);
+    const r = rng(seed * 7 + 1);
+    const g = Array.from({ length: H }, () => Array(W).fill(null));
+    const land = pickOf(r, LANDS);
+    const side = pickOf(r, land.id === "sea" ? SIDES.slice(0, 3) : SIDES);
+    const along = side === "west" || side === "east" ? H : W;
+    const k = Math.floor(along / 2) - 1 + Math.floor(r() * 2);
+    const ent = edgeAt(side, k);
+    // The first few squares in from the road out stay clear for a road.
+    const inward = (n) => side === "west" ? { x: n, y: ent.y } : side === "east" ? { x: W - 1 - n, y: ent.y } : side === "north" ? { x: ent.x, y: n } : { x: ent.x, y: H - 1 - n };
+    const lane = new Set([0, 1, 2].map((n) => { const p = inward(n); return p.x + "," + p.y; }));
+    const free = (x, y) => g[y] && x >= 0 && x < W && !g[y][x] && !lane.has(x + "," + y);
+    if (land.id === "river") {
+      // A river crosses the map with one old bridge over it.
+      const across = side === "north" || side === "south";
+      const by = across ? 2 + Math.floor(r() * (H - 4)) : ent.y;
+      let x = 6 + Math.floor(r() * 3);
+      for (let y = 0; y < H; y++) {
+        if (free(x, y) || y === by) g[y][x] = y === by ? { t: "road", fixed: true } : { t: "water" };
+        if (y !== by && y !== by - 1 && r() < 0.3) x = Math.max(4, Math.min(W - 4, x + (r() < 0.5 ? -1 : 1)));
+      }
+    } else if (land.id === "lake") {
+      const cx = 3 + Math.floor(r() * (W - 6)), cy = ent.y < H / 2 && side !== "south" ? H - 3 : 2;
+      [[0, 0], [1, 0], [-1, 0], [0, 1], [1, 1], [0, -1], [2, 0], [-1, 1], [2, 1]].forEach(([dx, dy]) => { if (free(cx + dx, cy + dy)) g[cy + dy][cx + dx] = { t: "water" }; });
+    } else if (land.id === "sea") {
+      for (let x = 0; x < W; x++) { if (free(x, H - 1)) g[H - 1][x] = { t: "water" }; if (x > 3 + Math.floor(r() * 3) && r() < 0.7 && free(x, H - 2)) g[H - 2][x] = { t: "water" }; }
+    } else {
+      for (let n = 0; n < 5; n++) {
+        const cx = 1 + Math.floor(r() * (W - 2)), cy = Math.floor(r() * H);
+        [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0]].forEach(([dx, dy]) => { if (free(cx + dx, cy + dy) && r() < 0.8) g[cy + dy][cx + dx] = { t: "trees" }; });
+      }
+    }
+    for (let n = 0; n < 7; n++) { const x = Math.floor(r() * W), y = Math.floor(r() * H); if (free(x, y)) g[y][x] = { t: "trees" }; }
+    // Special land: an old castle that brings tourists once a road reaches
+    // it, and two rocky spots where a factory earns double.
+    const spots = [];
+    const open = () => { const out = []; g.forEach((row, y) => row.forEach((c, x) => { if (free(x, y) && x > 0 && y > 0 && x < W - 1 && y < H - 1 && !spots.some((p) => Math.abs(p.x - x) + Math.abs(p.y - y) < 3)) out.push({ x, y }); })); return out; };
+    const far = open().filter((p) => Math.abs(p.x - ent.x) + Math.abs(p.y - ent.y) >= 6);
+    const cs = far.length ? pickOf(r, far) : pickOf(r, open());
+    g[cs.y][cs.x] = { t: "castle", fixed: true };
+    spots.push({ x: cs.x, y: cs.y, k: "castle" });
+    for (let n = 0; n < 2; n++) { const o = open(); if (o.length) { const p = pickOf(r, o); spots.push({ x: p.x, y: p.y, k: "rocks" }); } }
+    g[ent.y][ent.x] = { t: "road", fixed: true, entry: true, side };
+    return { grid: g, land, side, spots: spots.filter((p) => p.k === "rocks") };
+  }
+  // The first kind of map: the road out is always on the left.
+  function makeMap1(seed) {
     const r = rng(seed * 7 + 1);
     const g = Array.from({ length: H }, () => Array(W).fill(null));
     const ey = 4 + Math.floor(r() * 2);
@@ -97,22 +164,39 @@ LC.Mayor = (function () {
     return { grid: g, land };
   }
 
-  function create(name, mode, seed) {
-    const m = makeMap(seed);
-    return {
-      v: 1, id: Date.now(), name, mode, seed, land: m.land.id, grid: m.grid,
+  // Shuffle needs within groups that unlock together, so a hamlet can only
+  // ever ask for hamlet buildings and the police still wait for a city.
+  function wantOrder(seed) {
+    const r = rng(seed * 13 + 5);
+    const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const at = WANTS.map(([, n]) => n);
+    const needs = shuffle(["shop", "school", "park"]).concat(shuffle(["clinic", "job", "fire"]), ["police"]);
+    return needs.map((w, i) => [w, at[i]]);
+  }
+  const wantsList = (town) => (town && town.wants2) || WANTS;
+  // The family for the next house, drawn from the town's seed and how many
+  // families have come so far, so the same town always plays the same.
+  function drawFam(town) { const r = rng(town.seed * 31 + (town.fams || 0) * 7 + 3); town.fams = (town.fams || 0) + 1; return pickOf(r, FAM_IDS); }
+
+  function create(name, mode, seed, v) {
+    const ver = v || V;
+    const m = makeMap(seed, ver);
+    const town = {
+      v: ver, id: Date.now(), name, mode, seed, land: m.land.id, grid: m.grid,
       year: 1, coins: START_COINS, loan: 0, request: null, offer: null, over: false,
       streak: {}, stats: { storms: 0, helped: 0, fireSaved: 0, repaid: 0, best: 0 },
       wants: 0, rank: 0, medals: [], history: [], last: null,
       term: 1, campaign: null, snap: null, elections: []
     };
+    if (ver >= 2) { town.spots = m.spots; town.wants2 = wantOrder(seed); town.nextFam = drawFam(town); }
+    return town;
   }
 
   // ── What the town looks like right now ─────────────────────────────────────
   const people = (town) => town.grid.flat().reduce((n, c) => n + (c && homes(c.t) ? c.live || 0 : 0), 0);
   const rankOf = (n) => RANKS.reduce((k, rk, i) => (n >= rk.at ? i : k), 0);
   const unlocked = (town) => RANKS.slice(0, town.rank + 1).flatMap((rk) => rk.unlock);
-  function wantsFor(n) { return ["road", "noise"].concat(WANTS.filter(([, at]) => n >= at).map(([w]) => w)); }
+  function wantsFor(n, town) { return ["road", "noise"].concat(wantsList(town).filter(([, at]) => n >= at).map(([w]) => w)); }
   function covered(g, x, y, t) {
     return g.some((row, yy) => row.some((c, xx) => c && c.t === t && !c.damaged && Math.abs(xx - x) + Math.abs(yy - y) <= LC.rangeOf(c)));
   }
@@ -123,17 +207,39 @@ LC.Mayor = (function () {
     const g = town.grid, pop = people(town);
     // Damaged buildings don't work: hand the checker a copy without them.
     const working = g.map((row) => row.map((c) => (c && c.damaged && !homes(c.t) ? { t: "trees" } : c)));
-    const ev = Sim.evaluate(working, wantsFor(pop));
     const roads = Sim.reach(g);
     const on = (x, y) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => roads.has(x + dx + "," + (y + dy)));
+    const isNew = v2(town), un = unlocked(town);
+    const town2 = wantsFor(pop, town);
+    // Version 2 asks the checker about every need any family might have,
+    // then keeps the ones this family cares about.
+    const ask = isNew ? Array.from(new Set(town2.concat(["school", "park", "clinic", "job"].filter((w) => w === "job" || un.includes(w))))) : town2;
+    const ev = Sim.evaluate(working, ask);
+    const around = (x, y, f) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const c = g[y + dy] && g[y + dy][x + dx]; if (c && f(c)) return true; } return false; };
     const hs = ev.houses.map((h) => {
-      const c = g[h.y][h.x], missing = h.missing.slice();
-      if (c.damaged) missing.push("repair");
-      const face = c.damaged ? "sad" : h.face;
-      const bonus = ["library", "stadium"].filter((t) => covered(working, h.x, h.y, t)).length;
-      return { x: h.x, y: h.y, t: c.t, cap: capOf(c.t), live: c.live || 0, face, missing, bonus };
+      const c = g[h.y][h.x];
+      let missing = h.missing.slice(), face = h.face, extras = [];
+      if (isNew && c.fam) {
+        const F = FAMS[c.fam];
+        const wants = new Set(town2.concat(F.extra.filter((w) => w === "job" || w === "quiet" || w === "green" || un.includes(w))).filter((w) => !F.skip.includes(w)));
+        missing = missing.filter((m) => wants.has(m));
+        if (wants.has("quiet") && around(h.x, h.y, (o) => LOUD.includes(o.t) && !o.damaged)) missing.push("quiet");
+        if (wants.has("green") && !around(h.x, h.y, (o) => o.t === "trees" || o.t === "water" || (o.t === "park" && !o.damaged))) missing.push("green");
+        const linkedHome = !missing.includes("road");
+        face = !missing.length ? "happy" : missing.length === 1 && linkedHome && !["noise", "quiet"].includes(missing[0]) ? "meh" : "sad";
+      }
+      if (c.damaged) { missing.push("repair"); face = "sad"; }
+      let bonus = ["library", "stadium"].filter((t) => covered(working, h.x, h.y, t)).length;
+      // Good neighbours: a park next door, or a view of the water.
+      if (isNew && around(h.x, h.y, (o) => o.t === "park" && !o.damaged)) { bonus++; extras.push("park"); }
+      if (isNew && around(h.x, h.y, (o) => o.t === "water")) { bonus++; extras.push("view"); }
+      return { x: h.x, y: h.y, t: c.t, fam: c.fam || null, cap: capOf(c.t), live: c.live || 0, face, missing, bonus, extras };
     });
-    const out = { people: pop, capacity: hs.reduce((n, h) => n + h.cap, 0), homes: hs, houses: hs, happy: 0, shops: [], works: [], tax: 0, earn: 0, upkeep: 0 };
+    const out = { people: pop, capacity: hs.reduce((n, h) => n + h.cap, 0), homes: hs, houses: hs, happy: 0, shops: [], works: [], tax: 0, earn: 0, upkeep: 0, tourists: 0 };
+    // The castle: once a road reaches it, tourists visit and spend.
+    let castle = null;
+    if (isNew) g.forEach((row, y) => row.forEach((c, x) => { if (c && c.t === "castle" && on(x, y)) castle = { x, y }; }));
+    if (castle) { out.tourists = 3; out.earn += 3; }
     hs.forEach((h) => { if (h.face === "happy") out.happy += h.live; });
     g.forEach((row, y) => row.forEach((c, x) => {
       if (!c || !T[c.t] || c.damaged || !on(x, y)) return;
@@ -141,14 +247,18 @@ LC.Mayor = (function () {
       out.upkeep += UPKEEP[c.t] ? UPKEEP[c.t] + (c.lv || 1) - 1 : 0;
       if (c.t === "shop") {
         const customers = hs.reduce((n, h) => n + (dist(h, { x, y }) <= LC.rangeOf(c) ? h.live : 0), 0);
-        const coins = Math.min(LC.LEVELS.shop.earn[(c.lv || 1) - 1], Math.floor(customers / 5));
-        out.shops.push({ x, y, customers, coins });
+        let coins = Math.min(LC.LEVELS.shop.earn[(c.lv || 1) - 1], Math.floor(customers / 5));
+        const why = isNew ? perks(g, x, y, "shop", castle) : [];
+        if (coins) why.forEach((w) => { coins += w.coins; });
+        out.shops.push({ x, y, customers, coins, why });
         out.earn += coins;
       }
       if (c.t === "factory" || c.t === "station") {
         const workers = hs.reduce((n, h) => n + (dist(h, { x, y }) <= LC.JOB_RANGE ? h.live : 0), 0);
-        const coins = c.t === "factory" ? Math.min(LC.LEVELS.factory.earn[(c.lv || 1) - 1], Math.floor(workers / 4)) : Ty.income;
-        out.works.push({ x, y, t: c.t, workers, coins });
+        let coins = c.t === "factory" ? Math.min(LC.LEVELS.factory.earn[(c.lv || 1) - 1], Math.floor(workers / 4)) : Ty.income;
+        const why = isNew && c.t === "factory" ? perks(g, x, y, "factory", castle, town.spots, coins) : [];
+        if (coins) why.forEach((w) => { coins += w.coins; });
+        out.works.push({ x, y, t: c.t, workers, coins, why });
         out.earn += coins;
       }
     }));
@@ -170,6 +280,7 @@ LC.Mayor = (function () {
     if (town.coins < T[t].cost) return "Not enough coins! Borrow from the 🏦 bank, or wait for next year's taxes.";
     town.coins -= T[t].cost;
     g[y][x] = homes(t) ? { t, live: 0 } : { t };
+    if (homes(t) && v2(town)) { g[y][x].fam = town.nextFam; town.nextFam = drawFam(town); }
     return null;
   }
   // You get half back: a building has already been paid for and used.
@@ -177,6 +288,7 @@ LC.Mayor = (function () {
     const c = town.grid[y][x];
     if (!c) return "skip";
     if (c.t === "trees") { if (town.coins < 2) return "Clearing trees costs 2 coins."; town.coins -= 2; town.grid[y][x] = null; return null; }
+    if (c.t === "castle") return "🏰 The old castle is history: it stays! Build a road to it and tourists will come.";
     if (!T[c.t] || c.fixed) return c.fixed ? "🔒 That was here first: you can't bulldoze it." : "You can't bulldoze water!";
     town.coins += Math.floor((T[c.t].cost + (c.paid || 0)) / 2);
     town.grid[y][x] = null;
@@ -268,6 +380,8 @@ LC.Mayor = (function () {
     if (pop >= 8) pool.push(["festival", 2], ["heat", 1], ["boom", 2]);
     if (pop >= 4 && !town.request) pool.push(["request", 4]);
     if (pop >= 12 && !town.offer) pool.push(["offer", 3]);
+    const wet = v2(town) ? buildings.filter((b) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => g[b.y + dy] && g[b.y + dy][b.x + dx] && g[b.y + dy][b.x + dx].t === "water")) : [];
+    if (town.year > 2 && wet.length) pool.push(["flood", 1.2]);
     let roll = r() * pool.reduce((n, p) => n + p[1], 0), kind = "quiet";
     for (const [k, w] of pool) { roll -= w; if (roll < 0) { kind = k; break; } }
 
@@ -290,6 +404,12 @@ LC.Mayor = (function () {
       g[hit.y][hit.x] = null;
       return { e: "🔥", title: "A fire!", text: `The ${was} burned down. Everyone got out safely, but there was no fire station close enough to save it. A 🚒 fire station protects everything nearby.`, at: hit };
     }
+    if (kind === "flood") {
+      const hit = wet.slice().sort(() => r() - 0.5).slice(0, 2);
+      hit.forEach((b) => { b.c.damaged = true; });
+      const names = hit.map((b) => LC.nameOf(b.c).toLowerCase());
+      return { e: "🌊", title: "A flood!", text: `Heavy rain made the water rise. The ${names.join(" and the ")} right next to the water got soaked and need repairs. Homes by the water have lovely views, but floods can reach them.`, at: hit[0] };
+    }
     if (kind === "festival") { const n = Math.max(5, Math.floor(pop / 3)); town.coins += n; return { e: "🎉", title: "Town festival!", text: `Everyone came to the festival and it made ${n} coins for the town!`, coins: n }; }
     if (kind === "heat") return { e: "☀️", title: "Heatwave!", text: "It was SO hot. Families without a park nearby went to stay somewhere cooler, so their houses didn't grow this year.", heat: true };
     if (kind === "boom") return { e: "👶", title: "Baby boom!", text: "Lots of babies were born this year! Every happy home with room got one more person.", boom: true };
@@ -310,7 +430,7 @@ LC.Mayor = (function () {
       const nearHomes = empty.filter((p) => st.homes.some((h) => Math.abs(h.x - p.x) <= 1 && Math.abs(h.y - p.y) <= 1));
       const offers = [];
       if (nearHomes.length && unlocked(town).includes("factory")) { const p = pickOf(r, nearHomes); offers.push({ kind: "factory", x: p.x, y: p.y, coins: 30 + Math.floor(pop / 4), text: "A juice company wants to build a factory right next to some homes. They'll pay the town {c} coins. But factories are noisy! Say yes?" }); }
-      { const p = pickOf(r, empty); offers.push({ kind: "house", x: p.x, y: p.y, coins: 0, text: "A builder offers to build a house for free on the circled square. A new home, free! Say yes?" }); }
+      { const p = pickOf(r, empty), fam = v2(town) ? pickOf(r, FAM_IDS) : null; offers.push({ kind: "house", x: p.x, y: p.y, coins: 0, fam, text: `A builder offers to build a house for free on the circled square${fam ? `, for a family of ${FAMS[fam].e} ${FAMS[fam].name.toLowerCase()}` : ""}. A new home, free! Say yes?` }); }
       const park = buildingsOf(g, "park");
       if (park.length) { const p = pickOf(r, park); offers.push({ kind: "sellpark", x: p.x, y: p.y, coins: 25 + Math.floor(pop / 5), text: "Someone wants to buy the circled park to build a car park, for {c} coins. Families near it would lose their park. Sell it?" }); }
       const o = pickOf(r, offers);
@@ -320,6 +440,18 @@ LC.Mayor = (function () {
     }
     return { e: "🌤️", title: "A quiet year", text: "Nothing special happened. A lovely, peaceful year!" };
   }
+  // Why a shop or factory earns extra in a version 2 town: shops side by side
+  // make a high street, tourists shop near the castle, traffic from a road
+  // out of town stops by, and a factory on rocks digs up what it needs.
+  function perks(g, x, y, t, castle, spots, base) {
+    const out = [];
+    const nb = (f) => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const c = g[y + dy] && g[y + dy][x + dx]; return c && f(c); });
+    if (t === "shop" && nb((c) => c.t === "shop" && !c.damaged)) out.push({ k: "street", coins: 2, text: "high street: another shop next door" });
+    if (t === "shop" && castle && dist(castle, { x, y }) <= 3) out.push({ k: "castle", coins: 2, text: "tourists from the castle" });
+    if (g.some((row, yy) => row.some((c, xx) => c && c.entry && Math.abs(xx - x) + Math.abs(yy - y) <= 2))) out.push({ k: "exit", coins: 2, text: "drivers stop on the way into town" });
+    if (t === "factory" && spots && spots.some((p) => p.k === "rocks" && p.x === x && p.y === y)) out.push({ k: "rocks", coins: base || 0, text: "built on rocks: it earns double" });
+    return out;
+  }
   function buildingsOf(g, t) { const out = []; g.forEach((row, y) => row.forEach((c, x) => { if (c && c.t === t) out.push({ x, y }); })); return out; }
   function answer(town, yes) {
     const o = town.offer;
@@ -327,7 +459,7 @@ LC.Mayor = (function () {
     if (!o || !yes) return null;
     const g = town.grid;
     if (o.kind === "factory" && !g[o.y][o.x]) g[o.y][o.x] = { t: "factory" };
-    if (o.kind === "house" && !g[o.y][o.x]) g[o.y][o.x] = { t: "house", live: 0 };
+    if (o.kind === "house" && !g[o.y][o.x]) g[o.y][o.x] = o.fam ? { t: "house", live: 0, fam: o.fam } : { t: "house", live: 0 };
     if (o.kind === "sellpark" && g[o.y][o.x] && g[o.y][o.x].t === "park") g[o.y][o.x] = null;
     town.coins += o.coins;
     return o;
@@ -342,7 +474,34 @@ LC.Mayor = (function () {
     if (town.loan > 0) n.loan = Math.max(1, Math.floor(st.people / 4));
     return Object.keys(n).sort((a, b) => n[b] - n[a]);
   }
+  // Version 2 rivals stand for something the town really has: a need families
+  // are missing, a kind of family that feels forgotten, coins piling up in
+  // the treasury, factories next to homes, or the loan.
+  const hoard = (town, pop) => town.coins - (50 + pop);
+  function platforms(town, st) {
+    const out = [];
+    complaints(town, st).filter((n) => n !== "loan").slice(0, 2).forEach((n) => out.push({ kind: "need", need: n, promise: PROMISE[n], weight: 3 }));
+    const byFam = {};
+    st.homes.forEach((h) => { if (h.fam && h.live) { const b = byFam[h.fam] = byFam[h.fam] || { sad: 0, all: 0 }; b.all += h.live; if (h.face !== "happy") b.sad += h.live; } });
+    const fam = Object.keys(byFam).sort((a, b) => byFam[b].sad - byFam[a].sad || byFam[b].all - byFam[a].all)[0];
+    if (fam) out.push({ kind: "fam", fam, promise: `I'll listen to the ${FAMS[fam].name.toLowerCase()}! They want ${FAMS[fam].likes.split(":")[0].split(".")[0]}.`, weight: 1 + byFam[fam].sad / 4 });
+    if (hoard(town, st.people) > 0) out.push({ kind: "coins", promise: `The mayor is sitting on ${town.coins} coins! I'll spend them on the town.`, weight: 1 + hoard(town, st.people) / 40 });
+    if (town.loan > 0) out.push({ kind: "loan", need: "loan", promise: PROMISE.loan, weight: 1 + town.loan / 40 });
+    if (st.homes.some((h) => h.live && h.fam !== "workers" && nearFactory(town.grid, h))) out.push({ kind: "quiet", promise: "Keep the factories away from homes!", weight: 1.5 });
+    out.push({ kind: "need", need: "slide", promise: PROMISE.slide, weight: 0.1 });
+    return out;
+  }
+  const nearFactory = (g, h) => g.some((row, y) => row.some((c, x) => c && c.t === "factory" && !c.damaged && Math.abs(x - h.x) <= 2 && Math.abs(y - h.y) <= 2));
   function startCampaign(town, r) {
+    if (v2(town)) {
+      const st = look(town), ps = platforms(town, st).sort((a, b) => b.weight - a.weight + (r() - 0.5) * 0.4);
+      const first = ps[0], second = ps.find((p) => p !== first && (p.kind !== first.kind || p.need !== first.need)) || ps[ps.length - 1];
+      const pool = RIVALS.slice();
+      const rivals = [first, second].map((p) => { const who = pool.splice(Math.floor(r() * pool.length), 1)[0]; return { e: who.e, name: who.name, kind: p.kind, need: p.need || p.kind, fam: p.fam, promise: p.promise }; });
+      town.campaign = { rivals, year: town.year, helped: town.stats.helped };
+      town.snap = JSON.stringify(Object.assign({}, town, { snap: null, last: null }));
+      return;
+    }
     const st = look(town), wish = complaints(town, st).concat(["slide", "slide"]);
     const pool = RIVALS.slice();
     const rivals = [0, 1].map((k) => { const who = pool.splice(Math.floor(r() * pool.length), 1)[0]; return { e: who.e, name: who.name, need: wish[k], promise: PROMISE[wish[k]] }; });
@@ -358,7 +517,37 @@ LC.Mayor = (function () {
   // homes vote for a rival: the one promising what they need, or the one
   // promising to pay back the loan, or anyone who isn't the mayor. Families
   // the mayor helped this term bring their friends.
+  // Version 2: every home splits its votes by how much each side speaks to
+  // it. Happy homes lean to the mayor, but a rival who stands up for their
+  // kind of family, or points at coins nobody is spending, still wins some.
+  const LOYAL = { happy: 4, meh: 2, sad: 0.3 };
+  function appeal(town, st, rv, h) {
+    let a = 0.6;
+    if (rv.kind === "need" && h.missing.includes(rv.need)) a += h.face === "sad" ? 3 : 2;
+    if (rv.kind === "fam" && h.fam === rv.fam) a += 1.2 + (h.face === "happy" ? 0 : 1.5);
+    if (rv.kind === "coins" && hoard(town, st.people) > 0) a += Math.min(2.5, 0.5 + hoard(town, st.people) / 50);
+    if (rv.kind === "loan" && town.loan > 0) a += Math.min(1.5, town.loan / 60);
+    if (rv.kind === "quiet" && h.fam !== "workers" && nearFactory(town.grid, h)) a += 2;
+    return a;
+  }
+  function tally2(town) {
+    const c = town.campaign, st = look(town);
+    const v = { mayor: 0, r0: 0, r1: 0 };
+    st.homes.forEach((h) => {
+      if (!h.live) return;
+      const w = [LOYAL[h.face] + 0.75 * Math.min(2, h.bonus), appeal(town, st, c.rivals[0], h), appeal(town, st, c.rivals[1], h)];
+      const sum = w[0] + w[1] + w[2];
+      v.mayor += h.live * w[0] / sum; v.r0 += h.live * w[1] / sum; v.r1 += h.live * w[2] / sum;
+    });
+    const votes = { mayor: Math.round(v.mayor), r0: Math.round(v.r0), r1: Math.round(v.r1) };
+    const thanks = 3 * Math.max(0, town.stats.helped - c.helped);
+    votes.mayor += thanks;
+    const total = votes.mayor + votes.r0 + votes.r1;
+    const won = votes.mayor >= votes.r0 && votes.mayor >= votes.r1;
+    return { votes, total, won, thanks, rivals: c.rivals };
+  }
   function tally(town) {
+    if (v2(town)) return tally2(town);
     const c = town.campaign, st = look(town);
     const votes = { mayor: 0, r0: 0, r1: 0 };
     st.homes.forEach((h) => {
@@ -431,7 +620,8 @@ LC.Mayor = (function () {
       let d = 0;
       const parked = covered(town.grid, h.x, h.y, "park");
       if (h.missing.includes("road")) d = -h.live;
-      else if (h.face === "happy") d = ev.heat && !parked ? 0 : 2 + (h.bonus ? 1 : 0) + (ev.boom ? 1 : 0);
+      // Version 2 homes get bonuses from neighbours too, so it takes two to grow faster.
+      else if (h.face === "happy") d = ev.heat && !parked ? 0 : 2 + (h.bonus >= (v2(town) ? 2 : 1) ? 1 : 0) + (ev.boom ? 1 : 0);
       else if (h.face === "meh") d = h.live < h.cap / 2 ? 1 : 0;
       else d = -1;
       const nv = Math.max(0, Math.min(h.cap, h.live + d));
@@ -484,14 +674,16 @@ LC.Mayor = (function () {
     }
 
     if (town.campaign && town.year % TERM === 0) election(town, sum);
+    if (v2(town) && town.year === 6) highway(town, r, sum);
 
     // Growing up: needs, ranks, unlocks, medals.
     town.year++;
     const pop = people(town);
     const later = look(town);
-    const nw = WANTS.filter(([, at]) => pop >= at).length;
+    const wl = wantsList(town);
+    const nw = wl.filter(([, at]) => pop >= at).length;
     for (let k = town.wants; k < nw; k++) {
-      const w = WANTS[k][0];
+      const w = wl[k][0];
       sum.news.push(w === "job" ? "💼 The town is growing! Families now want jobs nearby: a shop, factory or station." : `📣 The town is growing! Families now want a ${T[w].e} ${T[w].name.toLowerCase()} nearby.`);
     }
     town.wants = Math.max(town.wants, nw);
@@ -522,16 +714,37 @@ LC.Mayor = (function () {
     return sum;
   }
 
+  // Year 6 in a version 2 town: a new road out arrives on another side.
+  function highway(town, r, sum) {
+    const g = town.grid, have = [];
+    g.forEach((row, y) => row.forEach((c, x) => { if (c && c.entry) have.push(c.side || (x === 0 ? "west" : "")); }));
+    const sides = SIDES.filter((sd) => !have.includes(sd)).sort(() => r() - 0.5);
+    for (const side of sides) {
+      const along = side === "west" || side === "east" ? H : W, mid = (along - 1) / 2;
+      const spots = Array.from({ length: along }, (_, k) => k).sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid)).map((k) => edgeAt(side, k)).filter((p) => { const c = g[p.y][p.x]; return !c || c.t === "trees"; });
+      if (!spots.length) continue;
+      const p = spots[0];
+      g[p.y][p.x] = { t: "road", fixed: true, entry: true, side, late: true };
+      const word = { west: "west", east: "east", north: "north", south: "south" }[side];
+      sum.news.push(`🛣️ A new highway reached town from the ${word}! Shops and factories near a road out of town earn extra.`);
+      sum.marks.push({ x: p.x, y: p.y, e: "🛣️" });
+      return;
+    }
+  }
+
   // The 20-year challenge: people count most, happy people and savings help,
   // and a loan still owed counts against you.
   function score(town) {
     const st = look(town);
     const pts = st.people + st.happy + Math.floor(town.coins / 10) - town.loan;
-    return { pts, stars: pts >= 450 ? 3 : pts >= 260 ? 2 : pts >= 100 ? 1 : 0, people: st.people, happy: st.happy };
+    // Version 2 towns can grow bigger with families planned for, so the
+    // stars ask for more.
+    const at = v2(town) ? [150, 380, 680] : [100, 260, 450];
+    return { pts, stars: pts >= at[2] ? 3 : pts >= at[1] ? 2 : pts >= at[0] ? 1 : 0, at, people: st.people, happy: st.happy };
   }
 
   return {
-    W, H, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS,
+    W, H, V, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS, FAMS, LOUD, wantsList, isV2: v2,
     create, makeMap, look, build, bulldoze, repair, upgrade, nextStep, repairCost, borrow, repay, loanLimit, answer, endYear, score,
     people, unlocked, rankOf, covered, wantsFor, rng, tally, retry, complaints
   };

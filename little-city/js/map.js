@@ -17,7 +17,9 @@ window.LC = window.LC || {};
     let s = `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="#8a8f98"/>`;
     // Dashed centre lines towards each neighbouring road, so streets join up.
     const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => on(dx, dy));
-    if (g[y][x].entry && x === 0) dirs.push([-1, 0]);
+    // The road out points off the map on its own side.
+    const out = { west: [-1, 0], east: [1, 0], north: [0, -1], south: [0, 1] }[g[y][x].side || (x === 0 ? "west" : "")];
+    if (g[y][x].entry && out) dirs.push(out);
     if (!dirs.length) s += `<circle cx="${cx}" cy="${cy}" r="4" fill="#f5f5f5"/>`;
     dirs.forEach(([dx, dy]) => { s += `<line x1="${cx}" y1="${cy}" x2="${cx + dx * S / 2}" y2="${cy + dy * S / 2}" stroke="#f5f5f5" stroke-width="2.5" stroke-dasharray="5 4"/>`; });
     if (g[y][x].entry) s += `<text x="${x * S + 4}" y="${y * S + 11}" font-size="9" font-weight="800" fill="#fff" font-family="system-ui,sans-serif">OUT</text>`;
@@ -32,20 +34,27 @@ window.LC = window.LC || {};
       if ((x + y) % 2) s += `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="#94c35f"/>`;
     }
     (o.shade || []).forEach(([x, y]) => { s += `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="${o.shadeColor || "#fff176"}" opacity=".8"/>`; });
+    // Rocky ground in Be the Mayor, where a factory earns double.
+    (o.spots || []).forEach((p) => { if (p.k === "rocks" && !g[p.y][p.x]) s += `<circle cx="${p.x * S + S / 2}" cy="${p.y * S + S / 2}" r="${S * 0.38}" fill="#8d8273" opacity=".35"/><text x="${p.x * S + S / 2}" y="${p.y * S + S / 2 + 1}" font-size="20" text-anchor="middle" dominant-baseline="central">🪨</text>`; });
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const c = g[y][x];
       if (!c) continue;
       if (c.t === "water") s += `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="#4fa3e0"/><path d="M${x * S + 8} ${y * S + 20} q6 -5 12 0 t12 0" stroke="#bfe3ff" stroke-width="2" fill="none"/>`;
       else if (c.t === "trees") s += `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="#558b2f"/><text x="${x * S + S / 2}" y="${y * S + S / 2}" font-size="26" text-anchor="middle" dominant-baseline="central">🌲</text>`;
       else if (c.t === "road") s += road(g, x, y);
+      else if (c.t === "castle") s += `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="#b0a48a"/><text x="${x * S + S / 2}" y="${y * S + S / 2 + 1}" font-size="27" text-anchor="middle" dominant-baseline="central">🏰</text>`;
       else {
         s += `<rect x="${x * S + 2}" y="${y * S + 2}" width="${S - 4}" height="${S - 4}" rx="6" fill="#fffde7" stroke="${c.fixed ? "#6d6d6d" : "#bca56b"}" stroke-width="1.5"/>`;
         const L = LC.LEVELS[c.t], lvl = c.lv || 1;
         s += `<text x="${x * S + S / 2}" y="${y * S + S / 2 + 1}" font-size="25" text-anchor="middle" dominant-baseline="central">${L ? L.e[lvl - 1] : LC.TYPES[c.t].e}</text>`;
+        // Who lives in a Be the Mayor home.
+        const F = c.fam && LC.Mayor && LC.Mayor.FAMS[c.fam];
+        if (F) s += `<text x="${x * S + 10}" y="${y * S + 10}" font-size="13" text-anchor="middle" dominant-baseline="central">${F.e}</text>`;
         // Upgraded buildings wear a star per extra level.
         if (lvl > 1) s += `<text x="${x * S + 4}" y="${y * S + S - 5}" font-size="10" fill="#f9a825" stroke="#5d4037" stroke-width=".6" font-weight="900">${"★".repeat(lvl - 1)}</text>`;
       }
     }
+    (o.spots || []).forEach((p) => { const c = g[p.y][p.x]; if (p.k === "rocks" && c && c.t !== "road") s += `<text x="${p.x * S + 9}" y="${p.y * S + S - 10}" font-size="11" text-anchor="middle" dominant-baseline="central">🪨</text>`; });
     if (st && !o.small) st.houses.forEach((hh) => {
       s += `<circle cx="${hh.x * S + S - 9}" cy="${hh.y * S + 9}" r="9" fill="#fff" stroke="#555" stroke-width="1"/><text x="${hh.x * S + S - 9}" y="${hh.y * S + 10}" font-size="13" text-anchor="middle" dominant-baseline="central">${FACE[hh.face]}</text>`;
     });

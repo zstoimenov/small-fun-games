@@ -93,7 +93,8 @@ LC.Studio = (function () {
     // The news: a chip each for the election, a family's letter and an offer.
     // A chip is one short line; tapping it tells the whole story in the talk
     // panel, next to the map, so the news never squeezes the map out.
-    const c = t.campaign, q = t.request, off = t.over ? null : t.offer;
+    // A finished town has no news left to act on.
+    const c = t.over ? null : t.campaign, q = t.over ? null : t.request, off = t.over ? null : t.offer;
     $("mCampaign").hidden = !c;
     if (c) {
       const poll = M.tally(t), tot = poll.total || 1;
@@ -110,11 +111,11 @@ LC.Studio = (function () {
     if (t.over) {
       const sc = M.score(t);
       $("mOver").innerHTML = t.lost
-        ? `<p><b>🗳️ You lost the election in year ${t.year - 1}.</b> ${t.snap ? "You can try that year again!" : ""}</p>`
+        ? `<p><b>🗳️ You lost the election in year ${t.year - 1}.</b></p>`
         : `<p><b>🏁 Your 20 years as mayor are over!</b> Score ${sc.pts} ${"⭐".repeat(sc.stars)}</p>`;
       if (t.lost && t.snap) {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "btn small"; b.textContent = "↺ Try the election year again";
+        b.type = "button"; b.className = "btn small"; b.textContent = "↺ Try that year again";
         b.addEventListener("click", retry);
         $("mOver").appendChild(b);
       }
@@ -137,7 +138,7 @@ LC.Studio = (function () {
     LC.Audio.build();
     setTimeout(() => yearCard(sum), window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900);
   }
-  const WHY = { road: "no road", school: "no school nearby", clinic: "no clinic nearby", fire: "no fire station nearby", shop: "no shop nearby", park: "no park nearby", noise: "a noisy factory next door", job: "no jobs nearby", police: "no police nearby", repair: "storm damage" };
+  const WHY = { road: "no road", school: "no school nearby", clinic: "no clinic nearby", fire: "no fire station nearby", shop: "no shop nearby", park: "no park nearby", noise: "a noisy factory next door", job: "no jobs nearby", police: "no police nearby", repair: "storm damage", quiet: "too busy next door", green: "no nature next door" };
   function yearCard(sum) {
     const t = town();
     const body = $("yBody"), acts = $("yActs");
@@ -239,8 +240,8 @@ LC.Studio = (function () {
       $("nMode").appendChild(b);
     });
     const mp = M.makeMap(fresh.seed);
-    $("nMap").innerHTML = LC.mapSvg(mp.grid, null, { small: true, attrs: 'role="img" aria-label="Your new map"' });
-    $("nLand").textContent = `${mp.land.e} ${mp.land.name}`;
+    $("nMap").innerHTML = LC.mapSvg(mp.grid, null, { small: true, spots: mp.spots, attrs: 'role="img" aria-label="Your new map"' });
+    $("nLand").textContent = `${mp.land.e} ${mp.land.name}` + (mp.spots ? " · 🏰 a castle · 🪨 rocky ground" : "");
   }
   function start() {
     const t = M.create(fresh.name, fresh.mode, fresh.seed);
@@ -275,7 +276,7 @@ LC.Studio = (function () {
       const card = document.createElement("div");
       card.className = "town card";
       const status = t.lost ? "🗳️ Lost an election" : t.over ? `🏁 Finished · ${"⭐".repeat(M.score(t).stars)}` : t.mode === "challenge" ? `🏁 Year ${t.year} of ${M.CHALLENGE_YEARS}` : `♾️ Year ${t.year}`;
-      card.innerHTML = `<div class="thumb">${LC.mapSvg(t.grid, st, { attrs: 'aria-hidden="true"' })}</div><div class="town-body"><b>${esc(t.name)}</b><small>${rk.e} ${rk.name} · 👥 ${st.people} · 💰 ${t.coins}</small><small>${status}</small></div>`;
+      card.innerHTML = `<div class="thumb">${LC.mapSvg(t.grid, st, { spots: t.spots, attrs: 'aria-hidden="true"' })}</div><div class="town-body"><b>${esc(t.name)}</b><small>${rk.e} ${rk.name} · 👥 ${st.people} · 💰 ${t.coins}</small><small>${status}</small></div>`;
       const acts = document.createElement("div");
       acts.className = "town-acts";
       const mk = (cls, html, label, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.innerHTML = html; b.setAttribute("aria-label", label + " " + t.name); b.addEventListener("click", fn); return b; };

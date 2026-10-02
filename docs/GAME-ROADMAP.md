@@ -2081,6 +2081,40 @@ everything reads the grid's own dimensions). With towers and room, the bot
 reached ~236 people in 20 years, so Big City moved from 180 to 250 and the
 challenge stars from 80/170/260 to 100/260/450.
 
+#### Fourth pass: no one layout wins (town version 2)
+
+From play-testing: a comb of roads (a side street every third column) and
+the same build order won every town, and every election was a landslide.
+New towns carry `v: 2`; saved towns keep `v: 1` rules untouched.
+
+- **Families.** Each house gets a family, drawn from the seed and shown on
+  the 🏠 tool before building: grandparents (clinic, quiet: no shop or
+  factory in the 8 squares round, no school), young family (school, park),
+  workers (jobs, factory noise is fine), nature lovers (trees, water or a
+  park in the 8 squares round). Extras count from the start.
+- **Land.** The road out is on any side; a second highway arrives in year 6.
+  A castle (+3 a year once a road reaches it, +2 to shops within 3), two
+  rocky spots (a factory there earns double), floods for buildings next to
+  water. Homes get a bonus for a park or water next door, but need two
+  bonuses to grow faster.
+- **Order.** Wishes are shuffled within groups that unlock together
+  (shop/school/park, clinic/jobs/fire, then police).
+- **Elections.** Rivals stand on platforms the town really has (a missing
+  need, the kind of family most left out, coins over 50 + people, the loan,
+  factories within 2 of homes), and each home splits its votes by loyalty
+  (happy 4, OK 2, unhappy 0.3, plus bonuses) against each rival's appeal.
+- **Stars** for version 2 are 150/380/680.
+
+`tools/mayor-bot.js` now plays both: over 200 towns the family-blind comb
+bot gets 3 stars in ~11% (was 54% under the old rules), a bot that plans
+for families and spends its coins ~60%, and election shares sit near 60%
+instead of 95%. The bot joins up roads water cuts off, which a fixed comb
+can't do on the new maps.
+
+The Mayor's talk panel also stopped scrolling: on wide screens it fills the
+space down to the buttons, short windows get picture-only tools, and phones
+drop the longer lines.
+
 Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
 Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
 

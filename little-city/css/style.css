@@ -383,8 +383,12 @@ button:disabled{opacity:.45; cursor:default}
 .mark.flash i{border-width:4px; animation-duration:.9s}
 @keyframes ring{0%{transform:scale(.8); opacity:1} 100%{transform:scale(1.35); opacity:.35}}
 @media (prefers-reduced-motion: reduce){ .mark i{animation:none} }
-.upgrade{margin-top:8px; padding:10px 12px; border-radius:12px; background:color-mix(in srgb, #ffc107 14%, var(--card)); border:1px solid #ffc107; display:flex; flex-direction:column; gap:6px; align-items:flex-start}
-.upgrade p{margin:0}
+.upgrade{margin-top:6px; padding:6px 10px; border-radius:12px; background:color-mix(in srgb, #ffc107 14%, var(--card)); border:1px solid #ffc107; display:flex; flex-wrap:wrap; gap:4px 8px; align-items:center}
+.upgrade p{margin:0; flex:1 1 160px; font-size:14px; line-height:1.3}
+.upgrade .btn{flex:0 0 auto}
+.talk .likes{font-size:14px; margin-top:4px; color:var(--muted)}
+.talk .perk{font-size:14px; margin-top:2px}
+.tool .fam-badge{position:absolute; top:2px; right:2px; font-size:14px; font-style:normal; line-height:1; background:var(--card); border-radius:999px; padding:2px}
 .lvl{color:#f9a825; font-size:14px; letter-spacing:1px}
 .talk .btn.go{margin-top:8px}
 .show-me{margin-right:auto}
@@ -478,7 +482,9 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
 .mayor-top .name-btn{min-height:44px; font-size:18px}
 .mayor-top .stats{padding:0; gap:2px 14px}
 .rank-chip small{display:none}
-.over{padding:8px 12px; font-size:15px}
+.over{padding:8px 12px; font-size:15px; display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:6px 10px}
+.over p{margin:0; flex:1 1 140px}
+.over .btn{flex:0 0 auto; white-space:nowrap}
 /* The town's news: one row of chips, whatever the screen. Tapping one tells
    the whole story in the talk panel. */
 .news{display:flex; flex-wrap:wrap; gap:6px}
@@ -499,14 +505,32 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
   /* If the panel runs out of room, the news scrolls inside itself: the tools
      and the buttons always stay in sight. */
   .panel-info{flex:0 1 auto; min-height:0; overflow:auto}
-  .panel-controls{flex:0 0 auto}
+  /* The talk panel takes the room between the tools and the buttons, so a
+     family's words and an upgrade fit without a scrollbar. */
+  .panel-controls{flex:1 1 auto}
+  .panel-controls > .talk,.panel-controls > .slot{flex:1 1 0; min-height:72px}
   .panel-acts{margin-top:auto}
-  .play .talk{max-height:180px}
+  .play .talk{max-height:none}
   #studio .toolbar{grid-template-columns:repeat(auto-fill,minmax(56px,1fr))}
   #studio .panel-acts .lbl{display:none}
   #studio .panel-acts .btn{font-size:20px}
   #studio #mEnd{flex:2.4 1 0; font-size:18px}
   #studio #mEnd .lbl{display:inline}
+}
+/* A short window that's wider than tall (a laptop, a small browser window):
+   the Mayor's tools become pictures in two rows, like on a phone, so the
+   talk panel keeps room for a family's words. */
+@media (min-aspect-ratio:5/4) and (max-height:820px){
+  #studio .toolbar{grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px}
+  #studio .tool{min-height:46px}
+  #studio .tool b{display:none}
+  #studio .tool span{font-size:24px}
+  .mayor-top{padding:8px 12px; gap:4px}
+  .mayor-top .name-btn{min-height:40px; font-size:17px}
+  .over{padding:6px 10px; font-size:14px}
+  .over .btn{min-height:40px}
+  .talk{font-size:15px}
+  .talk .bubble{padding:6px 10px}
 }
 /* Taller than wide: info, board, controls, actions. */
 @media (max-aspect-ratio:5/4){
@@ -580,6 +604,9 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
   .stats .w{display:none}
   #play .brief,#play .stats,.goal p{font-size:14px}
   .play .talk{max-height:90px; font-size:14px; padding:8px 12px}
+  /* The upgrade button names the upgrade, so its description can go. */
+  .upgrade p,.talk .likes,.upgrade:has(.btn:disabled){display:none}
+  .upgrade{padding:0; border:0; background:none; margin-top:4px}
   /* Locked tools are just padlocks: on a phone the map needs the room more. */
   #studio .tool.locked{display:none}
   .mayor-top .name-btn{min-height:40px; font-size:17px}
@@ -624,6 +651,13 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
   .panel-controls{flex:1 1 auto; min-height:0; overflow:visible}
   .panel-controls .slot{flex:1 1 0; min-height:48px}
   .play .talk{max-height:none; height:100%; font-size:14px; padding:6px 10px}
+  .upgrade p,.talk .likes,.talk .love,.upgrade:has(.btn:disabled){display:none}
+  .upgrade{padding:0; border:0; background:none; margin-top:4px}
+  .talk .bubble{padding:4px 10px}
+  .talk p{line-height:1.3}
+  .talk > .btn{min-height:40px; margin-top:4px}
+  .over{padding:4px 8px}
+  .over p{font-size:13px}
   .tool{min-height:50px}
   .tool small{display:none}
   .panel-acts .btn{min-height:46px}
@@ -636,6 +670,11 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
   .offer-acts .btn{min-height:42px}
   .news-chip{min-height:36px; padding:0 9px; font-size:14px}
   .news{gap:4px}
+  /* Stats on one line, then the news chips and any notice side by side. */
+  .mayor-top{flex-direction:row; flex-wrap:wrap; align-items:center; padding:6px 10px; gap:4px 6px}
+  .mayor-top .stats{flex:1 1 100%; flex-wrap:nowrap; font-size:13px; gap:0 8px; white-space:nowrap}
+  .mayor-top .over{flex:1 1 auto}
+  .over .btn{min-height:40px; padding:0 10px; font-size:14px}
   #studio .tool{min-height:46px}
   #studio .tool b{display:none}
   #studio .tool span{font-size:24px}
@@ -713,3 +752,13 @@ body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
 /* An offer's Yes and No are never scrolled out of sight: the talk panel grows
    for them and the map gives way. */
 .play .talk:has(.offer-acts){max-height:none}
+
+/* An upright phone has height to spare around the wide town map: the
+   Mayor's talk panel takes some of it, at a fixed height so the map never
+   moves when a family has more to say. */
+@media (max-aspect-ratio:5/4) and (min-height:700px) and (max-width:699px){
+  #studio .talk{min-height:150px; max-height:150px}
+}
+@media (max-aspect-ratio:5/4) and (min-height:900px) and (min-width:700px){
+  #studio .talk{min-height:240px; max-height:240px}
+}
