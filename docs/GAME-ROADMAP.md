@@ -2145,6 +2145,23 @@ missions; the comb bot gets 3 stars in none. Before big roads and the City
 highway, every 300-person town jammed at its one or two exits whatever the
 mayor did.
 
+#### Sixth pass: help in the game, and no scrolling anywhere
+
+- **The mayor's guide** (`#mayorHelp`): six short sections, opens by itself
+  the first time Be the Mayor opens, then from ? on the Mayor's screen.
+- **The coach**: the first town ever gets 5 steps (road, two houses, end a
+  year, look at a house, then "build what they ask for") that tick off as
+  the mayor does them; Skip tips or Got it ends it for good (`tutorDone`).
+- **The advisor** (`LC.Mayor.advice`): one tip whenever the mayor isn't
+  building, most useful first: no road, broken buildings, an offer, the
+  election poll, jams, the need most families are missing, a letter, the
+  loan, unspent coins, a mission close to done, the next family.
+- **Phones held sideways**: the tools stand in a two-column strip down the
+  right of the panel, so the talk panel gets the full height beside them.
+  The talk panel also fits itself: when the words don't fit it hides the
+  least important lines (hints, likes, bonuses), then cuts bubbles to two
+  lines, so it never scrolls at any size.
+
 Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
 Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
 

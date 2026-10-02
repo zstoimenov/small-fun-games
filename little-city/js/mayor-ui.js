@@ -23,6 +23,30 @@ window.LC = window.LC || {};
       <div class="talk card" aria-live="polite"></div>`;
     const map = root.querySelector(".map"), anim = root.querySelector(".anim"), bar = root.querySelector(".toolbar"), talk = root.querySelector(".talk");
     const g = () => town.grid;
+    // The talk panel never scrolls: when what it has to say doesn't fit, the
+    // least important lines step aside first (hints, what a family likes,
+    // bonuses), then long speech bubbles are cut to two lines. Runs whenever
+    // the panel's words change, and again when the window changes size.
+    const DROP = [".muted", ".likes", ".love", ".perk", ".upgrade p", ".tip", ".coach-acts .ghost"];
+    let fitting = false;
+    function fit() {
+      if (fitting) return;
+      fitting = true;
+      talk.querySelectorAll(".fit-hide").forEach((el) => el.classList.remove("fit-hide"));
+      talk.classList.remove("fit-clamp", "fit-tight");
+      const over = () => talk.scrollHeight > talk.clientHeight + 1;
+      for (const sel of DROP) {
+        if (!over()) break;
+        // A tip is the whole message when nothing else is showing.
+        if (sel === ".tip" && !talk.querySelector(".coach, .who")) continue;
+        talk.querySelectorAll(sel).forEach((el) => el.classList.add("fit-hide"));
+      }
+      if (over()) talk.classList.add("fit-clamp");
+      if (over()) talk.classList.add("fit-tight");
+      fitting = false;
+    }
+    new MutationObserver(() => { if (!fitting) requestAnimationFrame(fit); }).observe(talk, { childList: true, subtree: true, characterData: true });
+    window.addEventListener("resize", () => requestAnimationFrame(fit));
     const GW = () => g()[0].length, GH = () => g().length;
     // Its shape, so the stylesheet can fit the map to the space without cropping
     // it (and the cars and rings drawn over it stay on their squares).
@@ -90,9 +114,37 @@ window.LC = window.LC || {};
       });
       mk("bulldoze", "🧹", "Bulldoze", "½ back", tool === "bulldoze");
     }
-    const say = (html) => { talk.innerHTML = `<p>${html}</p>`; };
+    // ── The coach (first town only) and the advisor ──────────────────────────
+    // town.tutor is the step the coach is on; each step ticks itself off when
+    // the mayor does it. After the coach, the advisor gives one tip at a time.
+    const STEPS = [
+      { text: "Tap 🛣️ <b>Road</b>, then drag from the <b>OUT</b> road to make a street.", done: () => LC.Sim.reach(g()).size >= 4 },
+      { text: "Tap 🏠 <b>House</b> and build 2 houses next to your street." + (town.nextFam ? " The little badge shows which family moves in next." : ""), done: () => M.look(town).homes.length >= 2 },
+      { text: "Press <b>▶ End year</b>. Families move in when they're happy.", done: () => town.year >= 2 },
+      { text: "Tap a house with 👆 <b>Look</b> to hear what the family needs.", done: () => !!town.tutorLooked },
+      { text: "Build what they ask for, then keep ending years. Tap <b>?</b> for the mayor's guide" + (town.missions ? " and 🎯 for your missions" : "") + ". Good luck, Mayor!", done: () => false, last: true }
+    ];
+    function coach() {
+      if (!town.tutor || o.locked()) return "";
+      while (town.tutor <= STEPS.length && !STEPS[town.tutor - 1].last && STEPS[town.tutor - 1].done()) town.tutor++;
+      const st = STEPS[town.tutor - 1];
+      return `<div class="coach"><p><b>🎓 Step ${town.tutor} of ${STEPS.length}:</b> ${st.text}</p><div class="coach-acts">${st.last ? '<button type="button" class="btn small go" data-coach="done">👍 Got it</button>' : ""}<button type="button" class="btn small ghost" data-coach="skip">Skip tips</button></div></div>`;
+    }
+    talk.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-coach]");
+      if (!b) return;
+      delete town.tutor;
+      if (o.onTutorDone) o.onTutorDone();
+      LC.Audio.click();
+      hint();
+    });
+    function advisor() {
+      const a = M.advice(town);
+      return a ? `<div class="tip"><p><span class="tip-e" aria-hidden="true">${a.e}</span> ${esc(a.text)}</p></div>` : "";
+    }
+    const say = (html) => { talk.innerHTML = coach() + `<p>${html}</p>`; };
     function hint() {
-      if (!tool) return say("👆 Tap a house to hear the family. Tap a building to see how it's doing.");
+      if (!tool) { talk.innerHTML = (coach() || advisor()) + `<p class="muted">👆 Tap a house to hear the family. Tap a building to see how it's doing.</p>`; return; }
       if (tool === "bulldoze") return say("🧹 Tap something to clear it. You get half the coins back. Trees cost 2 coins to clear.");
       if (tool === "road") return say("🛣️ Tap or drag across the grass to build roads. 1 coin each.");
       const t = T[tool];
@@ -111,6 +163,7 @@ window.LC = window.LC || {};
       const h = st.homes.find((q) => q.x === x && q.y === y);
       let html = "";
       if (h) {
+        if (town.tutor) town.tutorLooked = true;
         const lines = h.missing.length ? h.missing.map((m) => LC.NEEDS[m]) : [h.live ? LC.HAPPY[(x * 7 + y * 3) % LC.HAPPY.length] : "This home is ready. Families move in when everything they need is close by!"];
         const q = town.request && town.request.x === x && town.request.y === y ? `<p class="perk">✉️ They asked for a ${T[town.request.need].name.toLowerCase()} by year ${town.request.due}.</p>` : "";
         const F = h.fam && M.FAMS[h.fam];
@@ -197,7 +250,13 @@ window.LC = window.LC || {};
       if (tool === "bulldoze") LC.Audio.boom(); else LC.Audio.build(tool === "road");
       changed();
     }
-    function changed() { paint(); cars(true); if (o.onChange) o.onChange(); }
+    // The coach moves on as soon as a step is done, even with a tool in hand.
+    function changed() {
+      const step = town.tutor;
+      paint(); cars(true);
+      if (step && coach() && town.tutor !== step) { if (tool) hint(); else hint(); }
+      if (o.onChange) o.onChange();
+    }
     function preview(x, y) {
       ghost = { x, y };
       pick = null;

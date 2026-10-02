@@ -54,7 +54,13 @@ window.LC = window.LC || {};
     show("chapter");
   }
   // With no town yet, Be the Mayor opens the new-town dialog instead.
-  function openStudio() { if (!LC.Studio.current()) { LC.Studio.newTown(); return; } show("studio"); LC.Studio.open(); }
+  function openStudio() {
+    if (!LC.Studio.current()) { LC.Studio.newTown(); return; }
+    show("studio");
+    LC.Studio.open();
+    // The guide opens by itself the first time someone plays mayor.
+    if (!store.seenMayorHelp) { store.seenMayorHelp = true; save(); $("mayorHelp").showModal(); }
+  }
   function openTowns(from) { back = from; show("towns"); LC.Studio.gallery(); }
 
   // ── A level ────────────────────────────────────────────────────────────────
@@ -146,7 +152,8 @@ window.LC = window.LC || {};
     paintMute();
     LC.Audio.click();
   });
-  $("help").addEventListener("click", () => $("helpDialog").showModal());
+  // On the Mayor's screen, ? opens the mayor's guide.
+  $("help").addEventListener("click", () => $(screen === "studio" ? "mayorHelp" : "helpDialog").showModal());
   document.querySelectorAll("[data-close]").forEach((b) =>
     b.addEventListener("click", () => b.closest("dialog").close()));
 

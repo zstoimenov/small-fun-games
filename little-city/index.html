@@ -210,14 +210,53 @@
     <li><b>Pick a building</b> from the tools, then tap a grass square. Roads: tap or drag.</li>
     <li><b>Every building</b> must touch a road that leads OUT of town.</li>
     <li><b>👆 Look:</b> tap a house to hear what the family needs. 😀 happy, 😐 OK, 😟 unhappy.</li>
-    <li><b>Be the Mayor:</b> build, then press ▶ End year. Happy homes fill up, unhappy ones empty out, and taxes come in.</li>
-    <li><b>Every family is different.</b> The badge on 🏠 House shows who moves in next: 👵 grandparents like peace and quiet, 👨‍👩‍👧 young families want a school and park, 👷 workers want jobs, 🌿 nature lovers want trees or water next door.</li>
-    <li><b>Look at the land.</b> 🪨 Rocky ground doubles a factory's earnings, a road to the 🏰 castle brings tourists, and two shops side by side make a high street.</li>
-    <li><b>Watch the traffic.</b> Every 4 people make a car. Busy roads turn orange; red roads are jammed, and families stuck in them aren't happy. Tap a road to widen it, or give cars another way out.</li>
-    <li><b>🎯 Missions:</b> every town has three. Tap 🎯 next to the coins to see how close you are.</li>
-    <li><b>Every 4 years there's an election.</b> Rivals point at what's wrong: unhappy families, a loan, or coins nobody is spending. Fix it to win their votes!</li>
+    <li><b>Be the Mayor:</b> run your own town, year by year. Press ? on the Mayor's screen for the mayor's guide.</li>
   </ol>
   <button class="btn" type="button" data-close>Got it!</button>
+</dialog>
+
+<!-- The mayor's guide: opens by itself the first time, then from ? on the Mayor's screen. -->
+<dialog id="mayorHelp" class="sheet guide" aria-labelledby="mayorHelpTitle">
+  <div class="sheet-head">
+    <h2 id="mayorHelpTitle">&#127963;&#65039; The mayor's guide</h2>
+    <button class="icon-btn close" type="button" data-close aria-label="Close">&times;</button>
+  </div>
+  <div class="guide-body">
+    <h3>&#128197; Each year</h3>
+    <ol class="how">
+      <li><b>Build</b> with the coins in the treasury: pick a tool, then tap the map.</li>
+      <li>Press <b>&#9654; End year</b>. Happy homes fill up, unhappy ones empty out, and taxes come in.</li>
+      <li>Every building must touch a road that leads <b>OUT</b> of town.</li>
+    </ol>
+    <h3>&#128106; Families</h3>
+    <ul class="how">
+      <li>Tap a house with &#128070; <b>Look</b> to hear what the family needs. &#128512; happy, &#128528; OK, &#128543; unhappy.</li>
+      <li>The badge on &#127968; House shows who moves in next: &#128117; grandparents want a clinic and peace and quiet, &#128104;&#8205;&#128105;&#8205;&#128103; young families want a school and park, &#128119; workers want jobs, &#127807; nature lovers want trees or water next door.</li>
+      <li>As the town grows, everyone wants more: a shop, a school, a clinic and so on.</li>
+    </ul>
+    <h3>&#128176; Money</h3>
+    <ul class="how">
+      <li>Everyone pays tax. Shops and factories earn from people close by. Schools and clinics cost coins every year.</li>
+      <li>Short of coins? Borrow at the &#127974; bank, but loans cost interest. Lots of coins? Spend them: tap a building to upgrade it.</li>
+    </ul>
+    <h3>&#128506;&#65039; The land</h3>
+    <ul class="how">
+      <li>&#129704; Rocky ground doubles a factory's earnings. A road to the &#127984; castle brings tourists. Two shops side by side make a high street.</li>
+      <li>Homes love a park or water next door, but floods can reach the waterside.</li>
+    </ul>
+    <h3>&#128663; Traffic</h3>
+    <ul class="how">
+      <li>Every 4 people make a car. Orange roads are busy; red roads are jammed, and families stuck in a jam aren't happy.</li>
+      <li>Tap a road to widen it, or build another way out so cars can go round.</li>
+    </ul>
+    <h3>&#128499;&#65039; Elections and &#127919; missions</h3>
+    <ul class="how">
+      <li>Every 4 years the town votes. Rivals point at what's wrong; fix it before the vote to win families back. The live poll shows how you're doing.</li>
+      <li>Each town has 3 missions. Tap &#127919; next to the coins to see them.</li>
+    </ul>
+    <p class="muted">&#128161; Stuck? When you're not building, the panel next to the map gives you a tip.</p>
+  </div>
+  <button class="btn go" type="button" data-close>Let's go!</button>
 </dialog>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>

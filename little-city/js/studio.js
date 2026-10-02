@@ -36,7 +36,7 @@ LC.Studio = (function () {
     const t = town();
     if (!t) { newTown(); return false; }
     $("sName").innerHTML = `${esc(t.name)} <small aria-hidden="true">✏️</small>`;
-    board = LC.mayorBoard($("sEditor"), t, { board: $("mBoard"), onChange: () => { keep(); header(); }, locked: () => t.over });
+    board = LC.mayorBoard($("sEditor"), t, { board: $("mBoard"), onChange: () => { keep(); header(); }, locked: () => t.over, onTutorDone: () => { store.tutorDone = true; keep(); } });
     header();
     return true;
   }
@@ -123,11 +123,11 @@ LC.Studio = (function () {
     if (t.over) {
       const sc = M.score(t);
       $("mOver").innerHTML = t.lost
-        ? `<p><b>🗳️ You lost the election in year ${t.year - 1}.</b></p>`
+        ? `<p><b>🗳️ <span class="long">You lost the election in year ${t.year - 1}.</span><span class="short">You lost the vote.</span></b></p>`
         : `<p><b>🏁 Your 20 years as mayor are over!</b> Score ${sc.pts} ${"⭐".repeat(sc.stars)}</p>`;
       if (t.lost && t.snap) {
         const b = document.createElement("button");
-        b.type = "button"; b.className = "btn small"; b.textContent = "↺ Try that year again";
+        b.type = "button"; b.className = "btn small"; b.innerHTML = '↺ Try <span class="long">that year </span>again';
         b.addEventListener("click", retry);
         $("mOver").appendChild(b);
       }
@@ -257,6 +257,8 @@ LC.Studio = (function () {
   }
   function start() {
     const t = M.create(fresh.name, fresh.mode, fresh.seed);
+    // The very first town gets the step-by-step coach.
+    if (!store.tutorDone) t.tutor = 1;
     store.towns.unshift(t);
     store.current = t.id;
     keep();

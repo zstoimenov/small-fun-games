@@ -909,6 +909,55 @@ LC.Mayor = (function () {
     }
   }
 
+  // ── The advisor ────────────────────────────────────────────────────────────
+  // One tip for right now, the most useful first: what's broken, what's
+  // urgent this year, what the most families are missing, then money,
+  // the next family and the missions. Shown when the mayor isn't building.
+  const NEED_TIP = {
+    shop: (n) => `${n} famil${n === 1 ? "y wants" : "ies want"} a 🏪 shop nearby. Shops reach 3 squares and earn coins too.`,
+    school: (n) => `${n} famil${n === 1 ? "y wants" : "ies want"} a 🏫 school. Pick the spot where the yellow reaches the most homes.`,
+    park: (n) => `${n} famil${n === 1 ? "y wants" : "ies want"} a 🌳 park nearby. Parks are cheap!`,
+    clinic: (n) => `${n} famil${n === 1 ? "y wants" : "ies want"} a 🏥 clinic within reach.`,
+    fire: (n) => `${n} famil${n === 1 ? "y wants" : "ies want"} a 🚒 fire station. It also stops fires burning buildings down.`,
+    police: (n) => `${n} famil${n === 1 ? "y wants" : "ies want"} a 🚓 police station nearby.`,
+    job: (n) => `${n} famil${n === 1 ? "y needs" : "ies need"} jobs: a 🏪 shop, 🏭 factory or 🚉 station within 5 squares.`,
+    noise: (n) => `${n} famil${n === 1 ? "y lives" : "ies live"} right next to a noisy 🏭 factory. Keep factories away from homes (workers don't mind).`,
+    quiet: (n) => `👵 Grandparents want peace and quiet: no shop or factory in the 8 squares around them.`,
+    green: (n) => `🌿 Nature lovers want trees, water or a 🌳 park right next door.`,
+    traffic: (n) => `${n} famil${n === 1 ? "y is" : "ies are"} stuck in traffic.`,
+    repair: () => "Something is broken: tap the 🔧 with 👆 Look to repair it."
+  };
+  function advice(town, st) {
+    st = st || look(town);
+    if (town.over) return null;
+    const live = st.homes.filter((h) => h.live);
+    if (!st.homes.length) return { e: "🏠", text: "Start with a road from the OUT road, then a 🏠 house next to it." + (v2(town) ? " The badge on House shows who moves in next." : "") };
+    if (st.homes.some((h) => h.missing.includes("road"))) return { e: "🛣️", text: "A home has no road! Every building must touch a road that leads OUT of town." };
+    if (town.grid.some((row) => row.some((c) => c && c.damaged))) return { e: "🔧", text: NEED_TIP.repair() };
+    if (town.offer) return { e: "🤝", text: "An offer is waiting. Look at the circled square, then answer 👍 or 👎 before you end the year." };
+    if (town.campaign) {
+      const poll = tally(town), tot = poll.total || 1, rv = town.campaign.rivals;
+      const share = Math.round(100 * poll.votes.mayor / tot);
+      return { e: "🗳️", text: `Election this year, and you have ${share}% in the poll. ${rv[0].name} says “${rv[0].promise}” and ${rv[1].name} says “${rv[1].promise}” Fix what they promise to win votes back.` };
+    }
+    if (st.traffic && st.traffic.on && st.jams) return { e: "🚗", text: `${st.jams} road${st.jams === 1 ? " is" : "s are"} jammed (red). Tap one with 👆 Look to widen it, or build another way out so cars can go round.` };
+    const count = {};
+    st.homes.forEach((h) => h.missing.forEach((m) => { count[m] = (count[m] || 0) + 1; }));
+    const top = Object.keys(count).filter((m) => NEED_TIP[m]).sort((a, b) => count[b] - count[a])[0];
+    if (top) return { e: "💡", text: NEED_TIP[top](count[top]) };
+    const q = town.request;
+    if (q) return { e: "✉️", text: `The ${q.fam} family asked for a ${T[q.need].name.toLowerCase()} near them by year ${q.due}. Do it for ${q.reward} coins!` };
+    if (town.loan && town.coins > 40) return { e: "🏦", text: "You have coins to spare: pay back some of the loan at the 🏦 bank. Loans cost interest every year." };
+    if (v2(town) && town.coins > 60 + st.people) return { e: "💰", text: "That's a lot of coins sitting still! Spend them: upgrade busy buildings (tap one with 👆 Look). Rivals notice a mayor who doesn't spend." };
+    if (town.missions) {
+      const m = missionState(town, st).filter((x) => !x.done && !x.failed).sort((a, b) => b.have / b.need - a.have / a.need)[0];
+      if (m && m.have) return { e: "🎯", text: `Mission ${m.e} ${m.name}: ${m.have} of ${m.need}. ${m.text[0].toUpperCase() + m.text.slice(1)}.` };
+    }
+    if (town.nextFam) { const F = FAMS[town.nextFam]; return { e: F.e, text: `Next to move in: ${F.name}. They want ${F.likes}. Find them a good spot!` }; }
+    if (!live.length) return { e: "▶", text: "Press ▶ End year. Families move in when everything they need is close by." };
+    return { e: "😀", text: "Everything looks good! Build more homes to grow, and keep an eye on the families." };
+  }
+
   // The 20-year challenge: people count most, happy people and savings help,
   // and a loan still owed counts against you.
   function score(town) {
@@ -923,7 +972,7 @@ LC.Mayor = (function () {
   }
 
   return {
-    W, H, V, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS, FAMS, LOUD, wantsList, isV2: v2, isV3: v3, MISSIONS, CAP, WIDE, BIG, WIDEN, TRAFFIC_AT, ROAD_NAMES, capOfRoad, widen, widenStep, missionState,
+    W, H, V, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS, FAMS, LOUD, wantsList, isV2: v2, isV3: v3, advice, MISSIONS, CAP, WIDE, BIG, WIDEN, TRAFFIC_AT, ROAD_NAMES, capOfRoad, widen, widenStep, missionState,
     create, makeMap, look, build, bulldoze, repair, upgrade, nextStep, repairCost, borrow, repay, loanLimit, answer, endYear, score,
     people, unlocked, rankOf, covered, wantsFor, rng, tally, retry, complaints
   };
