@@ -78,6 +78,17 @@ LC.Studio = (function () {
       $("sEditor").querySelector(".talk").appendChild(row);
     }
   }
+  // The town's three missions, told in the talk panel like the news.
+  function missions() {
+    const t = town();
+    if (!t || !t.missions) return;
+    const rows = M.missionState(t).map((m) => {
+      const pc = Math.round(100 * Math.min(1, m.have / m.need));
+      const mark = m.done ? "✅" : m.failed ? "⌛" : m.e;
+      return `<div class="mission${m.done ? " done" : ""}${m.failed ? " failed" : ""}"><span class="me">${mark}</span><div><b>${m.name}</b><small>${esc(m.text)}${m.failed ? " (out of time)" : ""}</small>${m.done || m.failed ? "" : `<div class="bar"><i style="width:${pc}%"></i></div>`}</div><span class="pc">${m.done ? "Done!" : m.have + "/" + m.need}</span></div>`;
+    }).join("");
+    board.say(`<p class="who">🎯 Missions for ${esc(t.name)}</p>${rows}<p class="muted">Each one done: +30 coins${t.mode === "challenge" ? " and +40 points" : ""}.</p>`);
+  }
   function header() {
     const t = town();
     if (!t) return;
@@ -89,7 +100,8 @@ LC.Studio = (function () {
       `<span title="People living here / room in all the homes">👥 <b>${st.people}/${st.capacity}</b></span><span>😀 <b>${happy}%</b></span>` +
       `<span class="${t.coins < 10 ? "bad" : ""}">💰 <b>${t.coins}</b></span>` +
       `<span class="${st.balance < 0 ? "bad" : ""}" title="What the next year will add or take">📈 <b>${st.balance >= 0 ? "+" : ""}${st.balance}</b>/yr</span>` +
-      (t.loan ? `<span class="bad">🏦 owe <b>${t.loan}</b></span>` : "");
+      (t.loan ? `<span class="bad">🏦 owe <b>${t.loan}</b></span>` : "") +
+      (t.missions ? `<button type="button" class="stat-btn" id="mMissions" aria-label="Missions: ${t.missions.filter((m) => m.done).length} of 3 done. Tap to see them">🎯 <b>${t.missions.filter((m) => m.done).length}/3</b></button>` : "");
     // The news: a chip each for the election, a family's letter and an offer.
     // A chip is one short line; tapping it tells the whole story in the talk
     // panel, next to the map, so the news never squeezes the map out.
@@ -138,7 +150,7 @@ LC.Studio = (function () {
     LC.Audio.build();
     setTimeout(() => yearCard(sum), window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 900);
   }
-  const WHY = { road: "no road", school: "no school nearby", clinic: "no clinic nearby", fire: "no fire station nearby", shop: "no shop nearby", park: "no park nearby", noise: "a noisy factory next door", job: "no jobs nearby", police: "no police nearby", repair: "storm damage", quiet: "too busy next door", green: "no nature next door" };
+  const WHY = { road: "no road", school: "no school nearby", clinic: "no clinic nearby", fire: "no fire station nearby", shop: "no shop nearby", park: "no park nearby", noise: "a noisy factory next door", job: "no jobs nearby", police: "no police nearby", repair: "storm damage", quiet: "too busy next door", green: "no nature next door", traffic: "stuck in traffic" };
   function yearCard(sum) {
     const t = town();
     const body = $("yBody"), acts = $("yActs");
@@ -159,7 +171,7 @@ LC.Studio = (function () {
         (e.won ? `<p class="big-win">🎉 You won! Welcome to term ${t.term} as mayor.</p>` : `<p class="big-lose">${e.winner.e} ${e.winner.name} won the election. Families wanted: “${esc(e.winner.promise)}”</p>`) + "</div>";
     }
     if (sum.medals.length) h += `<div class="medals-won">${sum.medals.map((id) => { const m = M.MEDALS.find((x) => x.id === id); return `<span class="medal on">${m.e}<b>${m.name}</b></span>`; }).join("")}</div>`;
-    if (sum.final && !t.lost) h += `<div class="final card"><p class="kicker">🏁 20 years as mayor!</p><p class="big-stars">${"★".repeat(sum.final.stars)}<span class="dim">${"★".repeat(3 - sum.final.stars)}</span></p><p>Score <b>${sum.final.pts}</b>: ${sum.final.people} people, ${sum.final.happy} happy, plus savings, minus any loan.</p></div>`;
+    if (sum.final && !t.lost) h += `<div class="final card"><p class="kicker">🏁 20 years as mayor!</p><p class="big-stars">${"★".repeat(sum.final.stars)}<span class="dim">${"★".repeat(3 - sum.final.stars)}</span></p><p>Score <b>${sum.final.pts}</b>: ${sum.final.people} people, ${sum.final.happy} happy, plus savings${t.missions ? `, plus ${sum.final.missions} mission${sum.final.missions === 1 ? "" : "s"}` : ""}, minus any loan.</p></div>`;
     body.innerHTML = h;
     acts.innerHTML = "";
     const btn = (cls, text, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.textContent = text; b.addEventListener("click", fn); acts.appendChild(b); return b; };
@@ -241,7 +253,7 @@ LC.Studio = (function () {
     });
     const mp = M.makeMap(fresh.seed);
     $("nMap").innerHTML = LC.mapSvg(mp.grid, null, { small: true, spots: mp.spots, attrs: 'role="img" aria-label="Your new map"' });
-    $("nLand").textContent = `${mp.land.e} ${mp.land.name}` + (mp.spots ? " · 🏰 a castle · 🪨 rocky ground" : "");
+    $("nLand").textContent = `${mp.land.e} ${mp.land.name}` + (mp.spots ? " · 🏰 a castle · 🪨 rocky ground · 🎯 3 missions" : "");
   }
   function start() {
     const t = M.create(fresh.name, fresh.mode, fresh.seed);
@@ -296,6 +308,8 @@ LC.Studio = (function () {
 
   function wire() {
     $("mEnd").addEventListener("click", endYear);
+    // The missions button is redrawn with the stats, so listen on the row.
+    $("mStats").addEventListener("click", (e) => { if (e.target.closest("#mMissions")) { LC.Audio.click(); missions(); } });
     ["campaign", "request", "offer"].forEach((k) => $("m" + k[0].toUpperCase() + k.slice(1)).addEventListener("click", () => { LC.Audio.click(); news(k); }));
     $("mBank").addEventListener("click", bank);
     $("mMedals").addEventListener("click", medals);

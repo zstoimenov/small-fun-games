@@ -2115,6 +2115,36 @@ The Mayor's talk panel also stopped scrolling: on wide screens it fills the
 space down to the buttons, short windows get picture-only tools, and phones
 drop the longer lines.
 
+#### Fifth pass: traffic jams and missions (town version 3)
+
+New towns carry `v: 3`; version 1 and 2 towns keep their rules.
+
+- **Traffic.** Every 4 people make a car that drives to the nearest road out.
+  Homes are routed one at a time (Dijkstra over linked roads) and a road
+  that would overflow costs 8 instead of 1, so later cars go round and a
+  second route really helps. A road fits 16 cars, a wide road 36 (6 coins),
+  a big road 64 (14 coins, City). From 40 people a jam on a family's route
+  is a need ("traffic"). Families within 5 of a train station drive half as
+  much. A City gets a third road out.
+- **Missions.** Three per town, one per group, from the seed: land (water
+  view, high street of 3, castle tours, rock factory), families (5 nature,
+  4 grandparents, 6 young families, 8 homes by a park) and big (100 people
+  without a jam, 120 with no loan, 40 happy by year 10). +30 coins each,
+  +40 challenge points, two new medals. A 🎯 n/3 button in the stats line
+  opens them in the talk panel.
+- **Elections** in version 3 are counted on the town as the mayor left it
+  (what the live poll showed), not after that year's newcomers. Before
+  this, crossing 110 people mid-year (police) plus fresh jams made every
+  family unhappy at the moment of the vote, so a town 48–32 in the poll
+  lost 22–95.
+- **Stars** for version 3 are 150/360/600.
+
+Over 200 towns: the smart bot (fixes jams first, links new highways)
+reaches a median 339 people, gets 3 stars in 45% and finishes a median 2
+missions; the comb bot gets 3 stars in none. Before big roads and the City
+highway, every 300-person town jammed at its one or two exits whatever the
+mayor did.
+
 Still on the shortlist: Farm Seasons, Fact or Fake Newsroom, Ecosystem
 Balance, Detective Lab, Kitchen Chemist, Air Traffic Tower.
 

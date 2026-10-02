@@ -41,7 +41,8 @@ LC.NEEDS = {
   police: "I'd feel safer with a police station nearby.",
   repair: "The storm broke our roof! Please fix it.",
   quiet: "It's so busy and loud next door. We like peace and quiet!",
-  green: "We'd love trees, water or a park right next to our house."
+  green: "We'd love trees, water or a park right next to our house.",
+  traffic: "We're stuck in a traffic jam every morning! The roads are too full."
 };
 LC.HAPPY = ["I love living here!", "Everything I need is close by!", "Best town ever!", "What a lovely street!"];
 // Buildings in Be the Mayor can be upgraded. A level is stored on the cell

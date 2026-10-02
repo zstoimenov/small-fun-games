@@ -119,6 +119,28 @@ window.LC = window.LC || {};
         html = `<p class="who">${FACE[h.face]} ${F ? `${F.e} ${F.name}` : T[h.t].name}: 👥 <b>${h.live}/${h.cap}</b> people</p>` + `<p class="bubble">“${lines.map(esc).join(" ")}”</p>` + q +
           (F ? `<p class="likes">They want ${esc(F.likes)}.</p>` : "") +
           (perks.length ? `<p class="perk love">💛 They love ${perks.join(" and ")}.</p>` : "");
+      } else if (c && c.t === "road" && M.isV3(town)) {
+        const k = x + "," + y, n = (st.traffic && st.traffic.load[k]) || 0, cap = M.capOfRoad(c), lv = +(c.wide || 0);
+        const jam = st.traffic && st.traffic.on && n > cap;
+        html = `<p class="who">🛣️ ${c.entry ? "Road out of town" : M.ROAD_NAMES[lv][0].toUpperCase() + M.ROAD_NAMES[lv].slice(1)}</p><p>${jam ? "🚗🚗 <b>Traffic jam!</b> " : ""}<b>${Math.ceil(n)}</b> cars a day drive here, and it fits <b>${cap}</b>.${n ? "" : " Every 4 people make a car on its way out of town."}</p>` +
+          (jam ? `<p class="muted">Widen it, or build another way out so some cars go round.</p>` : !st.traffic.on && n >= cap ? `<p class="muted">Jams start to matter when ${M.TRAFFIC_AT} people live here.</p>` : "");
+        const w = M.widenStep(town, c);
+        if (w && !o.locked()) {
+          const need = town.rank < w.rank ? M.RANKS[w.rank] : null;
+          const box = document.createElement("div");
+          box.className = "upgrade";
+          box.innerHTML = `<p>⬆️ <b>${w.name}</b>: fits ${w.cap} cars instead of ${cap}.</p>`;
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "btn small" + (need ? " ghost" : "");
+          b.textContent = need ? `🔒 ${w.name} at ${need.name} (${need.at} people)` : `⬆️ ${w.name} for ${w.cost} coins`;
+          b.disabled = !!need;
+          b.addEventListener("click", () => { const err = M.widen(town, x, y); if (err) { say(err); LC.Audio.nope(); } else { LC.Audio.build(true); changed(); lookAt(x, y); } });
+          box.appendChild(b);
+          talk.innerHTML = html;
+          talk.appendChild(box);
+          return;
+        }
       } else if (c && c.t === "castle") {
         html = `<p class="who">🏰 The old castle</p><p>${st.tourists ? "A road reaches it, so tourists visit: <b>+3</b> coins a year. Shops within 3 squares earn +2 from them." : "Build a road right next to it and tourists will come: +3 coins a year, and shops nearby earn more."}</p>`;
       } else if (!c && (town.spots || []).some((p) => p.k === "rocks" && p.x === x && p.y === y)) {

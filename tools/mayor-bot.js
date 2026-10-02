@@ -105,8 +105,46 @@ function smartHouse(town, spots, st) {
   const few = st.homes.length < 3;
   return !!best && (bs > -5 || few) && !M.build(town, "house", best.x, best.y);
 }
+// Traffic: link a new highway to the town, then widen the busiest jammed road.
+function linkExit(town) {
+  const g = town.grid, W = g[0].length, H = g.length;
+  const ex = []; g.forEach((row, y) => row.forEach((c, x) => { if (c && c.entry && c.late) ex.push({ x, y }); }));
+  for (const e of ex) {
+    const isTown = (x, y) => g[y] && g[y][x] && g[y][x].t === "road" && !(x === e.x && y === e.y);
+    if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => isTown(e.x + dx, e.y + dy))) continue;
+    // Shortest way over grass or trees to any other road.
+    const from = new Map([[e.x + "," + e.y, null]]), q = [[e.x, e.y]];
+    let hit = null;
+    while (q.length && !hit) {
+      const [x, y] = q.shift();
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, k = nx + "," + ny;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || from.has(k)) continue;
+        const c = g[ny][nx];
+        from.set(k, x + "," + y);
+        if (c && c.t === "road") { hit = from.get(k); break; }
+        if (!c || c.t === "trees") q.push([nx, ny]);
+      }
+    }
+    if (!hit) continue;
+    const path = [];
+    for (let k = hit; k && k !== e.x + "," + e.y; k = from.get(k)) path.push(k.split(",").map(Number));
+    if (town.coins < path.length * 3) continue;
+    path.forEach(([x, y]) => { if (g[y][x] && g[y][x].t === "trees") M.bulldoze(town, x, y); M.build(town, "road", x, y); });
+    return true;
+  }
+  return false;
+}
 function smartExtras(town, spots, st) {
   const g = town.grid;
+  if (M.isV3(town)) {
+    if (linkExit(town)) return true;
+    const tr = st.traffic;
+    if (tr && tr.on && tr.jammed.length && town.coins >= M.WIDEN + 4) {
+      const k = tr.jammed.filter((q) => { const [x, y] = q.split(",").map(Number), n = M.widenStep(town, g[y][x]); return n && town.rank >= n.rank && town.coins >= n.cost + 4; }).sort((a, b) => tr.load[b] - tr.load[a])[0];
+      if (k) { const [x, y] = k.split(",").map(Number); if (!M.widen(town, x, y)) return true; }
+    }
+  }
   // A nature lover missing green: a park right next door.
   const sad = st.homes.find((h) => h.missing.includes("green"));
   if (sad && town.coins >= T.park.cost) {
@@ -154,7 +192,7 @@ function sensible(town, opts) {
     g.forEach((row, y) => row.forEach((c, x) => { if (c && c.damaged) M.repair(town, x, y); }));
     const spots = roadSide(g).filter((p) => !st.homes.some(() => false));
     const quiet = spots.filter((p) => !g.some((row, y) => row.some((c, x) => c && c.t === "factory" && Math.abs(x - p.x) <= 1 && Math.abs(y - p.y) <= 1)));
-    const SKIP = ["road", "noise", "quiet", "green", "repair"];
+    const SKIP = ["road", "noise", "quiet", "green", "repair", "traffic"];
     const wants = Array.from(new Set(M.wantsFor(st.people, town).concat(st.homes.flatMap((h) => h.missing)))).filter((w) => !SKIP.includes(w));
     let did = false;
     for (const w of wants) {
@@ -172,8 +210,8 @@ function sensible(town, opts) {
       }
     }
     if (did) continue;
-    if (town.coins >= T.house.cost + 4 && (opts.smart ? smartHouse(town, quiet, st) : place(town, "house", quiet, []))) continue;
     if (opts.smart && smartExtras(town, spots, st)) continue;
+    if (town.coins >= T.house.cost + 4 && (opts.smart ? smartHouse(town, quiet, st) : place(town, "house", quiet, []))) continue;
     // Out of land: upgrade full, happy homes (house -> flats -> tower).
     // A smart mayor spends a pile of coins instead of handing rivals an argument.
     if (opts.smart && town.loan && town.coins > 40) M.repay(town, town.coins - 30);
@@ -213,7 +251,7 @@ const med = (a) => { const s = a.slice().sort((x, y) => x - y); return s[Math.fl
 // "old rules" is the first version of the game, kept for saved towns; the
 // rest play version 2 towns. The comb bot ignores families and land, the
 // smart one plans for them.
-for (const [name, bot, v] of [["old rules", sensible, 1], ["comb", sensible, 2], ["smart", smart, 2], ["houses only", housesOnly, 2], ["lazy", lazy, 2]]) {
+for (const [name, bot, v] of [["old rules", sensible, 1], ["v2 smart", smart, 2], ["comb", sensible, 3], ["smart", smart, 3], ["houses only", housesOnly, 3], ["lazy", lazy, 3]]) {
   const runs = Array.from({ length: N }, (_, i) => play(bot, i + 1, M.CHALLENGE_YEARS, v));
   const stars = [0, 0, 0, 0];
   runs.forEach((r) => stars[r.sc.stars]++);
@@ -221,6 +259,9 @@ for (const [name, bot, v] of [["old rules", sensible, 1], ["comb", sensible, 2],
   runs.forEach((r) => ranks[r.town.rank]++);
   const ev = {};
   runs.forEach((r) => Object.entries(r.log.events).forEach(([k, v]) => { ev[k] = (ev[k] || 0) + v; }));
+  const ms = runs.map((r) => (r.town.missions || []).filter((m) => m.done).length), jams = runs.map((r) => M.look(r.town).jams || 0);
+  const mids = {}; runs.forEach((r) => (r.town.missions || []).forEach((m) => { const o = mids[m.id] = mids[m.id] || [0, 0]; o[1]++; if (m.done) o[0]++; }));
+  if (v >= 3) console.log(`${name.padEnd(12)} missions done 0/1/2/3: ${[0, 1, 2, 3].map((n) => ms.filter((x) => x === n).length).join(" / ")}  jams at end (median) ${med(jams)}  by mission: ${Object.entries(mids).map(([k, [a, b]]) => k + " " + a + "/" + b).join(", ")}`);
   console.log(`${name.padEnd(12)} pop@10 ${med(runs.map((r) => r.log.pop10))}  pop@20 ${med(runs.map((r) => r.sc.people))}  score ${med(runs.map((r) => r.sc.pts))}  coins ${med(runs.map((r) => r.town.coins))}  loan ${med(runs.map((r) => r.town.loan))}  medals ${med(runs.map((r) => r.town.medals.length))}`);
   console.log(`             stars 0/1/2/3: ${stars.join(" / ")}   ranks H/V/T/C/B: ${ranks.join(" / ")}`);
   const el = runs.flatMap((r) => r.town.elections);

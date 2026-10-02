@@ -15,6 +15,9 @@ window.LC = window.LC || {};
     const on = (dx, dy) => { const c = g[y + dy] && g[y + dy][x + dx]; return c && c.t === "road"; };
     const cx = x * S + S / 2, cy = y * S + S / 2;
     let s = `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="#8a8f98"/>`;
+    // Widened roads in Be the Mayor get kerbs: one pair for wide, two for big.
+    const wide = +(g[y][x].wide || 0);
+    for (let k = 0; k < wide; k++) s += `<rect x="${x * S + 2 + k * 4}" y="${y * S + 2 + k * 4}" width="${S - 4 - k * 8}" height="${S - 4 - k * 8}" fill="none" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="${k ? "3 3" : "none"}" opacity=".8"/>`;
     // Dashed centre lines towards each neighbouring road, so streets join up.
     const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => on(dx, dy));
     // The road out points off the map on its own side.
@@ -55,6 +58,14 @@ window.LC = window.LC || {};
       }
     }
     (o.spots || []).forEach((p) => { const c = g[p.y][p.x]; if (p.k === "rocks" && c && c.t !== "road") s += `<text x="${p.x * S + 9}" y="${p.y * S + S - 10}" font-size="11" text-anchor="middle" dominant-baseline="central">🪨</text>`; });
+    // Traffic in Be the Mayor: busy roads orange, jams red with a queue of cars.
+    if (st && st.traffic && !o.small) Object.entries(st.traffic.load).forEach(([k, n]) => {
+      const [x, y] = k.split(",").map(Number), cap = LC.Mayor.capOfRoad(g[y][x]);
+      const jam = st.traffic.on && n > cap;
+      if (!jam && n < cap * 0.75) return;
+      s += `<rect x="${x * S}" y="${y * S}" width="${S}" height="${S}" fill="${jam ? "#e53935" : "#fb8c00"}" opacity="${jam ? 0.55 : 0.4}"/>`;
+      if (jam) s += `<text x="${x * S + S / 2}" y="${y * S + S / 2}" font-size="15" text-anchor="middle" dominant-baseline="central">🚗🚗</text>`;
+    });
     if (st && !o.small) st.houses.forEach((hh) => {
       s += `<circle cx="${hh.x * S + S - 9}" cy="${hh.y * S + 9}" r="9" fill="#fff" stroke="#555" stroke-width="1"/><text x="${hh.x * S + S - 9}" y="${hh.y * S + 10}" font-size="13" text-anchor="middle" dominant-baseline="central">${FACE[hh.face]}</text>`;
     });

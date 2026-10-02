@@ -43,7 +43,9 @@ LC.Mayor = (function () {
     { id: "helper", e: "✉️", name: "Good neighbour", text: "Did 3 things residents asked for." },
     { id: "ten", e: "🎖️", name: "10 years as mayor", text: "Ran one town for 10 years." },
     { id: "elected", e: "🗳️", name: "Re-elected", text: "Won an election." },
-    { id: "landslide", e: "🏆", name: "Landslide", text: "Won an election with 3 out of every 4 votes." }
+    { id: "landslide", e: "🏆", name: "Landslide", text: "Won an election with 3 out of every 4 votes." },
+    { id: "mission", e: "🎯", name: "Mission done", text: "Finished one of a town's missions." },
+    { id: "missions3", e: "🏅", name: "All three missions", text: "Finished all 3 missions in one town." }
   ];
   // Every 4 years the town votes. Two rivals stand against the mayor, each
   // promising what the most families are missing, so the campaign year is a
@@ -53,14 +55,16 @@ LC.Mayor = (function () {
   const PROMISE = {
     road: "Roads to every house!", shop: "Shops for everyone!", school: "A school near every home!", park: "More parks for the kids!",
     clinic: "A clinic close to every street!", fire: "Fire stations to keep us safe!", police: "More police!", job: "Jobs for everybody!",
-    noise: "Move the noisy factories away from homes!", repair: "Fix everything the storm broke!", loan: "Pay back the bank loan!", slide: "A giant water slide!",
+    noise: "Move the noisy factories away from homes!", repair: "Fix everything the storm broke!", loan: "Pay back the bank loan!", slide: "A giant water slide!", traffic: "No more traffic jams!",
     quiet: "Peace and quiet for grandparents!", green: "More nature next to homes!"
   };
   // Towns started from version 2 on play with families, special land, a road
   // out on any side, shuffled wishes and rivals with real platforms. Older
   // saved towns keep the rules they were started with.
-  const V = 2;
+  // Version 3 adds traffic jams and missions on top.
+  const V = 3;
   const v2 = (town) => (town.v || 1) >= 2;
+  const v3 = (town) => (town.v || 1) >= 3;
   // Every house gets a family, shown before it's built so the mayor can pick
   // a spot that suits them. `extra` needs count from the start (once that
   // building exists in the town); `skip` needs never bother them.
@@ -189,6 +193,7 @@ LC.Mayor = (function () {
       term: 1, campaign: null, snap: null, elections: []
     };
     if (ver >= 2) { town.spots = m.spots; town.wants2 = wantOrder(seed); town.nextFam = drawFam(town); }
+    if (ver >= 3) town.missions = drawMissions(seed, m.grid);
     return town;
   }
 
@@ -199,6 +204,156 @@ LC.Mayor = (function () {
   function wantsFor(n, town) { return ["road", "noise"].concat(wantsList(town).filter(([, at]) => n >= at).map(([w]) => w)); }
   function covered(g, x, y, t) {
     return g.some((row, yy) => row.some((c, xx) => c && c.t === t && !c.damaged && Math.abs(xx - x) + Math.abs(yy - y) <= LC.rangeOf(c)));
+  }
+
+  // ── Traffic (version 3) ────────────────────────────────────────────────────
+  // Every 4 people make a car that drives to the nearest road out of town.
+  // Homes are routed one by one and later cars avoid roads that are already
+  // full, so a second route really does take cars away. A road fits CAP cars
+  // (WIDE once widened); more than that is a jam, and once the town has
+  // TRAFFIC_AT people, families stuck in one aren't happy.
+  // A road can be widened twice: a wide road, then (in a City) a big road.
+  const CAP = 16, WIDE = 36, BIG = 64, WIDEN = 6, WIDEN2 = 14, TRAFFIC_AT = 40;
+  const capOfRoad = (c) => (!c.wide ? CAP : c.wide >= 2 ? BIG : WIDE);
+  const ROAD_NAMES = ["road", "wide road", "big road"];
+  function traffic(g, roads) {
+    const load = {}, routes = {};
+    const exits = [];
+    roads.forEach((k) => { const [x, y] = k.split(",").map(Number); if (g[y][x].entry) exits.push(k); });
+    if (!exits.length) return { load, routes, jammed: new Set() };
+    const stations = [];
+    g.forEach((row, y) => row.forEach((c, x) => { if (c && c.t === "station" && !c.damaged) stations.push({ x, y }); }));
+    const hs = [];
+    g.forEach((row, y) => row.forEach((c, x) => { if (c && homes(c.t) && c.live) hs.push({ x, y, c }); }));
+    const N = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    hs.forEach((h) => {
+      let cars = Math.ceil(h.c.live / 4);
+      // Families near a train station take the train half the time.
+      if (stations.some((s) => dist(s, h) <= 5)) cars = Math.ceil(cars / 2);
+      const starts = N.map(([dx, dy]) => (h.x + dx) + "," + (h.y + dy)).filter((k) => roads.has(k));
+      if (!starts.length) return;
+      // Dijkstra over the town's roads: a road that would overflow costs more.
+      const cost = (k) => { const [x, y] = k.split(",").map(Number); return 1 + ((load[k] || 0) + cars > capOfRoad(g[y][x]) ? 8 : 0); };
+      const best = {}, from = {}, open = [];
+      starts.forEach((k) => { best[k] = cost(k); from[k] = null; open.push(k); });
+      let end = null;
+      while (open.length) {
+        let bi = 0;
+        for (let i = 1; i < open.length; i++) if (best[open[i]] < best[open[bi]]) bi = i;
+        const k = open.splice(bi, 1)[0];
+        const [x, y] = k.split(",").map(Number);
+        if (g[y][x].entry) { end = k; break; }
+        N.forEach(([dx, dy]) => {
+          const nk = (x + dx) + "," + (y + dy);
+          if (!roads.has(nk)) return;
+          const d = best[k] + cost(nk);
+          if (best[nk] == null || d < best[nk]) { if (best[nk] == null) open.push(nk); best[nk] = d; from[nk] = k; }
+        });
+      }
+      if (!end) return;
+      const path = [];
+      for (let k = end; k; k = from[k]) { path.push(k); load[k] = (load[k] || 0) + cars; }
+      routes[h.x + "," + h.y] = path;
+    });
+    const jammed = new Set(Object.keys(load).filter((k) => { const [x, y] = k.split(",").map(Number); return load[k] > capOfRoad(g[y][x]); }));
+    return { load, routes, jammed };
+  }
+
+  // ── Missions (version 3) ───────────────────────────────────────────────────
+  // Three per town, one from each group, drawn from the seed. `got` returns
+  // how far along the town is: [have, need].
+  const MISSIONS = {
+    view: { group: "land", e: "🌊", name: "By the water", text: "4 homes with a water view, with people living in them", water: true,
+      got: (t, st) => [st.homes.filter((h) => h.live && h.extras.includes("view")).length, 4] },
+    street: { group: "land", e: "🏪", name: "High street", text: "3 shops in a row, touching each other",
+      got: (t, st) => [Math.min(3, biggestRow(t.grid, "shop")), 3] },
+    castle: { group: "land", e: "🏰", name: "Castle tours", text: "a road to the castle, and 2 shops near it",
+      got: (t, st) => [(st.tourists ? 1 : 0) + Math.min(2, st.shops.filter((s) => s.why.some((w) => w.k === "castle")).length), 3] },
+    rocks: { group: "land", e: "🪨", name: "Rock factory", text: "a factory on rocky ground that's earning coins",
+      got: (t, st) => [st.works.some((w) => w.t === "factory" && w.coins && w.why.some((q) => q.k === "rocks")) ? 1 : 0, 1] },
+    nature: { group: "family", e: "🌿", name: "Nature town", text: "5 happy homes of nature lovers",
+      got: (t, st) => [Math.min(5, st.homes.filter((h) => h.fam === "nature" && h.live && h.face === "happy").length), 5] },
+    grand: { group: "family", e: "👵", name: "Quiet streets", text: "4 happy homes of grandparents",
+      got: (t, st) => [Math.min(4, st.homes.filter((h) => h.fam === "grand" && h.live && h.face === "happy").length), 4] },
+    kids: { group: "family", e: "👨‍👩‍👧", name: "Family town", text: "6 happy homes of young families",
+      got: (t, st) => [Math.min(6, st.homes.filter((h) => h.fam === "kids" && h.live && h.face === "happy").length), 6] },
+    parks: { group: "family", e: "🌳", name: "Green streets", text: "8 homes with a park right next door",
+      got: (t, st) => [Math.min(8, st.homes.filter((h) => h.live && h.extras.includes("park")).length), 8] },
+    flow: { group: "big", e: "🚗", name: "Smooth roads", text: "100 people and not a single traffic jam",
+      got: (t, st) => [st.jams ? Math.min(99, st.people) : Math.min(100, st.people), 100] },
+    debt: { group: "big", e: "🏦", name: "No loans", text: "120 people and no money owed to the bank",
+      got: (t, st) => [t.loan ? Math.min(119, st.people) : Math.min(120, st.people), 120] },
+    early: { group: "big", e: "😀", name: "Happy start", text: "40 happy people by the end of year 10", by: 10,
+      got: (t, st) => [Math.min(40, st.happy), 40] }
+  };
+  const MISSION_COINS = 30, MISSION_PTS = 40;
+  function biggestRow(g, t) {
+    const seen = new Set();
+    let best = 0;
+    g.forEach((row, y) => row.forEach((c, x) => {
+      if (!c || c.t !== t || c.damaged || seen.has(x + "," + y)) return;
+      let n = 0;
+      const q = [[x, y]];
+      seen.add(x + "," + y);
+      while (q.length) {
+        const [a, b] = q.pop();
+        n++;
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const o = g[b + dy] && g[b + dy][a + dx], k = (a + dx) + "," + (b + dy); if (o && o.t === t && !o.damaged && !seen.has(k)) { seen.add(k); q.push([a + dx, b + dy]); } });
+      }
+      best = Math.max(best, n);
+    }));
+    return best;
+  }
+  function drawMissions(seed, grid) {
+    const r = rng(seed * 17 + 9);
+    const water = grid.some((row) => row.some((c) => c && c.t === "water"));
+    return ["land", "family", "big"].map((gr) => {
+      const ids = Object.keys(MISSIONS).filter((id) => MISSIONS[id].group === gr && (!MISSIONS[id].water || water));
+      return { id: pickOf(r, ids), done: false, failed: false };
+    });
+  }
+  function missionState(town, st) {
+    st = st || look(town);
+    return (town.missions || []).map((m) => {
+      const M = MISSIONS[m.id], [have, need] = M.got(town, st);
+      return Object.assign({ e: M.e, name: M.name, text: M.text, by: M.by, have: m.done ? need : have, need }, m);
+    });
+  }
+  function checkMissions(town, sum) {
+    if (!town.missions) return;
+    const st = look(town);
+    missionState(town, st).forEach((m, i) => {
+      const keep = town.missions[i];
+      if (keep.done || keep.failed) return;
+      if (m.have >= m.need) {
+        keep.done = true;
+        town.coins += MISSION_COINS;
+        award(town, "mission");
+        sum.news.push(`🎯 Mission done: ${m.e} ${m.name}! +${MISSION_COINS} coins.`);
+        if (town.missions.every((q) => q.done)) award(town, "missions3");
+      } else if (m.by && town.year >= m.by) {
+        keep.failed = true;
+        sum.news.push(`🎯 The ${m.e} ${m.name} mission ran out of time. The other missions are still on!`);
+      }
+    });
+  }
+  // What widening this road next would be, or null when it can't go further.
+  function widenStep(town, c) {
+    const lv = c.wide ? +c.wide : 0;
+    if (lv >= 2) return null;
+    return lv === 0 ? { name: "Wide road", cost: WIDEN, cap: WIDE, rank: 0 } : { name: "Big road", cost: WIDEN2, cap: BIG, rank: 3 };
+  }
+  function widen(town, x, y) {
+    const c = town.grid[y][x];
+    if (!v3(town) || !c || c.t !== "road") return "skip";
+    const n = widenStep(town, c);
+    if (!n) return "This road is already as big as it gets.";
+    if (town.rank < n.rank) return `🔒 Big roads unlock when your town is a ${RANKS[n.rank].name} (${RANKS[n.rank].at} people).`;
+    if (town.coins < n.cost) return `A ${n.name.toLowerCase()} costs ${n.cost} coins.`;
+    town.coins -= n.cost;
+    c.wide = (c.wide ? +c.wide : 0) + 1;
+    c.paid = (c.paid || 0) + n.cost;
+    return null;
   }
 
   // Everything the mayor's screen shows: each home's face and what it's
@@ -216,6 +371,9 @@ LC.Mayor = (function () {
     const ask = isNew ? Array.from(new Set(town2.concat(["school", "park", "clinic", "job"].filter((w) => w === "job" || un.includes(w))))) : town2;
     const ev = Sim.evaluate(working, ask);
     const around = (x, y, f) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { if (!dx && !dy) continue; const c = g[y + dy] && g[y + dy][x + dx]; if (c && f(c)) return true; } return false; };
+    const tr = v3(town) ? traffic(g, roads) : null;
+    const jamOn = !!tr && pop >= TRAFFIC_AT;
+    const stuck = (h) => jamOn && (tr.routes[h.x + "," + h.y] || []).some((k) => tr.jammed.has(k));
     const hs = ev.houses.map((h) => {
       const c = g[h.y][h.x];
       let missing = h.missing.slice(), face = h.face, extras = [];
@@ -225,6 +383,7 @@ LC.Mayor = (function () {
         missing = missing.filter((m) => wants.has(m));
         if (wants.has("quiet") && around(h.x, h.y, (o) => LOUD.includes(o.t) && !o.damaged)) missing.push("quiet");
         if (wants.has("green") && !around(h.x, h.y, (o) => o.t === "trees" || o.t === "water" || (o.t === "park" && !o.damaged))) missing.push("green");
+        if (stuck(h)) missing.push("traffic");
         const linkedHome = !missing.includes("road");
         face = !missing.length ? "happy" : missing.length === 1 && linkedHome && !["noise", "quiet"].includes(missing[0]) ? "meh" : "sad";
       }
@@ -268,6 +427,10 @@ LC.Mayor = (function () {
     out.interest = Math.ceil(town.loan * INTEREST);
     out.balance = out.tax + out.earn - out.upkeep - out.interest;
     out.allHappy = hs.length > 0 && hs.every((h) => h.face === "happy");
+    if (tr) {
+      out.traffic = { load: tr.load, jammed: [...tr.jammed], on: jamOn };
+      out.jams = tr.jammed.size;
+    }
     return out;
   }
 
@@ -571,8 +734,8 @@ LC.Mayor = (function () {
     const won = votes.mayor >= votes.r0 && votes.mayor >= votes.r1;
     return { votes, total, won, thanks, rivals: c.rivals };
   }
-  function election(town, sum) {
-    const res = tally(town);
+  function election(town, sum, poll) {
+    const res = poll || tally(town);
     res.year = town.year;
     town.elections.push({ year: town.year, won: res.won, share: res.total ? Math.round(100 * res.votes.mayor / res.total) : 100 });
     if (res.won) {
@@ -604,6 +767,10 @@ LC.Mayor = (function () {
     const r = rng(town.seed * 1000 + town.year);
     const before = look(town);
     const sum = { year: town.year, inn: 0, out: 0, why: {}, news: [], upgrades: 0, marks: [] };
+    // Version 3 counts the votes on the town as the mayor left it, which is
+    // exactly what the live poll showed, not after this year's newcomers.
+    const poll = v3(town) && town.campaign && town.year % TERM === 0 ? tally(town) : null;
+    const helpedBefore = town.stats.helped;
     town.newMedals = [];
     // An offer waits on the main screen for one year. Not answered by the
     // time the year ends means no.
@@ -673,8 +840,17 @@ LC.Mayor = (function () {
       }
     }
 
-    if (town.campaign && town.year % TERM === 0) election(town, sum);
+    if (v3(town)) checkMissions(town, sum);
+    if (poll) {
+      // Families helped this year still bring their friends.
+      const extra = 3 * (town.stats.helped - helpedBefore);
+      poll.votes.mayor += extra; poll.thanks += extra; poll.total += extra;
+      poll.won = poll.votes.mayor >= poll.votes.r0 && poll.votes.mayor >= poll.votes.r1;
+    }
+    if (town.campaign && town.year % TERM === 0) election(town, sum, poll);
     if (v2(town) && town.year === 6) highway(town, r, sum);
+    // Version 3: a City gets one more road out, because a big town has a lot of cars.
+    if (v3(town) && town.rank >= 3 && !town.highway3) { town.highway3 = true; highway(town, r, sum); }
 
     // Growing up: needs, ranks, unlocks, medals.
     town.year++;
@@ -695,6 +871,7 @@ LC.Mayor = (function () {
     if (pop > 0) award(town, "first");
     [["village", 20], ["town", 50], ["city", 100], ["big", 250]].forEach(([id, at]) => { if (pop >= at) award(town, id); });
     if (later.allHappy && pop >= 12) award(town, "allhappy");
+    if (v3(town) && pop >= TRAFFIC_AT && !town.trafficOn) { town.trafficOn = true; sum.news.push("🚗 The town is busy now! Too many cars on one road make a traffic jam, and families stuck in it aren't happy. Widen a red road (tap it with 👆 Look), or give cars another way out."); }
     if (town.coins >= 200) award(town, "saver");
     if (town.year > 10) award(town, "ten");
     town.stats.best = Math.max(town.stats.best, pop);
@@ -736,15 +913,17 @@ LC.Mayor = (function () {
   // and a loan still owed counts against you.
   function score(town) {
     const st = look(town);
-    const pts = st.people + st.happy + Math.floor(town.coins / 10) - town.loan;
+    const done = (town.missions || []).filter((m) => m.done).length;
+    const pts = st.people + st.happy + Math.floor(town.coins / 10) - town.loan + MISSION_PTS * done;
     // Version 2 towns can grow bigger with families planned for, so the
     // stars ask for more.
-    const at = v2(town) ? [150, 380, 680] : [100, 260, 450];
-    return { pts, stars: pts >= at[2] ? 3 : pts >= at[1] ? 2 : pts >= at[0] ? 1 : 0, at, people: st.people, happy: st.happy };
+    // Version 3 adds traffic (harder) and missions (+40 each).
+    const at = v3(town) ? [150, 360, 600] : v2(town) ? [150, 380, 680] : [100, 260, 450];
+    return { pts, stars: pts >= at[2] ? 3 : pts >= at[1] ? 2 : pts >= at[0] ? 1 : 0, at, people: st.people, happy: st.happy, missions: done };
   }
 
   return {
-    W, H, V, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS, FAMS, LOUD, wantsList, isV2: v2,
+    W, H, V, START_COINS, CHALLENGE_YEARS, UPKEEP, TERM, PROMISE, RANKS, MEDALS, LANDS, WANTS, FAMS, LOUD, wantsList, isV2: v2, isV3: v3, MISSIONS, CAP, WIDE, BIG, WIDEN, TRAFFIC_AT, ROAD_NAMES, capOfRoad, widen, widenStep, missionState,
     create, makeMap, look, build, bulldoze, repair, upgrade, nextStep, repairCost, borrow, repay, loanLimit, answer, endYear, score,
     people, unlocked, rankOf, covered, wantsFor, rng, tally, retry, complaints
   };
