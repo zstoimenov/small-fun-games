@@ -265,12 +265,20 @@ BQ.UI = (function () {
         '<button class="tile" type="button" data-k="' + k + '"><span class="emoji">' + c.e + '</span><span lang="bg">' + esc(c.name) + '</span><span class="yr" hidden>' + esc(c.when) + "</span></button>").join("") +
         '</div><div id="qNext" class="actions" hidden><button class="btn" type="button" data-act="next">Next ›</button></div>');
     }
-    const pic = q.pic ? '<div class="prompt">' + emo(q.pic) + "</div>" : "";
+    // A picture, a word to read, or both (the missing-letter word sits under its picture).
+    const word = q.word ? '<span class="w" lang="bg">' + esc(q.word) + "</span>" : "";
+    const pic = q.pic || q.word ? '<div class="prompt' + (q.pic && q.word ? " gap" : "") + '">' + (q.pic ? emo(q.pic) : "") + word + "</div>" : "";
     const letter = q.kind === "letter";
-    // Story questions are asked and answered in English, one per row.
+    if (q.pics) {
+      return stage(head + pic + '<div class="tiles">' + q.options.map((o, k) =>
+        '<button class="tile pic" type="button" data-k="' + k + '">' + emo(o) + "</button>").join("") +
+        '</div><div id="qNext" class="actions" hidden><button class="btn" type="button" data-act="next">Next ›</button></div>');
+    }
+    // Story and "when" questions are answered in English; story answers are
+    // long, so they get a row each.
     const en = !q.bg;
-    const from = q.card ? '<p class="say"><span class="emoji">' + q.card.e + '</span> From the card <b lang="bg">' + esc(q.card.name) + "</b></p>" : "";
-    return stage(head + pic + from + '<div class="tiles' + (en ? " one" : "") + '">' + q.options.map((o, k) =>
+    const from = q.card ? '<p class="say"><span class="emoji">' + q.card.e + "</span> " + (q.kind === "when" ? "" : "From the card ") + '<b lang="bg">' + esc(q.card.name) + "</b></p>" : "";
+    return stage(head + pic + from + '<div class="tiles' + (q.kind === "story" ? " one" : "") + '">' + q.options.map((o, k) =>
       '<button class="tile' + (en ? " snd" : letter ? "" : " bgw") + '" type="button" data-k="' + k + '"' + (en ? "" : ' lang="bg"') + ">" + esc(o) + "</button>").join("") +
       '</div><div id="qNext" class="actions" hidden><button class="btn" type="button" data-act="next">Next ›</button></div>');
   }

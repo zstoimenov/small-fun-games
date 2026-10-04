@@ -103,7 +103,7 @@ C.forEach((c) => {
   ok(c.m >= 0 && c.m < M.length, "card " + c.id + " opens with a real mission");
 });
 C.filter((c) => c.year !== null).forEach((c) => {
-  const first = +c.when.match(/\d{3,}|\d+(?= BC)/)[0] * (/BC/.test(c.when) ? -1 : 1);
+  const first = +c.when.replace(/,/g, "").match(/\d{3,}|\d+(?= BC)/)[0] * (/BC/.test(c.when) ? -1 : 1);
   ok(first === c.year, "card " + c.id + " year " + c.year + " matches the first year shown (" + c.when + ")");
 });
 ok(C.length >= 40, "at least 40 cards (" + C.length + ")");
@@ -129,6 +129,13 @@ S.forEach((st) => {
       ok(q.options.filter((o) => o === q.answer).length === 1, st.place + " " + q.kind + ": one right answer");
       ok(new Set(q.options).size === q.options.length && q.options.length >= 2, st.place + " " + q.kind + ": options distinct");
       if (q.bg) q.options.forEach((o) => ok(!R.unreadable(o, set).length, st.place + " " + q.kind + ": \"" + o + "\" readable"));
+      if (q.word) ok(!R.unreadable(q.word, set).length, st.place + " " + q.kind + ": \"" + q.word + "\" readable");
+      if (q.kind === "missing") q.options.forEach((o) => {
+        const w = q.word.replace("_", o);
+        ok((o === q.answer) === R.pool(n).some((p) => p.w === w), st.place + " missing: only the answer spells a real word (" + w + ")");
+      });
+      if (q.kind === "word2pic") ok(R.pool(n).find((p) => p.w === q.word).e === q.answer, "word2pic answer is the word's picture");
+      if (q.kind === "group") ok(C.filter((c) => q.options.includes(c.name) && c.m <= n).length === q.options.length, "group options are open cards");
       if (q.card) ok(q.card.m <= n, "story question's card is open");
       if (q.kind === "first") ok(q.cards.every((c) => c.year !== null), "first only uses dated cards");
       if (q.kind === "first") ok(q.cards.find((c) => c.name === q.answer).year < q.cards.find((c) => c.name !== q.answer).year, "first picks the older");

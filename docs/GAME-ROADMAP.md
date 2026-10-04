@@ -2588,3 +2588,23 @@ facts", more cards, Levski FC and Georgi Asparuhov, and the name Буквар.
   and three history ones, one of them a card's own "Remember it?".
 - **Stamp names never break inside a word.** Each word keeps to one line and
   `fitStamps` shrinks the type until it fits, measured on the device.
+
+### Fourth pass: more to read, more cards, more quiz
+
+Asked for: more content in the reading, the cards and the quiz. Every word,
+sentence and card was reviewed by the user before it was coded.
+
+- **27 new picture words and 10 new sentences.** Missions 1-2 get a sentence
+  each (their letters allow no new picture words). Review caught гитара (it
+  is китара), мравя (мравка) and свиня for 🐷 (a parent says прасе); 🎲 is
+  зарче, which needs Ч, so it sits in Mission 7.
+- **57 cards.** Science, art and traditions were thin; the new ones are mostly
+  there (Берон, Наджаков, Антарктида, Александров, Балканска, Елин Пелин,
+  Майстора, 24 май, Сурвачка, Нестинари, Великден), plus Йовчев, the Golden
+  Girls, the Varna gold and Бачо Киро. Dropped in review: Петър Петров and
+  Асен Йорданов (invention claims disputed), Мария Гроздева (a pistol for 7-9s).
+- **Four new quiz kinds:** word → picture, missing letter, "which one is
+  about sport / a tradition / ...", and "when was this?". A missing letter
+  never offers a letter that spells another real word (л in _ама = лама).
+  Each slot of a round now picks among its kinds, so pools are 30-700 a stamp.
+- **`when` may have commas** ("about 43,000 BC"); the checker strips them.
