@@ -145,7 +145,7 @@ const GAMES = [
     category: "science",
     players: [1, 1],
     age: 8,
-    blurb: "Be a bridge engineer! Build a bridge out of road, wood and steel, then drive a truck across and watch every piece turn green, yellow or red. Find out why a long plank snaps, why squares fold and triangles don't, and where to put the steel. Then take the Bridge Trail: 30 harder puzzles across six worlds, with coins to spend, crumbly canyons, boats, snow and rope bridges. Meet the people who build bridges for a job!",
+    blurb: "Be a bridge engineer! Build a bridge out of road, wood and steel, then drive a truck across and watch every piece turn green, yellow or red. Find out why a long plank snaps, why squares fold and triangles don't, and where to put the steel. Then take the Bridge Trail: 36 harder puzzles across seven worlds, with coins to spend, crumbly canyons, boats, snow, rope bridges and a volcano to escape. Meet the people who build bridges for a job!",
     colors: ["#1f6fb2", "#f29f05"],
     highlights: ["🔺 Triangles", "🗺️ Bridge Trail"]
   },

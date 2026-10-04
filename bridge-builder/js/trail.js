@@ -1,5 +1,5 @@
-/* Bridge Builder - the Bridge Trail: six worlds of harder puzzles, each with  */
-/* a new rule, starting where Chapter 3 ends. Same level format as levels.js  */
+/* Bridge Builder - the Bridge Trail: seven worlds of harder puzzles, each    */
+/* with a new rule (the last one mixes them all), after Chapter 3. Same level format as levels.js  */
 /* plus the Trail fields documented in physics.js (pins, towers, lane, snow, */
 /* convoy, budget...). Every level's par comes from a real design that       */
 /* tools/bridge-check.js drives across; most were found by its search.       */
@@ -229,12 +229,54 @@ BB.TRAIL = [
       { name: "Grand opening", gap: 8, rows: [-3, 1], islands: [[3, 4]], towers: ["8,-3"], lane: [5, 7], convoy: ["truck", "car"], truck: "big", parts: [],
         inv: { road: Infinity, beam: Infinity, steel: Infinity, rope: Infinity }, budget: 28, par: 22,
         text: "Opening day! The big truck leads a parade across the harbour. Build the city's best bridge.",
-        win: "The city cheers! You've finished the whole Bridge Trail. You're a real bridge engineer!" }
+        win: "The city cheers! Your best bridge yet." }
+    ],
+    lesson: {
+      title: "You finished City Harbour!",
+      life: "Sydney Harbour Bridge carries 8 lanes of cars, 2 train lines, a bike path and a footpath, all at once.",
+      job: "\u{1F3D7}\u{FE0F} Project managers bring the engineers, builders and plans together to get a bridge built."
+    }
+  },
+  {
+    id: "t7", trail: true, kicker: "World 7", name: "Volcano Island", emoji: "\u{1F30B}", color: "#c8432b", theme: "volcano",
+    rule: "Use everything you know",
+    says: "The volcano is rumbling! Everyone needs to get off the island, and you'll need every trick you've learned.",
+    more: [
+      "Crumbly lava rock: fix to the pins \u{25B2} only.",
+      "Ropes, old wood, islands, boats and convoys are all here.",
+      "Look at what each level gives you before you start."
+    ],
+    grown: "Real engineers rarely face one problem at a time. They look at the ground, the river, the traffic and the materials together, and pick the idea that fits each part of the bridge.",
+    levels: [
+      { name: "Hot rocks", gap: 5, rows: [0, 3], pins: ["0,3", "5,2"], truck: "fire", parts: [],
+        inv: { road: 5, beam: 14, steel: 3 }, par: 18,
+        text: "The fire truck is on its way to the volcano! No building above the road, and the lava rock only holds at the pins \u{25B2}.",
+        win: "Props from the pins hold the road up from below. The fire truck made it!" },
+      { name: "Fishing boats", gap: 7, rows: [-2, 2], rocks: [[2, 2]], lane: [3, 7], truck: "bus", parts: [],
+        inv: { road: 7, beam: 14, steel: 9 }, par: 26,
+        text: "The fishing boats need the right side clear. Use the rock on the left, and build up on the right.",
+        win: "A pillar where you can, a truss where you can't. The boats sail home safely." },
+      { name: "Old rope bridge", gap: 7, rows: [-3, 1], towers: ["0,-3"], truck: "bus", parts: [],
+        inv: { road: 7, rope: 3, beam: 4, old: 8 }, par: 16,
+        text: "One tower, a few ropes and lots of old wood. Ropes only reach so far. What holds up the far end?",
+        win: "Ropes on one side, wood on the other. Old wood did the easy jobs." },
+      { name: "Island village", gap: 8, rows: [-1, 1], islands: [[4, 5]], convoy: ["car"], truck: "fire", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity }, budget: 22, par: 17,
+        text: "The fire truck and a car rush to the village. Use the island, and don't waste coins!",
+        win: "Two short bridges, one island and a happy village." },
+      { name: "Steam vents", gap: 7, rows: [-3, 2], pins: ["0,2"], towers: ["7,-3"], holes: ["3,-1", "4,1", "2,1"], truck: "bus", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity, rope: Infinity }, budget: 34, par: 27,
+        text: "Steam has blown some dots away. One pin, one tower, and a bus full of people. Mind your coins!",
+        win: "Ropes from the tower and props from the pin. Nothing could stop that bus!" },
+      { name: "Eruption escape", gap: 10, rows: [-3, 2], islands: [[3, 5]], towers: ["10,-3"], pins: ["0,2"], lane: [6, 10], convoy: ["bus", "fire"], truck: "big", parts: [],
+        inv: { road: Infinity, beam: Infinity, steel: Infinity, rope: Infinity }, budget: 37, par: 29,
+        text: "The volcano is erupting! The big truck, a bus and the fire truck all cross at once. Island, boat lane, tower: use them all!",
+        win: "Everyone escaped the volcano! You've finished the whole Bridge Trail. You're a real bridge engineer!" }
     ],
     lesson: {
       title: "You finished the Bridge Trail!",
-      life: "Sydney Harbour Bridge carries 8 lanes of cars, 2 train lines, a bike path and a footpath, all at once.",
-      job: "\u{1F3D7}\u{FE0F} Project managers bring the engineers, builders and plans together to get a bridge built."
+      life: "In Iceland, engineers build bridges near volcanoes, and some are made to be rebuilt fast after an eruption floods the river.",
+      job: "\u{1F30B} Volcanologists watch volcanoes and warn people when it's time to leave."
     }
   }
 ];

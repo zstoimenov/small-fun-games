@@ -2307,12 +2307,15 @@ Bridge Trail, a free build with any truck, jobs and a quiz.
 - A snapped road is usually where some *other* failure shows, so a level can
   set `fail` to say what it really means ("the squares folded").
 
-**Bridge Trail** (`js/trail.js`): six worlds of five levels, starting where
+**Bridge Trail** (`js/trail.js`): six worlds of five levels, then a six-level finale world, starting where
 Chapter 3 ends. Each world adds one rule, all level data handled in physics.js:
 coins on a budget (Farm Creek), pins only where the canyon rock is solid and
 missing dots (Desert Canyon), a boat lane with nothing below the road (Big
 River), snow load and weak old wood (Snowy Peaks), ropes that only pull, hung
 from stone towers (Jungle Gorge), and islands plus convoys (City Harbour).
+World 7, Volcano Island, adds no rule: six levels that mix the others (pins
+with no building above, a lane beside a rock, ropes plus old wood, an island
+convoy, holes with a pin and a tower, and an all-in finale).
 
 - **Ropes are tension-only**: solve, slacken any rope being pushed, take back any
   slack rope that would stretch, solve again until nothing changes. A rope may

@@ -356,8 +356,10 @@ button:disabled{opacity:.45; cursor:default}
 .theme-snow{--sky:#dceefc; --water:#8fc7ea; --ripple:rgba(255,255,255,.75); --bank:#7b8796; --grass:#ffffff; --rock:#9aa6b4}
 .theme-jungle{--sky:#c6f0d0; --water:#2e9b8f; --bank:#6b4a2b; --grass:#2f9e44; --rock:#6f7a5c}
 .theme-city{--sky:#1d2752; --water:#1b3e6e; --ripple:rgba(255,255,255,.25); --bank:#4a4f5c; --grass:#6b7280; --rock:#59606c; --dot:#b9c6dc; --pin:#e3e8f0; --bolt:#dfe6ef; --old:#a8946f; --rope:#c9a06a; --tower:#6f675c; --lane:rgba(255,255,255,.12); --lane-edge:rgba(255,255,255,.5); --tarmac:#2b2f36}
+.theme-volcano{--sky:#ffd2b0; --water:#1f6f8b; --bank:#4a3b36; --grass:#6f8a3a; --rock:#5a4a45}
 .board[class*="theme-"]{--dot:#5f6b80; --pin:#2f3744}
 .theme-city.board{--dot:#b9c6dc; --pin:#e3e8f0}
+.theme-volcano.board{--pin:#fbe3d0}
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .dusk{opacity:.38} }
 :root[data-theme="dark"] .dusk{opacity:.38}
 .theme-city .dusk{opacity:0 !important}

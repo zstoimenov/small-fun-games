@@ -33,7 +33,8 @@ BB.Board = (function () {
     river:  { sky: "\u{26C5}", bank: ["\u{1F333}", "\u{1F986}"] },
     snow:   { sky: "\u{2744}\u{FE0F}", bank: ["\u{1F332}", "\u{26C4}"] },
     jungle: { sky: "\u{1F324}\u{FE0F}", bank: ["\u{1F334}", "\u{1F99C}"] },
-    city:   { sky: "\u{1F319}", bank: ["\u{1F3E2}", "\u{1F3EC}"] }
+    city:   { sky: "\u{1F319}", bank: ["\u{1F3E2}", "\u{1F3EC}"] },
+    volcano: { sky: "\u{2601}\u{FE0F}", bank: ["\u{1F30B}", "\u{1F334}"] }
   };
 
   // on: { dot, piece, empty, dragStart, dragOver, dragEnd } - see app.js.
