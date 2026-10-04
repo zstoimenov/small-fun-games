@@ -70,6 +70,7 @@ CT.Ui = (function () {
         x.dataset.remove = c.id;
         x.textContent = "✕";
         x.title = "Remove " + c.name;
+        x.setAttribute("aria-label", "Remove " + c.name);
         chip.appendChild(x);
       }
       box.appendChild(chip);

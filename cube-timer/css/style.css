@@ -170,8 +170,14 @@ body{
 .chip.on{background:var(--accent);color:#fff;border-color:transparent}
 .chip.add{border-style:dashed;color:var(--muted)}
 .chip.taken{opacity:.35;cursor:default}
-.chip-x{font-size:12px;opacity:.6;padding:2px 4px}
+/* A full-size tap target of its own, so a kid aiming for the name doesn't
+   catch it by accident. It pulls into the chip's right padding. */
+.chip-x{
+  font-size:15px;opacity:.6;min-width:40px;min-height:40px;margin:-6px -10px -6px 0;
+  display:inline-flex;align-items:center;justify-content:center;border-radius:999px;
+}
 .chip.on .chip-x{opacity:.85}
+.chip-x.arm{opacity:1;background:#d93a3a;color:#fff;padding:0 12px;font-size:14px}
 .name-input{
   font:inherit;font-size:18px;width:100%;margin-top:10px;
   padding:13px 14px;border-radius:14px;border:1px solid var(--line);

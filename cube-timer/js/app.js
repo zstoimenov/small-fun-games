@@ -296,7 +296,12 @@
     showAfterRow(false);
     drawStats();
     // In a race the go still has to happen, so the round waits for a real time.
-    if (isRace()) $("nextBtn").hidden = true;
+    // The pad goes back to idle: in "done" a race ignores the pad and waits
+    // for Next, which has just been hidden, so the round would be stuck.
+    if (isRace()) {
+      $("nextBtn").hidden = true;
+      setPhase("idle");
+    }
   }
 
   /* ── The pad ───────────────────────────────────────────────────────────── */
@@ -678,11 +683,31 @@
       return;
     }
     const x = e.target.closest("[data-remove]");
-    if (x) { Store.removeCuber(x.dataset.remove); drawSetup(); return; }
+    if (x) { removeTap(x); return; }
     const chip = e.target.closest(".chip");
     if (!chip || chip.disabled) return;
     Store.set(field, chip.dataset.id);
     drawSetup();
+  }
+
+  // Removing a cuber deletes every time they have, so the ✕ asks first: the
+  // first tap turns it into "Delete?", a second tap within 3 seconds deletes.
+  function removeTap(x) {
+    if (x.classList.contains("arm")) {
+      Store.removeCuber(x.dataset.remove);
+      drawSetup();
+      return;
+    }
+    const label = x.getAttribute("aria-label");
+    x.classList.add("arm");
+    x.textContent = "Delete?";
+    x.setAttribute("aria-label", "Tap again to delete " + label.replace(/^Remove /, "") + " and all their times");
+    setTimeout(() => {
+      if (!x.isConnected || !x.classList.contains("arm")) return;
+      x.classList.remove("arm");
+      x.textContent = "✕";
+      x.setAttribute("aria-label", label);
+    }, 3000);
   }
 
   function addName() {
