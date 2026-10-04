@@ -508,7 +508,9 @@
     // A pop-up is on top of the machine; typing should not code letters unseen.
     if (document.querySelector("dialog[open]")) return;
     if (onScreen !== "play") return;
-    if (e.key === "Backspace") { e.preventDefault(); undo(); return; }
+    // Undo is free play only (its button is hidden in missions): rewinding the
+    // rotors there would leave the mission's place in the message behind.
+    if (e.key === "Backspace") { e.preventDefault(); if (!ms) undo(); return; }
     if (e.key.length === 1 && /[a-z]/i.test(e.key)) {
       e.preventDefault();
       keyDown(e.key.toUpperCase());
