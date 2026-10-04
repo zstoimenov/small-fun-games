@@ -49,12 +49,31 @@ EN.Audio = (function () {
     src.stop(t + dur + 0.02);
   }
 
+  // A plain sine note, for the mission sounds: the knocks are the machine,
+  // these are the game talking.
+  function tone(freq, dur, vol, delay) {
+    const ac = ready();
+    if (!ac) return;
+    const t = ac.currentTime + (delay || 0);
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  }
+
   return {
     setMuted(v) { muted = !!v; },
     isMuted() { return muted; },
     key() { knock(900, 0.07, 0.5); knock(200, 0.05, 0.4); },
     rotor() { knock(2200, 0.03, 0.25); knock(1500, 0.03, 0.2, 0.04); },
     // A little rising run for "Random secret start".
-    random() { [0, 1, 2].forEach((i) => knock(1200 + i * 300, 0.04, 0.25, i * 0.06)); }
+    random() { [0, 1, 2].forEach((i) => knock(1200 + i * 300, 0.04, 0.25, i * 0.06)); },
+    oops() { tone(220, 0.18, 0.2); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.3, 0.18, i * 0.12)); }
   };
 })();

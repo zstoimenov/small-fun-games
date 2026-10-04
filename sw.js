@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v75";
+const CACHE = "game-box-v76";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -168,7 +168,7 @@ const ASSETS = [
 
   "./enigma/", "./enigma/index.html", "./enigma/manifest.webmanifest",
   "./enigma/css/style.css",
-  "./enigma/js/rules.js", "./enigma/js/audio.js", "./enigma/js/ui.js", "./enigma/js/app.js",
+  "./enigma/js/rules.js", "./enigma/js/missions.js", "./enigma/js/audio.js", "./enigma/js/ui.js", "./enigma/js/app.js",
   "./enigma/icons/icon-192.png", "./enigma/icons/icon-512.png",
   "./enigma/icons/apple-touch-icon.png",
 

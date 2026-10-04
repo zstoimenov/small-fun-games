@@ -186,5 +186,163 @@ EN.UI = (function () {
     b.setAttribute("aria-pressed", muted ? "true" : "false");
   }
 
-  return { build, open, showRotors, showStart, lamp, keyDown, lampsOff, tape, toast, muteState };
+  // ── Screens and the mission panel ─────────────────────────────────────────
+  // Small DOM helper: el("div", "class", "text", [children]).
+  function el(tag, cls, text, kids) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    (kids || []).forEach((k) => k && e.appendChild(k));
+    return e;
+  }
+  const starText = (n, of) => "★".repeat(n) + "☆".repeat((of || 3) - n);
+
+  function screen(name) {
+    ["story", "home", "play"].forEach((s) => { $(s).hidden = s !== name; });
+    // Off the machine, the way out is to the games; on it, back to the menu.
+    $("back").hidden = name === "play";
+    $("toMenu").hidden = name !== "play";
+  }
+
+  function story(paras) {
+    const box = $("storyText");
+    box.textContent = "";
+    paras.forEach((t) => box.appendChild(el("p", "", t)));
+  }
+
+  // items: [{ name, line, best, locked }]
+  function home(items, total, max, next, onPick) {
+    $("starTotal").textContent = "★ " + total + " / " + max;
+    const list = $("missionList");
+    list.textContent = "";
+    items.forEach((it, i) => {
+      const b = el("button", "mission-card" + (it.locked ? " locked" : "") + (it.best ? " done" : ""), null, [
+        el("span", "num", String(i + 1)),
+        el("span", "what", null, [el("b", "", it.name), el("small", "", it.line)]),
+        el("span", "got", it.locked ? "🔒" : starText(it.best))
+      ]);
+      b.type = "button";
+      b.disabled = it.locked;
+      b.setAttribute("aria-label", "Mission " + (i + 1) + ": " + it.name + (it.locked ? ", locked" : ", " + it.best + " stars"));
+      b.addEventListener("click", () => onPick(i));
+      list.appendChild(b);
+    });
+    $("nextBtn").textContent = next.label;
+    $("nextBtn").onclick = next.go;
+  }
+
+  // Which panels the play screen shows: the toolbar in free play, the
+  // mission info, note and actions in a mission.
+  function mode(mission, kind) {
+    document.body.classList.toggle("in-mission", mission);
+    document.body.dataset.kind = mission ? kind : "";
+    ["mInfo", "mNote", "mActions"].forEach((id) => { $(id).hidden = !mission; });
+    document.querySelector(".tools").hidden = mission;
+  }
+
+  function missionInfo(kicker, name, stars, say) {
+    $("mKicker").textContent = kicker;
+    $("mName").textContent = name;
+    $("mStars").textContent = starText(stars);
+    $("mStars").setAttribute("aria-label", stars + " stars");
+    const box = $("mSay");
+    box.textContent = "";
+    [].concat(say).forEach((t) => box.appendChild(el("span", "", t)));
+  }
+
+  // The spy note. Each item is one row; see app.js for what goes in it.
+  function note(items, onSpot) {
+    const box = $("mNote");
+    box.textContent = "";
+    items.forEach((it) => {
+      if (it.fact) { box.appendChild(el("p", "fact", null, [el("b", "", "📜 True story: "), document.createTextNode(it.fact)])); return; }
+      if (it.clue) { box.appendChild(el("p", "clue", it.clue)); return; }
+      if (it.crib) { box.appendChild(cribRows(it.crib, onSpot)); return; }
+      const row = el("div", "n-row", null, [el("span", "lab", it.lab)]);
+      if (it.big) row.appendChild(el("span", "big", it.big.split("").join(" ")));
+      if (it.letters != null) {
+        // The code to type: done letters dim, the next one boxed.
+        const line = el("span", "letters");
+        it.letters.split("").forEach((ch, i) => {
+          if (i && i % 5 === 0) line.appendChild(el("span", "gap"));
+          line.appendChild(el("span", i < it.at ? "done" : i === it.at ? "next" : "", ch));
+        });
+        row.appendChild(line);
+      }
+      if (it.raw != null) row.appendChild(el("span", "out", it.raw));
+      if (it.text != null) row.appendChild(el("span", "out" + (it.text ? "" : " empty"), it.text ? R.groups(it.text).join(" ") : (it.empty || "…")));
+      box.appendChild(row);
+    });
+  }
+
+  // Turing's trick: the code on one line, WEATHER slid under it at the chosen
+  // spot, and a button per spot. Same letters stacked go red when shown.
+  function cribRows(c, onSpot) {
+    const wrap = el("div", "crib");
+    const n = c.code.length;
+    const top = el("div", "cells code");
+    const bot = el("div", "cells word");
+    for (let i = 0; i < n; i++) {
+      const bad = c.clash.indexOf(i) >= 0;
+      top.appendChild(el("span", bad ? "bad" : "", c.code[i]));
+      const k = c.spot == null ? -1 : i - c.spot;
+      bot.appendChild(el("span", (k >= 0 && k < c.crib.length ? "on" : "") + (bad ? " bad" : ""), k >= 0 && k < c.crib.length ? c.crib[k] : ""));
+    }
+    wrap.appendChild(el("div", "lab", "The code"));
+    wrap.appendChild(top);
+    wrap.appendChild(bot);
+    const spots = el("div", "spots");
+    c.spots.forEach((s, i) => {
+      const b = el("button", "spot" + (c.spot === s ? " on" : "") + (c.ruled.indexOf(s) >= 0 ? " ruled" : ""), "Spot " + (i + 1));
+      b.type = "button";
+      b.disabled = c.locked;
+      b.addEventListener("click", () => onSpot(s));
+      spots.appendChild(b);
+    });
+    wrap.appendChild(spots);
+    return wrap;
+  }
+
+  // buttons: [{ label, go, main, off }]
+  function actions(buttons) {
+    const box = $("mActions");
+    box.textContent = "";
+    buttons.forEach((b) => {
+      const e = el("button", "btn" + (b.main ? " go" : " plain"), b.label);
+      e.type = "button";
+      e.disabled = !!b.off;
+      e.addEventListener("click", b.go);
+      box.appendChild(e);
+    });
+  }
+
+  // Rings a mission does not want touched have their arrows switched off;
+  // the ones to find are marked.
+  function rotorState(locked, missing) {
+    document.querySelectorAll(".rotor").forEach((r, i) => {
+      r.querySelectorAll("button").forEach((b) => { b.disabled = !!locked[i]; });
+      r.classList.toggle("missing", !!(missing && missing[i]));
+    });
+  }
+  function nudgeRotors() {
+    const r = document.querySelector(".rotors");
+    r.classList.remove("nudge");
+    void r.offsetWidth;
+    r.classList.add("nudge");
+  }
+  function glowKey(letter) {
+    Object.keys(keys).forEach((k) => keys[k].classList.toggle("hint", k === letter));
+  }
+  function shakeKey(letter) {
+    const k = keys[letter];
+    if (!k) return;
+    k.classList.remove("wrong");
+    void k.offsetWidth;
+    k.classList.add("wrong");
+  }
+
+  return {
+    build, open, showRotors, showStart, lamp, keyDown, lampsOff, tape, toast, muteState,
+    screen, story, home, mode, missionInfo, note, actions, rotorState, nudgeRotors, glowKey, shakeKey
+  };
 })();

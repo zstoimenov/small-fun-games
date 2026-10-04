@@ -13,6 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Enigma">
+<link rel="stylesheet" href="../shared/screen.css">
 <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -20,10 +21,47 @@
 
   <header class="top">
     <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="toMenu" class="link-btn" type="button" hidden>&lsaquo; Menu</button>
     <h1>Enigma</h1>
     <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
     <button id="help" class="icon-btn" type="button" aria-label="How to send a secret">?</button>
   </header>
+
+  <!-- First visit only (and the Story button): where Enigma comes from. -->
+  <section id="story" class="screen menu" hidden>
+    <article class="story-card">
+      <span class="story-emoji" aria-hidden="true">&#128220;</span>
+      <h2>A real secret machine</h2>
+      <div id="storyText"></div>
+    </article>
+    <div class="menu-actions"><button id="storyGo" class="btn go" type="button">Become a code-breaker &rsaquo;</button></div>
+  </section>
+
+  <!-- Menu: the mission ladder, free play, the story again. -->
+  <section id="home" class="screen menu" hidden>
+    <div class="home-head">
+      <h2>Code-breaker missions</h2>
+      <span class="star-total" id="starTotal"></span>
+    </div>
+    <div id="missionList" class="mission-list"></div>
+    <div class="menu-row">
+      <button id="freeBtn" class="wide-btn" type="button">&#128272; Free play <small>Send secret messages to a friend</small></button>
+      <button id="storyBtn" class="wide-btn" type="button">&#128220; The story <small>Where Enigma comes from</small></button>
+    </div>
+    <div class="menu-actions"><button id="nextBtn" class="btn go" type="button"></button></div>
+  </section>
+
+  <section id="play" class="screen play" hidden>
+
+  <!-- Mission info: what to do, how many stars it is worth right now. -->
+  <div id="mInfo" class="m-info" hidden>
+    <div class="m-head">
+      <span class="m-kicker" id="mKicker"></span>
+      <span class="m-stars" id="mStars" aria-label="Stars"></span>
+    </div>
+    <h2 id="mName"></h2>
+    <p id="mSay" class="m-say" aria-live="polite"></p>
+  </div>
 
   <!-- The machine: wooden case, dark front panel. Everything you play with is  -->
   <!-- in here, so the whole game fits one screen; the reading lives in pop-ups. -->
@@ -70,6 +108,14 @@
     <button id="clear" class="tool" type="button"><span class="i">&#128465;</span>Clear</button>
   </nav>
 
+  <!-- Mission controls: the spy note (start, code, what came out). -->
+  <div id="mNote" class="m-note" hidden></div>
+
+  <!-- Mission actions: last, full width, the main one green. -->
+  <div id="mActions" class="m-actions" hidden></div>
+
+  </section>
+
 </main>
 
 <dialog id="paperDialog" class="sheet" aria-labelledby="paperTitle">
@@ -100,6 +146,7 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script src="./js/rules.js"></script>
+<script src="./js/missions.js"></script>
 <script src="./js/audio.js"></script>
 <script src="./js/ui.js"></script>
 <script src="./js/app.js"></script>

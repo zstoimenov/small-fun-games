@@ -216,9 +216,9 @@ const GAMES = [
     category: "coding",
     players: [1, 2],
     age: 8,
-    blurb: "Send secret messages with a copy of the famous Enigma code machine. Spin the three rings to pick a secret start, type your words, and watch the lamps light up your code. Give the code and the three start letters to a friend, and when they type it in, your message pops back out!",
+    blurb: "Be a code-breaker with a copy of the famous Enigma machine from World War II. Six missions: read a secret message, send one back, crack a missing start letter, and use Alan Turing's trick to find a hidden word. Then spin the three rings, type your own message and send the code to a friend!",
     colors: ["#8a5a2b", "#2b2b2e"],
-    highlights: ["🔑 Secret codes", "💡 Glowing lamps"]
+    highlights: ["🕵️ 6 code-breaker missions", "💡 Glowing lamps"]
   },
   {
     title: "Cube Timer",
