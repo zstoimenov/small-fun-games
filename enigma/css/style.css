@@ -104,7 +104,11 @@ button{font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; tou
 .panel{
   /* Key size is worked out from the width so nine keys always fit in one row,
      from a phone to a tablet. The tablet cap is what keeps the keys finger-sized
-     rather than dinner plates. */
+     rather than dinner plates.
+     On phones the keys come out at 27-31px, under the house 40px rule, and
+     screen-check flags them. That is on purpose: ten QWERTY keys across a
+     375px phone leave about 32px each, the size of the phone's own keyboard.
+     The only way past 40px is a non-QWERTY phone layout, which was turned down. */
   --gap:6px;
   /* Two limits, both measured on the machine itself: ten keys across the
      panel (its padding and border are the 28px), and lamps + keys (about 6.4
