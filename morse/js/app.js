@@ -543,7 +543,12 @@
         if (misses >= 3) {
           st.querySelector("#target").insertAdjacentHTML("beforeend",
             ' <button class="small-btn" type="button" id="skip">Skip it</button>');
-          st.querySelector("#skip").addEventListener("click", () => {
+          const skip = st.querySelector("#skip");
+          skip.addEventListener("click", () => {
+            // One skip per button: on the last letter nothing redraws it, and
+            // a second tap used to step past the end of the word.
+            if (!live(tok) || at >= word.length) return;
+            skip.remove();
             rec.push({ presses: R.CODE[want].split("").reduce((acc, s) => {
               const u = agent().unit, start = acc.length ? acc[acc.length - 1].u + u : 0;
               acc.push({ d: start, u: start + (s === "." ? u : 3 * u) });
