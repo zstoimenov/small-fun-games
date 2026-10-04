@@ -190,6 +190,7 @@
   }
 
   function startGame() {
+    cpuReset();
     state.players = makePlayers();
     state.turn = 0;
     state.guided = false;
@@ -203,6 +204,7 @@
   }
 
   function resumeGame() {
+    cpuReset();
     state.players = saved.players.map((p) => ({
       name: p.name, kind: p.kind, difficulty: p.difficulty,
       card: { scores: p.card.scores, jokers: p.card.jokers || 0, manual: p.card.manual || {} }
@@ -382,22 +384,36 @@
 
   /* ── The computer's turn ───────────────────────────────────────────────── */
 
+  // The computer's turn is a chain of timers. cpuGen tags the chain, so one left
+  // over from an abandoned game stops instead of playing into the next; cpuOn
+  // stops a second chain starting while one runs (closing How to play mid-turn
+  // used to start another, and Robo filled two boxes).
+  let cpuGen = 0;
+  let cpuOn = false;
+  function cpuReset() { cpuGen++; cpuOn = false; }
+  function cpuLater(fn, ms) {
+    const gen = cpuGen;
+    setTimeout(() => { if (gen === cpuGen && state.playing) fn(); }, ms);
+  }
+
   function maybeCpu() {
     const p = current();
-    if (!p || p.kind !== "cpu" || !state.playing) return;
+    if (cpuOn || !p || p.kind !== "cpu" || !state.playing) return;
+    cpuOn = true;
     state.busy = true;
     render();
-    setTimeout(cpuRoll, 750);
+    cpuLater(cpuRoll, 750);
   }
 
   function cpuRoll() {
-    if (!state.playing) return;
+    const gen = cpuGen;
     doRoll(() => {
+      if (gen !== cpuGen || !state.playing) return;
       state.busy = true; // still the computer's turn
       updateDerived();
       Ui.renderTurn(state);
       Ui.renderScorecard(state);
-      setTimeout(cpuThink, 600);
+      cpuLater(cpuThink, 600);
     });
   }
 
@@ -412,10 +428,10 @@
       state.held = held;
       Ui.renderDice(state.dice, state.held, { canHold: false });
       if (held.every(Boolean)) {
-        setTimeout(cpuPick, 700); // happy with the hand, no need to roll again
+        cpuLater(cpuPick, 700); // happy with the hand, no need to roll again
         return;
       }
-      setTimeout(cpuRoll, 750);
+      cpuLater(cpuRoll, 750);
       return;
     }
     cpuPick();
@@ -429,6 +445,7 @@
     });
     const points = Rules.scoreAll(state.dice, rs, p.card)[id];
     state.busy = false;
+    cpuOn = false;
     finishTurn(id, points, false);
   }
 
@@ -498,6 +515,7 @@
   // Runs the ordinary turn code with state.guided set, so the practice can never
   // drift out of step with the real game — it *is* the real game, not scored.
   function startPractice() {
+    cpuReset();
     state.players = [{ name: "You", kind: "human", difficulty: null, card: Rules.emptyCard(ruleset()) }];
     state.turn = 0;
     state.guided = true;
@@ -629,6 +647,7 @@
     $("menuNew").addEventListener("click", () => {
       $("menu").hidden = true;
       state.playing = false;
+      cpuReset();
       save();
       showScreen("setup");
       renderSetup();
