@@ -2342,6 +2342,31 @@ With a mouse: hover rings a dot, shows the piece a click would build or the
 piece Remove would take, and during a test names a piece and its strain.
 Keys: 1-9 parts, R Remove, Ctrl+Z, Space test, Esc let go or stop.
 
+
+#### Phone pass: the river is the screen
+
+On a phone the river was 452×234 sideways and 378×196 upright, boxed in by
+the header and panel. Now, on any phone, the play screen drops its frame:
+
+- **The river fills the screen.** `Board.fit()` fits just the part you build
+  on (the dots, plus a little bank) into the room the floating buttons
+  leave, and the sky, water and banks carry on to the screen's edges. It
+  measures the floating groups (`[data-ov]`, each naming its edge with
+  `--edge`) once per level, so nothing moves when the parts make way for a
+  test drive. Tablets and desktops keep the framed layout.
+- **Everything floats.** Top line: Back, the level's pill (name, stars, ⓘ),
+  sound and help. Sideways: parts down the left (pictures; picking one names
+  it), Start again, Undo and Test it! down the right, the truck choice in the
+  top line. Upright: parts and buttons in rows over the ground.
+- **Brief and messages.** The brief opens as a card under the pill when a
+  level starts; the first touch on the river only closes it. Held upright it
+  adds the count, the truck and "turn your phone sideways for a bigger
+  river". Messages are a bubble that steps aside after four seconds. While
+  the truck drives, the strain key takes the pill's place (sideways) or the
+  parts' row (upright).
+- A check opens all 39 levels at six phone sizes and confirms no dot or pin
+  sits under a floating control or off screen; dots are now 39-47px apart
+  (about 25px before).
 ### Vet Clinic — `vet-clinic/` ✅ built
 
 Case-based: owner's story, pick checks, read each against that species' normal

@@ -151,7 +151,8 @@ BB.UI = (function () {
       g.appendChild(el("span", "row-label", "Drive:"));
       const seg = el("div", "seg");
       Object.keys(T).forEach((k) => {
-        const b = button(st.truck === k ? "on" : "", T[k].emoji + " " + T[k].label, () => act("truck", k));
+        const b = button(st.truck === k ? "on" : "", T[k].emoji + '<span class="lbl"> ' + T[k].label + "</span>", () => act("truck", k));
+        b.setAttribute("aria-label", T[k].label);
         b.setAttribute("aria-pressed", st.truck === k ? "true" : "false");
         seg.appendChild(b);
       });

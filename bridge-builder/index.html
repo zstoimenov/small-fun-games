@@ -20,11 +20,11 @@
 <main class="page">
 
   <header class="top">
-    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
-    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Back</button>
+    <a id="back" data-ov href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" data-ov class="link-btn" type="button" hidden>&lsaquo; Back</button>
     <h1 id="title">Bridge Builder</h1>
-    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
-    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+    <button id="mute" data-ov class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" data-ov class="icon-btn" type="button" aria-label="How to play">?</button>
   </header>
 
   <!-- Home: one line of intro, the chapters, three tiles. -->
@@ -67,16 +67,18 @@
   <section id="play" class="screen play" hidden>
     <div class="play-board"><div class="stage" id="stage"></div></div>
     <div class="play-panel">
-      <div class="goal panel-info">
+      <div class="goal panel-info" data-ov>
         <span class="goal-name" id="goalName"></span>
         <span class="goal-stars" id="goalStars"></span>
+        <!-- On a phone the brief folds into this button and opens as a card. -->
+        <button id="goalMore" class="goal-more" type="button" aria-label="What to do" aria-expanded="false">&#9432;</button>
         <p id="goalText"></p>
       </div>
       <div class="panel-controls">
-        <div class="controls" id="controls"></div>
+        <div class="controls" id="controls" data-ov></div>
         <p class="say" id="say" aria-live="polite"></p>
       </div>
-      <div class="panel-acts" id="acts"></div>
+      <div class="panel-acts" id="acts" data-ov></div>
     </div>
   </section>
 

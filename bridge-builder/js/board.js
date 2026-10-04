@@ -15,7 +15,7 @@ BB.Board = (function () {
   const Ph = BB.Physics;
   const EMOJI = 'font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif"';
 
-  let svg, live, ghost, lv, hooks, box, water, boat;
+  let svg, live, ghost, lv, hooks, box, water, boat, safe, stage;
 
   function mk(tag, attrs, parent) {
     const e = document.createElementNS(NS, tag);
@@ -43,6 +43,7 @@ BB.Board = (function () {
     press = null;
     fingers = 0;
     host.innerHTML = "";
+    stage = host;
     // The frame round the board shows the world's sky too, not the default one.
     host.className = host.className.replace(/\s*theme-\w+/g, "") + (LOOKS[theme] ? " theme-" + theme : "");
     const x0 = -1.8, x1 = lv.gap + 1.8, y0 = lv.rows[0] - 0.9, y1 = Math.max(lv.rows[1], 1) + 1.1;
@@ -51,22 +52,26 @@ BB.Board = (function () {
     host.style.setProperty("--ar", (box.w / box.h).toFixed(4));
     water = (Math.max(lv.rows[1], 1) + 0.55) * U;
     const look = LOOKS[theme];
+    // Just the part you build on, for phones where the river fills the whole
+    // screen and the buttons float over the sky and banks round it.
+    safe = { x0: -0.6 * U, y0: (lv.rows[0] - 0.8) * U, x1: (lv.gap + 0.6) * U, y1: (Math.max(lv.rows[1], 1) + 0.9) * U };
     svg = mk("svg", { viewBox: [box.x0, box.y0, box.w, box.h].join(" "), role: "img", "aria-label": "River and bridge",
       class: "board" + (look ? " theme-" + theme : "") + (lv.snow ? " snowy" : "") }, host);
 
     // Scenery: sky, water, the banks and islands, any rocks and towers. When
     // the board is height-bound it is wider than its picture, so the sky,
     // water and banks carry on past the edges (wide) instead of leaving strips.
-    const wide = { x: box.x0 - 3000, w: box.w + 6000 };
-    mk("rect", { x: wide.x, y: box.y0, width: wide.w, height: box.h, class: "sky" }, svg);
+    // On a phone the river fills the screen, so it carries on up and down too.
+    const wide = { x: box.x0 - 3000, w: box.w + 6000 }, tall = { y: box.y0 - 3000, h: box.h + 6000 };
+    mk("rect", { x: wide.x, y: tall.y, width: wide.w, height: tall.h, class: "sky" }, svg);
     // Dark mode turns a world's daytime sky into evening.
-    if (look) mk("rect", { x: wide.x, y: box.y0, width: wide.w, height: box.h, class: "dusk" }, svg);
+    if (look) mk("rect", { x: wide.x, y: tall.y, width: wide.w, height: tall.h, class: "dusk" }, svg);
     if (look) mk("text", { x: box.x0 + 60, y: box.y0 + 80, "font-size": 56, class: "deco" }, svg).textContent = look.sky;
-    mk("rect", { x: wide.x, y: water, width: wide.w, height: box.y0 + box.h - water, class: "water" }, svg);
+    mk("rect", { x: wide.x, y: water, width: wide.w, height: box.y0 + box.h - water + 3000, class: "water" }, svg);
     for (let i = 0; i < 3; i++) {
       mk("path", { d: "M" + box.x0 + " " + (water + 18 + i * 22) + " q 40 -10 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0 t 80 0", class: "ripple" }, svg);
     }
-    const bottom = box.y0 + box.h;
+    const bottom = box.y0 + box.h + 3000;
     const bank = (xa, xb) => {
       mk("rect", { x: Math.min(xa, xb), y: 0, width: Math.abs(xb - xa), height: bottom, class: "bank" }, svg);
       mk("rect", { x: Math.min(xa, xb), y: -8, width: Math.abs(xb - xa), height: 16, rx: 6, class: "grass" }, svg);
@@ -325,5 +330,34 @@ BB.Board = (function () {
     return ya + (yb - ya) * f - 12;
   }
 
-  return { build, render, roadY, U, get water() { return water; } };
+  // Where the river sits. Normally the stage keeps the river's shape and
+  // shows all of it. On a phone (the stylesheet sets --float on the stage)
+  // the stage is the whole screen and the buttons float over it: the part
+  // you build on is fitted into the room the buttons leave, and the sky,
+  // water and banks fill the rest. Measured once per level, so nothing moves
+  // when the parts make way for a test drive.
+  function fit() {
+    if (!svg) return;
+    const float = getComputedStyle(stage).getPropertyValue("--float").trim() === "1";
+    const W = stage.clientWidth, H = stage.clientHeight;
+    if (!float || !W || !H) { svg.setAttribute("viewBox", [box.x0, box.y0, box.w, box.h].join(" ")); return; }
+    const sr = stage.getBoundingClientRect(), gap = 8;
+    const ins = { left: 0, right: 0, top: 0, bottom: 0 };
+    document.querySelectorAll("[data-ov]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || el.closest("[hidden]")) return;
+      const d = { left: r.left - sr.left, right: sr.right - r.right, top: r.top - sr.top, bottom: sr.bottom - r.bottom };
+      const said = getComputedStyle(el).getPropertyValue("--edge").trim();
+      const edge = d[said] != null ? said : Object.keys(d).reduce((a, b) => (d[b] < d[a] ? b : a));
+      const reach = { left: r.right - sr.left, right: sr.right - r.left, top: r.bottom - sr.top, bottom: sr.bottom - r.top }[edge];
+      ins[edge] = Math.max(ins[edge], reach + gap);
+    });
+    const fw = Math.max(40, W - ins.left - ins.right), fh = Math.max(40, H - ins.top - ins.bottom);
+    const sw = safe.x1 - safe.x0, sh = safe.y1 - safe.y0;
+    const k = Math.min(fw / sw, fh / sh);
+    const vx = safe.x0 - (ins.left + (fw - sw * k) / 2) / k, vy = safe.y0 - (ins.top + (fh - sh * k) / 2) / k;
+    svg.setAttribute("viewBox", [vx, vy, W / k, H / k].map((v) => v.toFixed(1)).join(" "));
+  }
+
+  return { build, render, fit, roadY, U, get water() { return water; } };
 })();

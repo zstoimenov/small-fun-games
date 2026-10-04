@@ -458,3 +458,106 @@ button:disabled{opacity:.45; cursor:default}
   .law-card h2{font-size:30px}
   .law-big{font-size:22px}
 }
+
+/* ── Phones: the river fills the screen, the buttons float over it ─────────
+   On a phone held either way the play screen drops its frame: the river is
+   the whole screen (board.js fits the part you build on into the room the
+   buttons leave, and the sky, water and banks fill the rest) and everything
+   else floats on top as pills and cards. Each floating group says which edge
+   it hugs (--edge), so board.js knows what room it takes. The brief folds
+   into ⓘ and opens as a card; messages are a bubble that steps aside. */
+.goal-more{display:none}
+@media (max-height:520px) and (orientation:landscape), (max-aspect-ratio:5/4) and (max-width:600px){
+  #play:not([hidden]){position:fixed; inset:0; z-index:1; display:block; padding:0; margin:0}
+  #play .play-board{position:absolute; inset:0; display:block; container-type:normal}
+  #play .stage{--float:1; position:absolute; inset:0; width:100%; height:100%; aspect-ratio:auto; border:0; border-radius:0; box-shadow:none}
+  #play .stage .board{width:100%; height:100%}
+  #play .play-panel{display:contents}
+  #play .panel-controls{display:contents}
+
+  /* The top line: Back, the level's pill, sound and help. */
+  .page:has(> #play:not([hidden])) > .top{position:fixed; z-index:3; top:calc(6px + env(safe-area-inset-top)); left:calc(8px + env(safe-area-inset-left)); right:calc(8px + env(safe-area-inset-right)); width:auto; min-height:44px; margin:0; gap:6px; pointer-events:none}
+  .page:has(> #play:not([hidden])) > .top > *{pointer-events:auto; --edge:top}
+  .page:has(> #play:not([hidden])) > .top h1{visibility:hidden; pointer-events:none}
+  .page:has(> #play:not([hidden])) #up,.page:has(> #play:not([hidden])) #back{min-height:44px; min-width:44px; padding:0; justify-content:center; border-radius:50%; background:var(--card); border:1px solid var(--line); box-shadow:0 2px 6px var(--shadow); font-size:0}
+  .page:has(> #play:not([hidden])) #up::before,.page:has(> #play:not([hidden])) #back::before{content:"\2039"; font-size:30px; line-height:1; margin-top:-3px}
+  .page:has(> #play:not([hidden])) .icon-btn{width:44px; height:44px; font-size:17px; box-shadow:0 2px 6px var(--shadow)}
+
+  #play .goal{--edge:top; position:fixed; z-index:3; top:calc(6px + env(safe-area-inset-top)); left:calc(58px + env(safe-area-inset-left)); width:max-content; max-width:calc(100vw - 172px - env(safe-area-inset-left) - env(safe-area-inset-right)); min-height:44px; display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; gap:8px; padding:2px 2px 2px 14px; border-radius:22px; background:var(--card); border:1px solid var(--line); box-shadow:0 2px 6px var(--shadow); text-align:left}
+  #play .goal-name{font-size:15px; flex:0 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  #play .goal-stars{flex:0 0 auto; white-space:nowrap; font-size:15px}
+  #play .goal-stars small{font-size:13px}
+  #play .goal-more{display:inline-grid; place-items:center; flex:0 0 auto; width:40px; height:40px; padding:0; border-radius:50%; border:1px solid var(--line); background:var(--chip); color:var(--ink); font-size:20px; font-weight:700}
+  #play.brief-open .goal-more{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+  /* The brief: a card hanging under the pill while it's open. */
+  #play #goalText{display:none}
+  #play.brief-open #goalText{display:block; position:absolute; top:calc(100% + 6px); left:0; width:min(420px, calc(100vw - 80px)); margin:0; padding:12px 14px; border-radius:16px; background:var(--card); border:1px solid var(--line); box-shadow:0 6px 18px var(--shadow); font-size:15px; line-height:1.35; white-space:normal}
+
+  /* Messages: a bubble over the top line, gone after a few seconds. */
+  #play .say{position:fixed; z-index:4; top:calc(6px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(560px, calc(100vw - 120px)); min-height:44px; margin:0; padding:9px 16px; border-radius:20px; background:var(--card); border:2px solid var(--accent); box-shadow:0 6px 18px var(--shadow); font-size:15px; line-height:1.3; text-align:center; opacity:0; pointer-events:none; transition:opacity .3s}
+  #play .say.fresh{opacity:1}
+  #play .say:empty{display:none}
+
+  /* Parts: pictures only; picking one names it in the bubble. */
+  #play .part{font-size:0; min-height:48px; padding:2px; gap:0; box-shadow:0 2px 6px var(--shadow)}
+  #play .part .pe{margin:4px 0}
+  #play .part .pe.rope{margin:10px 0}
+  #play .part .n,#play .part .cost{font-size:13px}
+  #play .seg .lbl,#play .row-label{display:none}
+  #play .seg button{min-width:44px; min-height:44px; padding:0 8px; font-size:22px; box-shadow:0 2px 6px var(--shadow); background:var(--card)}
+  #play .legend{font-size:13px; padding:6px 10px; gap:4px 10px; background:var(--card); box-shadow:0 2px 6px var(--shadow)}
+  #play .legend b{display:none}
+  #play #acts .btn{box-shadow:0 2px 6px var(--shadow)}
+  #play #acts .lbl{display:none}
+}
+
+/* Sideways: parts down the left, buttons down the right, the river between. */
+@media (max-height:520px) and (orientation:landscape){
+  #play #controls{--edge:left; position:fixed; z-index:2; left:calc(8px + env(safe-area-inset-left)); top:calc(58px + env(safe-area-inset-top)); width:66px; display:flex; flex-direction:column; gap:6px}
+  #play .parts{display:flex; flex-direction:column; gap:5px}
+  #play .part{width:66px; min-height:46px}
+  #play .part:has(.cost){min-height:56px}
+  /* The truck choice (free build) sits in the top line, beside sound and help. */
+  #play .row-set{position:fixed; top:calc(6px + env(safe-area-inset-top)); right:calc(108px + env(safe-area-inset-right)); gap:4px}
+  #play .seg{flex-wrap:nowrap; gap:4px}
+  /* While the truck drives the parts make way; the key takes the level's pill's place. */
+  #play .legend{position:fixed; top:calc(6px + env(safe-area-inset-top)); left:calc(58px + env(safe-area-inset-left)); min-height:44px; flex-wrap:nowrap; border-radius:22px}
+  #play:has(.legend) .goal{visibility:hidden}
+  #play #acts{--edge:right; position:fixed; z-index:2; right:calc(8px + env(safe-area-inset-right)); bottom:calc(8px + env(safe-area-inset-bottom)); width:136px; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; margin:0}
+  #play #acts .btn.again,#play #acts .btn.undo{flex:0 0 65px; min-width:0; min-height:48px; padding:0; font-size:20px}
+  #play #acts .btn.test,#play #acts .btn:only-child{flex:1 1 100%; order:2; min-width:0; min-height:58px; padding:0 8px; font-size:18px}
+}
+
+/* Upright: parts in a row over the ground, the buttons under them. */
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  #play #acts{--edge:bottom; position:fixed; z-index:2; left:calc(8px + env(safe-area-inset-left)); right:calc(8px + env(safe-area-inset-right)); bottom:calc(8px + env(safe-area-inset-bottom)); display:flex; gap:8px; margin:0}
+  #play #acts .btn{min-height:52px}
+  #play #acts .btn.again,#play #acts .btn.undo{flex:0 0 56px; min-width:0; padding:0; font-size:20px}
+  #play #acts .btn.test,#play #acts .btn:only-child{flex:1 1 auto; min-width:0; font-size:18px}
+  #play #controls{--edge:bottom; position:fixed; z-index:2; left:calc(8px + env(safe-area-inset-left)); right:calc(8px + env(safe-area-inset-right)); bottom:calc(68px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:6px}
+  #play .parts{display:grid; grid-template-columns:repeat(auto-fit,minmax(0,1fr)); grid-auto-flow:column; gap:6px}
+  #play .part{min-height:56px}
+  #play .row-set{justify-content:center}
+  #play .seg{flex-wrap:nowrap; gap:4px}
+  #play .legend{justify-content:center; border-radius:16px}
+  /* The river can't grow much held upright: the brief says how to get more. */
+  #play.brief-open #goalText::after{content:"\A\1F4F1  Turn your phone sideways for a bigger river."; white-space:pre-wrap; color:var(--muted); font-weight:700; font-size:14px}
+}
+@media (max-height:520px) and (orientation:landscape), (max-aspect-ratio:5/4) and (max-width:600px){
+  #play .goal{overflow:visible}
+}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  /* Held upright the pill is the name and stars; the count and the truck
+     are in the brief card. */
+  #play .goal-stars small,#play .goal-stars .who{display:none}
+}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  #play.brief-open #goalText::before{content:attr(data-count) "\A"; white-space:pre-wrap; color:var(--muted); font-weight:700; font-size:14px}
+}
+@media (max-height:520px) and (orientation:landscape){
+  #play #acts .btn:only-child{white-space:normal; line-height:1.15; font-size:16px; padding:0 6px}
+}
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  /* Held upright there's always sky above the river: the bubble hangs there. */
+  #play .say{top:calc(58px + env(safe-area-inset-top)); max-width:calc(100vw - 32px)}
+}

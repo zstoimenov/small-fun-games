@@ -87,7 +87,7 @@ window.BB = window.BB || {};
   }
   const find = (a, b) => members.find((m) => Ph.key(m.a, m.b) === Ph.key(a, b));
 
-  function play(i) {
+  function play(i, again) {
     lvl = i;
     cfg = i < 0 ? BB.FREE : ch.levels[i];
     members = cfg.parts.map(parse);
@@ -104,14 +104,42 @@ window.BB = window.BB || {};
     BB.Board.build($("stage"), cfg, { dot: tapDot, piece: tapPiece, empty: tapEmpty, dragStart, dragOver, dragEnd }, ch && ch.theme);
     say("");
     paint();
+    // On a phone the brief opens as a card over the river at the start, and
+    // the river is fitted round the floating buttons once they are drawn.
+    BB.Board.fit();
+    brief(!again);
   }
 
-  function say(msg) { $("say").textContent = msg; }
+  let sayTimer = 0;
+  function say(msg) {
+    $("say").textContent = msg;
+    // On a phone the message is a bubble over the top line that steps aside
+    // after a few seconds; elsewhere it simply stays in the panel.
+    $("say").classList.toggle("fresh", !!msg);
+    clearTimeout(sayTimer);
+    if (msg) sayTimer = setTimeout(() => $("say").classList.remove("fresh"), 4000);
+  }
+  const floating = () => getComputedStyle($("stage")).getPropertyValue("--float").trim() === "1";
+  function brief(open) {
+    $("play").classList.toggle("brief-open", open);
+    $("goalMore").setAttribute("aria-expanded", String(open));
+  }
+  $("goalMore").addEventListener("click", () => { BB.Audio.click(); brief(!$("play").classList.contains("brief-open")); });
+  // The first touch on the river just closes the brief, so it can't build by accident.
+  $("stage").addEventListener("pointerdown", (e) => {
+    if (!$("play").classList.contains("brief-open")) return;
+    brief(false);
+    if (floating()) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+  window.addEventListener("resize", () => { if (screen === "play") requestAnimationFrame(BB.Board.fit); });
 
   function goalStars() {
     const g = $("goalStars");
     const T = Ph.TRUCKS[truckKind];
     const who = '<span class="who">' + T.emoji + " " + T.label + "</span>";
+    // Held upright on a phone the pill has room for the stars only; the brief
+    // card shows the count and the truck instead.
+    $("goalText").dataset.count = (lvl < 0 ? "" : (coins() ? "\u{1FA99} " + spent() + " of " + cfg.budget + " \u{00B7} 3\u{2605} for " + cfg.par : "Pieces: " + used() + " \u{00B7} 3\u{2605} in " + cfg.par) + " \u{00B7} ") + T.emoji + " " + T.label;
     if (lvl < 0) { g.innerHTML = who; return; }
     const count = coins() ? "\u{1FA99} " + spent() + " of " + cfg.budget + " \u{00B7} 3\u{2605} for " + cfg.par
       : "Pieces: " + used() + " \u{00B7} 3\u{2605} in " + cfg.par;
@@ -277,10 +305,14 @@ window.BB = window.BB || {};
 
   function act(what, v) {
     BB.Audio.ready();
-    if (what === "tool") { tool = v; if (v === "remove") selected = null; BB.Audio.click(); paint(); }
-    else if (what === "truck") { truckKind = v; BB.Audio.click(); paint(); }
+    if (what === "tool") {
+      tool = v; if (v === "remove") selected = null; BB.Audio.click(); paint();
+      // On a phone the parts are just pictures, so picking one names it.
+      if (floating()) say(v === "remove" ? "\u{1F9FD} Remove: tap a piece to take it away." : Ph.MAT[v].label + (coins() ? " \u{00B7} \u{1FA99} " + Ph.COST[v] : ""));
+    }
+    else if (what === "truck") { truckKind = v; BB.Audio.click(); paint(); if (floating()) say(Ph.TRUCKS[v].emoji + " " + Ph.TRUCKS[v].label); }
     else if (what === "undo") undo();
-    else if (what === "reset") { BB.Audio.click(); play(lvl); }
+    else if (what === "reset") { BB.Audio.click(); play(lvl, true); }
     else if (what === "test") startTest();
     else if (what === "stop") stopTest();
   }
