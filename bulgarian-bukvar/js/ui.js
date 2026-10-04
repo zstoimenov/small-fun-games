@@ -191,7 +191,8 @@ BQ.UI = (function () {
   // not guessed: the width of КОПРИВЩИЦА depends on the tablet's font.
   function fitStamps(root) {
     root.querySelectorAll(".stamp").forEach((st) => {
-      const room = st.clientWidth - 16;
+      // The words sit across the middle of the ring, where it is widest.
+      const room = st.clientWidth - 14;
       let size = parseFloat(getComputedStyle(st).fontSize);
       const words = [...st.querySelectorAll(".pw")];
       while (size > 7 && words.some((w) => w.scrollWidth > room)) {

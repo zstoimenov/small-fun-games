@@ -2608,3 +2608,10 @@ sentence and card was reviewed by the user before it was coded.
   never offers a letter that spells another real word (л in _ама = лама).
   Each slot of a round now picks among its kinds, so pools are 30-700 a stamp.
 - **`when` may have commas** ("about 43,000 BC"); the checker strips them.
+- **Fact check after shipping** (web search): Maystora was born in a village
+  near Kyustendil, not "lived in one"; the Tokyo group used balls, hoops and
+  clubs; Varna is "some of the oldest gold jewellery ever found" (the "oldest
+  worked gold" claim is disputed); Mir means peace *and* world; Yovchev was
+  world champion on rings and floor.
+- **Stamps are 140px** so Копривщица fits at 13px instead of shrinking below
+  it, and on sideways phones a story question's three answers sit in one row.
