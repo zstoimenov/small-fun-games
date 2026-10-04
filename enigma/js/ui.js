@@ -199,6 +199,7 @@ EN.UI = (function () {
 
   function screen(name) {
     ["story", "home", "play"].forEach((s) => { $(s).hidden = s !== name; });
+    document.body.dataset.screen = name;
     // Off the machine, the way out is to the games; on it, back to the menu.
     $("back").hidden = name === "play";
     $("toMenu").hidden = name !== "play";
