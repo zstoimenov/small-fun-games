@@ -1,0 +1,27 @@
+{
+  "name": "cost-meter",
+  "version": "0.1.0",
+  "description": "Per-turn token and cost band above the prompt, a prompt-cache countdown, and a /cost-meter history pane",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "audRate": {
+      "type": "number",
+      "title": "AUD per USD",
+      "description": "Exchange rate used to show costs in Australian dollars",
+      "default": 1.52
+    },
+    "cacheTtl": {
+      "type": "string",
+      "title": "Prompt cache lifetime",
+      "description": "How long the prompt cache stays warm after a turn (5m standard, 1h extended)",
+      "options": ["5m", "1h"],
+      "default": "5m"
+    },
+    "warnToast": {
+      "type": "boolean",
+      "title": "Warn before the cache goes cold",
+      "description": "Show a toast 30 seconds before the prompt cache expires",
+      "default": true
+    }
+  }
+}
