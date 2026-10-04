@@ -24,7 +24,13 @@
   if (!store.stamps || typeof store.stamps !== "object") store.stamps = {};
   if (!Array.isArray(store.seen)) store.seen = [];
   if (!Array.isArray(store.remembered)) store.remembered = [];
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
+  // The home page reads gamebox:progress:<folder> for the ★ on this game's
+  // card and its place in "Keep playing"; it is written with every save.
+  const report = () => {
+    const stars = store.done.reduce((a, b) => a + b, 0);
+    try { localStorage.setItem("gamebox:progress:bulgarian-bukvar", JSON.stringify({ stars, max: M.length * 3, at: Date.now() })); } catch (e) { /* ignore */ }
+  };
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } report(); };
 
   const finished = () => store.done.filter((s) => s > 0).length;
   const nextMission = () => { const i = store.done.findIndex((s) => !s); return i < 0 ? M.length - 1 : i; };
@@ -512,5 +518,6 @@
     d.addEventListener("click", (e) => { if (e.target === d || e.target.closest("[data-close]")) d.close(); });
   });
 
+  report();
   home();
 })();
