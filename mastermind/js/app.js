@@ -60,6 +60,9 @@
   // throw on write, and a family game is not worth crashing over.
 
   let savedGame = null;
+  // Who was setting and who was breaking, from the setup the game started with:
+  // the sheet can change before Resume, and the saved code belongs to its setter.
+  let savedSeats = null;
 
   // savedGame is the single record of "there is a game to come back to", and
   // save() refreshes it before writing. Deriving the stored game straight from
@@ -67,8 +70,11 @@
   // progress — and one of those runs is setMuted() at boot, so the save would
   // never survive being reopened.
   function save() {
-    if (state.playing && !state.over) savedGame = Rules.snapshot(state.game);
-    else if (state.over) savedGame = null;
+    if (state.playing && !state.over) {
+      savedGame = Rules.snapshot(state.game);
+      savedSeats = { playerCount: state.playerCount, role: state.role,
+        difficulty: state.difficulty, setterSeat: state.setterSeat };
+    } else if (state.over) savedGame = savedSeats = null;
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         playerCount: state.playerCount, role: state.role, difficulty: state.difficulty,
@@ -78,7 +84,7 @@
         // The code plus the guesses is the whole game — the pegs are worked out
         // again on the way back in, so a saved game can never show feedback that
         // disagrees with its own code.
-        game: savedGame
+        game: savedGame, gameSeats: savedSeats
       }));
     } catch (e) { /* storage unavailable — the game still plays fine */ }
   }
@@ -96,6 +102,7 @@
       if (s.tally && Array.isArray(s.tally.goes)) state.tally = s.tally;
       if (s.best && typeof s.best === "object") state.best = s.best;
       if (s.game) savedGame = s.game;
+      if (s.gameSeats && typeof s.gameSeats === "object") savedSeats = s.gameSeats;
     } catch (e) { /* corrupt or unreadable save — start fresh */ }
   }
 
@@ -307,7 +314,7 @@
       state.tally = { goes: [0, 0], rounds: [0, 0] };
       state.setterSeat = 0;
     }
-    savedGame = null;
+    savedGame = savedSeats = null;
     const players = makePlayers();
     state.setter = players.setter;
     state.breaker = players.breaker;
@@ -345,6 +352,14 @@
     if (!g) return;
     state.gen++;
     state.preset = g.spec.id;
+    // A save from before the seats were kept falls back to the sheet, as it did.
+    if (savedSeats) {
+      for (const k of ["playerCount", "role", "difficulty", "setterSeat"]) {
+        if (savedSeats[k] !== undefined) state[k] = savedSeats[k];
+      }
+    }
+    for (const [id, v] of [["countChooser", state.playerCount], ["roleChooser", state.role],
+      ["diffChooser", state.difficulty], ["presetChooser", state.preset]]) setChooser(id, v);
     const players = makePlayers();
     state.setter = players.setter;
     state.breaker = players.breaker;
@@ -866,7 +881,7 @@
   function abandon() {
     state.playing = false;
     state.over = false;
-    savedGame = null;
+    savedGame = savedSeats = null;
     save();
     closeResult();
     showScreen("setup");
