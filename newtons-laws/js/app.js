@@ -34,6 +34,7 @@ window.NL = window.NL || {};
 
   function show(name) {
     screen = name;
+    clearTimeout(winTimer);
     ["home", "chapter", "play", "quiz"].forEach((s) => { $(s).hidden = s !== name; });
     $("back").hidden = name !== "home";
     $("up").hidden = name === "home";
@@ -82,6 +83,7 @@ window.NL = window.NL || {};
   };
 
   function play(i) {
+    clearTimeout(winTimer);
     lvl = i;
     fails = 0;
     const cfg = i < 0 ? ch.sandbox : ch.levels[i];
@@ -107,7 +109,7 @@ window.NL = window.NL || {};
     NL.Audio.ready();
     const s = scene;
     if (what === "surface") { NL.Audio.click(); s.setSurface(v); hooks.say(""); }
-    else if (what === "reset") { NL.Audio.click(); s.reset(); hooks.say(""); }
+    else if (what === "reset") { clearTimeout(winTimer); NL.Audio.click(); s.reset(); hooks.say(""); }
     else if (what === "push" || what === "load") { NL.Audio.click(); s.set(what, v); hooks.say(""); }
     else if (what === "go") s.go();
     else if (what === "guess") s.go(v);
@@ -118,6 +120,7 @@ window.NL = window.NL || {};
   }
 
   function showWin(got, msg) {
+    if (screen !== "play") return;
     $("winStars").innerHTML = NL.UI.starRow(got);
     [0, 1, 2].forEach((i) => { if (i < got) setTimeout(() => NL.Audio.star(i), 150 + i * 180); });
     $("winTitle").textContent = got === 3 ? "Brilliant!" : got === 2 ? "Well done!" : "You did it!";
