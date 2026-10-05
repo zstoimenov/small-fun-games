@@ -367,7 +367,10 @@
       state.playing = false;
       save();
       render();
+      // New game in the pause resets cpuGen, so the old scores stay away.
+      const gen = cpuGen;
       setTimeout(() => {
+        if (gen !== cpuGen) return;
         Audio.win();
         Ui.showResult(state);
       }, 700);
