@@ -12,6 +12,10 @@ window.CC = window.CC || {};
   const fresh = () => ({ quiz: null, likes: {}, muted: false, seenHelp: false });
   const store = fresh();
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
+  // A damaged or older save must not crash the game: a field with the wrong
+  // shape goes back to its default.
+  if (!store.likes || typeof store.likes !== "object" || Array.isArray(store.likes)) store.likes = {};
+  if (store.quiz !== null && !Array.isArray(store.quiz)) store.quiz = null;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
 
   let screen = "home";
@@ -52,11 +56,14 @@ window.CC = window.CC || {};
     ask();
   }
   function ask() {
-    CC.UI.question(quiz.i, quiz.items.length, quiz.items[quiz.i], (id) => {
+    const q = quiz;
+    CC.UI.question(q.i, q.items.length, q.items[q.i], (id) => {
       CC.Audio.pick();
-      quiz.picks.push(id);
+      q.picks.push(id);
       setTimeout(() => {
-        if (screen !== "quiz") return;
+        // Leaving and starting a new quiz in this pause makes a new quiz
+        // object; the old answer must not move the new one on.
+        if (screen !== "quiz" || quiz !== q) return;
         quiz.i++;
         if (quiz.i < quiz.items.length) ask(); else finishQuiz();
       }, 350);
