@@ -58,7 +58,12 @@
         muted: state.muted, seenHowTo: state.seenHowTo, tally: state.tally,
         // The move list is the whole game — a saved position can never disagree
         // with the moves that made it, because it is rebuilt from them.
-        game: state.playing && !state.over ? { moves: Board.snapshot(state.board) } : null
+        // Who plays which colour belongs to the game too: the setup sheet can
+        // change before Resume, and the moves only make sense with their seats.
+        game: state.playing && !state.over ? {
+          moves: Board.snapshot(state.board),
+          seats: { playerCount: state.playerCount, difficulty: state.difficulty, youAre: state.youAre }
+        } : null
       }));
     } catch (e) { /* storage unavailable — the game still plays fine */ }
   }
@@ -196,6 +201,14 @@
     const b = savedGame && Board.restore(savedGame.moves);
     if (!b) { startGame(true); return; }
     state.gen++;
+    // A save from before the seats were kept falls back to the sheet, as it did.
+    const seats = savedGame.seats;
+    if (seats && typeof seats === "object") {
+      for (const k of ["playerCount", "difficulty", "youAre"]) if (seats[k] !== undefined) state[k] = seats[k];
+    }
+    setChooser("countChooser", state.playerCount);
+    setChooser("diffChooser", state.difficulty);
+    setChooser("colourChooser", state.youAre);
     state.players = makePlayers();
     state.board = b;
     state.playing = true;
@@ -208,6 +221,7 @@
     showScreen("game");
     Ui.paint(b);
     refresh();
+    save();
     afterTurn();
   }
 
