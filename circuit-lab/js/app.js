@@ -80,6 +80,7 @@ window.CL = window.CL || {};
 
   // ── A Stay Safe level: no board, just the safety screen ────────────────────
   function playSafety(i) {
+    clearTimeout(winTimer);
     lvl = i;
     show("safety");      // before cfg: show() clears it for any non-board screen
     cfg = ch.levels[i];
