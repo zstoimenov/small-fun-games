@@ -730,7 +730,10 @@
 
     refresh();
     save();
-    setTimeout(() => showResult(), g.cracked ? 1100 : 700);
+    // The card waits so the winning move can be seen first. Undo or New game in
+    // that pause bumps gen, and then the card belongs to a game that is gone.
+    const gen = state.gen;
+    setTimeout(() => { if (gen === state.gen) showResult(); }, g.cracked ? 1100 : 700);
   }
 
   /* ── The end card ──────────────────────────────────────────────────────── */
