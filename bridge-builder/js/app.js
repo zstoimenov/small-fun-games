@@ -395,7 +395,8 @@ window.BB = window.BB || {};
         t.creak -= dt;
         if (worst > 0.85 && t.creak <= 0) { BB.Audio.creak(); t.creak = 0.6; }
       }
-      if (t.x > Ph.finishX(cfg)) finish(true);
+      // A truck that falls in the frame it reaches the far side has still fallen.
+      if (!fell && t.x > Ph.finishX(cfg)) finish(true);
     } else if (t.state === "fall") {
       t.trucks.forEach((tr) => {
         if (!tr.falling) return;
@@ -464,6 +465,16 @@ window.BB = window.BB || {};
     $("winDialog").showModal();
   }
 
+  // Esc would close the card without moving on, leaving a finished level with
+  // no Next button; the card waits for one of its own buttons instead. Browsers
+  // don't always let a page refuse Esc, so a card that Esc does close opens again.
+  {
+    const win = $("winDialog");
+    let escAt = 0;
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && win.open) escAt = Date.now(); }, true);
+    win.addEventListener("cancel", (e) => e.preventDefault());
+    win.addEventListener("close", () => { if (Date.now() - escAt < 1000) { escAt = 0; win.showModal(); } });
+  }
   $("winAgain").addEventListener("click", () => { $("winDialog").close(); stopTest(); });
   $("winNext").addEventListener("click", () => {
     $("winDialog").close();
