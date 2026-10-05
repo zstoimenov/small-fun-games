@@ -344,7 +344,7 @@ button:disabled{opacity:.45; cursor:default}
   min-height:calc(70px + (2 - max(var(--i) - 2, 2 - var(--i))) * 18px);
 }
 .step span{font-size:22px; line-height:1}
-.step small{color:var(--muted); font-size:11px}
+.step small{color:var(--muted); font-size:13px}
 .step.done{background:color-mix(in srgb, var(--right) 14%, var(--card))}
 .step.on{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent)}
 .part-head h3{margin:0; font-size:20px}
