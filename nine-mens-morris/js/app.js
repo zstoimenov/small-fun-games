@@ -586,7 +586,10 @@
 
     refresh();
     save();
-    setTimeout(() => showResult(res), 900);
+    // The card waits so the winning move can be seen first. Undo or New game in
+    // that pause bumps gen, and then the card belongs to a game that is gone.
+    const gen = state.gen;
+    setTimeout(() => { if (gen === state.gen) showResult(res); }, 900);
   }
 
   function reasonWords(res) {
