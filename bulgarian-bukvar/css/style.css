@@ -375,8 +375,8 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-of
    one line and ui.js shrinks the type until the longest one fits the ring. */
 .stamp [lang]{max-width:100%}
 .stamp .pw{display:block; white-space:nowrap}
-.album b.long{font-size:11px; letter-spacing:-.02em; overflow-wrap:normal}
-@media (max-width:420px){ .album b.long{font-size:10.5px} .album button{padding-inline:2px} }
+.album b.long{font-size:13px; letter-spacing:-.02em; overflow-wrap:normal}
+@media (max-width:420px){ .album b.long{font-size:13px} .album button{padding-inline:2px} }
 
 /* ── Card book ───────────────────────────────────────────────────────────── */
 .album-head{margin:6px 0 8px; font-size:19px}
