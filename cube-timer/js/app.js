@@ -290,18 +290,22 @@
     if (!state.last) return;
     Store.removeSolve(state.last.who, state.last.puzzle, state.last.index);
     Audio.tap();
-    if (isRace()) state.race.times[state.race.turn] = null;
     state.last = null;
     $("time").textContent = "0.00";
     showAfterRow(false);
     drawStats();
-    // In a race the go still has to happen, so the round waits for a real time.
-    // The pad goes back to idle: in "done" a race ignores the pad and waits
-    // for Next, which has just been hidden, so the round would be stuck.
-    if (isRace()) {
-      $("nextBtn").hidden = true;
-      setPhase("idle");
-    }
+    raceRedo();
+  }
+
+  // In a race the go still has to happen, so once its time is gone (binned,
+  // cleared from the list) the round waits for a real one. The pad goes back
+  // to idle: in "done" a race ignores the pad and waits for Next, which is
+  // hidden, so the round would be stuck.
+  function raceRedo() {
+    if (!isRace()) return;
+    state.race.times[state.race.turn] = null;
+    $("nextBtn").hidden = true;
+    if (state.phase === "done") setPhase("idle");
   }
 
   /* ── The pad ───────────────────────────────────────────────────────────── */
@@ -565,10 +569,11 @@
     if (detailIndex < 0) return;
     if (change === "bin") Store.removeSolve(who, puzzle(), detailIndex);
     else Store.updateSolve(who, puzzle(), detailIndex, { penalty: change });
-    // Editing an old solve can move the one the after-row points at, so the
-    // safest thing is to let go of it entirely.
-    if (state.last && state.last.who === who && state.last.puzzle === puzzle()) {
-      if (change === "bin" && detailIndex <= state.last.index) state.last = null;
+    // Binning an older solve moves the latest one up the list; binning the
+    // latest one lets go of it (and, in a race, means that go is played again).
+    if (change === "bin" && state.last && state.last.who === who && state.last.puzzle === puzzle()) {
+      if (detailIndex < state.last.index) state.last.index--;
+      else if (detailIndex === state.last.index) { raceRedo(); state.last = null; }
     }
     Audio.tap();
     show("detail", false);
@@ -645,6 +650,7 @@
     });
     $("clearBtn").addEventListener("click", () => {
       Store.clearSolves(cubing(), puzzle());
+      if (state.last) raceRedo();
       state.last = null;
       showAfterRow(false);
       drawStats();

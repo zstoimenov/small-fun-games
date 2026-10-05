@@ -42,8 +42,10 @@ CT.Store = (function () {
         if (saved && saved.v === 1) data = Object.assign(blank(), saved);
       }
     } catch (e) { /* unreadable or absent — the blank one will do */ }
-    // A store with nobody in it would leave the timer with no one to save to.
-    if (!data.cubers || !data.cubers.length) data.cubers = blank().cubers;
+    // A store with nobody in it would leave the timer with no one to save to,
+    // and one with no list of times would crash on the first solve.
+    if (!Array.isArray(data.cubers) || !data.cubers.length) data.cubers = blank().cubers;
+    if (!data.solves || typeof data.solves !== "object" || Array.isArray(data.solves)) data.solves = {};
     if (!cuber(data.who)) data.who = data.cubers[0].id;
     if (data.who2 && !cuber(data.who2)) data.who2 = "";
     return data;
