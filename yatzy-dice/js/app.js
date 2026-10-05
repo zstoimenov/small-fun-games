@@ -58,7 +58,10 @@
             name: p.name, kind: p.kind, difficulty: p.difficulty, card: p.card
           })),
           turn: state.turn, dice: state.dice, held: state.held,
-          rollsLeft: state.rollsLeft, rolled: state.rolled
+          rollsLeft: state.rollsLeft, rolled: state.rolled,
+          // The rules and the dice mode belong to the game: the setup sheet can
+          // change before Resume, and the card only makes sense under its own.
+          rulesetId: state.rulesetId, mode: state.mode, entryMode: state.entryMode
         } : null
       }));
     } catch (e) { /* storage unavailable — the game still plays fine */ }
@@ -81,8 +84,10 @@
 
   function resumable() {
     if (!saved || !saved.players || !saved.players.length) return false;
-    const rs = ruleset();
-    return saved.players.some((p) => !Rules.isComplete(rs, p.card));
+    // A save written before the game kept its own rules falls back to the sheet.
+    const rs = Rules.get(saved.rulesetId || state.rulesetId);
+    // A damaged save is no game to carry on, not a reason to lose the setup sheet.
+    try { return saved.players.some((p) => !Rules.isComplete(rs, p.card)); } catch (e) { return false; }
   }
 
   /* ── Setup screen ──────────────────────────────────────────────────────── */
@@ -205,6 +210,11 @@
 
   function resumeGame() {
     cpuReset();
+    // Back to the rules the game was started with, and the sheet shows them so
+    // the next new game starts from what was actually being played.
+    for (const k of ["rulesetId", "mode", "entryMode"]) if (saved[k] !== undefined) state[k] = saved[k];
+    setChooser("rulesetChooser", state.rulesetId);
+    setChooser("modeChooser", state.mode);
     state.players = saved.players.map((p) => ({
       name: p.name, kind: p.kind, difficulty: p.difficulty,
       card: { scores: p.card.scores, jokers: p.card.jokers || 0, manual: p.card.manual || {} }
@@ -219,6 +229,7 @@
     updateDerived();
     showScreen("game");
     render();
+    save();
     maybeCpu();
   }
 
