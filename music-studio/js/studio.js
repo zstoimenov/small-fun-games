@@ -134,7 +134,9 @@ MS.Studio = (function () {
       const mk = (cls, html, label, fn) => { const b = document.createElement("button"); b.type = "button"; b.className = cls; b.innerHTML = html; b.setAttribute("aria-label", label + " " + x.name); b.addEventListener("click", fn); return b; };
       let on = false;
       const play = mk("icon-btn", "▶", "Play", () => {
-        if (on) { P.stop(); return; }
+        // Reset here as well: a stop just as the song ends cancels the player's
+        // own reset, which left the button stuck on ■.
+        if (on) { P.stop(); on = false; play.textContent = "▶"; play.classList.remove("playing"); return; }
         on = true; play.textContent = "■"; play.classList.add("playing");
         P.play(x.song, { loop: 2, onStep: (s) => { if (s < 0) { on = false; play.textContent = "▶"; play.classList.remove("playing"); } } });
       });

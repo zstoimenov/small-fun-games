@@ -305,7 +305,7 @@ button:disabled{opacity:.45; cursor:default}
 @media (prefers-reduced-motion: reduce){ .cell.pop,.cell.hint,.pad.pulse{animation:none} }
 @media (max-width:480px){
   .grid{gap:3px; padding:6px; grid-template-columns:minmax(34px,auto) repeat(var(--steps),minmax(0,1fr))}
-  .label b{font-size:12px}
+  .label b{font-size:13px}
   .label.note i{display:none}
   .label:not(.note) b{display:none}
   .label:not(.note) i{font-size:20px}

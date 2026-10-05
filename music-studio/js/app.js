@@ -9,6 +9,11 @@ window.MS = window.MS || {};
   // ── Saved progress ─────────────────────────────────────────────────────────
   const store = { stars: {}, quiz: null, muted: false, seenHelp: false, draft: null, gallery: [], steps: 8 };
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
+  // A damaged or older save must not crash the game: a field with the wrong
+  // shape goes back to its default.
+  if (!store.stars || typeof store.stars !== "object" || Array.isArray(store.stars)) store.stars = {};
+  store.gallery = (Array.isArray(store.gallery) ? store.gallery : [])
+    .filter((x) => x && x.song && MS.MOODS.some((m) => m.id === x.song.mood));
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } report(); };
   const starsOf = (ch, i) => store.stars[ch + "-" + i] || 0;
   const unlocked = (ch, i) => i === 0 || starsOf(ch, i - 1) > 0;
@@ -79,6 +84,16 @@ window.MS = window.MS || {};
     $("winDialog").showModal();
   }
 
+  // Esc would close the card without moving on, leaving a finished level with
+  // no Next button; the card waits for one of its own buttons instead. Browsers
+  // don't always let a page refuse Esc, so a card that Esc does close opens again.
+  {
+    const win = $("winDialog");
+    let escAt = 0;
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && win.open) escAt = Date.now(); }, true);
+    win.addEventListener("cancel", (e) => e.preventDefault());
+    win.addEventListener("close", () => { if (Date.now() - escAt < 1000) { escAt = 0; win.showModal(); } });
+  }
   $("winAgain").addEventListener("click", () => { $("winDialog").close(); play(lvl); });
   $("winNext").addEventListener("click", () => {
     $("winDialog").close();
