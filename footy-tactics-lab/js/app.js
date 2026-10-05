@@ -10,6 +10,7 @@ window.FTL = window.FTL || {};
   let level = null;
   let running = false;
   let toastTimer = null;
+  let winTimer = null;
 
   /* ── Little helpers ───────────────────────────────────────────────────── */
 
@@ -67,6 +68,7 @@ window.FTL = window.FTL || {};
   }
 
   function showMenu() {
+    clearTimeout(winTimer);
     Engine.stop();
     running = false;
     renderLevelSelect();
@@ -96,6 +98,7 @@ window.FTL = window.FTL || {};
   }
 
   function resetRun() {
+    clearTimeout(winTimer);
     Engine.stop();
     running = false;
     Blocks.setLocked(false);
@@ -111,6 +114,7 @@ window.FTL = window.FTL || {};
     const tree = Blocks.getTree();
     if (!Engine.countBlocks(tree)) { toast("Add some blocks first! 👉", 2200); return; }
 
+    clearTimeout(winTimer);
     running = true;
     Blocks.setLocked(true);
     Blocks.clearHighlights();
@@ -165,12 +169,15 @@ window.FTL = window.FTL || {};
         running = false;
         Blocks.setLocked(false);
         $("runBtn").textContent = "RUN LOGIC ▶";
-        setTimeout(() => {
+        // The goal counts the moment it goes in. Only the card waits, so it is
+        // cancelled if the kid leaves or runs again before it lands.
+        const earned = Levels.recordWin(level.id, blockCount);
+        $("levelStars").textContent = stars(Levels.starsFor(level.id));
+        clearTimeout(winTimer);
+        winTimer = setTimeout(() => {
           Audio.goal();
           Game.celebrate();
           hideNowPlaying();
-          const earned = Levels.recordWin(level.id, blockCount);
-          $("levelStars").textContent = stars(Levels.starsFor(level.id));
           showResult(earned, blockCount);
         }, 520);
       }
