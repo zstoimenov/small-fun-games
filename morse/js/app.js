@@ -23,6 +23,14 @@
   // ── Saved state ───────────────────────────────────────────────────────────
   let store = { agents: [], cur: null, muted: false, lampAlways: false, turns: 3, p1: "Agent 1", p2: "Agent 2" };
   try { Object.assign(store, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { /* private mode or junk */ }
+  // A damaged or older save must not crash the game: a field with the wrong
+  // shape goes back to its default.
+  store.agents = (Array.isArray(store.agents) ? store.agents : []).filter((a) => a && typeof a === "object" && a.id);
+  store.agents.forEach((a) => {
+    if (!R.LEVELS[a.level]) a.level = 0;
+    if (!(a.mission >= 1)) a.mission = 1;
+    if (!a.best || typeof a.best !== "object") a.best = {};
+  });
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } };
   const codename = () => "Agent " + NAMES[Math.floor(Math.random() * NAMES.length)];
   function newAgent(name) {
@@ -180,6 +188,9 @@
     const cards = document.querySelectorAll("#pages .page-card");
     A.stop();
     UI.lamp(false);
+    // The Hear buttons light a small lamp on their own page; stopping the sound
+    // mid-beep would leave it lit for the next visit.
+    document.querySelectorAll("#pages .lamp.small.on").forEach((l) => l.classList.remove("on"));
     page = Math.max(0, Math.min(cards.length - 1, n));
     cards.forEach((c, i) => { c.hidden = i !== page; });
     $("pageDots").innerHTML = Array.from(cards, (_, i) => '<i class="' + (i === page ? "on" : "") + '"></i>').join("");
