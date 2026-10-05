@@ -324,8 +324,9 @@
     showScreen("game");
     render();
     maybeRobo();
-    // A game put down on the Banker's call comes back to it.
-    if (curGame().phase === "offer") later(() => showOffer(), 400);
+    // A game put down on the Banker's call comes back to it. Robo's call is
+    // already answered by maybeRobo(); showing it again made Robo answer twice.
+    if (curGame().phase === "offer" && cur().kind !== "cpu") later(() => showOffer(), 400);
   }
 
   /* ── Screens ───────────────────────────────────────────────────────────── */
