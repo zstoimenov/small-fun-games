@@ -79,6 +79,16 @@ window.VC = window.VC || {};
     $("winDialog").showModal();
   }
 
+  // Esc would close the card without moving on, leaving a finished level with
+  // no Next button; the card waits for one of its own buttons instead. Browsers
+  // don't always let a page refuse Esc, so a card that Esc does close opens again.
+  {
+    const win = $("winDialog");
+    let escAt = 0;
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && win.open) escAt = Date.now(); }, true);
+    win.addEventListener("cancel", (e) => e.preventDefault());
+    win.addEventListener("close", () => { if (Date.now() - escAt < 1000) { escAt = 0; win.showModal(); } });
+  }
   $("winAgain").addEventListener("click", () => { $("winDialog").close(); play(lvl); });
   $("winNext").addEventListener("click", () => {
     $("winDialog").close();
@@ -97,7 +107,7 @@ window.VC = window.VC || {};
   });
   $("chartBtn").addEventListener("click", () => { VC.UI.chart(); $("chartDialog").showModal(); });
   $("jobsBtn").addEventListener("click", () => $("jobsDialog").showModal());
-  document.addEventListener("visibilitychange", () => { if (document.hidden) VC.Clinic.stop(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) VC.Clinic.pause(); else VC.Clinic.resume(); });
 
   // ── Quiz ───────────────────────────────────────────────────────────────────
   function startQuiz() {

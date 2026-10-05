@@ -28,7 +28,15 @@ VC.Clinic = (function () {
   let mistakes = 0, done = null, sound = null, beatTimer = 0;
   const box = () => $("clinic");
   function progress(t) { $("clinicProgress").textContent = t; }
-  function stopBeat() { clearInterval(beatTimer); beatTimer = 0; }
+  function stopBeat() { clearInterval(beatTimer); beatTimer = 0; beatOn = null; }
+  // Switching apps pauses the heartbeat; coming back starts it again, but only
+  // while its card is still the one on screen.
+  let beatOn = null;   // { bpm, card } while a heartbeat question is showing
+  function pauseBeat() { clearInterval(beatTimer); beatTimer = 0; }
+  function resumeBeat() {
+    if (!beatOn || beatTimer || !beatOn.card.isConnected) return;
+    beatTimer = setInterval(() => sound("beat"), 60000 / beatOn.bpm);
+  }
 
   // A number drawn on its normal range: green band = normal, pin = this one.
   function rangeBar(num) {
@@ -90,10 +98,14 @@ VC.Clinic = (function () {
       card.innerHTML = "";
       const h = el("div", "big-heart", "\u{2764}\u{FE0F}");
       h.setAttribute("aria-hidden", "true");
-      card.appendChild(el("p", "hint", "\u{1FA7A} Listen through the stethoscope..."));
+      // With the sound off there is nothing to hear; the heart still beats.
+      card.appendChild(el("p", "hint", VC.Audio.isMuted()
+        ? "\u{1F507} Sound is off. Watch the heart, or tap \u{1F507} at the top to listen."
+        : "\u{1FA7A} Listen through the stethoscope..."));
       card.appendChild(h);
       h.style.animationDuration = Math.max(0.08, 60 / bpm) + "s";
       beatTimer = setInterval(() => sound("beat"), 60000 / bpm);
+      beatOn = { bpm, card };
       const grid = el("div", "choice-grid");
       const why = el("p", "why");
       cfg.choices.forEach((c) => {
@@ -238,5 +250,5 @@ VC.Clinic = (function () {
     ({ heart: heartGame, temp: tempGame, case: caseGame })[cfg.kind](cfg);
   }
 
-  return { start, stop: stopBeat };
+  return { start, stop: stopBeat, pause: pauseBeat, resume: resumeBeat };
 })();
