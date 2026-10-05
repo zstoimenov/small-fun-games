@@ -95,14 +95,14 @@
      fixed height and the board takes whatever is left, sized by ui.js. -->
 <main id="game" hidden>
   <div class="topbar">
-    <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
+    <button id="menuBtn" class="icon-btn" type="button" title="Menu" aria-label="Menu">☰</button>
     <div class="turn-info">
       <!-- The dot is a sibling, not a child: app.js writes turnName's text
            content, which would swallow anything nested inside it. -->
       <strong><span id="turnDot" class="turn-dot white"></span><span id="turnName">White's go</span></strong>
       <span id="turnMeta">Placing • 9 to go</span>
     </div>
-    <button id="muteBtn" class="icon-btn" type="button" aria-pressed="true" title="Sound on/off">🔊</button>
+    <button id="muteBtn" class="icon-btn" type="button" aria-pressed="true" title="Sound on/off" aria-label="Sound on/off">🔊</button>
   </div>
 
   <!-- Pieces still to place, then pieces lost — a look rather than a sum. -->

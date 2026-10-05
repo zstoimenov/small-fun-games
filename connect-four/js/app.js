@@ -163,11 +163,15 @@
 
   /* ── Starting a game ───────────────────────────────────────────────────── */
 
+  // A typed name ends up in coach lines and the result card, which are HTML;
+  // the characters that would turn it into markup are simply left out.
+  const playerName = (i) => (state.names[i] || "").replace(/[<>&"']/g, "").trim() || "Player " + (i + 1);
+
   function makePlayers() {
     if (!isCpuGame()) {
       return [
-        { name: (state.names[0] || "").trim() || "Player 1", kind: "human", difficulty: null },
-        { name: (state.names[1] || "").trim() || "Player 2", kind: "human", difficulty: null }
+        { name: playerName(0), kind: "human", difficulty: null },
+        { name: playerName(1), kind: "human", difficulty: null }
       ];
     }
     const you = { name: "You", kind: "human", difficulty: null };
