@@ -735,7 +735,10 @@
 
     refresh();
     save();
-    setTimeout(showResult, 1300);
+    // The card waits so the last shot can be seen first. Undo or New game in
+    // that pause bumps gen, and then the card belongs to a game that is gone.
+    const gen = state.gen;
+    setTimeout(() => { if (gen === state.gen) showResult(); }, 1300);
   }
 
   /* ── The play-back ─────────────────────────────────────────────────────── */
@@ -946,7 +949,8 @@
     else Audio.turn();
     state.tally.games++;
     save();
-    setTimeout(showResult, 1600);
+    // Kept on the replay, so stopReplay() cancels it if the player walks away.
+    r.timer = setTimeout(() => { if (state.replay === r) showResult(); }, 1600);
   }
 
   // Walking away mid-play-back. The timer outlives the screen otherwise, and it
