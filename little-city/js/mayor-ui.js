@@ -16,7 +16,13 @@ window.LC = window.LC || {};
   const rankFor = (t) => M.RANKS.findIndex((r) => r.unlock.includes(t));
   const pct = (x, n) => ((x + 0.5) / n * 100).toFixed(2) + "%";
 
+  // Opening the board again (a new town, a reload of the studio) used to leave
+  // the last board's window listener, size watcher and car timer running on
+  // top of the new ones. Each board hands back how to switch itself off.
+  let disposeLast = null;
+
   LC.mayorBoard = function (root, town, o) {
+    if (disposeLast) disposeLast();
     let tool = null, pick = null, painting = false, last = null, carTimer = 0, ghost = null;
     root.innerHTML = `<div class="map-wrap"><div class="map-box"><div class="map"></div><div class="anim" aria-hidden="true"></div></div></div>
       <div class="toolbar" role="group" aria-label="Build"></div>
@@ -67,7 +73,8 @@ window.LC = window.LC || {};
       talk.classList.toggle("tucked");
       fit();
     });
-    window.addEventListener("resize", () => requestAnimationFrame(fit));
+    const onResize = () => requestAnimationFrame(fit);
+    window.addEventListener("resize", onResize);
     const GW = () => g()[0].length, GH = () => g().length;
     // Its shape, so the stylesheet can fit the map to the space without cropping
     // it (and the cars and rings drawn over it stay on their squares).
@@ -91,7 +98,13 @@ window.LC = window.LC || {};
       paint();
       anim.querySelectorAll("span").forEach((el) => { if (el.at) spot(el, ...el.at); });
     }
-    if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(shape)).observe(wrap);
+    const sizeWatch = window.ResizeObserver ? new ResizeObserver(() => requestAnimationFrame(shape)) : null;
+    if (sizeWatch) sizeWatch.observe(wrap);
+    disposeLast = () => {
+      window.removeEventListener("resize", onResize);
+      if (sizeWatch) sizeWatch.disconnect();
+      clearInterval(carTimer);
+    };
 
     // Extra marks on the map: how full each home is, broken buildings, sleepy
     // shops, and a ring round anything a letter or an offer is about.
