@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <title>Robo Rules — Teach Chip!</title>
 <meta name="description" content="Teach Chip the robot pet with IF-THIS-THEN-THAT rules. A first taste of coding for kids!">
 <meta name="theme-color" content="#4fc3f7">
@@ -11,6 +11,7 @@
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="../shared/screen.css">
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -78,17 +79,20 @@
     <div id="ground"></div>
   </section>
 
-  <!-- ============ EVENTS ============ -->
-  <section class="panel" id="eventsPanel">
-    <h2>⚡ Make something happen!</h2>
-    <div id="eventButtons" class="btn-grid"></div>
-  </section>
-
+  <!-- Everything to read and tap. The scene never scrolls out of view; this
+       column scrolls inside itself when there is more than fits. -->
+  <div class="side">
   <!-- ============ MISSION ============ -->
   <section class="panel mission" id="missionPanel">
     <h2>🎯 Mission</h2>
     <p id="missionText"></p>
     <div id="missionDone" class="hidden">🎉 Mission complete!</div>
+  </section>
+
+  <!-- ============ EVENTS ============ -->
+  <section class="panel" id="eventsPanel">
+    <h2>⚡ Make something happen!</h2>
+    <div id="eventButtons" class="btn-grid"></div>
   </section>
 
   <!-- ============ RULE BUILDER ============ -->
@@ -123,6 +127,7 @@
     <h2>🧢 Chip's prizes</h2>
     <div id="wardrobe" class="btn-grid"></div>
   </section>
+  </div>
 </main>
 
 <script src="./app.js"></script>

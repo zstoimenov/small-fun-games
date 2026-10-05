@@ -7,74 +7,97 @@
   --pink: #ff5d8f;
   --green: #66bb6a;
   --ink: #243b55;
+  --btn-ink: #243b55;      /* the pastel buttons keep dark writing in both themes */
+  --muted: #5d7089;
   --paper: #ffffff;
+  --soft: #f1f6fb;
+  --mission-bg: #fff8e1;
   --bg: #eef6fb;
   --radius: 18px;
 }
+/* Dark: the room goes dark around Chip. The sky in the scene is the weather,
+   not the theme, so it stays as it is. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #e6eef8; --muted: #a3b4ca; --paper: #18233a; --soft: #22304a;
+    --mission-bg: #2b2716; --bg: #0e1626;
+  }
+}
+:root[data-theme="dark"] {
+  --ink: #e6eef8; --muted: #a3b4ca; --paper: #18233a; --soft: #22304a;
+  --mission-bg: #2b2716; --bg: #0e1626;
+}
 
 html { font-size: 17px; }
+/* Exactly the window: the header, then the scene and the panel column. */
 body {
   font-family: "Comic Sans MS", "Chalkboard SE", "Segoe UI", system-ui, sans-serif;
   background: var(--bg);
   color: var(--ink);
-  min-height: 100vh;
+  height: var(--app-h);
+  display: flex; flex-direction: column; overflow: hidden;
   user-select: none;
+  touch-action: manipulation;
 }
 
 header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 10px 16px;
+  flex: 0 0 auto;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
   background: var(--blue);
   color: #fff;
-  position: sticky; top: 0; z-index: 20;
+  z-index: 20;
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
 }
-header h1 { font-size: 1.3rem; letter-spacing: .5px; text-shadow: 1px 2px 0 rgba(0,0,0,.15); }
-.header-left { display: flex; align-items: center; gap: 10px; }
+header h1 {
+  font-size: 1.3rem; letter-spacing: .5px; text-shadow: 1px 2px 0 rgba(0,0,0,.15);
+  min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .back-link {
   background: rgba(255,255,255,.25); color: #fff; text-decoration: none;
-  padding: 6px 12px; border-radius: 999px; font-weight: bold; font-size: .95rem;
+  display: inline-flex; align-items: center; min-height: 42px;
+  padding: 0 14px; border-radius: 999px; font-weight: bold; font-size: .95rem;
   white-space: nowrap;
 }
 .back-link:active { background: rgba(255,255,255,.4); }
-.header-right { display: flex; align-items: center; gap: 10px; }
+.header-right { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .stars {
   background: rgba(255,255,255,.25); padding: 4px 12px; border-radius: 999px;
   font-weight: bold; font-size: 1rem;
 }
 .icon-btn {
-  font-size: 1.2rem; background: rgba(255,255,255,.25); border: none;
-  border-radius: 999px; width: 40px; height: 40px; cursor: pointer;
+  flex: 0 0 auto; font-size: 1.2rem; background: rgba(255,255,255,.25); border: none;
+  border-radius: 999px; width: var(--tap); height: var(--tap); cursor: pointer;
 }
 
+/* Taller than wide: the scene on top, the panels under it. Wider than tall:
+   the scene down the left at full height, the panels on the right. Either way
+   the scene stays put and only the panel column scrolls, inside itself. */
 main {
-  max-width: 1100px; margin: 0 auto; padding: 14px;
-  display: grid; gap: 14px;
-  grid-template-columns: 1fr;
+  flex: 1; min-height: 0;
+  display: grid; gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(190px, 40%) minmax(0, 1fr);
+  padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
-@media (min-width: 860px) {
+.side {
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 12px;
+  border-radius: var(--radius);
+}
+@media (min-aspect-ratio: 5/4) {
   main {
-    grid-template-columns: 1.2fr 1fr;
-    grid-template-areas:
-      "scene events"
-      "scene mission"
-      "builder brain"
-      "builder wardrobe";
-    align-items: start;
+    grid-template-columns: minmax(0, 1.15fr) minmax(320px, 1fr);
+    grid-template-rows: minmax(0, 1fr);
   }
-  #scene { grid-area: scene; }
-  #eventsPanel { grid-area: events; }
-  #missionPanel { grid-area: mission; }
-  #builderPanel { grid-area: builder; }
-  #brainPanel { grid-area: brain; }
-  #wardrobePanel { grid-area: wardrobe; }
 }
 
 /* ============ SCENE ============ */
 #scene {
   position: relative;
   border-radius: var(--radius);
-  min-height: 380px;
+  min-height: 0;
   overflow: hidden;
   box-shadow: 0 4px 14px rgba(0,0,0,.12);
   transition: background 1s;
@@ -105,7 +128,7 @@ main {
 
 #banner {
   position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-  background: var(--paper); color: var(--ink);
+  background: #fff; color: #243b55;
   padding: 8px 18px; border-radius: 999px; font-weight: bold; font-size: 1.05rem;
   box-shadow: 0 3px 10px rgba(0,0,0,.2);
   z-index: 6; white-space: nowrap;
@@ -114,22 +137,26 @@ main {
 
 #speech {
   position: absolute; top: 64px; left: 50%; transform: translateX(-50%);
-  background: #fff; border: 3px solid var(--ink); color: var(--ink);
+  background: #fff; border: 3px solid #243b55; color: #243b55;
   padding: 8px 14px; border-radius: 16px; font-weight: bold;
   z-index: 6; max-width: 82%; text-align: center;
   animation: pop .3s ease-out;
 }
 #speech::after {
   content: ""; position: absolute; bottom: -12px; left: 50%; margin-left: -8px;
-  border: 8px solid transparent; border-top-color: var(--ink);
+  border: 8px solid transparent; border-top-color: #243b55;
 }
 
 /* ============ PET ============ */
 #petZone {
   position: absolute; bottom: 40px; left: 50%;
   transform: translateX(-50%);
+  transform-origin: 50% 100%;
   z-index: 4;
 }
+/* A shorter scene gets a smaller Chip, so his hat never leaves the sky. */
+@media (max-height: 820px) and (max-aspect-ratio: 5/4) { #petZone { transform: translateX(-50%) scale(.72); bottom: 34px; } }
+@media (max-height: 560px) { #petZone { transform: translateX(-50%) scale(.62); bottom: 30px; } }
 #pet {
   width: 170px; position: relative;
   animation: bob 2.4s ease-in-out infinite;
@@ -205,10 +232,10 @@ main {
   box-shadow: 0 3px 10px rgba(0,0,0,.08);
 }
 .panel h2 { font-size: 1.05rem; margin-bottom: 10px; }
-.panel .sub { font-weight: normal; font-size: .85rem; color: #7a8ca3; }
-.tip { font-size: .9rem; color: #5d7089; margin-bottom: 10px; }
+.panel .sub { font-weight: normal; font-size: .85rem; color: var(--muted); }
+.tip { font-size: .9rem; color: var(--muted); margin-bottom: 10px; }
 
-.mission { background: #fff8e1; border: 3px dashed var(--yellow); }
+.mission { background: var(--mission-bg); border: 3px dashed var(--yellow); }
 #missionText { font-size: 1rem; font-weight: bold; }
 #missionDone {
   margin-top: 8px; font-weight: bold; color: var(--green);
@@ -228,7 +255,7 @@ main {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   min-width: 76px;
   transition: transform .1s, border-color .15s;
-  color: var(--ink);
+  color: var(--btn-ink);
 }
 .event-btn { background: #fff3cd; border-color: #ffd54f; }
 .event-btn:active, .choice-btn:active { transform: scale(.93); }
@@ -256,13 +283,13 @@ main {
 
 .builder-preview {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  background: #f1f6fb; border-radius: 12px; padding: 10px 12px; flex-wrap: wrap;
+  background: var(--soft); border-radius: 12px; padding: 10px 12px; flex-wrap: wrap;
 }
 #rulePreview { font-weight: bold; font-size: 1rem; }
 #teachBtn {
   background: var(--green); color: #fff; border: none;
   font-family: inherit; font-weight: 900; font-size: 1rem;
-  padding: 10px 18px; border-radius: 999px; cursor: pointer;
+  padding: 10px 18px; min-height: var(--tap); border-radius: 999px; cursor: pointer;
   box-shadow: 0 3px 0 #3f8943;
 }
 #teachBtn:disabled { background: #b8c6d4; box-shadow: none; cursor: not-allowed; }
@@ -272,20 +299,36 @@ main {
 #ruleList { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 #ruleList li {
   display: flex; align-items: center; gap: 8px;
-  background: #f1f6fb; border-radius: 12px; padding: 8px 10px;
+  background: var(--soft); border-radius: 12px; padding: 8px 10px;
   font-weight: bold; font-size: .98rem;
   animation: pop .25s ease-out;
 }
-#ruleList .mini-kw { font-size: .7rem; color: #fff; padding: 2px 6px; border-radius: 6px; }
+#ruleList .mini-kw { font-size: 13px; color: #fff; padding: 2px 6px; border-radius: 6px; }
 #ruleList .mini-when { background: #4d7cfe; }
 #ruleList .mini-then { background: var(--pink); }
 .del-btn {
   margin-left: auto; background: none; border: none; font-size: 1.1rem;
+  min-width: 40px; min-height: 40px; color: inherit;
   cursor: pointer; opacity: .55;
 }
 .del-btn:hover { opacity: 1; }
 
 .hidden { display: none !important; }
+
+/* Phones held sideways: a slim header, every pixel of height to the scene. */
+@media (max-height: 520px) {
+  header { padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+  header h1 { font-size: 1.1rem; }
+  main { gap: 8px; padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .side { gap: 8px; }
+  .panel { padding: 10px 12px; }
+}
+/* Desktop: a full-screen app with desktop-sized type. */
+@media (min-aspect-ratio: 5/4) and (min-width: 1200px) and (min-height: 700px) {
+  html { font-size: 19px; }
+  main { gap: 18px; padding: 16px 22px 18px; }
+  .side { gap: 16px; }
+}
 
 @keyframes pop {
   0% { transform: scale(.6); opacity: 0; }

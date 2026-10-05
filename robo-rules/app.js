@@ -134,6 +134,9 @@ let selectedWhen = null, selectedThen = null;
 let busy = false;
 let timers = [];
 
+// later() is for the show an event puts on, which the next event cuts short.
+// Anything that must happen whatever is tapped next (tidying up effects, the
+// prize banner, moving on to the next mission) uses a plain setTimeout.
 function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
 function clearTimers() { timers.forEach(clearTimeout); timers = []; }
 
@@ -162,7 +165,7 @@ function burst(emoji, count = 6) {
     el.style.top = (rect.top - sceneRect.top + 40 + Math.random() * 60) + "px";
     el.style.animationDelay = (Math.random() * 0.5) + "s";
     effects.appendChild(el);
-    later(() => el.remove(), 2400);
+    setTimeout(() => el.remove(), 2400);
   }
 }
 
@@ -175,7 +178,7 @@ function confetti() {
     el.style.left = Math.random() * 100 + "vw";
     el.style.animationDelay = (Math.random() * 0.8) + "s";
     document.body.appendChild(el);
-    later(() => el.remove(), 4200);
+    setTimeout(() => el.remove(), 4200);
   }
 }
 
@@ -288,12 +291,12 @@ function onGameEvent(ev) {
       state.unlocked.push(m.reward);
       const acc = ACCESSORIES.find((a) => a.id === m.reward);
       state.worn[acc.slot] = acc.id; // auto-wear the new prize
-      later(() => showBanner(`🎁 Prize unlocked: ${acc.emoji} ${acc.label}!`, 3200), 3400);
+      setTimeout(() => showBanner(`🎁 Prize unlocked: ${acc.emoji} ${acc.label}!`, 3200), 3400);
     }
     sndMission();
     confetti();
     $("missionDone").classList.remove("hidden");
-    later(() => {
+    setTimeout(() => {
       $("missionDone").classList.add("hidden");
       renderMission();
     }, 2600);
