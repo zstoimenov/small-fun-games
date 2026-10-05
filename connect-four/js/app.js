@@ -278,7 +278,11 @@
     Audio.drop(Board.ROWS - 1 - row);
     refresh();
 
+    // New game during the fall bumps gen; the landing then belongs to a board
+    // that is gone, so it must not finish that game or start a turn.
+    const gen = state.gen;
     Ui.drop(col, row, who).then(() => {
+      if (gen !== state.gen) return;
       Audio.land();
       const line = Board.lastLine(b);
       if (line) return finish(who, line);
@@ -381,7 +385,10 @@
 
     refresh();
     save();
-    setTimeout(() => showResult(winner), line ? 1100 : 600);
+    // The card waits so the winning move can be seen first. Undo or New game in
+    // that pause bumps gen, and then the card belongs to a game that is gone.
+    const gen = state.gen;
+    setTimeout(() => { if (gen === state.gen) showResult(winner); }, line ? 1100 : 600);
   }
 
   function showResult(winner) {
