@@ -335,6 +335,7 @@ window.BB = window.BB || {};
   }
 
   function stopTest() {
+    clearTimeout(winTimer);
     test = null;
     BB.Audio.motor(false);
     say("");
