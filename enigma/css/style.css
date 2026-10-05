@@ -54,7 +54,7 @@ body{
   font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-tap-highlight-color:transparent;
   touch-action:manipulation;
-  /* Left and right only. Top and bottom belong to .page, inside its 100dvh:
+  /* Left and right only. Top and bottom belong to .page, inside its app height:
      as body padding they were added ON TOP of a full-height page, and edge-to-
      edge Chrome on Android reports a bottom inset for the gesture bar - so a
      OnePlus 12 scrolled by exactly that much. */
@@ -67,7 +67,7 @@ button{font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; tou
   padding:calc(8px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom));
   /* One screen: the page is exactly the viewport tall and the machine takes
      whatever the header and toolbar leave (see .machine). */
-  height:100dvh; display:flex; flex-direction:column; gap:10px;
+  height:var(--app-h); display:flex; flex-direction:column; gap:10px;
 }
 
 .top{display:flex; align-items:center; gap:8px}
