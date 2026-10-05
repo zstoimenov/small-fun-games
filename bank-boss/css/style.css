@@ -208,7 +208,7 @@ body.in-game{
   min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
   overflow:hidden;transition:width .45s ease;
 }
-.bar i{font-style:normal;font-size:9px;font-weight:700;opacity:.85;white-space:nowrap}
+.bar i{font-style:normal;font-size:13px;font-weight:700;opacity:.85;white-space:nowrap}
 .bar b{font-size:13px;font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums}
 .seg-owed{background:var(--owed);color:#fff}
 .seg-own{background:var(--own);color:#fff}
@@ -313,7 +313,9 @@ body.in-game{
 .wide-seg .opt em{display:block;font-style:normal;font-size:13px;font-weight:900;
   margin-top:2px;color:var(--ink);font-variant-numeric:tabular-nums}
 .wide-seg .opt.on em{color:var(--accent)}
-.wide-seg .opt small{display:block;font-size:9.5px;font-weight:700;opacity:.7;margin-top:1px}
+/* At 13px the caption can be wider than its third of the row on a phone, so it
+   wraps rather than running into the next option. */
+.wide-seg .opt small{display:block;font-size:13px;font-weight:700;opacity:.7;margin-top:1px;white-space:normal;line-height:1.15;overflow-wrap:anywhere}
 
 .ratecard{padding:11px 13px 12px;border-left:5px solid var(--accent2)}
 .rate-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
