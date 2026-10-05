@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v82";
+const CACHE = "game-box-v83";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -227,22 +227,55 @@ self.addEventListener("activate", (e) => {
 // refreshes the cache so the offline copy stays current. "no-cache" makes the
 // browser ask the server whether a file changed: GitHub Pages lets browsers
 // keep files for 10 minutes, which would run old code just after a fix.
+//
+// The network gets WAIT ms. A weak connection can take half a minute to fail,
+// and a game sitting in the cache should not hang that long: after WAIT the
+// cached copy is used, and the network carries on to refresh the cache.
+const WAIT = 3000;
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
-  e.respondWith(
-    fetch(req, { cache: "no-cache" })
-      .then((res) => {
-        if (res && res.ok && res.type === "basic") {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-        }
-        return res;
-      })
-      .catch(() =>
-        caches.match(req, { ignoreSearch: true }).then(
-          (hit) => hit || (req.mode === "navigate" ? caches.match("./index.html") : Response.error())
-        )
-      )
-  );
+  const net = fetch(req, { cache: "no-cache" }).then((res) => {
+    // Only whole, same-origin files: a 206 range answer can't be cached.
+    const keep = res && res.status === 200 && res.type === "basic";
+    const copy = keep ? res.clone() : null;
+    return { res, saved: keep ? caches.open(CACHE).then((c) => c.put(req, copy)) : null };
+  });
+  // Keeps the worker alive until the cache write is done, even when the page
+  // was answered from the cache long before the network came back.
+  e.waitUntil(net.then((n) => n.saved).catch(() => {}));
+  const cached = () => caches.match(req, { ignoreSearch: true });
+  e.respondWith(new Promise((resolve) => {
+    let done = false;
+    const give = (r) => { if (r && !done) { done = true; resolve(r); } };
+    net.then((n) => give(n.res), () => cached().then((hit) => give(hit || missing(req))));
+    setTimeout(() => cached().then(give), WAIT);
+  }));
 });
+
+// Offline and never cached. The launcher answers for itself; a game page gets a
+// short note rather than the launcher at the game's address, where every
+// relative link would be wrong.
+function missing(req) {
+  if (req.mode !== "navigate") return Response.error();
+  const home = self.registration.scope;
+  if (req.url === home || req.url.startsWith(home + "index.html") || req.url.startsWith(home + "#")) {
+    return caches.match("./index.html").then((hit) => hit || Response.error());
+  }
+  return new Response(OFFLINE.replace("{home}", home), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+const OFFLINE = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>No internet</title><style>
+:root{--bg:#f6f4ff;--ink:#1d1b3a;--muted:#5b5a78;--accent:#6b4cf0;--accent-ink:#fff;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#12132a;--ink:#ecebff;--muted:#a9a8c9;--accent:#8f7bff;--accent-ink:#12132a;color-scheme:dark}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--ink);
+font:18px/1.45 system-ui,sans-serif;padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left));box-sizing:border-box}
+main{max-width:420px;text-align:center}h1{font-size:28px;margin:8px 0}p{color:var(--muted)}
+a{display:block;min-height:56px;line-height:56px;border-radius:16px;background:var(--accent);color:var(--accent-ink);
+font-weight:800;text-decoration:none;margin-top:20px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+</style></head><body><main><div style="font-size:56px">📴</div><h1>No internet</h1>
+<p>This game isn't saved on this device yet. Open it once with the internet on, and it will work offline after that.</p>
+<a href="{home}">&lsaquo; Games</a></main></body></html>`;
