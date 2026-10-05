@@ -13,6 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Footy Tactics">
+<link rel="stylesheet" href="../shared/screen.css">
 <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -35,6 +36,10 @@
 <!-- ══ GAME ═════════════════════════════════════════════════════════════ -->
 <main id="game" hidden>
 
+  <!-- The two columns are layout-free (display:contents): the stylesheet
+       places the top bar, oval, blocks, play and buttons on one grid, so the
+       buttons come last when the screen is taller than wide and sit under the
+       code when it is wider. -->
   <!-- LEFT: the oval -->
   <section class="field-col">
     <div class="topbar">
@@ -62,6 +67,7 @@
     <div class="field-buttons">
       <button id="resetBtn" class="btn btn-reset">↺ RESET</button>
       <button id="hintBtn" class="btn btn-hint" title="Give me a hint">💡</button>
+      <button id="clearBtn" class="btn btn-clear" aria-label="Clear all">🗑️<span class="btn-word"> Clear all</span></button>
       <button id="runBtn" class="btn btn-run">RUN LOGIC ▶</button>
     </div>
   </section>
@@ -79,9 +85,6 @@
       <p id="workspaceEmpty" class="empty">Tap a block above to add it here 👆</p>
     </div>
 
-    <div class="code-buttons">
-      <button id="clearBtn" class="btn btn-clear">🗑️ Clear all</button>
-    </div>
   </section>
 </main>
 

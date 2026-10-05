@@ -246,10 +246,15 @@ FTL.Blocks = (function () {
   /* ── Dragging to reorder ──────────────────────────────────────────────── */
 
   let drag = null;
+  // With the pointer captured, a tap or drag on a grip ends in a click on the
+  // workspace itself, which reads as a tap on empty space and would move the
+  // drop target back to the top level. This marks that click so it is ignored.
+  let lastGrip = false;
 
   // Drags start from the grip only, so the workspace can still scroll normally
   // on a touchscreen — the grip is the one spot with touch-action:none.
   function onPointerDown(e) {
+    lastGrip = false;
     if (locked || e.button > 0) return;
     if (!e.target.closest(".grip")) return;
     const el = e.target.closest(".ws-block");
@@ -346,6 +351,7 @@ FTL.Blocks = (function () {
     if (!drag) return;
     const d = drag;
     drag = null;
+    lastGrip = true;
     if (!d.active) return;
 
     if (d.dropBody) {
@@ -395,6 +401,8 @@ FTL.Blocks = (function () {
 
     workspaceEl.addEventListener("click", (e) => {
       if (locked) return;
+      // The grip is only a handle: tapping or dragging it leaves the target be.
+      if (lastGrip) { lastGrip = false; return; }
       const del = e.target.closest(".del-btn");
       if (del) { remove(del.closest(".ws-block").dataset.id); return; }
 

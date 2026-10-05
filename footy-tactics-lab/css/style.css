@@ -2,18 +2,47 @@
    Every tappable thing is at least 56px, because 8-year-old fingers. */
 
 :root {
-  --turf:      #0a2818;
-  --turf-2:    #0e3b23;
-  --panel:     #12432a;
-  --panel-2:   #175534;
-  --line:      rgba(255, 255, 255, .14);
-  --ink:       #eef7f0;
-  --muted:     #9dc4ac;
-  --gold:      #ffe14d;
-  --run:       #3ddc68;
-  --danger:    #ff5f52;
+  /* Light: a sunny training day. The oval itself is drawn on the canvas and
+     stays the same green in both themes. */
+  --turf:      #dcefe2;
+  --turf-2:    #f2faf4;
+  --panel:     #ffffff;
+  --panel-2:   #eaf5ee;
+  --line:      rgba(10, 60, 30, .16);
+  --ink:       #11301d;
+  --muted:     #4b6b57;
+  --gold:      #9a6c00;          /* gold as text: dark enough to read */
+  --gold-hi:   #ffd21f;          /* gold as light: outlines and the drop line */
+  --gold-fill: rgba(255, 196, 0, .2);
+  --run:       #2fcf5e;
+  --danger:    #d9443a;
+  --fill:      rgba(10, 60, 30, .07);
+  --fill-2:    rgba(10, 60, 30, .14);
+  --hint:      #3e5c49;
+  --veil:      rgba(20, 45, 30, .55);
+  --back-bg:   rgba(255, 255, 255, .9);
+  --back-ink:  #11301d;
   --radius:    14px;
-  --tap:       56px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --turf: #0a2818; --turf-2: #0e3b23; --panel: #12432a; --panel-2: #175534;
+    --line: rgba(255, 255, 255, .14); --ink: #eef7f0; --muted: #9dc4ac;
+    --gold: #ffe14d; --gold-hi: #ffe14d; --gold-fill: rgba(255, 225, 77, .14);
+    --run: #3ddc68; --danger: #ff5f52;
+    --fill: rgba(255, 255, 255, .1); --fill-2: rgba(255, 255, 255, .2);
+    --hint: rgba(255, 255, 255, .72); --veil: rgba(4, 14, 9, .86);
+    --back-bg: rgba(6, 20, 12, .78); --back-ink: #cfe9d8;
+  }
+}
+:root[data-theme="dark"] {
+  --turf: #0a2818; --turf-2: #0e3b23; --panel: #12432a; --panel-2: #175534;
+  --line: rgba(255, 255, 255, .14); --ink: #eef7f0; --muted: #9dc4ac;
+  --gold: #ffe14d; --gold-hi: #ffe14d; --gold-fill: rgba(255, 225, 77, .14);
+  --run: #3ddc68; --danger: #ff5f52;
+  --fill: rgba(255, 255, 255, .1); --fill-2: rgba(255, 255, 255, .2);
+  --hint: rgba(255, 255, 255, .72); --veil: rgba(4, 14, 9, .86);
+  --back-bg: rgba(6, 20, 12, .78); --back-ink: #cfe9d8;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -28,7 +57,8 @@ body {
   color: var(--ink);
   background: radial-gradient(900px 600px at 50% -10%, var(--turf-2), var(--turf));
   -webkit-user-select: none; user-select: none;
-  overflow: auto;
+  touch-action: manipulation;
+  overflow: hidden;
 }
 
 /* ── Back to the catalogue ─────────────────────────────────────────────── */
@@ -36,18 +66,19 @@ body {
   position: fixed; z-index: 60;
   top: calc(8px + env(safe-area-inset-top));
   left: calc(8px + env(safe-area-inset-left));
-  background: rgba(6, 20, 12, .78); color: #cfe9d8;
-  text-decoration: none; font-size: 13px; font-weight: 700;
-  padding: 8px 13px; border-radius: 999px;
+  background: var(--back-bg); color: var(--back-ink);
+  text-decoration: none; font-size: 15px; font-weight: 700;
+  display: inline-flex; align-items: center; min-height: 42px;
+  padding: 0 14px; border-radius: 999px;
   border: 1px solid var(--line);
 }
-#back:active { background: rgba(6, 20, 12, .95); }
+#back:active { background: var(--fill-2); }
 
 /* ── Overlays (level select, result) ───────────────────────────────────── */
 .overlay {
   position: fixed; inset: 0; z-index: 40;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(4, 14, 9, .86);
+  background: var(--veil);
   padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
   overflow: auto;
 }
@@ -62,7 +93,7 @@ body {
 .sheet-sm { max-width: 420px; }
 .sheet h1 { font-size: clamp(22px, 5vw, 30px); margin-bottom: 6px; }
 .sheet h2 { font-size: clamp(20px, 4.5vw, 26px); }
-.sub { color: var(--muted); font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+.sub { color: var(--muted); font-size: 15px; line-height: 1.5; margin-bottom: 16px; }
 
 .level-grid {
   display: grid; gap: 10px;
@@ -77,9 +108,9 @@ body {
 }
 .level-card:active { transform: scale(.97); }
 .level-card.locked { opacity: .38; cursor: default; }
-.level-no { font-size: 12px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
-.level-t  { font-size: 14px; font-weight: 700; line-height: 1.2; }
-.level-c  { font-size: 11px; color: var(--muted); }
+.level-no { font-size: 13px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
+.level-t  { font-size: 15px; font-weight: 700; line-height: 1.2; }
+.level-c  { font-size: 13px; color: var(--muted); }
 .level-s  { font-size: 15px; color: var(--gold); letter-spacing: 2px; }
 
 .sheet-foot {
@@ -91,33 +122,36 @@ body {
 .big-stars { font-size: 34px; color: var(--gold); letter-spacing: 6px; margin: 6px 0 10px; }
 
 .pill {
-  background: rgba(255, 255, 255, .12); border-radius: 999px;
+  background: var(--fill); border-radius: 999px;
   padding: 6px 14px; font-size: 14px; font-weight: 700; white-space: nowrap;
 }
 .ghost-btn {
   background: none; border: 1px solid var(--line); color: var(--muted);
-  border-radius: 999px; padding: 9px 16px; font: inherit; font-size: 13px; cursor: pointer;
+  border-radius: 999px; padding: 0 18px; min-height: 44px; font: inherit; font-size: 15px; cursor: pointer;
 }
 
 /* ── Game shell ────────────────────────────────────────────────────────────
-   The base layout is the portrait one: everything stacks and the page
-   scrolls. The landscape media query at the bottom turns it into the fixed
-   60/40 split. */
+   Exactly the window, never scrolling. Taller than wide it is one column:
+   top bar, oval, blocks, your play (which takes what is left and scrolls
+   itself), then the buttons. The wide layout at the bottom puts the oval on
+   the left and everything else on the right. */
 #game {
-  min-height: 100%;
-  display: grid; gap: 10px;
+  height: var(--app-h);
+  display: grid; gap: 8px;
   grid-template-columns: minmax(0, 1fr);   /* never widen past the viewport */
-  align-content: start;                    /* panels keep their natural height */
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-areas: "top" "field" "palette" "work" "btns";
   padding: calc(6px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right))
            calc(8px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
 }
 #game[hidden] { display: none; }
 
-.field-col, .code-col {
-  display: grid; gap: 8px; min-height: 0; min-width: 0;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto auto;
-}
+.field-col, .code-col { display: contents; }
+.topbar        { grid-area: top; }
+.canvas-wrap   { grid-area: field; }
+.palette-panel { grid-area: palette; }
+.workspace-panel { grid-area: work; }
+.field-buttons { grid-area: btns; }
 
 /* ── Top bar ───────────────────────────────────────────────────────────── */
 .topbar {
@@ -125,18 +159,24 @@ body {
   padding-left: 92px;   /* clears the fixed ‹ Games pill */
 }
 .level-name { flex: 1; min-width: 0; line-height: 1.2; }
-.level-name strong { display: block; font-size: 15px; }
-.level-name span { font-size: 11px; color: var(--muted); }
+/* Two lines at most, so a long level name can't push the oval down. */
+.level-name strong {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow: hidden; font-size: 15px;
+}
+.level-name span { font-size: 13px; color: var(--muted); }
 #levelStars { color: var(--gold); letter-spacing: 2px; }
 .icon-btn {
-  flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px;
-  background: rgba(255, 255, 255, .1); border: 1px solid var(--line);
+  flex: 0 0 auto; width: var(--tap); height: var(--tap); border-radius: 12px;
+  background: var(--fill); border: 1px solid var(--line);
   color: inherit; font-size: 18px; cursor: pointer;
 }
-.icon-btn:active { background: rgba(255, 255, 255, .2); }
+.icon-btn:active { background: var(--fill-2); }
 
 /* ── The oval ──────────────────────────────────────────────────────────── */
-.canvas-wrap { position: relative; min-height: 0; aspect-ratio: 4 / 3; }
+/* Taller than wide the oval gets about half of what the top bar, blocks and
+   buttons leave; the canvas draws the field to whatever box it is given. */
+.canvas-wrap { position: relative; min-height: 0; height: clamp(150px, calc(var(--app-h) * .5 - 130px), 75vw); }
 #oval { display: block; width: 100%; height: 100%; touch-action: none; }
 
 /* the running block, mirrored onto the field */
@@ -152,7 +192,7 @@ body {
 .np-label { font-size: 16px; white-space: nowrap; }
 .np-meta[hidden] { display: none; }
 .np-meta  {
-  font-size: 12px; font-weight: 800; white-space: nowrap;
+  font-size: 13px; font-weight: 800; white-space: nowrap;
   padding: 3px 8px; border-radius: 999px;
   background: rgba(0, 0, 0, .22); color: rgba(0, 0, 0, .68);
 }
@@ -174,17 +214,18 @@ body {
 
 /* ── Buttons ───────────────────────────────────────────────────────────── */
 .field-buttons { display: flex; gap: 8px; }
-.code-buttons  { display: flex; gap: 8px; }
 .btn {
   min-height: var(--tap); border: none; border-radius: var(--radius);
   font: inherit; font-size: 15px; font-weight: 800; letter-spacing: .4px;
   cursor: pointer; padding: 0 16px;
 }
 .btn:active { transform: scale(.97); }
-.btn-run    { flex: 1; background: var(--run); color: #04240f; font-size: 17px; }
-.btn-reset  { flex: 0 0 auto; background: rgba(255, 255, 255, .12); color: var(--ink); }
-.btn-hint   { flex: 0 0 auto; background: rgba(255, 225, 77, .17); color: var(--gold); font-size: 20px; padding: 0 14px; }
-.btn-clear  { flex: 1; background: rgba(255, 255, 255, .1); color: var(--muted); font-size: 14px; }
+.btn-run    { flex: 1; min-width: 0; background: var(--run); color: #04240f; font-size: 17px; }
+.btn-reset  { flex: 0 0 auto; background: var(--fill-2); color: var(--ink); }
+.btn-hint   { flex: 0 0 auto; background: var(--gold-fill); color: var(--gold); font-size: 20px; padding: 0 14px; }
+.btn-clear  { flex: 0 0 auto; background: var(--fill); color: var(--muted); font-size: 15px; padding: 0 14px; }
+/* On a phone the bin says enough; the words come back when there is room. */
+@media (max-width: 520px), (max-height: 520px) { .btn-word { display: none; } }
 
 /* ── Code panels ───────────────────────────────────────────────────────── */
 .panel {
@@ -193,11 +234,11 @@ body {
   min-height: 0; display: flex; flex-direction: column;
 }
 .panel h2 {
-  font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase;
+  font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase;
   color: var(--muted); margin-bottom: 8px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
-.count { font-size: 12px; letter-spacing: 0; color: var(--muted); }
+.count { font-size: 13px; letter-spacing: 0; color: var(--muted); }
 .count.full { color: var(--gold); }
 .count.shake { animation: shake .35s; }
 @keyframes shake {
@@ -206,15 +247,15 @@ body {
   75% { transform: translateX(5px); }
 }
 
-.palette { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
-/* The workspace always scrolls itself rather than the page. In portrait that
-   keeps the oval pinned above it however long the play gets. */
+.palette { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+/* The workspace always scrolls itself rather than the page, so the oval stays
+   in view however long the play gets. */
 .workspace {
   position: relative; flex: 1; min-height: 0;
-  max-height: 44vh; overflow-y: auto; overflow-x: hidden;
+  overflow-y: auto; overflow-x: hidden;
   touch-action: pan-y; overscroll-behavior: contain;
 }
-.empty { color: var(--muted); font-size: 13px; text-align: center; padding: 12px 6px 4px; }
+.empty { color: var(--muted); font-size: 14px; text-align: center; padding: 12px 6px 4px; }
 .empty[hidden] { display: none; }
 
 /* ── Blocks ────────────────────────────────────────────────────────────── */
@@ -238,7 +279,7 @@ body {
 }
 .palette-block:active { transform: scale(.96); }
 .block-icon  { font-size: 19px; }
-.block-label { font-size: 13px; }
+.block-label { font-size: 14px; }
 
 .ws-block { margin-bottom: 6px; }
 .block-head {
@@ -257,14 +298,14 @@ body {
   background: rgba(0, 0, 0, .16); border-radius: 999px; padding: 2px;
 }
 .step-btn {
-  width: 34px; height: 34px; border: none; border-radius: 50%;
+  width: 40px; height: 40px; border: none; border-radius: 50%;
   background: rgba(255, 255, 255, .55); color: #08210f;
   font: inherit; font-size: 19px; font-weight: 900; line-height: 1; cursor: pointer;
 }
 .step-n { min-width: 28px; text-align: center; font-size: 14px; }
 
 .del-btn {
-  flex: 0 0 auto; width: 34px; height: 34px; border: none; border-radius: 50%;
+  flex: 0 0 auto; width: 40px; height: 40px; border: none; border-radius: 50%;
   background: rgba(0, 0, 0, .2); color: #08210f;
   font: inherit; font-size: 14px; font-weight: 900; cursor: pointer;
 }
@@ -277,19 +318,19 @@ body {
   border: 2px dashed transparent;
 }
 .root-body { margin: 0; padding: 4px; background: none; min-height: 60px; }
-.block-body.targeted { border-color: var(--gold); }
-.body-hint { display: block; padding: 8px 6px; font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, .72); }
+.block-body.targeted { border-color: var(--gold-hi); }
+.body-hint { display: block; padding: 8px 6px; font-size: 13px; font-weight: 600; color: var(--hint); }
 .target-chip {
   display: block; text-align: center;
   padding: 5px 8px; margin: 2px 0 0;
-  font-size: 11px; font-weight: 800; letter-spacing: .4px;
-  color: var(--gold); background: rgba(255, 225, 77, .12);
+  font-size: 13px; font-weight: 800; letter-spacing: .4px;
+  color: var(--gold); background: var(--gold-fill);
   border-radius: 8px;
 }
 
 /* ── Run states ────────────────────────────────────────────────────────── */
 .ws-block.running > .block-head {
-  outline: 3px solid var(--gold); outline-offset: -3px;
+  outline: 3px solid var(--gold-hi); outline-offset: -3px;
   border-radius: 12px; animation: pulse .5s ease-in-out infinite alternate;
 }
 @keyframes pulse { from { filter: brightness(1); } to { filter: brightness(1.35); } }
@@ -313,32 +354,81 @@ body {
 /* an insertion line, positioned absolutely so it never reflows the list */
 .placeholder {
   position: absolute; height: 5px; border-radius: 3px;
-  background: var(--gold); box-shadow: 0 0 10px rgba(255, 225, 77, .8);
+  background: var(--gold-hi); box-shadow: 0 0 10px rgba(255, 225, 77, .8);
   pointer-events: none; z-index: 6;
 }
 
-/* ── Landscape: the 60/40 split from the spec, locked to the viewport ──── */
-@media (min-width: 720px) and (orientation: landscape) {
-  body { overflow: hidden; }
+/* ── Wider than tall: the 60/40 split ───────────────────────────────────
+   The oval down the left at full height under the top bar; the blocks, your
+   play and the buttons on the right, buttons last. */
+@media (min-aspect-ratio: 5/4) {
   #game {
-    height: 100%;
     grid-template-columns: minmax(0, 60fr) minmax(0, 40fr);
-    grid-template-rows: minmax(0, 1fr);
-    align-content: stretch;
-    overflow: hidden;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "top palette" "field palette" "field work" "field btns";
+    column-gap: 12px;
   }
-  .field-col, .code-col { grid-template-rows: auto minmax(0, 1fr) auto; }
-  .canvas-wrap { aspect-ratio: auto; }
-  .workspace { max-height: none; }
+  .topbar { align-self: start; }
+  .canvas-wrap { height: auto; }
   .palette { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* Very short landscape windows (a phone on its side): shrink the chrome. */
-@media (orientation: landscape) and (max-height: 460px) {
+@media (min-aspect-ratio: 5/4) {
+  .level-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (max-height: 800px) and (max-aspect-ratio: 5/4) {
+  .overlay { padding-top: calc(8px + env(safe-area-inset-top)); padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  .sheet { padding: 14px 14px 12px; }
+  .level-grid { gap: 8px; }
+  .level-card { min-height: 76px; padding: 6px; }
+  .sheet-foot { margin-top: 10px; }
+}
+/* Very short windows (a phone on its side): shrink the chrome. */
+@media (max-height: 520px) {
+  #game { gap: 6px; }
   .topbar { padding-left: 84px; }
-  .level-name strong { font-size: 13px; }
-  .btn { min-height: 48px; font-size: 14px; }
-  .palette-block, .block-head { min-height: 48px; }
+  .level-name strong { font-size: 14px; }
+  .btn { font-size: 14px; padding: 0 12px; }
+  .panel { padding: 6px 8px 8px; }
+  .panel h2 { margin-bottom: 4px; }
+  .palette { gap: 6px; }
+  .level-name strong { -webkit-line-clamp: 1; }
+  .sheet { padding: 12px 16px; }
+  .sheet h1 { font-size: 22px; }
+  .sub { margin-bottom: 8px; }
+  .level-grid { gap: 6px; }
+  .level-card { min-height: 70px; padding: 6px 4px; }
+  .sheet-foot { margin-top: 8px; }
+}
+
+/* Desktop: a full-screen app with desktop-sized type. */
+@media (min-aspect-ratio: 5/4) and (min-width: 1200px) and (min-height: 700px) {
+  #game { gap: 12px; column-gap: 18px; padding: 14px 20px 16px; }
+  .topbar { padding-left: 110px; }
+  .level-name strong { font-size: 20px; }
+  .level-name span { font-size: 15px; }
+  .panel { padding: 12px 14px 14px; }
+  .panel h2, .count { font-size: 15px; }
+  .block-label, .ws-block .block-label { font-size: 17px; }
+  .block-icon { font-size: 22px; }
+  .btn { font-size: 18px; min-height: 60px; }
+  .btn-run { font-size: 21px; }
+  .body-hint, .target-chip, .empty { font-size: 15px; }
+  .np-label { font-size: 19px; }
+  .toast { font-size: 17px; }
+  #back { font-size: 17px; min-height: 48px; }
+}
+@media (min-width: 1200px) and (min-height: 700px) {
+  .sheet { max-width: 1040px; }
+  .sheet h1 { font-size: 36px; }
+  .sub { font-size: 18px; }
+  .level-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+  .level-card { min-height: 130px; }
+  .level-no { font-size: 16px; }
+  .level-t { font-size: 19px; }
+  .level-c { font-size: 15px; }
+  .level-s { font-size: 19px; }
+  .pill, .ghost-btn { font-size: 17px; }
 }
 
 /* ── Putting the end card aside ─────────────────────────────────────────── */
@@ -359,5 +449,4 @@ body {
 .peek-pill:active { transform: translate(-50%, 1px); }
 /* The run is finished while the card is put aside, so the block buttons have
    nothing to do — standing them down leaves room for the pill. */
-body.peeking .code-buttons,
 body.peeking .field-buttons { visibility: hidden; }
