@@ -13,6 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Cube Timer">
+<link rel="stylesheet" href="../shared/screen.css">
 <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -26,6 +27,8 @@
     <h1>⏱️ Cube Timer</h1>
     <p class="sub">Hold the big button until it goes green, let go, and solve. Tap it to stop.</p>
 
+    <div class="setup-rows">
+    <div class="setup-col">
     <div class="row">
       <span class="row-label">Cube</span>
       <div class="seg" id="puzzleChooser">
@@ -43,6 +46,16 @@
       </div>
     </div>
 
+    <div class="row">
+      <span class="row-label">Look first</span>
+      <button id="inspectToggle" class="switch" type="button" role="switch" aria-checked="false">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">15 seconds to look at the cube first, like at a competition.</p>
+    </div>
+
+    <div class="setup-col">
     <div class="row stack">
       <span class="row-label" id="whoLabel">Who's cubing?</span>
       <div class="chips" id="whoChips"></div>
@@ -62,13 +75,6 @@
       </div>
     </div>
 
-    <div class="row">
-      <span class="row-label">Look first</span>
-      <button id="inspectToggle" class="switch" type="button" role="switch" aria-checked="false">
-        <span class="knob"></span>
-      </button>
-    </div>
-    <p class="row-note">15 seconds to look at the cube before the clock starts, the way it works at a competition.</p>
 
     <div class="row">
       <span class="row-label">Sounds</span>
@@ -76,10 +82,16 @@
         <span class="knob"></span>
       </button>
     </div>
+    </div>
+    </div>
 
-    <button id="startBtn" class="btn btn-go wide-btn" type="button">Start timing</button>
-    <button id="setupRankBtn" class="ghost-btn wide" type="button">🏆 Best times</button>
-    <button id="howBtn" class="ghost-btn wide" type="button">❓ How it works</button>
+    <div class="setup-go">
+      <button id="startBtn" class="btn btn-go wide-btn" type="button">Start timing</button>
+      <div class="setup-more">
+        <button id="setupRankBtn" class="ghost-btn" type="button">🏆 Best times</button>
+        <button id="howBtn" class="ghost-btn" type="button">❓ How it works</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -101,6 +113,9 @@
 <!-- ══ THE TIMER ════════════════════════════════════════════════════════ -->
 <div id="app" class="app" hidden>
 
+  <!-- The two .side boxes are invisible when the screen is taller than wide
+       (display:contents); wider than tall they become the panel beside the pad. -->
+  <div class="side side-top">
   <header class="topbar">
     <button id="menuBtn" class="icon-btn" type="button" title="Menu">☰</button>
     <div class="whoami">
@@ -129,12 +144,14 @@
     </div>
     <div class="net-wrap"><svg id="net" class="net" viewBox="0 0 120 90" aria-label="What the cube should look like"></svg></div>
   </section>
+  </div>
 
   <div id="pad" class="pad" role="button" tabindex="0" aria-label="Hold to start the timer">
     <div id="time" class="time">0.00</div>
     <div id="padHint" class="pad-hint">Hold to start</div>
   </div>
 
+  <div class="side side-bottom">
   <!-- Always in the layout, `gone` only takes it out of sight: if this row
        came and went the pad would change size after every single solve. -->
   <section id="afterRow" class="after-row gone">
@@ -151,6 +168,7 @@
   </section>
 
   <div class="spark-wrap"><svg id="spark" class="spark" viewBox="0 0 100 24" preserveAspectRatio="none"></svg></div>
+  </div>
 
   <!-- Shouted at, briefly, for a personal best. -->
   <div id="toast" class="toast" hidden></div>
