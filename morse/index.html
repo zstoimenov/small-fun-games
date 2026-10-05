@@ -13,6 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Morse Agent">
+<link rel="stylesheet" href="../shared/screen.css">
 <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
@@ -29,6 +30,8 @@
 
   <!-- HQ: pick an agent, set the lever, start a mission. -->
   <section id="hq" class="screen">
+    <!-- Two columns when wider than tall; one column (display:contents) otherwise. -->
+    <div class="hq-col">
     <button id="agentChip" class="agent-chip" type="button">
       <span class="face" aria-hidden="true">&#128373;</span>
       <span class="who"><b id="agentName">Agent</b><small id="agentInfo"></small></span>
@@ -54,7 +57,9 @@
       </div>
       <p class="lever-says" id="leverSays"></p>
     </div>
+    </div>
 
+    <div class="hq-col">
     <div class="card">
       <div class="card-head">
         <h2>Your letters</h2>
@@ -66,6 +71,7 @@
     <button id="bootBtn" class="wide-btn" type="button">&#127891; Boot Camp <small>Learn dots and dashes from the start</small></button>
     <button id="duoBtn" class="wide-btn" type="button">&#128101; Field Agents <small>2 players: send a secret word to a friend</small></button>
     <button id="storyBtn" class="wide-btn" type="button">&#128220; The story of Morse code <small>Who made it, where it was used, and why it still matters</small></button>
+    </div>
   </section>
 
   <!-- Where missions and two-player turns are played. Filled in by ui.js. -->

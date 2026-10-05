@@ -22,6 +22,8 @@ MO.UI = (function () {
 
   function screen(id, title) {
     ["hq", "play", "duo", "story"].forEach((s) => { $(s).hidden = s !== id; });
+    // The stylesheet sizes play, story and duo to the window; HQ is a menu.
+    document.body.dataset.screen = id;
     $("back").hidden = id !== "hq";
     $("toHq").hidden = id === "hq";
     $("title").textContent = title || "Morse Agent";

@@ -12,7 +12,6 @@
   --accent:#2f6fd6; --accent-ink:#fff; --brass:#c89b3c; --brass2:#8a6520;
   --right:#1f9d55; --right-bg:#dff5e8; --wrong:#d03b3b; --wrong-bg:#fde3e3;
   --chip:#eef2f8; --tile:#f7f9fc;
-  --tap:56px;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -53,11 +52,20 @@ button,input{font:inherit; color:inherit}
 button{-webkit-tap-highlight-color:transparent; touch-action:manipulation; cursor:pointer}
 
 .page{
-  max-width:760px; margin:0 auto; min-height:100dvh;
-  padding:calc(8px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+  max-width:760px; margin:0 auto; min-height:var(--app-h);
+  padding:calc(8px + env(safe-area-inset-top)) var(--gutter) calc(16px + env(safe-area-inset-bottom));
   display:flex; flex-direction:column; gap:12px;
 }
 .screen{display:flex; flex-direction:column; gap:12px}
+.hq-col{display:contents}
+/* A mission, the story and the two-player setup are app screens: exactly the
+   window, nothing to scroll. HQ is a menu and may scroll on a small phone. */
+body:is([data-screen="play"],[data-screen="story"],[data-screen="duo"]) .page{height:var(--app-h); min-height:0; overflow:hidden}
+#play,#story{flex:1; min-height:0}
+/* The stage takes what is left. On a phone held sideways late missions have
+   more letter tiles than fit, and only the tiles then scroll, never the page. */
+#stage{flex:1; min-height:0; overflow:auto; justify-content:safe center}
+#story .pages{flex:1; min-height:0; overflow:auto; display:flex; flex-direction:column}
 
 /* ── Header ──────────────────────────────────────────────────────────────── */
 .top{display:flex; align-items:center; gap:6px}
@@ -308,7 +316,7 @@ button{-webkit-tap-highlight-color:transparent; touch-action:manipulation; curso
    swipe handler instead of the browser's back gesture. */
 .pages{touch-action:pan-y}
 .page-card{
-  display:flex; flex-direction:column; gap:4px; min-height:52dvh; padding:20px 20px 16px;
+  display:flex; flex-direction:column; gap:4px; flex:1 0 auto; padding:20px 20px 16px;
   background:var(--card); border:1px solid var(--line); border-radius:22px; box-shadow:0 2px 10px var(--shadow);
   font-size:19px; line-height:1.5;
 }
@@ -380,6 +388,74 @@ button{-webkit-tap-highlight-color:transparent; touch-action:manipulation; curso
   .lamp{width:46px; height:46px}
 }
 
+/* Wider than tall: the stage (tiles, word and key) on the left at full height,
+   the mission steps, HQ's message and the radio in a panel on the right. HQ
+   becomes two columns. */
+@media (min-aspect-ratio:5/4){
+  .page{max-width:1500px; padding-left:max(var(--gutter),env(safe-area-inset-left)); padding-right:max(var(--gutter),env(safe-area-inset-right))}
+  #hq{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start}
+  .hq-col{display:flex; flex-direction:column; gap:12px}
+  #play{display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,1fr); grid-template-rows:auto auto 1fr; column-gap:22px; row-gap:12px}
+  #play #stage{grid-column:1; grid-row:1 / 4}
+  #play .steps{grid-column:2; grid-row:1; justify-content:flex-start}
+  #play .hq-msg{grid-column:2; grid-row:2; text-align:left}
+  #play .radio{grid-column:2; grid-row:3; align-self:start}
+  .page-card{max-width:900px; width:100%; margin:0 auto}
+  .page-nav{max-width:900px; width:100%; margin:0 auto}
+  #duo .card{max-width:640px; width:100%; margin:0 auto}
+}
+/* Phones held sideways: about 360px of height for everything. */
+@media (max-height:520px){
+  .page{gap:8px; padding-top:calc(4px + env(safe-area-inset-top)); padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .screen,.stage{gap:8px}
+  .icon-btn{width:var(--tap); height:var(--tap)}
+  #back,.link-btn{min-height:var(--tap)}
+  .top h1{font-size:20px}
+  .radio{min-height:60px; padding:8px 12px}
+  .lamp{width:42px; height:42px}
+  .signal b,.target b{font-size:24px}
+  .word .slot{width:44px; height:52px; font-size:24px}
+  .target{min-height:36px; font-size:17px}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(52px,1fr)); gap:6px}
+  .tile{min-height:52px}
+  .tile b{font-size:22px}
+  .tkey{height:124px}
+  .tkey .base{height:40px}
+  .tkey .arm{bottom:52px; height:13px}
+  .tkey .knob{bottom:54px; width:88px; height:50px}
+  .intro-card{padding:10px 16px}
+  .intro-card b{font-size:44px}
+  .page-card{font-size:17px; padding:14px 16px}
+  .page-card h2{font-size:22px}
+  .page-emoji{font-size:38px}
+  .handover{padding:8px 0}
+  .debrief .score b{font-size:42px}
+}
+/* Desktop: a full-screen app with desktop-sized type. */
+@media (min-aspect-ratio:5/4) and (min-width:1200px) and (min-height:700px){
+  body{font-size:19px}
+  .top h1{font-size:32px}
+  .card h2{font-size:22px}
+  .hq-msg{font-size:21px}
+  .big-btn .new{font-size:38px}
+  .wide-btn{font-size:21px; min-height:78px}
+  .wide-btn small,.lever-says,.small{font-size:16px}
+  .tiles{grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:10px}
+  .tile{min-height:84px}
+  .tile b{font-size:34px}
+  .word .slot{width:72px; height:84px; font-size:38px}
+  .signal{font-size:24px}
+  .signal b,.target b{font-size:38px}
+  .target{font-size:23px}
+  .lamp{width:72px; height:72px}
+  .radio{min-height:110px}
+  .tkey{height:220px; width:min(100%,520px)}
+  .intro-card b{font-size:80px}
+  .word-card{min-height:100px; font-size:34px}
+  .page-card{font-size:21px}
+  .page-card h2{font-size:30px}
+  .step{font-size:15px; padding:6px 14px}
+}
 @media (prefers-reduced-motion: reduce){
   .lever .handle,.lever .stick{transition:none}
 }
