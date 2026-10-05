@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <title>Times Table Blaster!</title>
 <link rel="manifest" href="manifest.json"/>
+<link rel="stylesheet" href="../shared/screen.css"/>
 <meta name="theme-color" content="#080820"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
@@ -12,25 +13,121 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
 <style>
+  /* Two arcades. Dark is the original neon night; light is the same arcade by
+     day: the neon colours darken so they can be read on a pale background (the
+     tone() helper does the same for colours made in the script), and the glows
+     go, because a glow on white is only a blur. --fg is the colour every
+     "white at some alpha" in the markup is drawn in. */
+  :root{
+    --fg:24,22,64; --bg:linear-gradient(135deg,#f6f4ff 0%,#fdeef7 50%,#eaf3ff 100%); --strip:#f8f4fd;
+    /* Text drawn in --fg at a low alpha is lifted (alpha*tk + tb) so dim labels
+       still read; cards drawn in --shade are lavender by day, black by night. */
+    --tk:.5; --tb:.45; --shade:110,90,190;
+    --yellow:#8c7e00; --cyan:#007e8c; --green:#3c8c1c; --pink:#d42c86; --red:#d23434; --purple:#8e3cd0; --orange:#c45a10;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --fg:255,255,255; --bg:linear-gradient(135deg,#080820 0%,#160430 50%,#0b1a3e 100%); --strip:#0d0d28;
+    --tk:.7; --tb:.25; --shade:0,0,0;
+      --tk:.7; --tb:.25; --shade:0,0,0;
+      --yellow:#ffe600; --cyan:#00e5ff; --green:#7cff50; --pink:#ff4da6; --red:#ff5555; --purple:#bf5fff; --orange:#ff6b35;
+    }
+  }
+  :root[data-theme="dark"]{
+    --fg:255,255,255; --bg:linear-gradient(135deg,#080820 0%,#160430 50%,#0b1a3e 100%); --strip:#0d0d28;
+    --tk:.7; --tb:.25; --shade:0,0,0;
+    --yellow:#ffe600; --cyan:#00e5ff; --green:#7cff50; --pink:#ff4da6; --red:#ff5555; --purple:#bf5fff; --orange:#ff6b35;
+  }
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]) *{text-shadow:none !important} :root:not([data-theme="dark"]) #scanlines{opacity:.35} }
+  :root[data-theme="light"] *{text-shadow:none !important}
+  :root[data-theme="light"] #scanlines{opacity:.35}
+
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html,body{height:100%;overflow:hidden;}
   body{
-    background:linear-gradient(135deg,#080820 0%,#160430 50%,#0b1a3e 100%);
+    background:var(--bg);
     font-family:'Courier New',monospace;
     display:flex;align-items:center;justify-content:center;
-    position:relative;min-height:100vh;
+    position:relative;height:var(--app-h);
+    touch-action:manipulation;
   }
+  #back-to-games{
+    position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));z-index:10000;
+    display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border-radius:50px;
+    background:rgba(var(--fg),0.06);color:var(--cyan);text-decoration:none;
+    font-family:'Courier New',monospace;font-weight:bold;font-size:0.9rem;letter-spacing:2px;
+    border:1px solid color-mix(in srgb,var(--cyan) 40%,transparent);
+  }
+  /* A quiz has its own way out (✕ in its header), and the link would sit on it. */
+  body[data-screen$="quiz"] #back-to-games{display:none}
+  .quit-btn{min-width:44px;min-height:44px;border-radius:50px;border:2px solid rgba(var(--fg),0.16);background:rgba(var(--fg),0.05);color:rgba(var(--fg),calc(0.6*var(--tk) + var(--tb)));font-family:inherit;font-size:1.05rem;font-weight:bold;cursor:pointer;flex-shrink:0}
   #scanlines{position:fixed;inset:0;pointer-events:none;z-index:1;
-    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);}
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(var(--shade),0.06) 2px,rgba(var(--shade),0.06) 4px);}
   #edge-pulse{position:fixed;inset:0;pointer-events:none;z-index:50;opacity:0;transition:opacity 0.05s;}
   #edge-pulse.correct{box-shadow:inset 0 0 60px 20px rgba(124,255,80,0.22);animation:edgePulse 0.35s ease-out forwards;}
   #edge-pulse.wrong{box-shadow:inset 0 0 60px 20px rgba(255,68,68,0.25);animation:edgePulse 0.35s ease-out forwards;}
   .particle{position:fixed;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:9999;animation:pop 0.9s ease-out forwards;}
 
   /* Scrollable screens */
-  #app{position:relative;z-index:2;width:100%;max-width:560px;padding:0 16px;}
-  .screen{display:none;width:100%;max-height:100vh;overflow-y:auto;padding:20px 0;animation:bounceIn 0.4s ease;}
+  #app{position:relative;z-index:2;width:100%;max-width:560px;height:100%;
+    padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left));}
+  /* A screen is the window. The quizzes always fit; the result screens carry a
+     review and a leaderboard, and only they may scroll. */
+  .screen{display:none;width:100%;height:100%;overflow-y:auto;
+    padding:calc(20px + env(safe-area-inset-top)) 0 calc(16px + env(safe-area-inset-bottom));animation:bounceIn 0.4s ease;}
   .screen.active{display:block;}
+  #screen-ninjabelt-quiz.active,#screen-classic-quiz.active{display:flex;flex-direction:column;justify-content:center;}
+  #screen-home.active{display:flex;flex-direction:column;justify-content:safe center;}
+  .home-title{padding-top:28px}
+
+  /* Wider than tall: home in two columns; a quiz with the sum on the left and
+     the answers on the right. */
+  @media (min-aspect-ratio:5/4){
+    #app{max-width:1180px}
+    #screen-home.active{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:32px;align-items:center}
+    .home-title{padding-top:0}
+    #screen-ninjabelt-quiz.active,#screen-classic-quiz.active{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:32px;align-items:center;align-content:center}
+    .quiz-board .grid-2,.quiz-board .grid-3{gap:14px}
+  }
+  /* Phones held sideways: about 360px of height. */
+  @media (max-height:520px){
+    .screen{padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+    .home-title > div:first-child,.home-title > span{display:none !important}
+    .home-title{margin-bottom:8px !important}
+    .home-title{padding-top:46px}
+    #nb-q-text,#cl-q-text{font-size:3rem !important}
+    #nb-dots{margin-bottom:8px !important}
+    #nb-question,#cl-question{margin-bottom:8px !important}
+    .choice-btn{padding:10px 0}
+  }
+  /* Short portrait phones: the title gives up its spinning star. */
+  @media (max-height:740px) and (max-aspect-ratio:5/4){
+    .home-title > div:first-child,.home-title > span{display:none !important}
+    .home-title{margin-bottom:10px !important}
+  }
+  /* On a phone the home screen is taller than the window; it scrolls like a
+     menu, and the start button stays pinned at the bottom, never out of reach. */
+  @media (max-width:520px) and (max-aspect-ratio:5/4), (max-height:520px){
+    .cta-dock{position:sticky;bottom:0;z-index:3;margin-bottom:0 !important;padding:12px 0 4px;
+      background:linear-gradient(transparent,var(--strip) 40%)}
+  }
+  /* Phones: the home screen keeps every choice but loses the extras. The mode
+     tabs drop their small print, the rank card its column of belt dots (the
+     belt strip below shows the same thing) and the rule its wide spacing. */
+  @media (max-width:520px), (max-height:520px){
+    .mode-tab > div:nth-child(3){display:none}
+    .mode-tab{padding:10px 8px}
+    #earned-belt-banner > div:last-child{display:none !important}
+    #earned-belt-banner{padding:10px 14px !important;margin-bottom:12px !important}
+    #rule-reminder div{letter-spacing:0 !important;line-height:1.45 !important}
+    #rule-reminder{margin-bottom:12px !important}
+    #home-cta{padding:13px 36px !important}
+  }
+  /* Desktop: desktop-sized type everywhere (the sizes are all in rem). */
+  @media (min-aspect-ratio:5/4) and (min-width:1200px) and (min-height:700px){
+    html{font-size:19px}
+    .choice-btn{padding:22px 0}
+  }
   /* hide scrollbar */
   .screen::-webkit-scrollbar{display:none;}
   .screen{scrollbar-width:none;-ms-overflow-style:none;}
@@ -39,7 +136,7 @@
   @keyframes pop{0%{transform:scale(1.2) translate(0,0);opacity:1}100%{transform:scale(0) translate(var(--dx),var(--dy));opacity:0}}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px)}40%{transform:translateX(14px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
   @keyframes bounceIn{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
-  @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px #ff4da6,0 0 40px #ff4da6}50%{box-shadow:0 0 50px #ff4da6,0 0 90px #ff4da6}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 20px var(--pink),0 0 40px var(--pink)}50%{box-shadow:0 0 50px var(--pink),0 0 90px var(--pink)}}
   @keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
   @keyframes orbGlow{0%,100%{box-shadow:0 0 20px currentColor}50%{box-shadow:0 0 40px currentColor}}
   @keyframes starSpin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.3)}100%{transform:rotate(360deg) scale(1)}}
@@ -47,8 +144,8 @@
   @keyframes correctReveal{0%{transform:scale(0.8);opacity:0}40%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
   @keyframes timerPulse{0%,100%{opacity:1}50%{opacity:0.25}}
   @keyframes promotion{0%{transform:scale(0) rotate(-15deg);opacity:0}60%{transform:scale(1.15) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0deg)}}
-  @keyframes flashGreen{0%{background:rgba(124,255,80,0.4);border-color:#7cff50;color:#7cff50}100%{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.18);color:white}}
-  @keyframes flashRed{0%{background:rgba(255,68,68,0.4);border-color:#ff4444;color:#ff5555}100%{background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.18);color:white}}
+  @keyframes flashGreen{0%{background:rgba(124,255,80,0.4);border-color:var(--green);color:var(--green)}100%{background:rgba(var(--fg),0.05);border-color:rgba(var(--fg),0.18);color:rgb(var(--fg))}}
+  @keyframes flashRed{0%{background:rgba(255,68,68,0.4);border-color:var(--red);color:var(--red)}100%{background:rgba(var(--fg),0.05);border-color:rgba(var(--fg),0.18);color:rgb(var(--fg))}}
   @keyframes edgePulse{0%{opacity:1}100%{opacity:0}}
   @keyframes shake-anim{0%,100%{transform:translateX(0)}20%{transform:translateX(-14px)}40%{transform:translateX(14px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
 
@@ -56,30 +153,30 @@
   .cta-btn{border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;border-radius:50px;cursor:pointer;letter-spacing:3px;transition:transform 0.15s;}
   .cta-btn:hover{transform:scale(1.06);}
   .cta-btn:active{transform:scale(0.97);}
-  .choice-btn{font-family:'Courier New',monospace;font-weight:bold;padding:14px 0;border-radius:12px;cursor:pointer;border:2px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.05);color:white;transition:background 0.1s,border-color 0.1s,transform 0.1s;font-size:1.75rem;width:100%;}
-  .choice-btn:hover:not(:disabled){background:rgba(255,255,255,0.12);border-color:#ffe600;color:#ffe600;}
+  .choice-btn{font-family:'Courier New',monospace;font-weight:bold;padding:14px 0;border-radius:12px;cursor:pointer;border:2px solid rgba(var(--fg),0.18);background:rgba(var(--fg),0.05);color:rgb(var(--fg));transition:background 0.1s,border-color 0.1s,transform 0.1s;font-size:1.75rem;width:100%;}
+  .choice-btn:hover:not(:disabled){background:rgba(var(--fg),0.12);border-color:var(--yellow);color:var(--yellow);}
   .choice-btn:active:not(:disabled){transform:scale(0.96);}
   .choice-btn:disabled{cursor:default;}
   .choice-btn.flash-correct{animation:flashGreen 0.32s ease forwards;}
   .choice-btn.flash-wrong{animation:flashRed 0.32s ease forwards;}
-  .pill-btn{font-family:'Courier New',monospace;font-size:0.74rem;letter-spacing:2px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;border:2px solid rgba(255,255,255,0.14);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.42);}
-  .mode-tab{flex:1;padding:14px 10px;border-radius:12px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);cursor:pointer;transition:all 0.18s;text-align:center;}
-  .mode-tab:hover{border-color:rgba(255,255,255,0.3);transform:scale(1.02);}
-  .diff-card{flex:1;padding:9px 5px;border-radius:10px;border:2px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);cursor:pointer;transition:all 0.15s;text-align:center;}
-  .name-input{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.2);color:white;font-family:'Courier New',monospace;font-size:1rem;letter-spacing:3px;padding:9px 14px;border-radius:10px;outline:none;width:140px;text-align:center;text-transform:uppercase;}
-  .name-input:focus{border-color:#00e5ff;box-shadow:0 0 10px rgba(0,229,255,0.3);}
-  .name-input::placeholder{color:rgba(255,255,255,0.2);}
-  .slabel{color:rgba(255,255,255,0.35);font-size:0.64rem;letter-spacing:3px;margin-bottom:7px;}
+  .pill-btn{font-family:'Courier New',monospace;font-size:0.8125rem;letter-spacing:2px;padding:6px 12px;min-height:42px;min-width:44px;border-radius:8px;cursor:pointer;transition:all 0.15s;border:2px solid rgba(var(--fg),0.14);background:rgba(var(--fg),0.05);color:rgba(var(--fg),calc(0.42*var(--tk) + var(--tb)));}
+  .mode-tab{flex:1;padding:14px 10px;border-radius:12px;border:2px solid rgba(var(--fg),0.1);background:rgba(var(--fg),0.04);cursor:pointer;transition:all 0.18s;text-align:center;}
+  .mode-tab:hover{border-color:rgba(var(--fg),0.3);transform:scale(1.02);}
+  .diff-card{flex:1;padding:9px 5px;border-radius:10px;border:2px solid rgba(var(--fg),0.1);background:rgba(var(--fg),0.04);cursor:pointer;transition:all 0.15s;text-align:center;}
+  .name-input{background:rgba(var(--fg),0.08);border:2px solid rgba(var(--fg),0.2);color:rgb(var(--fg));font-family:'Courier New',monospace;font-size:1rem;letter-spacing:3px;padding:9px 14px;border-radius:10px;outline:none;width:140px;text-align:center;text-transform:uppercase;}
+  .name-input:focus{border-color:var(--cyan);box-shadow:0 0 10px rgba(0,229,255,0.3);}
+  .name-input::placeholder{color:rgba(var(--fg),calc(0.2*var(--tk) + var(--tb)));}
+  .slabel{color:rgba(var(--fg),calc(0.35*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:3px;margin-bottom:7px;}
 
   /* Belt strip */
   .belt-strip-wrap{position:relative;margin-bottom:6px;}
-  .belt-strip-fade-l{position:absolute;left:0;top:0;bottom:0;width:24px;background:linear-gradient(90deg,#0d0d28,transparent);pointer-events:none;z-index:2;}
-  .belt-strip-fade-r{position:absolute;right:0;top:0;bottom:0;width:24px;background:linear-gradient(270deg,#0d0d28,transparent);pointer-events:none;z-index:2;}
+  .belt-strip-fade-l{position:absolute;left:0;top:0;bottom:0;width:24px;background:linear-gradient(90deg,var(--strip),transparent);pointer-events:none;z-index:2;}
+  .belt-strip-fade-r{position:absolute;right:0;top:0;bottom:0;width:24px;background:linear-gradient(270deg,var(--strip),transparent);pointer-events:none;z-index:2;}
   .belt-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;padding-left:12px;padding-right:12px;scrollbar-width:none;-ms-overflow-style:none;}
   .belt-strip::-webkit-scrollbar{display:none;}
-  .belt-item{flex-shrink:0;width:72px;padding:10px 0 8px;border-radius:12px;border:2px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.03);cursor:pointer;text-align:center;position:relative;transition:all 0.18s;}
+  .belt-item{flex-shrink:0;width:72px;padding:10px 0 8px;border-radius:12px;border:2px solid rgba(var(--fg),0.09);background:rgba(var(--fg),0.03);cursor:pointer;text-align:center;position:relative;transition:all 0.18s;}
   .belt-item.locked{opacity:0.22;cursor:not-allowed;}
-  .belt-item .crown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:0.65rem;line-height:1;}
+  .belt-item .crown{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:0.8125rem;line-height:1;}
 
   /* grid helpers */
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -92,8 +189,8 @@
   /* stat card */
   .stat-block{text-align:center;}
   .stat-val{font-size:1.05rem;font-weight:bold;}
-  .stat-lbl{color:rgba(255,255,255,0.26);font-size:0.56rem;letter-spacing:1px;margin-top:2px;}
-  .divider{width:1px;height:28px;background:rgba(255,255,255,0.1);}
+  .stat-lbl{color:rgba(var(--fg),calc(0.26*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:1px;margin-top:2px;}
+  .divider{width:1px;height:28px;background:rgba(var(--fg),0.1);}
   .lb-row{display:flex;justify-content:space-between;align-items:center;padding:5px 10px;border-radius:7px;margin-bottom:3px;}
 </style>
 </head>
@@ -102,37 +199,40 @@
 <div id="edge-pulse"></div>
 <div id="particles-container"></div>
 
-<a id="back-to-games" href="../" title="Back to games" style="position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));z-index:10000;background:rgba(8,8,32,0.72);color:#00e5ff;text-decoration:none;font-family:'Courier New',monospace;font-weight:bold;font-size:0.72rem;letter-spacing:2px;padding:8px 13px;border-radius:50px;border:1px solid rgba(0,229,255,0.35);box-shadow:0 0 12px rgba(0,229,255,0.15);">&lsaquo; GAMES</a>
+<a id="back-to-games" href="../" title="Back to games">&lsaquo; GAMES</a>
 
 <div id="app">
 
 <!-- ══ HOME ══ -->
 <div id="screen-home" class="screen active">
-  <div class="text-center" style="margin-bottom:18px;">
+  <div class="home-col">
+  <div class="text-center home-title" style="margin-bottom:18px;">
     <div style="font-size:2.6rem;display:inline-block;animation:starSpin 4s linear infinite;">⭐</div>
-    <h1 style="color:#ffe600;font-size:clamp(1.8rem,7vw,2.8rem);margin:4px 0 2px;letter-spacing:4px;text-shadow:0 0 20px #ffe600,0 0 40px #ffe60066;">TIMES TABLE</h1>
-    <h2 style="color:#ff4da6;font-size:clamp(1rem,4vw,1.5rem);margin:0 0 4px;letter-spacing:6px;text-shadow:0 0 15px #ff4da6;">BLASTER!</h2>
-    <span style="color:rgba(255,255,255,0.18);font-size:0.55rem;letter-spacing:3px;">V8</span>
+    <h1 style="color:var(--yellow);font-size:clamp(1.8rem,7vw,2.8rem);margin:4px 0 2px;letter-spacing:4px;text-shadow:0 0 20px var(--yellow),0 0 40px color-mix(in srgb,var(--yellow) 40%,transparent);">TIMES TABLE</h1>
+    <h2 style="color:var(--pink);font-size:clamp(1rem,4vw,1.5rem);margin:0 0 4px;letter-spacing:6px;text-shadow:0 0 15px var(--pink);">BLASTER!</h2>
+    <span style="color:rgba(var(--fg),calc(0.18*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:3px;">V8</span>
   </div>
 
   <!-- Mode tabs -->
   <div class="flex-row" style="margin-bottom:20px;">
     <div class="mode-tab" id="tab-ninja" onclick="setGameMode('ninjabelt')">
       <div style="font-size:1.8rem;">🥷</div>
-      <div style="color:rgba(255,255,255,0.6);font-weight:bold;font-size:0.8rem;letter-spacing:2px;margin-top:5px;">NINJA BELT</div>
-      <div style="color:rgba(255,255,255,0.28);font-size:0.57rem;margin-top:3px;">flash round · 60s · belt up</div>
+      <div style="color:rgba(var(--fg),calc(0.6*var(--tk) + var(--tb)));font-weight:bold;font-size:0.8125rem;letter-spacing:2px;margin-top:5px;">NINJA BELT</div>
+      <div style="color:rgba(var(--fg),calc(0.28*var(--tk) + var(--tb)));font-size:0.8125rem;margin-top:3px;">flash round · 60s · belt up</div>
     </div>
     <div class="mode-tab" id="tab-classic" onclick="setGameMode('classic')">
       <div style="font-size:1.8rem;">🎮</div>
-      <div style="color:rgba(255,255,255,0.6);font-weight:bold;font-size:0.8rem;letter-spacing:2px;margin-top:5px;">CLASSIC</div>
-      <div style="color:rgba(255,255,255,0.28);font-size:0.57rem;margin-top:3px;">10 Qs · feedback · timer</div>
+      <div style="color:rgba(var(--fg),calc(0.6*var(--tk) + var(--tb)));font-weight:bold;font-size:0.8125rem;letter-spacing:2px;margin-top:5px;">CLASSIC</div>
+      <div style="color:rgba(var(--fg),calc(0.28*var(--tk) + var(--tb)));font-size:0.8125rem;margin-top:3px;">10 Qs · feedback · timer</div>
     </div>
   </div>
 
+  </div>
+  <div class="home-col">
   <!-- Ninja Belt Setup -->
   <div id="ninja-setup">
     <!-- Earned belt banner -->
-    <div id="earned-belt-banner" style="background:rgba(0,0,0,0.22);border-radius:14px;padding:13px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;"></div>
+    <div id="earned-belt-banner" style="background:rgba(var(--shade),0.22);border-radius:14px;padding:13px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;"></div>
 
     <!-- Q count -->
     <div style="margin-bottom:14px;">
@@ -155,8 +255,8 @@
     </div>
 
     <!-- Rule reminder -->
-    <div id="rule-reminder" style="background:rgba(0,0,0,0.18);border-radius:8px;padding:8px 12px;margin-bottom:18px;margin-top:10px;">
-      <div style="color:rgba(255,255,255,0.22);font-size:0.58rem;letter-spacing:1px;line-height:1.7;"></div>
+    <div id="rule-reminder" style="background:rgba(var(--shade),0.18);border-radius:8px;padding:8px 12px;margin-bottom:18px;margin-top:10px;">
+      <div style="color:rgba(var(--fg),calc(0.22*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:1px;line-height:1.7;"></div>
     </div>
   </div>
 
@@ -181,34 +281,37 @@
   </div>
 
   <!-- CTA -->
-  <div class="text-center" style="margin-bottom:24px;">
+  <div class="text-center cta-dock" style="margin-bottom:24px;">
     <button class="cta-btn" id="home-cta" style="font-size:1.2rem;padding:15px 44px;"></button>
   </div>
 
   <!-- Leaderboard -->
   <div id="home-lb" style="margin-bottom:20px;"></div>
+  </div>
 </div><!-- /home -->
 
 <!-- ══ NINJA BELT QUIZ ══ -->
 <div id="screen-ninjabelt-quiz" class="screen">
+  <div class="quiz-info">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
     <div style="display:flex;align-items:center;gap:8px;">
+      <button class="quit-btn" type="button" onclick="quitQuiz()" aria-label="Stop and go back">✕</button>
       <div id="nb-orb-hdr"></div>
       <div>
-        <div id="nb-belt-name" style="font-size:0.68rem;letter-spacing:2px;font-weight:bold;"></div>
-        <div id="nb-belt-table" style="color:rgba(255,255,255,0.28);font-size:0.54rem;"></div>
+        <div id="nb-belt-name" style="font-size:0.8125rem;letter-spacing:2px;font-weight:bold;"></div>
+        <div id="nb-belt-table" style="color:rgba(var(--fg),calc(0.28*var(--tk) + var(--tb)));font-size:0.8125rem;"></div>
       </div>
     </div>
     <div style="display:flex;gap:12px;align-items:center;">
-      <span id="nb-score-correct" style="color:#7cff50;font-size:0.82rem;"></span>
-      <span id="nb-score-wrong" style="color:#ff5555;font-size:0.82rem;display:none;"></span>
-      <span id="nb-qnum" style="color:rgba(255,255,255,0.25);font-size:0.72rem;"></span>
+      <span id="nb-score-correct" style="color:var(--green);font-size:0.82rem;"></span>
+      <span id="nb-score-wrong" style="color:var(--red);font-size:0.82rem;display:none;"></span>
+      <span id="nb-qnum" style="color:rgba(var(--fg),calc(0.25*var(--tk) + var(--tb)));font-size:0.8125rem;"></span>
     </div>
   </div>
 
   <!-- Timer bar -->
-  <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:7px;margin-bottom:6px;overflow:hidden;">
-    <div id="nb-timer-bar" style="height:100%;border-radius:4px;background:#00e5ff;transition:width 1s linear,background 0.5s;box-shadow:0 0 10px #00e5ff;width:100%;"></div>
+  <div style="background:rgba(var(--fg),0.08);border-radius:4px;height:7px;margin-bottom:6px;overflow:hidden;">
+    <div id="nb-timer-bar" style="height:100%;border-radius:4px;background:var(--cyan);transition:width 1s linear,background 0.5s;box-shadow:0 0 10px var(--cyan);width:100%;"></div>
   </div>
 
   <!-- Progress dots -->
@@ -216,15 +319,18 @@
 
   <!-- Question -->
   <div id="nb-question" class="text-center" style="margin-bottom:20px;">
-    <div id="nb-q-text" style="font-size:clamp(2.8rem,14vw,4.8rem);font-weight:bold;color:white;letter-spacing:4px;"></div>
-    <div style="font-size:1.6rem;color:rgba(255,255,255,0.2);letter-spacing:2px;margin-top:4px;">= ?</div>
+    <div id="nb-q-text" style="font-size:clamp(2.8rem,14vw,4.8rem);font-weight:bold;color:rgb(var(--fg));letter-spacing:4px;"></div>
+    <div style="font-size:1.6rem;color:rgba(var(--fg),calc(0.2*var(--tk) + var(--tb)));letter-spacing:2px;margin-top:4px;">= ?</div>
   </div>
 
+  </div>
   <!-- Choices -->
+  <div class="quiz-board">
   <div class="grid-2" id="nb-choices"></div>
 
-  <div class="text-center" style="margin-top:10px;color:rgba(255,255,255,0.16);font-size:0.6rem;letter-spacing:2px;">
+  <div class="text-center" style="margin-top:10px;color:rgba(var(--fg),calc(0.16*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:2px;">
     RESULTS SHOWN AT END · PERFECT SCORE = RANK UP
+  </div>
   </div>
 </div><!-- /ninja quiz -->
 
@@ -237,12 +343,12 @@
 
   <!-- Points -->
   <div style="margin:8px 0 14px;" class="text-center">
-    <div id="nbr-points" style="font-size:2.4rem;font-weight:bold;color:#ffe600;text-shadow:0 0 24px #ffe600;letter-spacing:2px;"></div>
-    <div style="color:rgba(255,255,255,0.28);font-size:0.6rem;letter-spacing:3px;">POINTS</div>
+    <div id="nbr-points" style="font-size:2.4rem;font-weight:bold;color:var(--yellow);text-shadow:0 0 24px var(--yellow);letter-spacing:2px;"></div>
+    <div style="color:rgba(var(--fg),calc(0.28*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:3px;">POINTS</div>
   </div>
 
   <!-- Answer review -->
-  <div id="nbr-review" style="margin-bottom:14px;text-align:left;max-height:200px;overflow-y:auto;background:rgba(0,0,0,0.22);border-radius:10px;padding:10px 12px;display:none;"></div>
+  <div id="nbr-review" style="margin-bottom:14px;text-align:left;max-height:200px;overflow-y:auto;background:rgba(var(--shade),0.22);border-radius:10px;padding:10px 12px;display:none;"></div>
 
   <!-- PB card -->
   <div style="margin-bottom:14px;">
@@ -251,10 +357,10 @@
   </div>
 
   <!-- Belt progress -->
-  <div style="background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px 14px;margin-bottom:14px;" class="text-center">
-    <div style="color:rgba(255,255,255,0.26);font-size:0.56rem;letter-spacing:2px;margin-bottom:7px;">BELT PROGRESS</div>
+  <div style="background:rgba(var(--shade),0.18);border:1px solid rgba(var(--fg),0.07);border-radius:10px;padding:10px 14px;margin-bottom:14px;" class="text-center">
+    <div style="color:rgba(var(--fg),calc(0.26*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:2px;margin-bottom:7px;">BELT PROGRESS</div>
     <div style="display:flex;gap:4px;justify-content:center;" id="nbr-belt-progress"></div>
-    <div id="nbr-belt-progress-label" style="font-size:0.6rem;letter-spacing:2px;margin-top:6px;font-weight:bold;"></div>
+    <div id="nbr-belt-progress-label" style="font-size:0.8125rem;letter-spacing:2px;margin-top:6px;font-weight:bold;"></div>
   </div>
 
   <!-- Save score -->
@@ -266,44 +372,49 @@
 
 <!-- ══ CLASSIC QUIZ ══ -->
 <div id="screen-classic-quiz" class="screen">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-    <div id="cl-qnum" style="color:#00e5ff;font-size:0.85rem;letter-spacing:2px;"></div>
+  <div class="quiz-info">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
+    <button class="quit-btn" type="button" onclick="quitQuiz()" aria-label="Stop and go back">✕</button>
+    <div id="cl-qnum" style="color:var(--cyan);font-size:0.85rem;letter-spacing:2px;"></div>
     <div id="cl-diff-badge"></div>
     <div style="display:flex;gap:10px;">
-      <span id="cl-score" style="color:#ffe600;font-size:0.85rem;"></span>
-      <span id="cl-streak" style="color:#ff4da6;font-size:0.85rem;"></span>
+      <span id="cl-score" style="color:var(--yellow);font-size:0.85rem;"></span>
+      <span id="cl-streak" style="color:var(--pink);font-size:0.85rem;"></span>
     </div>
   </div>
-  <div style="background:rgba(255,255,255,0.1);border-radius:4px;height:5px;margin-bottom:8px;">
-    <div id="cl-progress-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,#ff4da6,#ffe600);width:0%;transition:width 0.4s ease;"></div>
+  <div style="background:rgba(var(--fg),0.1);border-radius:4px;height:5px;margin-bottom:8px;">
+    <div id="cl-progress-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--pink),var(--yellow));width:0%;transition:width 0.4s ease;"></div>
   </div>
   <div id="cl-timer-wrap" style="margin-bottom:16px;display:none;">
-    <div style="background:rgba(255,255,255,0.08);border-radius:4px;height:7px;overflow:hidden;">
-      <div id="cl-timer-bar" style="height:100%;border-radius:4px;background:#7cff50;transition:width 1s linear,background 0.3s;box-shadow:0 0 8px #7cff50;width:100%;"></div>
+    <div style="background:rgba(var(--fg),0.08);border-radius:4px;height:7px;overflow:hidden;">
+      <div id="cl-timer-bar" style="height:100%;border-radius:4px;background:var(--green);transition:width 1s linear,background 0.3s;box-shadow:0 0 8px var(--green);width:100%;"></div>
     </div>
   </div>
   <div id="cl-question" class="text-center" style="margin-bottom:16px;">
-    <div id="cl-q-text" style="font-size:clamp(2.6rem,13vw,4.4rem);font-weight:bold;color:white;letter-spacing:4px;text-shadow:0 0 30px rgba(255,255,255,0.3);"></div>
+    <div id="cl-q-text" style="font-size:clamp(2.6rem,13vw,4.4rem);font-weight:bold;color:rgb(var(--fg));letter-spacing:4px;text-shadow:0 0 30px rgba(var(--fg),0.3);"></div>
     <div id="cl-q-answer" style="margin-top:6px;font-size:clamp(1.4rem,7vw,2.5rem);font-weight:bold;letter-spacing:3px;"></div>
   </div>
   <div id="cl-message" style="height:26px;text-align:center;margin-bottom:12px;font-size:1.05rem;font-weight:bold;letter-spacing:3px;"></div>
+  </div>
+  <div class="quiz-board">
   <div id="cl-choices" class="grid-2"></div>
+  </div>
 </div><!-- /classic quiz -->
 
 <!-- ══ CLASSIC RESULT ══ -->
 <div id="screen-classic-result" class="screen" style="text-align:center;">
-  <div style="font-size:0.88rem;letter-spacing:4px;color:#ff4da6;margin-bottom:4px;">🎮 CLASSIC</div>
-  <div id="clr-title" style="font-size:1.05rem;letter-spacing:5px;color:#ffe600;margin-bottom:10px;animation:float 2s ease-in-out infinite;"></div>
+  <div style="font-size:0.88rem;letter-spacing:4px;color:var(--pink);margin-bottom:4px;">🎮 CLASSIC</div>
+  <div id="clr-title" style="font-size:1.05rem;letter-spacing:5px;color:var(--yellow);margin-bottom:10px;animation:float 2s ease-in-out infinite;"></div>
   <div id="clr-stars" style="font-size:2.5rem;margin-bottom:4px;"></div>
-  <div id="clr-points" style="font-size:2.8rem;font-weight:bold;color:#ffe600;text-shadow:0 0 30px #ffe600;margin:6px 0 2px;letter-spacing:2px;"></div>
-  <div style="color:rgba(255,255,255,0.28);font-size:0.62rem;letter-spacing:3px;margin-bottom:10px;">POINTS</div>
-  <div id="clr-score-big" style="font-size:2.4rem;font-weight:bold;color:white;letter-spacing:2px;margin-bottom:12px;"></div>
+  <div id="clr-points" style="font-size:2.8rem;font-weight:bold;color:var(--yellow);text-shadow:0 0 30px var(--yellow);margin:6px 0 2px;letter-spacing:2px;"></div>
+  <div style="color:rgba(var(--fg),calc(0.28*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:3px;margin-bottom:10px;">POINTS</div>
+  <div id="clr-score-big" style="font-size:2.4rem;font-weight:bold;color:rgb(var(--fg));letter-spacing:2px;margin-bottom:12px;"></div>
   <div style="display:flex;justify-content:center;gap:18px;margin-bottom:18px;flex-wrap:wrap;" id="clr-stats"></div>
   <div id="clr-save" style="margin-bottom:16px;"></div>
   <div id="clr-lb" style="margin-bottom:16px;text-align:left;"></div>
   <div style="display:flex;gap:10px;justify-content:center;">
-    <button class="cta-btn" id="clr-again-btn" style="background:linear-gradient(135deg,#ff4da6,#ff6b35);animation:pulseGlow 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;" onclick="startClassic()">↺ AGAIN</button>
-    <button onclick="showScreen('home')" style="background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.4);font-family:'Courier New',monospace;font-size:0.86rem;padding:12px 16px;border-radius:50px;cursor:pointer;letter-spacing:2px;">← HOME</button>
+    <button class="cta-btn" id="clr-again-btn" style="background:linear-gradient(135deg,var(--pink),var(--orange));animation:pulseGlow 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;" onclick="startClassic()">↺ AGAIN</button>
+    <button onclick="showScreen('home')" style="background:rgba(var(--fg),0.05);border:2px solid rgba(var(--fg),0.14);color:rgba(var(--fg),calc(0.4*var(--tk) + var(--tb)));font-family:'Courier New',monospace;font-size:0.86rem;padding:12px 16px;border-radius:50px;cursor:pointer;letter-spacing:2px;">← HOME</button>
   </div>
 </div><!-- /classic result -->
 
@@ -337,16 +448,38 @@ const DIFFICULTIES = {
 
 const TIMER_OPTIONS = [{ label:"3s", value:3 }, { label:"5s", value:5 }, { label:"8s", value:8 }];
 
+// ── Theme ──────────────────────────────────────────────────────────────────────
+// Colours made here (belts, pills, bars) can't use the stylesheet's variables
+// where the script adds an alpha to the hex, so tone() does the same job: in
+// the light arcade a bright colour is darkened until it reads on a pale
+// background. Darkened colours stay below the threshold, so tone(tone(c)) is
+// tone(c).
+const darkMQ = matchMedia('(prefers-color-scheme: dark)');
+function isLight(){
+  const t = document.documentElement.dataset.theme;
+  return t ? t === 'light' : !darkMQ.matches;
+}
+function tone(hex){
+  if(!isLight() || !/^#[0-9a-f]{6}$/i.test(hex)) return hex;
+  const n = parseInt(hex.slice(1),16), rgb = [n>>16&255, n>>8&255, n&255];
+  const lum = (0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2]) / 255;
+  if(lum < 0.36) return hex;
+  return '#' + rgb.map(v=>Math.round(v*0.55).toString(16).padStart(2,'0')).join('');
+}
+// Names are typed by the player and drawn with innerHTML.
+function esc(t){ return String(t).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
 // ── Storage ────────────────────────────────────────────────────────────────────
 const LB_KEY   = "ttb_lb_v8";
 const BELT_KEY = "ttb_belt_v8";
 const PB_KEY   = "ttb_pb_v8";
 
-function getLB()   { try { return JSON.parse(localStorage.getItem(LB_KEY)  || "[]"); } catch { return []; } }
+// A damaged save must not stop the home screen drawing.
+function getLB()   { try { const v = JSON.parse(localStorage.getItem(LB_KEY) || "[]"); return Array.isArray(v) ? v.filter(e=>e && typeof e.points==="number") : []; } catch { return []; } }
 function saveLB(b) { try { localStorage.setItem(LB_KEY,  JSON.stringify(b)); } catch {} }
 function getBelt() { try { return Math.max(1, Math.min(12, parseInt(localStorage.getItem(BELT_KEY) || "1"))); } catch { return 1; } }
 function saveBeltLS(l) { try { localStorage.setItem(BELT_KEY, String(l)); } catch {} }
-function getPBs()  { try { return JSON.parse(localStorage.getItem(PB_KEY) || "{}"); } catch { return {}; } }
+function getPBs()  { try { const v = JSON.parse(localStorage.getItem(PB_KEY) || "{}"); return v && typeof v==="object" && !Array.isArray(v) ? v : {}; } catch { return {}; } }
 function savePBs(d){ try { localStorage.setItem(PB_KEY, JSON.stringify(d)); } catch {} }
 
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -455,6 +588,7 @@ function getDiff(){ return DIFFICULTIES[difficulty]; }
 function el(id){ return document.getElementById(id); }
 
 function showScreen(name){
+  document.body.dataset.screen = name;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   const s = el('screen-'+name);
   if(s){ s.classList.add('active'); s.scrollTop=0; }
@@ -463,7 +597,7 @@ function showScreen(name){
 
 // ── Particles ──────────────────────────────────────────────────────────────────
 function spawnParticles(colors){
-  colors = colors || ["#ff4da6","#ffe600","#00e5ff","#7cff50","#ff6b35","#bf5fff"];
+  colors = colors || [tone("#ff4da6"),tone("#ffe600"),tone("#00e5ff"),tone("#7cff50"),tone("#ff6b35"),tone("#bf5fff")];
   const container = el('particles-container');
   const frags = [];
   for(let i=0;i<20;i++){
@@ -504,10 +638,10 @@ function maybeUpdatePB(beltLevel, secsLeft, correct, total, qCount){
 function beltOrbHTML(belt, size=44, glow=false, dimmed=false, pulse=false){
   const bg = belt.blackBelt
     ? "radial-gradient(circle at 35% 35%,#2a2a2a,#050505)"
-    : `radial-gradient(circle at 35% 35%,${belt.color}ee,${belt.color}55)`;
+    : `radial-gradient(circle at 35% 35%,${tone(belt.color)}ee,${tone(belt.color)}55)`;
   const boxShadow = glow
-    ? `0 0 20px ${belt.color}99,0 0 40px ${belt.color}44`
-    : `0 0 6px ${belt.color}33`;
+    ? `0 0 20px ${tone(belt.color)}99,0 0 40px ${tone(belt.color)}44`
+    : `0 0 6px ${tone(belt.color)}33`;
   const border = belt.blackBelt ? "#555" : belt.color;
   const anim = pulse?"orbPulse 2s ease-in-out infinite":glow?"orbGlow 2s ease-in-out infinite":"none";
   return `<div style="width:${size}px;height:${size}px;border-radius:50%;flex-shrink:0;background:${bg};border:${size>55?3:2}px solid ${border};box-shadow:${boxShadow};display:flex;align-items:center;justify-content:center;opacity:${dimmed?0.35:1};animation:${anim};transition:all 0.3s;">
@@ -519,35 +653,35 @@ function beltOrbHTML(belt, size=44, glow=false, dimmed=false, pulse=false){
 function pbCardHTML(beltLevel){
   const pb = personalBests[beltLevel];
   const belt = BELTS[beltLevel-1];
-  if(!pb) return `<div style="background:rgba(0,0,0,0.18);border-radius:8px;padding:8px 12px;color:rgba(255,255,255,0.18);font-size:0.6rem;letter-spacing:2px;text-align:center;">NO PERSONAL BEST YET FOR THIS BELT</div>`;
-  return `<div style="background:rgba(0,0,0,0.22);border:1px solid ${belt.color}33;border-radius:8px;padding:8px 14px;display:flex;gap:16px;align-items:center;justify-content:center;">
-    <div class="stat-block"><div class="stat-val" style="color:${belt.color};">${pb.accuracy}%</div><div class="stat-lbl">ACCURACY</div></div>
+  if(!pb) return `<div style="background:rgba(var(--shade),0.18);border-radius:8px;padding:8px 12px;color:rgba(var(--fg),calc(0.18*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:2px;text-align:center;">NO PERSONAL BEST YET FOR THIS BELT</div>`;
+  return `<div style="background:rgba(var(--shade),0.22);border:1px solid ${tone(belt.color)}33;border-radius:8px;padding:8px 14px;display:flex;gap:16px;align-items:center;justify-content:center;">
+    <div class="stat-block"><div class="stat-val" style="color:${tone(belt.color)};">${pb.accuracy}%</div><div class="stat-lbl">ACCURACY</div></div>
     <div class="divider"></div>
-    <div class="stat-block"><div class="stat-val" style="color:#00e5ff;">${pb.secsLeft}s</div><div class="stat-lbl">TIME LEFT</div></div>
+    <div class="stat-block"><div class="stat-val" style="color:var(--cyan);">${pb.secsLeft}s</div><div class="stat-lbl">TIME LEFT</div></div>
     <div class="divider"></div>
-    <div class="stat-block"><div class="stat-val" style="color:#ffe600;">${pb.qCount}Q</div><div class="stat-lbl">QUESTIONS</div></div>
+    <div class="stat-block"><div class="stat-val" style="color:var(--yellow);">${pb.qCount}Q</div><div class="stat-lbl">QUESTIONS</div></div>
     <div class="divider"></div>
-    <div class="stat-block"><div style="color:rgba(255,255,255,0.5);font-size:0.72rem;">🏅</div><div class="stat-lbl">${pb.date}</div></div>
+    <div class="stat-block"><div style="color:rgba(var(--fg),calc(0.5*var(--tk) + var(--tb)));font-size:0.8125rem;">🏅</div><div class="stat-lbl">${pb.date}</div></div>
   </div>`;
 }
 
 // ── Pill HTML ──────────────────────────────────────────────────────────────────
 function pillHTML(label, active, color, onclick, extraStyle=''){
-  const bg   = active ? `${color}18` : "rgba(255,255,255,0.05)";
-  const bdr  = active ? color : "rgba(255,255,255,0.14)";
-  const col  = active ? color : "rgba(255,255,255,0.42)";
-  const shad = active ? `0 0 10px ${color}44` : "none";
+  const bg   = active ? `${tone(color)}18` : "rgba(var(--fg),0.05)";
+  const bdr  = active ? color : "rgba(var(--fg),0.14)";
+  const col  = active ? color : "rgba(var(--fg),0.42)";
+  const shad = active ? `0 0 10px ${tone(color)}44` : "none";
   return `<button class="pill-btn" onclick="${onclick}" style="background:${bg};border-color:${bdr};color:${col};box-shadow:${shad};${extraStyle}">${label}</button>`;
 }
 
 // ── Leaderboard HTML ───────────────────────────────────────────────────────────
 function lbHTML(limit=7){
   if(!leaderboard.length) return '';
-  return `<div style="color:#ff4da6;font-size:0.62rem;letter-spacing:4px;margin-bottom:8px;text-align:center;">🏆 LEADERBOARD</div>`
+  return `<div style="color:var(--pink);font-size:0.8125rem;letter-spacing:4px;margin-bottom:8px;text-align:center;">🏆 LEADERBOARD</div>`
     + leaderboard.slice(0,limit).map((e,i)=>`
-      <div class="lb-row" style="background:${i===0?"rgba(255,230,0,0.09)":"rgba(255,255,255,0.04)"};border:1px solid ${i===0?"rgba(255,230,0,0.24)":"rgba(255,255,255,0.07)"};">
-        <span style="color:${i===0?"#ffe600":"rgba(255,255,255,0.38)"};font-size:0.7rem;">${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`} ${e.name}</span>
-        <div><span style="color:#ffe600;font-size:0.76rem;font-weight:bold;">${e.points.toLocaleString()}</span><span style="color:rgba(255,255,255,0.26);font-size:0.6rem;margin-left:6px;">${e.mode}</span></div>
+      <div class="lb-row" style="background:${i===0?"rgba(255,230,0,0.09)":"rgba(var(--fg),0.04)"};border:1px solid ${i===0?"rgba(255,230,0,0.24)":"rgba(var(--fg),0.07)"};">
+        <span style="color:${i===0?tone("#ffe600"):"rgba(var(--fg),0.38)"};font-size:0.8125rem;">${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`} ${esc(e.name)}</span>
+        <div><span style="color:var(--yellow);font-size:0.8125rem;font-weight:bold;">${e.points.toLocaleString()}</span><span style="color:rgba(var(--fg),calc(0.26*var(--tk) + var(--tb)));font-size:0.8125rem;margin-left:6px;">${esc(e.mode)}</span></div>
       </div>`).join('');
 }
 
@@ -556,15 +690,15 @@ function renderHome(){
   // Mode tabs styling
   const nt = el('tab-ninja'), ct = el('tab-classic');
   if(gameMode==='ninjabelt'){
-    nt.style.borderColor='#00e5ff'; nt.style.background='rgba(0,229,255,0.08)'; nt.style.boxShadow='0 0 16px rgba(0,229,255,0.2)';
-    nt.querySelector('div:nth-child(2)').style.color='#00e5ff';
-    ct.style.borderColor='rgba(255,255,255,0.1)'; ct.style.background='rgba(255,255,255,0.04)'; ct.style.boxShadow='none';
-    ct.querySelector('div:nth-child(2)').style.color='rgba(255,255,255,0.6)';
+    nt.style.borderColor=tone('#00e5ff'); nt.style.background='rgba(0,229,255,0.08)'; nt.style.boxShadow='0 0 16px rgba(0,229,255,0.2)';
+    nt.querySelector('div:nth-child(2)').style.color=tone('#00e5ff');
+    ct.style.borderColor='rgba(var(--fg),0.1)'; ct.style.background='rgba(var(--fg),0.04)'; ct.style.boxShadow='none';
+    ct.querySelector('div:nth-child(2)').style.color='rgba(var(--fg),calc(0.6*var(--tk) + var(--tb)))';
   } else {
-    ct.style.borderColor='#ff4da6'; ct.style.background='rgba(255,77,166,0.08)'; ct.style.boxShadow='0 0 16px rgba(255,77,166,0.2)';
-    ct.querySelector('div:nth-child(2)').style.color='#ff4da6';
-    nt.style.borderColor='rgba(255,255,255,0.1)'; nt.style.background='rgba(255,255,255,0.04)'; nt.style.boxShadow='none';
-    nt.querySelector('div:nth-child(2)').style.color='rgba(255,255,255,0.6)';
+    ct.style.borderColor=tone('#ff4da6'); ct.style.background='rgba(255,77,166,0.08)'; ct.style.boxShadow='0 0 16px rgba(255,77,166,0.2)';
+    ct.querySelector('div:nth-child(2)').style.color=tone('#ff4da6');
+    nt.style.borderColor='rgba(var(--fg),0.1)'; nt.style.background='rgba(var(--fg),0.04)'; nt.style.boxShadow='none';
+    nt.querySelector('div:nth-child(2)').style.color='rgba(var(--fg),calc(0.6*var(--tk) + var(--tb)))';
   }
 
   el('ninja-setup').style.display  = gameMode==='ninjabelt'?'':'none';
@@ -581,13 +715,13 @@ function renderHome(){
   if(gameMode==='ninjabelt'){
     const pbd = BELTS[attemptBelt-1];
     const nbd = BELTS[Math.min(11,earnedBelt)];
-    cta.style.background = `linear-gradient(135deg,${pbd.color},${nbd.color})`;
+    cta.style.background = `linear-gradient(135deg,${tone(pbd.color)},${tone(nbd.color)})`;
     cta.style.animation  = 'orbPulse 2s ease-in-out infinite';
-    cta.style.color      = pbd.level===1?'#1a1a2e':'white';
+    cta.style.color      = pbd.level===1&&!isLight()?'#1a1a2e':'white';
     cta.textContent      = `🥷 TEST ${pbd.name} BELT`;
     cta.onclick = ()=>startNinjaBelt(attemptBelt, ninjaQCount);
   } else {
-    cta.style.background = 'linear-gradient(135deg,#ff4da6,#ff6b35)';
+    cta.style.background = 'linear-gradient(135deg,var(--pink),var(--orange))';
     cta.style.animation  = 'pulseGlow 2s ease-in-out infinite';
     cta.style.color      = 'white';
     cta.textContent      = '▶ PLAY NOW';
@@ -604,15 +738,15 @@ function renderNinjaSetup(){
   el('earned-belt-banner').innerHTML = `
     ${beltOrbHTML(belt,56,true)}
     <div style="flex:1;">
-      <div style="color:rgba(255,255,255,0.3);font-size:0.58rem;letter-spacing:2px;margin-bottom:2px;">YOUR RANK</div>
-      <div style="color:${belt.color};font-size:1.1rem;font-weight:bold;letter-spacing:3px;text-shadow:0 0 12px ${belt.color};">${belt.name} BELT</div>
-      <div style="color:rgba(255,255,255,0.28);font-size:0.58rem;margin-top:3px;">${earnedBelt<12?`×${belt.table} mastered · next: ${nextB.name} belt (×${nextB.table})`:"🏆 BLACK BELT MASTER — MAX RANK"}</div>
+      <div style="color:rgba(var(--fg),calc(0.3*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:2px;margin-bottom:2px;">YOUR RANK</div>
+      <div style="color:${tone(belt.color)};font-size:1.1rem;font-weight:bold;letter-spacing:3px;text-shadow:0 0 12px ${tone(belt.color)};">${belt.name} BELT</div>
+      <div style="color:rgba(var(--fg),calc(0.28*var(--tk) + var(--tb)));font-size:0.8125rem;margin-top:3px;">${earnedBelt<12?`×${belt.table} mastered · next: ${nextB.name} belt (×${nextB.table})`:"🏆 BLACK BELT MASTER — MAX RANK"}</div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:3px;">${BELTS.map(b=>`<div style="width:8px;height:8px;border-radius:50%;background:${b.level<=earnedBelt?b.color:"rgba(255,255,255,0.1)"};box-shadow:${b.level===earnedBelt?`0 0 6px ${b.color}`:"none"};"></div>`).join('')}</div>`;
-  el('earned-belt-banner').style.borderColor = `${belt.color}44`;
+    <div style="display:flex;flex-direction:column;gap:3px;">${BELTS.map(b=>`<div style="width:8px;height:8px;border-radius:50%;background:${b.level<=earnedBelt?b.color:"rgba(var(--fg),0.1)"};box-shadow:${b.level===earnedBelt?`0 0 6px ${tone(b.color)}`:"none"};"></div>`).join('')}</div>`;
+  el('earned-belt-banner').style.borderColor = `${tone(belt.color)}44`;
 
   // Q count pills
-  el('qcount-pills').innerHTML = Q_OPTIONS.map(n=>pillHTML(`${n} Qs`,ninjaQCount===n,'#00e5ff',`setNinjaQ(${n})`)).join('');
+  el('qcount-pills').innerHTML = Q_OPTIONS.map(n=>pillHTML(`${n} Qs`,ninjaQCount===n,tone('#00e5ff'),`setNinjaQ(${n})`)).join('');
 
   // Belt strip
   const strip = el('belt-strip');
@@ -620,12 +754,12 @@ function renderNinjaSetup(){
     const locked = b.level > earnedBelt;
     const sel    = attemptBelt === b.level;
     const cur    = b.level === earnedBelt;
-    return `<div class="belt-item${locked?' locked':''}" data-belt="${b.level}" onclick="${!locked?`selectBelt(${b.level})`:''}" style="border-color:${sel?b.color:cur?`${b.color}66`:"rgba(255,255,255,0.09)"};background:${sel?`${b.color}18`:cur?`${b.color}08`:"rgba(255,255,255,0.03)"};box-shadow:${sel?`0 0 14px ${b.color}55`:"none"};">
+    return `<div class="belt-item${locked?' locked':''}" data-belt="${b.level}" onclick="${!locked?`selectBelt(${b.level})`:''}" style="border-color:${sel?b.color:cur?`${tone(b.color)}66`:"rgba(var(--fg),0.09)"};background:${sel?`${tone(b.color)}18`:cur?`${tone(b.color)}08`:"rgba(var(--fg),0.03)"};box-shadow:${sel?`0 0 14px ${tone(b.color)}55`:"none"};">
       ${cur&&!sel?'<div class="crown">👑</div>':''}
       ${beltOrbHTML(b,36,sel)}
-      <div style="color:${sel?b.color:"rgba(255,255,255,0.45)"};font-size:0.5rem;letter-spacing:1px;margin-top:5px;font-weight:${sel?"bold":"normal"};line-height:1.2;">${b.name}</div>
-      <div style="color:rgba(255,255,255,0.22);font-size:0.46rem;margin-top:2px;">×${b.table}</div>
-      ${locked?'<div style="font-size:0.55rem;color:rgba(255,255,255,0.18);margin-top:2px;">🔒</div>':''}
+      <div style="color:${sel?b.color:"rgba(var(--fg),0.45)"};font-size:0.8125rem;letter-spacing:1px;margin-top:5px;font-weight:${sel?"bold":"normal"};line-height:1.2;">${b.name}</div>
+      <div style="color:rgba(var(--fg),calc(0.22*var(--tk) + var(--tb)));font-size:0.8125rem;margin-top:2px;">×${b.table}</div>
+      ${locked?'<div style="font-size:0.8125rem;color:rgba(var(--fg),calc(0.18*var(--tk) + var(--tb)));margin-top:2px;">🔒</div>':''}
     </div>`;
   }).join('');
 
@@ -639,7 +773,7 @@ function renderNinjaSetup(){
   el('pb-card').innerHTML = pbCardHTML(attemptBelt);
 
   // Rule reminder
-  el('rule-reminder').querySelector('div').innerHTML = `⚡ <b style="color:rgba(255,255,255,0.4);">Flash round</b> — answer ${ninjaQCount} questions on the ×${playBelt.table} table in 60 seconds. No answers shown until the end. <b style="color:${earnedBelt<12?nextB.color:"#ffe600"};">Perfect score required</b> to earn your next belt.`;
+  el('rule-reminder').querySelector('div').innerHTML = `⚡ <b style="color:rgba(var(--fg),calc(0.4*var(--tk) + var(--tb)));">Flash round</b> — answer ${ninjaQCount} questions on the ×${playBelt.table} table in 60 seconds. No answers shown until the end. <b style="color:${earnedBelt<12?nextB.color:tone("#ffe600")};">Perfect score required</b> to earn your next belt.`;
 }
 
 function renderClassicSetup(){
@@ -647,31 +781,31 @@ function renderClassicSetup(){
   // Difficulty cards
   el('diff-cards').innerHTML = Object.entries(DIFFICULTIES).map(([key,dv])=>{
     const act = difficulty===key;
-    return `<div class="diff-card" onclick="setDifficulty('${key}')" style="border-color:${act?dv.color:"rgba(255,255,255,0.1)"};background:${act?`${dv.color}18`:"rgba(255,255,255,0.04)"};box-shadow:${act?`0 0 12px ${dv.color}44`:"none"};">
+    return `<div class="diff-card" onclick="setDifficulty('${key}')" style="border-color:${act?dv.color:"rgba(var(--fg),0.1)"};background:${act?`${tone(dv.color)}18`:"rgba(var(--fg),0.04)"};box-shadow:${act?`0 0 12px ${tone(dv.color)}44`:"none"};">
       <div style="font-size:1.2rem;">${dv.emoji}</div>
-      <div style="color:${act?dv.color:"rgba(255,255,255,0.48)"};font-size:0.68rem;font-weight:bold;letter-spacing:2px;margin-top:3px;">${dv.label}</div>
-      <div style="color:rgba(255,255,255,0.26);font-size:0.55rem;margin-top:1px;">${dv.desc}</div>
+      <div style="color:${act?dv.color:"rgba(var(--fg),0.48)"};font-size:0.8125rem;font-weight:bold;letter-spacing:2px;margin-top:3px;">${dv.label}</div>
+      <div style="color:rgba(var(--fg),calc(0.26*var(--tk) + var(--tb)));font-size:0.8125rem;margin-top:1px;">${dv.desc}</div>
     </div>`;
   }).join('');
 
   // Focus pills
-  let focusHTML = pillHTML('ALL',focusTable===null,'#00e5ff',"setFocus(null)");
+  let focusHTML = pillHTML('ALL',focusTable===null,tone('#00e5ff'),"setFocus(null)");
   for(let n=1;n<=d.maxTable;n++){
     focusHTML += pillHTML(`×${n}`,focusTable===n,d.color,`setFocus(${n})`);
   }
   el('focus-pills').innerHTML = focusHTML;
 
   // Timer pills
-  let timerHTML = pillHTML('OFF',!timerMode,"rgba(255,255,255,0.38)","setTimer(false,0)");
+  let timerHTML = pillHTML('OFF',!timerMode,"rgba(var(--fg),0.38)","setTimer(false,0)");
   TIMER_OPTIONS.forEach(o=>{
-    timerHTML += pillHTML(`⏱ ${o.label}`,timerMode&&timerSecs===o.value,'#00e5ff',`setTimer(true,${o.value})`);
+    timerHTML += pillHTML(`⏱ ${o.label}`,timerMode&&timerSecs===o.value,tone('#00e5ff'),`setTimer(true,${o.value})`);
   });
   el('timer-pills').innerHTML = timerHTML;
 
   // Repeat pills
   el('repeat-pills').innerHTML =
-    pillHTML('🎲 RANDOM',!noRepeat,"rgba(255,255,255,0.38)","setNoRepeat(false)") +
-    pillHTML('✨ NO REPEATS',noRepeat,'#bf5fff',"setNoRepeat(true)");
+    pillHTML('🎲 RANDOM',!noRepeat,"rgba(var(--fg),0.38)","setNoRepeat(false)") +
+    pillHTML('✨ NO REPEATS',noRepeat,tone('#bf5fff'),"setNoRepeat(true)");
 }
 
 // ── Settings setters ───────────────────────────────────────────────────────────
@@ -682,6 +816,14 @@ function setDifficulty(d){ difficulty=d; focusTable=null; renderHome(); }
 function setFocus(n){ focusTable=n; renderHome(); }
 function setTimer(on,secs){ timerMode=on; if(secs) timerSecs=secs; renderHome(); }
 function setNoRepeat(v){ noRepeat=v; renderHome(); }
+
+// Leaving a quiz part-way: every clock stops, and nothing is scored or saved.
+function quitQuiz(){
+  clearInterval(ninjaTimerID); clearTimeout(flashTimerID);
+  clearInterval(classicTimerID); clearTimeout(advanceID);
+  ninjaRunning=false; processing=false; feedback=null;
+  showScreen('home');
+}
 
 // ═══════════════════════════════════════════════════════════
 // NINJA BELT
@@ -729,17 +871,17 @@ function updateNinjaTimerBar(){
   const bar = el('nb-timer-bar');
   if(!bar) return;
   const pct = (ninjaSecsLeft/NINJA_TOTAL_SECS)*100;
-  const color = ninjaSecsLeft>30?"#00e5ff":ninjaSecsLeft>15?"#ffe600":"#ff4444";
+  const color = ninjaSecsLeft>30?tone("#00e5ff"):ninjaSecsLeft>15?tone("#ffe600"):tone("#ff4444");
   bar.style.width  = pct+'%';
   bar.style.background = color;
-  bar.style.boxShadow  = `0 0 10px ${color}`;
+  bar.style.boxShadow  = `0 0 10px ${tone(color)}`;
   bar.style.animation  = ninjaSecsLeft<=10?"timerPulse 0.5s ease-in-out infinite":"none";
 }
 
 function renderNinjaQuiz(){
   const b = activeBelt;
   el('nb-orb-hdr').innerHTML = beltOrbHTML(b,36,true);
-  el('nb-belt-name').style.color = b.color;
+  el('nb-belt-name').style.color = tone(b.color);
   el('nb-belt-name').textContent = b.name+' BELT';
   el('nb-belt-table').textContent = '×'+b.table+' table';
   updateNinjaQuizUI();
@@ -755,12 +897,12 @@ function updateNinjaQuizUI(){
   // Dots
   el('nb-dots').innerHTML = beltQs.map((_,i)=>{
     const h=ninjaHistory[i]; const done=i<ninjaHistory.length; const cur=i===questionNum-1;
-    return `<div style="width:10px;height:10px;border-radius:50%;background:${done?(h.correct?"#7cff50":"#ff4444"):cur?b.color:"rgba(255,255,255,0.12)"};box-shadow:${cur?`0 0 7px ${b.color}`:"none"};transition:background 0.15s;"></div>`;
+    return `<div style="width:10px;height:10px;border-radius:50%;background:${done?(h.correct?tone("#7cff50"):tone("#ff4444")):cur?b.color:"rgba(var(--fg),0.12)"};box-shadow:${cur?`0 0 7px ${tone(b.color)}`:"none"};transition:background 0.15s;"></div>`;
   }).join('');
 
   // Question
   el('nb-q-text').textContent = question.a+' × '+question.b;
-  el('nb-q-text').style.textShadow = `0 0 28px ${b.color}55`;
+  el('nb-q-text').style.textShadow = `0 0 28px ${tone(b.color)}55`;
 
   // Choices
   renderNinjaChoices();
@@ -839,10 +981,10 @@ function endNinjaBelt(didTimeout){
     earnedBelt = newLevel;
     saveBeltLS(newLevel);
     promoted = true;
-    spawnParticles([belt.color, BELTS[belt.level].color, "#ffe600","#fff"]);
+    spawnParticles([belt.color, BELTS[belt.level].color, tone("#ffe600"),"#fff"]);
   } else if(perfect && !didTimeout && belt.level===12){
     promoted=true;
-    spawnParticles(["#ffe600","#fff","#ccc","#888"]);
+    spawnParticles([tone("#ffe600"),"#fff","#ccc","#888"]);
   } else {
     promoted=false;
   }
@@ -853,41 +995,41 @@ function endNinjaBelt(didTimeout){
 
 function renderNinjaResult(){
   const belt = activeBelt;
-  const beltBarColor = ninjaSecsLeft>30?"#00e5ff":ninjaSecsLeft>15?"#ffe600":"#ff4444";
+  const beltBarColor = ninjaSecsLeft>30?tone("#00e5ff"):ninjaSecsLeft>15?tone("#ffe600"):tone("#ff4444");
 
   // Top section
   let topHTML='';
   if(promoted){
     const nextB = BELTS[Math.min(11,belt.level)];
-    topHTML=`<div style="font-size:0.78rem;letter-spacing:5px;color:#ffe600;margin-bottom:6px;animation:float 2s ease-in-out infinite;">🎉 BELT PROMOTION!</div>
+    topHTML=`<div style="font-size:0.8125rem;letter-spacing:5px;color:var(--yellow);margin-bottom:6px;animation:float 2s ease-in-out infinite;">🎉 BELT PROMOTION!</div>
       <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px;">
-        <div style="text-align:center;opacity:0.38;">${beltOrbHTML(belt,56)}<div style="color:${belt.color};font-size:0.55rem;margin-top:5px;">${belt.name}</div></div>
-        <div style="font-size:2rem;color:#ffe600;animation:float 1s ease-in-out infinite;">→</div>
-        <div style="text-align:center;animation:promotion 0.7s ease forwards;">${beltOrbHTML(nextB,76,true)}<div style="color:${nextB.color};font-size:0.7rem;margin-top:7px;font-weight:bold;letter-spacing:2px;">${nextB.name} BELT</div></div>
+        <div style="text-align:center;opacity:0.38;">${beltOrbHTML(belt,56)}<div style="color:${tone(belt.color)};font-size:0.8125rem;margin-top:5px;">${belt.name}</div></div>
+        <div style="font-size:2rem;color:var(--yellow);animation:float 1s ease-in-out infinite;">→</div>
+        <div style="text-align:center;animation:promotion 0.7s ease forwards;">${beltOrbHTML(nextB,76,true)}<div style="color:${tone(nextB.color)};font-size:0.8125rem;margin-top:7px;font-weight:bold;letter-spacing:2px;">${nextB.name} BELT</div></div>
       </div>
-      ${earnedBelt>=12?'<div style="color:#ffe600;font-size:0.85rem;letter-spacing:3px;margin-bottom:10px;">🥷 BLACK BELT MASTER!</div>':''}`;
+      ${earnedBelt>=12?'<div style="color:var(--yellow);font-size:0.85rem;letter-spacing:3px;margin-bottom:10px;">🥷 BLACK BELT MASTER!</div>':''}`;
   } else if(timedOut){
     topHTML=`<div style="font-size:2rem;margin-bottom:6px;">⏰</div>
-      <div style="color:#ff5555;font-size:0.95rem;letter-spacing:4px;margin-bottom:4px;">TIME'S UP!</div>
-      <div style="color:rgba(255,255,255,0.35);font-size:0.68rem;letter-spacing:2px;margin-bottom:14px;">Finish all ${beltQs.length} questions within 60 seconds to rank up</div>
+      <div style="color:var(--red);font-size:0.95rem;letter-spacing:4px;margin-bottom:4px;">TIME'S UP!</div>
+      <div style="color:rgba(var(--fg),calc(0.35*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:2px;margin-bottom:14px;">Finish all ${beltQs.length} questions within 60 seconds to rank up</div>
       <div style="display:flex;justify-content:center;margin-bottom:14px;">${beltOrbHTML(belt,60)}</div>`;
   } else {
     topHTML=`<div style="font-size:2rem;margin-bottom:6px;">💪</div>
-      <div style="color:${belt.color};font-size:0.88rem;letter-spacing:4px;margin-bottom:4px;">${belt.name} BELT TEST</div>
-      <div style="color:#ff5555;font-size:0.72rem;letter-spacing:3px;margin-bottom:14px;">${beltMistakes} MISTAKE${beltMistakes!==1?"S":""} · NO PROMOTION</div>
+      <div style="color:${tone(belt.color)};font-size:0.88rem;letter-spacing:4px;margin-bottom:4px;">${belt.name} BELT TEST</div>
+      <div style="color:var(--red);font-size:0.8125rem;letter-spacing:3px;margin-bottom:14px;">${beltMistakes} MISTAKE${beltMistakes!==1?"S":""} · NO PROMOTION</div>
       <div style="display:flex;justify-content:center;margin-bottom:12px;">${beltOrbHTML(belt,60)}</div>
-      <div style="color:rgba(255,255,255,0.28);font-size:0.62rem;letter-spacing:1px;margin-bottom:8px;">Perfect score required. Keep training!</div>`;
+      <div style="color:rgba(var(--fg),calc(0.28*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:1px;margin-bottom:8px;">Perfect score required. Keep training!</div>`;
   }
   el('nbr-top').innerHTML = topHTML;
 
   // Stats
   const statsData = [
-    {val:`${score}/${beltQs.length}`,label:"CORRECT",color:"#7cff50"},
-    {val:`${beltMistakes}`,label:"MISTAKES",color:beltMistakes===0?"#7cff50":"#ff5555"},
-    {val:`🔥 ${bestStreak}`,label:"STREAK",color:"#ff4da6"},
+    {val:`${score}/${beltQs.length}`,label:"CORRECT",color:tone("#7cff50")},
+    {val:`${beltMistakes}`,label:"MISTAKES",color:beltMistakes===0?tone("#7cff50"):tone("#ff5555")},
+    {val:`🔥 ${bestStreak}`,label:"STREAK",color:tone("#ff4da6")},
     {val:`${ninjaSecsLeft}s`,label:"TIME LEFT",color:beltBarColor},
   ];
-  el('nbr-stats').innerHTML = statsData.map(s=>`<div class="stat-block"><div class="stat-val" style="color:${s.color};">${s.val}</div><div class="stat-lbl">${s.label}</div></div>`).join('');
+  el('nbr-stats').innerHTML = statsData.map(s=>`<div class="stat-block"><div class="stat-val" style="color:${tone(s.color)};">${s.val}</div><div class="stat-lbl">${s.label}</div></div>`).join('');
 
   el('nbr-points').textContent = points.toLocaleString();
 
@@ -895,10 +1037,10 @@ function renderNinjaResult(){
   const rev = el('nbr-review');
   if(ninjaHistory.length>0){
     rev.style.display='';
-    rev.innerHTML=`<div style="color:${belt.color};font-size:0.6rem;letter-spacing:3px;margin-bottom:8px;text-align:center;">📋 ROUND REVIEW — ×${belt.table} TABLE</div>`
+    rev.innerHTML=`<div style="color:${tone(belt.color)};font-size:0.8125rem;letter-spacing:3px;margin-bottom:8px;text-align:center;">📋 ROUND REVIEW — ×${belt.table} TABLE</div>`
       +ninjaHistory.map((h,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:6px;margin-bottom:3px;background:${h.correct?"rgba(124,255,80,0.07)":"rgba(255,68,68,0.07)"};border:1px solid ${h.correct?"rgba(124,255,80,0.18)":"rgba(255,68,68,0.18)"};">
-        <span style="color:rgba(255,255,255,0.52);font-size:0.7rem;">${h.q.a} × ${h.q.b} = <b style="color:rgba(255,255,255,0.75);">${h.q.answer}</b></span>
-        <span style="font-size:0.7rem;color:${h.correct?"#7cff50":"#ff5555"};">${h.correct?"✓":`✗ ${h.selected}`}</span>
+        <span style="color:rgba(var(--fg),calc(0.52*var(--tk) + var(--tb)));font-size:0.8125rem;">${h.q.a} × ${h.q.b} = <b style="color:rgba(var(--fg),calc(0.75*var(--tk) + var(--tb)));">${h.q.answer}</b></span>
+        <span style="font-size:0.8125rem;color:${h.correct?tone("#7cff50"):tone("#ff5555")};">${h.correct?"✓":`✗ ${h.selected}`}</span>
       </div>`).join('');
   } else { rev.style.display='none'; }
 
@@ -908,8 +1050,8 @@ function renderNinjaResult(){
 
   // Belt progress
   const curB = BELTS[earnedBelt-1];
-  el('nbr-belt-progress').innerHTML = BELTS.map(b=>`<div style="width:16px;height:16px;border-radius:50%;background:${b.level<earnedBelt?b.color:b.level===earnedBelt?`radial-gradient(circle,${b.color},${b.color}77)`:"rgba(255,255,255,0.08)"};border:2px solid ${b.level===earnedBelt?b.color:"transparent"};box-shadow:${b.level===earnedBelt?`0 0 7px ${b.color}`:"none"};"></div>`).join('');
-  el('nbr-belt-progress-label').style.color = curB.color;
+  el('nbr-belt-progress').innerHTML = BELTS.map(b=>`<div style="width:16px;height:16px;border-radius:50%;background:${b.level<earnedBelt?b.color:b.level===earnedBelt?`radial-gradient(circle,${tone(b.color)},${tone(b.color)}77)`:"rgba(var(--fg),0.08)"};border:2px solid ${b.level===earnedBelt?b.color:"transparent"};box-shadow:${b.level===earnedBelt?`0 0 7px ${tone(b.color)}`:"none"};"></div>`).join('');
+  el('nbr-belt-progress-label').style.color = tone(curB.color);
   el('nbr-belt-progress-label').textContent = `${curB.name} BELT · ${earnedBelt}/12`;
 
   // Save
@@ -919,20 +1061,20 @@ function renderNinjaResult(){
   const nextBelt = BELTS[earnedBelt-1];
   const nextBeltAlt = BELTS[Math.min(11,earnedBelt)];
   el('nbr-btns').innerHTML = `
-    <button class="cta-btn" onclick="startNinjaBelt(${belt.level},${beltQs.length})" style="background:linear-gradient(135deg,${belt.color},${BELTS[Math.min(11,belt.level)].color});animation:orbPulse 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;color:${belt.level===1?"#1a1a2e":"white"};">↺ RETRY</button>
-    ${promoted&&earnedBelt<=12?`<button class="cta-btn" onclick="startNinjaBelt(${earnedBelt},${beltQs.length})" style="background:linear-gradient(135deg,${nextBelt.color},${nextBeltAlt.color});animation:orbPulse 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;color:${earnedBelt===1?"#1a1a2e":"white"};">▶ NEXT BELT</button>`:''}
-    <button onclick="showScreen('home')" style="background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.42);font-family:'Courier New',monospace;font-size:0.86rem;padding:12px 16px;border-radius:50px;cursor:pointer;letter-spacing:2px;">← HOME</button>`;
+    <button class="cta-btn" onclick="startNinjaBelt(${belt.level},${beltQs.length})" style="background:linear-gradient(135deg,${tone(belt.color)},${tone(BELTS[Math.min(11,belt.level)].color)});animation:orbPulse 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;color:${belt.level===1&&!isLight()?"#1a1a2e":"white"};">↺ RETRY</button>
+    ${promoted&&earnedBelt<=12?`<button class="cta-btn" onclick="startNinjaBelt(${earnedBelt},${beltQs.length})" style="background:linear-gradient(135deg,${tone(nextBelt.color)},${tone(nextBeltAlt.color)});animation:orbPulse 2s ease-in-out infinite;font-size:0.95rem;padding:12px 24px;color:${earnedBelt===1&&!isLight()?"#1a1a2e":"white"};">▶ NEXT BELT</button>`:''}
+    <button onclick="showScreen('home')" style="background:rgba(var(--fg),0.05);border:2px solid rgba(var(--fg),0.14);color:rgba(var(--fg),calc(0.42*var(--tk) + var(--tb)));font-family:'Courier New',monospace;font-size:0.86rem;padding:12px 16px;border-radius:50px;cursor:pointer;letter-spacing:2px;">← HOME</button>`;
 }
 
 function renderNbrSave(){
   if(!savedScore){
-    el('nbr-save').innerHTML=`<div style="color:rgba(255,255,255,0.26);font-size:0.62rem;letter-spacing:2px;margin-bottom:7px;">SAVE SCORE</div>
+    el('nbr-save').innerHTML=`<div style="color:rgba(var(--fg),calc(0.26*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:2px;margin-bottom:7px;">SAVE SCORE</div>
       <div style="display:flex;gap:8px;justify-content:center;align-items:center;">
         <input class="name-input" id="nbr-name-input" placeholder="YOUR NAME" maxlength="12" oninput="nameInput=this.value" onkeydown="if(event.key==='Enter')saveToLBNinja()"/>
-        <button onclick="saveToLBNinja()" style="background:linear-gradient(135deg,#00e5ff,#bf5fff);border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;font-size:0.76rem;letter-spacing:2px;padding:11px 14px;border-radius:10px;cursor:pointer;">SAVE</button>
+        <button onclick="saveToLBNinja()" style="background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;font-size:0.8125rem;letter-spacing:2px;padding:11px 14px;border-radius:10px;cursor:pointer;">SAVE</button>
       </div>`;
   } else {
-    el('nbr-save').innerHTML=`<div style="color:#7cff50;font-size:0.76rem;letter-spacing:2px;">✓ SAVED AS ${savedScore.name}!</div>`;
+    el('nbr-save').innerHTML=`<div style="color:var(--green);font-size:0.8125rem;letter-spacing:2px;">✓ SAVED AS ${esc(savedScore.name)}!</div>`;
   }
 }
 
@@ -965,7 +1107,7 @@ function startClassic(){
 function renderClassicQuiz(){
   const d = getDiff();
   el('cl-qnum').textContent = 'Q '+questionNum+'/10';
-  el('cl-diff-badge').innerHTML = `<div style="background:${d.color}22;border:1px solid ${d.color}88;border-radius:20px;padding:3px 10px;color:${d.color};font-size:0.8rem;">${d.emoji} ${d.label}</div>`;
+  el('cl-diff-badge').innerHTML = `<div style="background:${tone(d.color)}22;border:1px solid ${tone(d.color)}88;border-radius:20px;padding:3px 10px;color:${tone(d.color)};font-size:0.8125rem;">${d.emoji} ${d.label}</div>`;
   el('cl-score').textContent  = '⭐'+score;
   el('cl-streak').textContent = '🔥'+streak;
   el('cl-progress-bar').style.width = `${((questionNum-1)/10)*100}%`;
@@ -987,10 +1129,10 @@ function updateClassicTimerBar(){
   const bar = el('cl-timer-bar');
   if(!bar) return;
   const pct = (timeLeft/timerSecs)*100;
-  const color = timeLeft>timerSecs*0.5?"#7cff50":timeLeft>timerSecs*0.25?"#ffe600":"#ff4444";
+  const color = timeLeft>timerSecs*0.5?tone("#7cff50"):timeLeft>timerSecs*0.25?tone("#ffe600"):tone("#ff4444");
   bar.style.width = pct+'%';
   bar.style.background = color;
-  bar.style.boxShadow = `0 0 8px ${color}`;
+  bar.style.boxShadow = `0 0 8px ${tone(color)}`;
   bar.style.animation = timeLeft<=Math.ceil(timerSecs*0.2)?"timerPulse 0.5s ease-in-out infinite":"none";
 }
 
@@ -1061,17 +1203,17 @@ function showClassicFeedback(){
   const d = getDiff();
   const msg = el('cl-message');
   if(feedback==='correct'){
-    msg.textContent=classicMessage; msg.style.color='#7cff50';
-    const ans=el('cl-q-answer'); ans.textContent=`= ${question.answer} ✓`; ans.style.color='#7cff50'; ans.style.textShadow='0 0 20px #7cff50'; ans.style.animation='correctReveal 0.4s ease';
+    msg.textContent=classicMessage; msg.style.color=tone('#7cff50');
+    const ans=el('cl-q-answer'); ans.textContent=`= ${question.answer} ✓`; ans.style.color=tone('#7cff50'); ans.style.textShadow='0 0 20px var(--green)'; ans.style.animation='correctReveal 0.4s ease';
   } else {
-    msg.textContent=classicMessage; msg.style.color='#ff5555';
-    const ans=el('cl-q-answer'); ans.textContent=`= ${question.answer}`; ans.style.color='rgba(255,255,255,0.38)'; ans.style.animation='';
+    msg.textContent=classicMessage; msg.style.color=tone('#ff5555');
+    const ans=el('cl-q-answer'); ans.textContent=`= ${question.answer}`; ans.style.color='rgba(var(--fg),calc(0.38*var(--tk) + var(--tb)))'; ans.style.animation='';
   }
   // Color choice buttons
   el('cl-choices').querySelectorAll('.choice-btn').forEach(btn=>{
     const c=parseInt(btn.textContent);
-    if(c===question.answer){ btn.style.borderColor='#7cff50';btn.style.background='rgba(124,255,80,0.15)';btn.style.color='#7cff50'; }
-    else if(c===selChoice){ btn.style.borderColor='#ff4444';btn.style.background='rgba(255,68,68,0.12)';btn.style.color='#ff5555'; }
+    if(c===question.answer){ btn.style.borderColor=tone('#7cff50');btn.style.background='rgba(124,255,80,0.15)';btn.style.color=tone('#7cff50'); }
+    else if(c===selChoice){ btn.style.borderColor=tone('#ff4444');btn.style.background='rgba(255,68,68,0.12)';btn.style.color=tone('#ff5555'); }
     btn.disabled=true;
   });
 }
@@ -1103,38 +1245,38 @@ function renderClassicResult(){
   const titles=score===10?"MASTER!":score>=7?"GREAT JOB!":score>=4?"GOOD TRY!":"KEEP GOING!";
   el('clr-title').textContent=titles;
   const stars=score===10?3:score>=7?2:score>=4?1:0;
-  el('clr-stars').innerHTML=[0,1,2].map(i=>`<span style="opacity:${i<stars?1:0.14};filter:${i<stars?"drop-shadow(0 0 10px #ffe600)":"none"};animation:${i<stars?`starSpin ${1.5+i*0.3}s linear infinite`:"none"};display:inline-block;margin:0 4px;">⭐</span>`).join('');
+  el('clr-stars').innerHTML=[0,1,2].map(i=>`<span style="opacity:${i<stars?1:0.14};filter:${i<stars?"drop-shadow(0 0 10px var(--yellow))":"none"};animation:${i<stars?`starSpin ${1.5+i*0.3}s linear infinite`:"none"};display:inline-block;margin:0 4px;">⭐</span>`).join('');
   el('clr-points').textContent=points.toLocaleString();
-  el('clr-score-big').innerHTML=`${score}<span style="font-size:1.2rem;color:rgba(255,255,255,0.32);">/10</span>`;
+  el('clr-score-big').innerHTML=`${score}<span style="font-size:1.2rem;color:rgba(var(--fg),calc(0.32*var(--tk) + var(--tb)));">/10</span>`;
   const statsData=[
-    {val:`🔥 ${bestStreak}`,label:"STREAK",color:"#ff4da6"},
-    {val:`${Math.round(score/10*100)}%`,label:"ACCURACY",color:"#00e5ff"},
+    {val:`🔥 ${bestStreak}`,label:"STREAK",color:tone("#ff4da6")},
+    {val:`${Math.round(score/10*100)}%`,label:"ACCURACY",color:tone("#00e5ff")},
     {val:d.emoji,label:d.label,color:d.color},
-    {val:timerMode?`⏱${timerSecs}s`:"FREE",label:"TIMER",color:"rgba(255,255,255,0.4)"},
+    {val:timerMode?`⏱${timerSecs}s`:"FREE",label:"TIMER",color:"rgba(var(--fg),0.4)"},
   ];
-  el('clr-stats').innerHTML=statsData.map(s=>`<div class="stat-block"><div class="stat-val" style="color:${s.color};">${s.val}</div><div class="stat-lbl">${s.label}</div></div>`).join('');
+  el('clr-stats').innerHTML=statsData.map(s=>`<div class="stat-block"><div class="stat-val" style="color:${tone(s.color)};">${s.val}</div><div class="stat-lbl">${s.label}</div></div>`).join('');
   renderClrSave();
   renderClrLB();
 }
 
 function renderClrSave(){
   if(!savedScore){
-    el('clr-save').innerHTML=`<div style="color:rgba(255,255,255,0.26);font-size:0.62rem;letter-spacing:2px;margin-bottom:7px;">SAVE TO LEADERBOARD</div>
+    el('clr-save').innerHTML=`<div style="color:rgba(var(--fg),calc(0.26*var(--tk) + var(--tb)));font-size:0.8125rem;letter-spacing:2px;margin-bottom:7px;">SAVE TO LEADERBOARD</div>
       <div style="display:flex;gap:8px;justify-content:center;align-items:center;">
         <input class="name-input" id="clr-name-input" placeholder="YOUR NAME" maxlength="12" oninput="nameInput=this.value" onkeydown="if(event.key==='Enter')saveToLBClassic()"/>
-        <button onclick="saveToLBClassic()" style="background:linear-gradient(135deg,#00e5ff,#bf5fff);border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;font-size:0.76rem;letter-spacing:2px;padding:11px 14px;border-radius:10px;cursor:pointer;">SAVE</button>
+        <button onclick="saveToLBClassic()" style="background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;color:white;font-family:'Courier New',monospace;font-weight:bold;font-size:0.8125rem;letter-spacing:2px;padding:11px 14px;border-radius:10px;cursor:pointer;">SAVE</button>
       </div>`;
   } else {
-    el('clr-save').innerHTML=`<div style="color:#7cff50;font-size:0.76rem;letter-spacing:2px;">✓ SAVED AS ${savedScore.name}!</div>`;
+    el('clr-save').innerHTML=`<div style="color:var(--green);font-size:0.8125rem;letter-spacing:2px;">✓ SAVED AS ${esc(savedScore.name)}!</div>`;
   }
 }
 
 function renderClrLB(){
   if(!leaderboard.length){ el('clr-lb').innerHTML=''; return; }
-  el('clr-lb').innerHTML=`<div style="color:#ff4da6;font-size:0.6rem;letter-spacing:4px;margin-bottom:7px;text-align:center;">🏆 TOP SCORES</div>`
-    +leaderboard.slice(0,5).map((e,i)=>`<div class="lb-row" style="background:${i===0?"rgba(255,230,0,0.09)":"rgba(255,255,255,0.04)"};border:1px solid ${i===0?"rgba(255,230,0,0.22)":"rgba(255,255,255,0.07)"};">
-      <span style="color:${i===0?"#ffe600":"rgba(255,255,255,0.38)"};font-size:0.7rem;">${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`} ${e.name}</span>
-      <div><span style="color:#ffe600;font-size:0.74rem;font-weight:bold;">${e.points.toLocaleString()}</span><span style="color:rgba(255,255,255,0.24);font-size:0.58rem;margin-left:6px;">${e.mode}</span></div>
+  el('clr-lb').innerHTML=`<div style="color:var(--pink);font-size:0.8125rem;letter-spacing:4px;margin-bottom:7px;text-align:center;">🏆 TOP SCORES</div>`
+    +leaderboard.slice(0,5).map((e,i)=>`<div class="lb-row" style="background:${i===0?"rgba(255,230,0,0.09)":"rgba(var(--fg),0.04)"};border:1px solid ${i===0?"rgba(255,230,0,0.22)":"rgba(var(--fg),0.07)"};">
+      <span style="color:${i===0?tone("#ffe600"):"rgba(var(--fg),0.38)"};font-size:0.8125rem;">${i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}.`} ${esc(e.name)}</span>
+      <div><span style="color:var(--yellow);font-size:0.8125rem;font-weight:bold;">${e.points.toLocaleString()}</span><span style="color:rgba(var(--fg),calc(0.24*var(--tk) + var(--tb)));font-size:0.8125rem;margin-left:6px;">${esc(e.mode)}</span></div>
     </div>`).join('');
 }
 
@@ -1151,7 +1293,10 @@ function saveToLBClassic(){
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
+document.body.dataset.screen = 'home';
 renderHome();
+// The script's colours were worked out for one theme; redraw when it changes.
+darkMQ.addEventListener('change', ()=>{ if(document.body.dataset.screen==='home') renderHome(); });
 
 // ── Service Worker Registration ────────────────────────────────────────────────
 // Game Box uses a single service worker at the site root (../sw.js).
