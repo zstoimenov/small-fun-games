@@ -141,7 +141,8 @@
   .fav{position:absolute;right:4px;top:4px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.88);
     font-size:18px;display:grid;place-items:center;color:#8a8fb0}
   .fav[aria-pressed="true"]{color:var(--heart)}
-  .empty{margin:40px 0;text-align:center;color:var(--muted)}
+  .empty{margin:40px auto;max-width:420px;text-align:center;color:var(--muted)}
+  .empty .playbtn{display:block;width:100%;margin-top:14px;border:0;cursor:pointer;font:inherit;font-weight:800;font-size:19px}
 
   /* ── Details sheet ── */
   dialog{border:0;padding:0;border-radius:24px;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);
@@ -253,9 +254,17 @@ const store = {
   get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* private mode */ } }
 };
-let favs = new Set(store.get("gamebox:favs", []));
-const played = store.get("gamebox:played", {});
-const progressOf = (g) => store.get("gamebox:progress:" + g.folder, null);
+// Anything read back is checked for shape: one damaged value must not stop the
+// home page drawing (a non-list in favs used to leave it with no cards at all).
+const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const listOf = (k) => { const v = store.get(k, []); return Array.isArray(v) ? v : []; };
+const mapOf = (k) => { const v = store.get(k, {}); return isObj(v) ? v : {}; };
+let favs = new Set(listOf("gamebox:favs"));
+const played = mapOf("gamebox:played");
+const progressOf = (g) => {
+  const p = store.get("gamebox:progress:" + g.folder, null);
+  return isObj(p) && Number.isFinite(p.stars) && Number.isFinite(p.max) ? p : null;
+};
 const lastPlayed = (g) => Math.max(played[g.folder] || 0, (progressOf(g) || {}).at || 0);
 
 function badge(g) {
@@ -361,35 +370,37 @@ function page(lane, dir) {
   const n = parseInt(getComputedStyle(lane).getPropertyValue("--n"), 10) || 2;
   lane.scrollBy({ left: dir * n * step(lane), behavior: smooth() });
 }
+// One drag at a time, followed by window listeners added once: adding them per
+// lane piled up a dozen more on every redraw (every heart tap redraws).
+let drag = null;
 function swipe(lane, after) {
-  let start = null, dragged = false;
   lane.addEventListener("pointerdown", (e) => {
     if (e.pointerType !== "mouse" || e.button !== 0) return;
-    start = { x: e.clientX, left: lane.scrollLeft, t: performance.now() };
-    dragged = false;
+    drag = { lane, after, x: e.clientX, left: lane.scrollLeft, t: performance.now() };
+    lane.dragged = false;
   });
-  addEventListener("pointermove", (e) => {
-    if (!start) return;
-    const dx = e.clientX - start.x;
-    if (!dragged && Math.abs(dx) > 6) { dragged = true; lane.classList.add("dragging"); }
-    if (dragged) lane.scrollLeft = start.left - dx;
-  });
-  addEventListener("pointerup", (e) => {
-    if (!start) return;
-    const s = start;
-    start = null;
-    if (!dragged) return;
-    // A quick flick carries on a little, the way a finger does.
-    const v = (e.clientX - s.x) / Math.max(1, performance.now() - s.t);
-    const w = step(lane);
-    const max = lane.scrollWidth - lane.clientWidth;
-    const target = Math.max(0, Math.min(max, Math.round((lane.scrollLeft - v * 180) / w) * w));
-    lane.classList.remove("dragging");
-    lane.scrollTo({ left: target, behavior: smooth() });
-    after();
-  });
-  lane.addEventListener("click", (e) => { if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; } }, true);
+  lane.addEventListener("click", (e) => { if (lane.dragged) { e.stopPropagation(); e.preventDefault(); lane.dragged = false; } }, true);
 }
+addEventListener("pointermove", (e) => {
+  if (!drag) return;
+  const { lane } = drag, dx = e.clientX - drag.x;
+  if (!lane.dragged && Math.abs(dx) > 6) { lane.dragged = true; lane.classList.add("dragging"); }
+  if (lane.dragged) lane.scrollLeft = drag.left - dx;
+});
+addEventListener("pointerup", (e) => {
+  if (!drag) return;
+  const s = drag, { lane } = s;
+  drag = null;
+  if (!lane.dragged) return;
+  // A quick flick carries on a little, the way a finger does.
+  const v = (e.clientX - s.x) / Math.max(1, performance.now() - s.t);
+  const w = step(lane);
+  const max = lane.scrollWidth - lane.clientWidth;
+  const target = Math.max(0, Math.min(max, Math.round((lane.scrollLeft - v * 180) / w) * w));
+  lane.classList.remove("dragging");
+  lane.scrollTo({ left: target, behavior: smooth() });
+  s.after();
+});
 function arrows(box) {
   const lane = box.firstChild;
   const max = lane.scrollWidth - lane.clientWidth;
@@ -450,7 +461,9 @@ function render() {
       .forEach(s => s && main.appendChild(s));
     fit();
   } else if (!list.length) {
-    main.innerHTML = '<p class="empty">No games match. Try another word, or tap <b>All</b>.</p>';
+    main.innerHTML = '<div class="empty"><p>No games match. Try another word, or start again.</p>' +
+      '<button type="button" class="playbtn" id="showAll">Show all games</button></div>';
+    $("showAll").addEventListener("click", showAll);
   } else {
     const grid = document.createElement("div");
     grid.className = "grid";
@@ -471,9 +484,14 @@ function paintFilters() {
     b.type = "button";
     b.className = "pill";
     b.setAttribute("aria-pressed", String(state.cat === o.id));
-    b.disabled = n === 0 && state.cat !== o.id;
+    // All is never dimmed: it is the way back. When the search has emptied it
+    // too, tapping it clears the search as well.
+    b.disabled = n === 0 && state.cat !== o.id && o.id !== "all";
     b.innerHTML = `<span aria-hidden="true">${o.emoji}</span>${o.label} <span class="n">${n}</span>`;
-    b.addEventListener("click", () => { state.cat = o.id; remember(); render(); });
+    b.addEventListener("click", () => {
+      if (o.id === "all" && n === 0) { showAll(); return; }
+      state.cat = o.id; remember(); render();
+    });
     box.appendChild(b);
   });
   const seg = $("players");
@@ -522,7 +540,7 @@ $("dFav").addEventListener("click", () => toggleFav(current.folder));
 // The count is Career Compass's "chooses to play" signal.
 $("dPlay").addEventListener("click", () => {
   played[current.folder] = Date.now(); store.set("gamebox:played", played);
-  const plays = store.get("gamebox:plays", {});
+  const plays = mapOf("gamebox:plays");
   plays[current.folder] = (plays[current.folder] || 0) + 1; store.set("gamebox:plays", plays);
 });
 
@@ -533,6 +551,12 @@ $("q").addEventListener("input", () => {
   render();
 });
 $("clear").addEventListener("click", () => { $("q").value = ""; state.q = ""; $("clear").hidden = true; render(); $("q").focus(); });
+// Back to everything: no search, no category, any number of players.
+function showAll() {
+  $("q").value = ""; state.q = ""; $("clear").hidden = true;
+  state.cat = "all"; state.players = "any";
+  remember(); render();
+}
 
 readPicks();
 render();
