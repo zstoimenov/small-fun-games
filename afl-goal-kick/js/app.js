@@ -2,7 +2,14 @@
 // Setup panel, input, sizing and the frame loop.
 
 // ---------- input / phase machine ----------
+// One press is one step. Two taps a few ms apart (a double tap, or a held key
+// repeating) used to lock the aim and the power in the same instant, or skip
+// the final scoreboard straight back to the menu.
+let lastStep = 0;
 function advance() {
+  const now = performance.now();
+  if (now - lastStep < 180) return;
+  lastStep = now;
   ac();
   const k = S.kick;
   if (S.phase === 'aim') {
@@ -16,7 +23,7 @@ function advance() {
   } else if (S.phase === 'result') {
     if (S.resultT > 0.6) nextKick();
   } else if (S.phase === 'gameover') {
-    showSetup();
+    if (S.time - (S.overAt || 0) > 1) showSetup();   // let the scoreboard be seen
   }
 }
 const setupEl = document.getElementById('setup');
@@ -74,7 +81,8 @@ addEventListener('keydown', e => {
     return;                                   // let space type into the name fields
   }
   if (e.code === 'Space' || e.key === ' ' || e.key === 'Spacebar' || e.keyCode === 32) {
-    e.preventDefault(); advance();
+    e.preventDefault();
+    if (!e.repeat) advance();                 // holding Space is one press, not a kick
   }
 });
 cv.addEventListener('pointerdown', () => { if (!setupVisible()) advance(); });

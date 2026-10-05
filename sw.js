@@ -7,7 +7,7 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v87";
+const CACHE = "game-box-v88";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
@@ -69,7 +69,8 @@ const ASSETS = [
   "./bulgarian-bukvar/icons/icon-192.png", "./bulgarian-bukvar/icons/icon-512.png",
   "./bulgarian-bukvar/icons/apple-touch-icon.png",
 
-  "./afl-goal-kick/", "./afl-goal-kick/index.html", "./afl-goal-kick/css/style.css",
+  "./afl-goal-kick/", "./afl-goal-kick/index.html", "./afl-goal-kick/manifest.webmanifest",
+  "./afl-goal-kick/css/style.css",
   "./afl-goal-kick/js/rules.js", "./afl-goal-kick/js/audio.js", "./afl-goal-kick/js/figures.js",
   "./afl-goal-kick/js/scene.js", "./afl-goal-kick/js/hud.js", "./afl-goal-kick/js/app.js",
 

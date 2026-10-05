@@ -1,51 +1,99 @@
+/* AFL Goal Kick. The match is a night game under lights in both themes: the
+   stadium is the game world, drawn on the canvas. The theme dresses what sits
+   around it: the setup panel and the Games link. */
+:root{
+  --veil:rgba(230,236,245,.82); --panel:#ffffff; --panel-line:#d5dfeb; --card:#f2f6fb; --card-line:#d5dfeb;
+  --ink:#15233a; --muted:#56677d; --gold:#b48600; --field:#eef3f9; --field-line:#c9d6e5; --opt:#e6edf6; --opt-ink:#3b4d66;
+  --back-bg:rgba(255,255,255,.88); --back-ink:#15233a;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --veil:rgba(5,9,15,.78); --panel:#121c2b; --panel-line:#2a3a52; --card:#0d1520; --card-line:#24344c;
+    --ink:#ffffff; --muted:#8fa0b6; --gold:#ffdd33; --field:#1a2537; --field-line:#2e405c; --opt:#1a2537; --opt-ink:#9fb4cc;
+    --back-bg:rgba(10,16,26,.72); --back-ink:#cfe3f7;
+  }
+}
+:root[data-theme="dark"]{
+  --veil:rgba(5,9,15,.78); --panel:#121c2b; --panel-line:#2a3a52; --card:#0d1520; --card-line:#24344c;
+  --ink:#ffffff; --muted:#8fa0b6; --gold:#ffdd33; --field:#1a2537; --field-line:#2e405c; --opt:#1a2537; --opt-ink:#9fb4cc;
+  --back-bg:rgba(10,16,26,.72); --back-ink:#cfe3f7;
+}
+
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0d1520;color:#fff;
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#0d1520;color:var(--ink);
   font-family:system-ui,-apple-system,sans-serif;
   touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 /* the canvas fills the entire viewport in any orientation; the game world and
    HUD are laid out responsively inside it, so there are never letterbox bars */
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:#0d1520;touch-action:none}
 #back{position:fixed;top:calc(8px + env(safe-area-inset-top));left:calc(8px + env(safe-area-inset-left));
-  z-index:20;background:rgba(10,16,26,.72);color:#cfe3f7;text-decoration:none;font-size:13px;font-weight:700;
-  padding:8px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.14)}
-#back:active{background:rgba(10,16,26,.92)}
+  z-index:20;background:var(--back-bg);color:var(--back-ink);text-decoration:none;font-size:15px;font-weight:700;
+  display:inline-flex;align-items:center;min-height:42px;padding:0 15px;border-radius:999px;border:1px solid rgba(128,140,160,.35)}
+#back:active{filter:brightness(.92)}
 #setup{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
-  background:rgba(5,9,15,.78);z-index:10;overflow:auto;padding:20px}
-#panel{background:#121c2b;border:1px solid #2a3a52;border-radius:16px;
+  background:var(--veil);z-index:10;overflow:auto;touch-action:manipulation;
+  padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+#panel{background:var(--panel);border:1px solid var(--panel-line);border-radius:16px;
   padding:clamp(20px,4vw,28px) clamp(18px,4vw,34px);
-  box-shadow:0 12px 60px rgba(0,0,0,.7);text-align:center;max-width:560px;width:100%;
+  box-shadow:0 12px 60px rgba(0,0,0,.45);text-align:center;max-width:560px;width:100%;
   max-height:100%;overflow:auto;margin:auto}
-#panel h1{margin:0 0 4px;font-size:clamp(21px,5vw,26px);color:#ffdd33}
-#panel .sub{color:#7a8ba0;font-size:13px;margin-bottom:20px;line-height:1.5}
+#panel h1{margin:0 0 4px;font-size:clamp(21px,5vw,26px);color:var(--gold)}
+#panel .sub{color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.5}
 /* step 1 — how many players */
 .modes{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:6px}
-.modeBtn{background:#0d1520;border:1px solid #24344c;border-radius:14px;padding:22px 18px;
-  width:210px;max-width:100%;cursor:pointer;color:#fff;text-align:center;
+.modeBtn{background:var(--card);border:1px solid var(--card-line);border-radius:14px;padding:22px 18px;
+  width:210px;max-width:100%;cursor:pointer;color:var(--ink);text-align:center;
   transition:border-color .15s,transform .1s}
-.modeBtn:hover{border-color:#ffdd33}
+.modeBtn:hover{border-color:var(--gold)}
 .modeBtn:active{transform:scale(.97)}
 .modeIcon{font-size:42px;line-height:1;margin-bottom:10px}
 .modeName{font-size:19px;font-weight:800;margin-bottom:6px}
-.modeDesc{font-size:12px;color:#7a8ba0;line-height:1.4}
+.modeDesc{font-size:14px;color:var(--muted);line-height:1.4}
 /* step 2 — names & difficulty */
 #players{display:flex;gap:18px;justify-content:center;margin-bottom:22px;flex-wrap:wrap}
-.pcard{background:#0d1520;border:1px solid #24344c;border-radius:12px;padding:16px;
+.pcard{background:var(--card);border:1px solid var(--card-line);border-radius:12px;padding:16px;
   width:220px;max-width:100%}
-.pcard label{display:block;font-size:11px;letter-spacing:1px;color:#7a8ba0;margin-bottom:8px}
-.pcard input{width:100%;background:#1a2537;border:1px solid #2e405c;color:#fff;
-  border-radius:8px;padding:9px 10px;font-size:15px;margin-bottom:12px;outline:none}
-.pcard input:focus{border-color:#ffdd33}
+.pcard label{display:block;font-size:13px;letter-spacing:1px;color:var(--muted);margin-bottom:8px}
+.pcard input{width:100%;background:var(--field);border:1px solid var(--field-line);color:var(--ink);
+  border-radius:8px;padding:0 10px;min-height:44px;font-size:16px;margin-bottom:12px;outline:none}
+.pcard input:focus{border-color:var(--gold)}
 .diffs{display:flex;gap:6px}
-.diffs button{flex:1;background:#1a2537;border:1px solid #2e405c;color:#9fb4cc;border-radius:8px;
-  padding:9px 0;font-size:13px;cursor:pointer}
+.diffs button{flex:1;background:var(--opt);border:1px solid var(--field-line);color:var(--opt-ink);border-radius:8px;
+  min-height:44px;font-size:14px;cursor:pointer}
 .diffs button.sel{background:#ffdd33;border-color:#ffdd33;color:#12203a;font-weight:700}
 .setupBtns{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap}
-#backToMode{background:#1a2537;border:1px solid #2e405c;color:#9fb4cc;border-radius:10px;
-  padding:12px 22px;font-size:14px;font-weight:700;cursor:pointer}
-#backToMode:hover{border-color:#7a8ba0}
+#backToMode{background:var(--opt);border:1px solid var(--field-line);color:var(--opt-ink);border-radius:10px;
+  min-height:var(--tap);padding:0 22px;font-size:15px;font-weight:700;cursor:pointer}
+#backToMode:hover{border-color:var(--muted)}
 #start{background:#3ddc68;border:none;color:#082412;font-size:17px;font-weight:800;
-  padding:12px 44px;border-radius:10px;cursor:pointer;letter-spacing:.5px}
+  min-height:var(--tap);padding:0 44px;border-radius:10px;cursor:pointer;letter-spacing:.5px}
 #start:hover{filter:brightness(1.1)}
 /* team swatch on each player card, so kids can see which club they kick for */
 .team{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-weight:800;
-  letter-spacing:.5px;font-size:10px;vertical-align:1px}
+  letter-spacing:.5px;font-size:13px;vertical-align:1px}
+
+/* Phones held sideways: the two player cards and the buttons side by side, so
+   the whole sheet fits in about 360px of height. */
+@media (max-height:520px){
+  #panel{padding:12px 18px;max-width:760px}
+  #panel h1{font-size:20px}
+  #panel .sub{margin-bottom:10px}
+  .modeBtn{padding:12px 14px}
+  .modeIcon{font-size:30px;margin-bottom:4px}
+  #players{gap:12px;margin-bottom:10px;flex-wrap:nowrap}
+  .pcard{padding:10px 12px}
+  .pcard input{margin-bottom:8px}
+}
+/* Desktop: a desktop-sized sheet. */
+@media (min-width:1200px) and (min-height:700px){
+  #panel{max-width:760px;padding:34px 40px}
+  #panel h1{font-size:34px}
+  #panel .sub{font-size:17px}
+  .modeBtn{width:260px;padding:28px 22px}
+  .modeName{font-size:23px}
+  .modeDesc{font-size:16px}
+  .pcard{width:280px}
+  .pcard label{font-size:15px}
+  .diffs button{font-size:16px}
+  #start{font-size:20px}
+}

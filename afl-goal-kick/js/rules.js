@@ -63,7 +63,7 @@ function nextKick() {
   } else {
     S.turn = 0; S.round++;                     // next round (solo: every kick; 2P: after both kicked)
   }
-  if (S.round > TOTAL_ROUNDS) { S.phase = 'gameover'; return; }
+  if (S.round > TOTAL_ROUNDS) { S.phase = 'gameover'; S.overAt = S.time; return; }
   setupKick();
 }
 
