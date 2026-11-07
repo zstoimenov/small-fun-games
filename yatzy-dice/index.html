@@ -131,12 +131,14 @@
     <!-- Playing with real dice: the app is only the score sheet -->
     <section id="entryArea" class="entry-area" hidden>
       <p id="entryTitle" class="entry-title">Tap in the five dice you rolled</p>
-      <div id="entryDice" class="dice-row"></div>
-      <div id="keypad" class="keypad"></div>
-      <div class="entry-buttons">
-        <button id="entryClear" class="ghost-btn" type="button">Clear</button>
-        <button id="entryToggle" class="ghost-btn" type="button">✏️ Type scores instead</button>
+      <!-- The switch and Clear sit either side of the dice so they cost no
+           line of their own: every pixel here is scorecard the kid can't see. -->
+      <div class="entry-row">
+        <button id="entryToggle" class="mini-btn" type="button" title="Type scores instead" aria-label="Type scores instead">✏️</button>
+        <div id="entryDice" class="dice-row"></div>
+        <button id="entryClear" class="mini-btn" type="button" title="Clear the dice" aria-label="Clear the dice">✕</button>
       </div>
+      <div id="keypad" class="keypad"></div>
     </section>
   </div>
 

@@ -260,7 +260,28 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   display:grid;place-items:center;
 }
 .key:active{transform:translateY(1px)}
-.entry-buttons{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.entry-row{display:flex;align-items:center;justify-content:center;gap:7px}
+.entry-row .dice-row{gap:6px;flex-wrap:nowrap}
+#entryDice .die{width:44px;height:44px;padding:6px;border-radius:11px}
+#entryDice .die .pip{max-width:8px;max-height:8px}
+.entry-area .entry-title{margin:4px 0 8px}
+.entry-area .keypad{margin:8px 0 0}
+.mini-btn{
+  flex:0 0 auto;box-sizing:border-box;width:44px;height:44px;
+  border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  font:inherit;font-size:16px;font-weight:800;cursor:pointer;display:grid;place-items:center;padding:0;
+}
+.mini-btn.pill-btn{width:auto;border-radius:999px;padding:0 14px;font-size:14px}
+.mini-btn:active{transform:translateY(1px)}
+.mini-btn[hidden],.entry-row .dice-row[hidden]{display:none}
+/* Two buttons and five dice must share one line on the narrowest phones. */
+@media (max-width:380px){
+  #entryDice .die,.mini-btn{width:40px;height:40px}
+  .mini-btn.pill-btn{width:auto}
+  .entry-row,.entry-row .dice-row{gap:5px}
+  .key{padding:3px}
+  .keypad{gap:5px}
+}
 
 /* ── Scorecard ──────────────────────────────────────────────────────────── */
 

@@ -420,12 +420,20 @@ YZ.Ui = (function () {
       d.addEventListener("click", () => on.unsetEntry && on.unsetEntry(i));
       el.entryDice.appendChild(d);
     }
-    el.entryTitle.textContent = state.entryMode === "type"
+    const typing = state.entryMode === "type";
+    el.entryTitle.textContent = typing
       ? "Tap a box below and type the score"
-      : "Tap in the five dice you rolled";
-    el.keypad.hidden = state.entryMode === "type";
-    el.entryClear.hidden = state.entryMode === "type" || state.dice.length === 0;
-    el.entryToggle.textContent = state.entryMode === "type" ? "🎲 Use dice instead" : "✏️ Type scores instead";
+      : "Tap in your five dice. ✏️ types scores instead.";
+    el.keypad.hidden = typing;
+    el.entryDice.hidden = typing;
+    el.entryClear.hidden = typing;
+    // Kept in place while empty so the dice row doesn't slide when it appears.
+    el.entryClear.style.visibility = state.dice.length ? "" : "hidden";
+    el.entryToggle.textContent = typing ? "🎲 Use dice" : "✏️";
+    el.entryToggle.classList.toggle("pill-btn", typing);
+    const label = typing ? "Use dice instead" : "Type scores instead";
+    el.entryToggle.title = label;
+    el.entryToggle.setAttribute("aria-label", label);
   }
 
   function buildKeypad() {
