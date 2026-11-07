@@ -422,9 +422,10 @@ YZ.Ui = (function () {
     }
     const typing = state.entryMode === "type";
     el.entryTitle.textContent = typing
-      ? "Tap a box below and type the score"
+      ? "Tap a box to type its score"
       : "Tap in your five dice. ✏️ types scores instead.";
     el.keypad.hidden = typing;
+    el.entryArea.classList.toggle("typing", typing);
     el.entryDice.hidden = typing;
     el.entryClear.hidden = typing;
     // Kept in place while empty so the dice row doesn't slide when it appears.

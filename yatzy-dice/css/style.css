@@ -464,6 +464,55 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   .card-wrap{flex:1 1 auto}
 }
 
+/* Typing scores: the dice slots are gone, so the hint and the switch share a line. */
+.entry-area.typing:not([hidden]){display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.entry-area.typing .entry-title{margin:0;min-height:0}
+
+/* ── Tablets and desktops held sideways ─────────────────────────────────────
+   The left column is a full-height panel, not a little cluster in the middle:
+   top bar at the top, dice as big as the column allows, and the Roll button
+   full width at the bottom where a thumb rests. Sideways phones (under 600px
+   tall) keep the compact layout above. */
+@media (min-width:900px) and (min-height:600px) and (orientation:landscape){
+  #game{max-width:none;gap:24px;box-sizing:border-box;padding-bottom:max(14px, env(safe-area-inset-bottom))}
+  .game-top{
+    flex:0 0 42%;justify-content:flex-start;overflow:visible;
+    container-type:inline-size;
+  }
+  .topbar{margin-bottom:14px}
+  .turn-info strong{font-size:22px}
+  .turn-info span{font-size:14px}
+  .dice-area,.entry-area{flex:1 1 auto;display:flex;flex-direction:column;margin-bottom:0;min-height:0}
+  .dice-area[hidden],.entry-area[hidden]{display:none}
+
+  /* Five dice and four gaps fill the column, up to a size that still looks like dice. */
+  .dice-area .dice-row{--die:min(112px, calc((100cqi - 64px) / 5));gap:16px;margin:auto 0 0}
+  .dice-area .die{width:var(--die);height:var(--die);padding:calc(var(--die) * .14);border-radius:calc(var(--die) * .22)}
+  .dice-area .die .pip{max-width:calc(var(--die) * .19);max-height:calc(var(--die) * .19)}
+  .dice-hint{font-size:15px;margin:18px 0 auto}
+  .btn-roll{max-width:none;min-height:72px;font-size:21px;margin-top:16px}
+  .rolls-left{font-size:14px}
+
+  /* Own dice: the chosen five and the keypad grow the same way, the hint on top. */
+  .entry-area{gap:18px}
+  .entry-area .entry-title{font-size:15px;margin:auto 0 0}
+  .entry-row{--die:min(84px, calc((100cqi - 190px) / 5));gap:12px}
+  .entry-row .dice-row{gap:10px}
+  #entryDice .die{width:var(--die);height:var(--die);padding:calc(var(--die) * .14);border-radius:calc(var(--die) * .22)}
+  #entryDice .die .pip{max-width:calc(var(--die) * .19);max-height:calc(var(--die) * .19)}
+  .mini-btn{width:60px;height:60px;font-size:22px}
+  .mini-btn.pill-btn{width:auto;font-size:17px;padding:0 20px}
+  .keypad{--key:min(96px, calc((100cqi - 60px) / 6));gap:12px;margin:auto 0 0}
+  .key{width:var(--key);height:var(--key);border-radius:18px}
+  .key .die.mini{width:calc(var(--key) * .74);height:calc(var(--key) * .74);padding:calc(var(--key) * .1);border-radius:calc(var(--key) * .16)}
+  .key .die.mini .pip{max-width:calc(var(--key) * .13);max-height:calc(var(--key) * .13)}
+  .entry-area.typing:not([hidden]){flex-direction:row;flex:0 0 auto}
+  .entry-area.typing .entry-title{margin:0}
+
+  .scorecard{font-size:15px}
+  .cat-help{font-size:15px}
+}
+
 /* ── Putting the end card aside ─────────────────────────────────────────── */
 
 /* The result sheet covers the board, and the finished board is usually the
