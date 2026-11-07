@@ -299,6 +299,7 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   border-radius:50%;background:var(--chip);color:var(--chipink);
   font-size:13px;font-weight:800;vertical-align:1px;margin-left:3px;
 }
+.cat-max{display:block;font-size:13px;font-weight:500;color:var(--muted);line-height:1.2}
 .cat-row:nth-child(odd){background:color-mix(in srgb, var(--line) 22%, transparent)}
 
 .cell{min-width:52px;height:42px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -327,6 +328,15 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 .total-row.grand{background:color-mix(in srgb, var(--accent) 14%, transparent)}
 .total-row .muted{font-size:13px;font-weight:600}
 .got-bonus{color:var(--good)}
+.cell.on-pace{color:var(--good)}
+.pace{display:block;font-size:13px;font-weight:700;line-height:1.1}
+.pace.up{color:var(--good)}
+.pace.down{color:var(--muted)}
+.status-row{background:none}
+.status-row th,.status-row td{font-size:13px;font-weight:700;padding:7px;color:var(--muted)}
+.status-row td.got-bonus{color:var(--good)}
+.help-miss-label{margin:12px 0 4px !important}
+.help-yours{font-weight:700}
 
 /* ── Toast, confetti ────────────────────────────────────────────────────── */
 

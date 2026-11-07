@@ -704,7 +704,10 @@
       hold: hold,
       roll: roll,
       pick: pick,
-      catHelp: (id) => Ui.showHelp(id, state.rulesetId),
+      catHelp: (id) => {
+        const p = state.players && state.players[state.turn];
+        Ui.showHelp(id, state.rulesetId, p && p.card, state.preview);
+      },
       typeScore: typeScore,
       addEntry: addEntry,
       unsetEntry: unsetEntry,

@@ -147,7 +147,7 @@ YZ.Ui = (function () {
       for (const cat of upper) body.appendChild(categoryRow(cat, state, ruleset, preview));
     }
 
-    body.appendChild(totalRow("Top total", state, (t) => t.upper, "sub"));
+    body.appendChild(upperTotalRow(state, ruleset));
     body.appendChild(bonusRow(state, ruleset));
 
     if (lower.length) {
@@ -155,9 +155,12 @@ YZ.Ui = (function () {
       for (const cat of lower) body.appendChild(categoryRow(cat, state, ruleset, preview));
     }
 
+    body.appendChild(totalRow("Bottom total", state, (t) => t.lower, "sub"));
+
     if (ruleset.extraBonus) body.appendChild(extraRow(state, ruleset));
 
     body.appendChild(totalRow("TOTAL", state, (t) => t.total, "grand"));
+    statusRows(state, ruleset).forEach((r) => body.appendChild(r));
     table.appendChild(body);
   }
 
@@ -188,7 +191,8 @@ YZ.Ui = (function () {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "cat-help";
-    btn.innerHTML = cat.label + " <span class='qmark'>?</span>";
+    btn.innerHTML = cat.label + " <span class='qmark'>?</span>" +
+      "<span class='cat-max'>max " + Rules.maxScore(cat) + "</span>";
     btn.addEventListener("click", () => on.catHelp && on.catHelp(cat.id));
     name.appendChild(btn);
     tr.appendChild(name);
@@ -203,6 +207,10 @@ YZ.Ui = (function () {
         td.textContent = cellText(scored);
         td.classList.add("filled");
         if (scored === 0) td.classList.add("zeroed");
+        // Top boxes are coloured against the bonus pace of three of each face.
+        if (cat.section === "upper" && scored > 0) {
+          td.classList.add(scored >= 3 * cat.face ? "on-pace" : "off-pace");
+        }
         if (p.card.manual[cat.id]) {
           td.classList.add("manual");
           td.title = "Typed in by hand";
@@ -258,6 +266,68 @@ YZ.Ui = (function () {
     return tr;
   }
 
+  // Top total, with how far ahead of or behind the bonus pace each player is.
+  function upperTotalRow(state, ruleset) {
+    const tr = document.createElement("tr");
+    tr.className = "total-row sub";
+    const name = document.createElement("th");
+    name.scope = "row";
+    name.innerHTML = "Top total <span class='muted'>vs 3 of each</span>";
+    tr.appendChild(name);
+    for (const p of state.players) {
+      const td = document.createElement("td");
+      td.textContent = Rules.totals(ruleset, p.card).upper;
+      const pace = Rules.upperPace(ruleset, p.card);
+      if (pace !== null) {
+        const s = document.createElement("span");
+        s.className = "pace " + (pace >= 0 ? "up" : "down");
+        s.textContent = (pace > 0 ? "+" : "") + pace;
+        td.appendChild(s);
+      }
+      tr.appendChild(td);
+    }
+    return tr;
+  }
+
+  // Boxes left, the best total still reachable and, with company, the gap to
+  // whoever is in front.
+  function statusRows(state, ruleset) {
+    const rows = [];
+    const totals = state.players.map((p) => Rules.totals(ruleset, p.card).total);
+    const lead = Math.max.apply(null, totals);
+    const row = (label, cell) => {
+      const tr = document.createElement("tr");
+      tr.className = "total-row status-row";
+      const name = document.createElement("th");
+      name.scope = "row";
+      name.textContent = label;
+      tr.appendChild(name);
+      state.players.forEach((p, i) => {
+        const td = document.createElement("td");
+        cell(td, p, i);
+        tr.appendChild(td);
+      });
+      rows.push(tr);
+    };
+    row("Boxes left", (td, p) => {
+      td.textContent = Rules.openCategories(ruleset, p.card).length;
+    });
+    row("Best possible", (td, p) => {
+      td.textContent = Rules.bestPossible(ruleset, p.card);
+    });
+    if (state.players.length > 1) {
+      row("Behind leader", (td, p, i) => {
+        const gap = lead - totals[i];
+        if (gap > 0) td.textContent = "−" + gap;
+        else {
+          td.textContent = "Top";
+          td.className = "got-bonus";
+        }
+      });
+    }
+    return rows;
+  }
+
   function bonusRow(state, ruleset) {
     const tr = document.createElement("tr");
     tr.className = "total-row sub bonus-row";
@@ -272,6 +342,8 @@ YZ.Ui = (function () {
       if (t.bonus) {
         td.textContent = "+" + t.bonus;
         td.className = "got-bonus";
+      } else if (!Rules.bonusReachable(ruleset, p.card)) {
+        td.innerHTML = "<span class='muted'>Missed</span>";
       } else {
         td.innerHTML = "<span class='muted'>" + t.bonusNeeded + " to go</span>";
       }
@@ -498,7 +570,9 @@ YZ.Ui = (function () {
 
   /* ── Category help popover ─────────────────────────────────────────────── */
 
-  function showHelp(catId, rulesetId) {
+  // preview is the live dice score, when there are dice on the table and the
+  // box is still open for the player whose turn it is.
+  function showHelp(catId, rulesetId, card, preview) {
     const ruleset = Rules.get(rulesetId);
     const cat = Rules.categoryById(ruleset, catId);
     if (!cat) return;
@@ -507,7 +581,22 @@ YZ.Ui = (function () {
     el.helpDice.innerHTML = "";
     el.helpDice.appendChild(diceStrip(cat.example, "mini"));
     const worth = cat.score(cat.example);
-    el.helpScore.textContent = "That hand scores " + worth + ".";
+    el.helpScore.textContent = "That hand scores " + worth + ". The most this box can score is " +
+      Rules.maxScore(cat) + ".";
+    const miss = Rules.zeroExample(cat);
+    el.helpMissWrap.hidden = !miss;
+    el.helpMiss.innerHTML = "";
+    if (miss) el.helpMiss.appendChild(diceStrip(miss, "mini"));
+    let yours = "";
+    if (card && !Rules.isOpen(card, catId)) {
+      yours = "You already wrote " + card.scores[catId] + " here.";
+    } else if (preview && preview.scores) {
+      yours = preview.legal.indexOf(catId) < 0
+        ? "Your dice can't go here right now."
+        : "Your dice would score " + preview.scores[catId] + " here.";
+    }
+    el.helpYours.textContent = yours;
+    el.helpYours.hidden = !yours;
     el.help.hidden = false;
   }
 
@@ -520,7 +609,7 @@ YZ.Ui = (function () {
       "entryArea", "entryDice", "entryTitle", "entryClear", "entryToggle", "keypad",
       "scorecard", "turnName", "turnMeta",
       "resultTitle", "resultIcon", "resultTable",
-      "helpTitle", "helpText", "helpDice", "helpScore"
+      "helpTitle", "helpText", "helpDice", "helpScore", "helpMissWrap", "helpMiss", "helpYours"
     ];
     for (const id of ids) el[id] = $(id);
   }

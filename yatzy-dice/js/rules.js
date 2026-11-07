@@ -351,6 +351,69 @@ YZ.Rules = (function () {
     return { id: id, points: points, extraBonus: bonus };
   }
 
+  /* ── Scorecard facts ───────────────────────────────────────────────────── */
+
+  // Every distinct hand (252 of them). Brute force keeps the "max" and
+  // "scores 0" facts true for any rule set without a hand-kept table.
+  let HANDS = null;
+  function allHands() {
+    if (HANDS) return HANDS;
+    HANDS = [];
+    for (let a = 1; a <= 6; a++) for (let b = a; b <= 6; b++) for (let c = b; c <= 6; c++)
+      for (let d = c; d <= 6; d++) for (let e = d; e <= 6; e++) HANDS.push([a, b, c, d, e]);
+    return HANDS;
+  }
+
+  function maxScore(cat) {
+    if (cat.max === undefined) cat.max = Math.max.apply(null, allHands().map(cat.score));
+    return cat.max;
+  }
+
+  // A miss that looks like a real roll, not 1-1-1-1-1. Null for Chance.
+  const NEAR_MISSES = [[1, 2, 3, 5, 6], [1, 3, 4, 4, 6], [2, 2, 4, 5, 6], [1, 1, 3, 5, 6], [1, 2, 4, 4, 5]];
+  function zeroExample(cat) {
+    for (const h of NEAR_MISSES) if (cat.score(h) === 0) return h;
+    for (const h of allHands()) if (cat.score(h) === 0) return h;
+    return null;
+  }
+
+  // Top-half pace: three of each face lands exactly on 63, so each top box is
+  // read against 3 × its face. Plus means ahead of the bonus, minus behind.
+  function upperPace(ruleset, card) {
+    let pace = 0, any = false;
+    for (const c of ruleset.categories) {
+      const v = card.scores[c.id];
+      if (c.section !== "upper" || v === null || v === undefined) continue;
+      pace += v - 3 * c.face;
+      any = true;
+    }
+    return any ? pace : null;
+  }
+
+  // Highest total still reachable if every open box scored its max. The extra
+  // Yatzy bonus is left out: it has no ceiling worth promising.
+  function bestPossible(ruleset, card) {
+    const t = totals(ruleset, card);
+    let upper = t.upper, lower = t.lower;
+    for (const c of ruleset.categories) {
+      if (!isOpen(card, c.id)) continue;
+      if (c.section === "upper") upper += maxScore(c);
+      else lower += maxScore(c);
+    }
+    const bonus = upper >= ruleset.upperBonus.threshold ? ruleset.upperBonus.points : 0;
+    return upper + bonus + lower + t.extra;
+  }
+
+  function bonusReachable(ruleset, card) {
+    const t = totals(ruleset, card);
+    if (t.bonus) return true;
+    let room = 0;
+    for (const c of ruleset.categories) {
+      if (c.section === "upper" && isOpen(card, c.id)) room += maxScore(c);
+    }
+    return t.upper + room >= ruleset.upperBonus.threshold;
+  }
+
   /* ── Totals ────────────────────────────────────────────────────────────── */
 
   function totals(ruleset, card) {
@@ -426,6 +489,7 @@ YZ.Rules = (function () {
     counts, sum, runLength, highestOfAKind, hasNOfAKind,
     emptyCard, isOpen, openCategories, isComplete,
     scoreAll, scoreFor, commit, totals,
+    maxScore, zeroExample, upperPace, bestPossible, bonusReachable,
     legalCategories, isJoker, earnsExtraBonus,
     selfTest
   };
