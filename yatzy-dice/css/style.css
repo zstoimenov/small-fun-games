@@ -464,6 +464,35 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   .card-wrap{flex:1 1 auto}
 }
 
+/* ── Math mode quiz ─────────────────────────────────────────────────────── */
+.quiz-sheet{text-align:center}
+.quiz-sheet .sub{margin-bottom:10px}
+.quiz-dice{margin:4px 0 14px}
+/* Dice that don't count fade back, so the question is the adding. */
+.quiz-dice .die.dim{opacity:.3;box-shadow:none}
+.quiz-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quiz-choice{
+  font:inherit;font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;
+  min-height:64px;border-radius:16px;cursor:pointer;
+  border:2px solid var(--line);background:var(--card);color:var(--ink);
+}
+.quiz-choice:active{transform:translateY(1px)}
+.quiz-choice:disabled{cursor:default;opacity:.55}
+.quiz-choice.right{opacity:1;border-color:var(--good);background:color-mix(in srgb, var(--good) 18%, var(--card))}
+.quiz-choice.wrong{opacity:1;border-color:var(--accent);background:color-mix(in srgb, var(--accent) 16%, var(--card));text-decoration:line-through}
+.quiz-result{font-size:16px;font-weight:700;margin:14px 0 0}
+#quiz [hidden]{display:none !important}
+/* Sideways phones: about 360px of height, so the question sits beside the answers. */
+@media (max-height:520px) and (orientation:landscape){
+  .quiz-sheet{max-width:720px;display:grid;grid-template-columns:1fr 1.15fr;column-gap:22px;align-items:center}
+  .quiz-sheet > h2,.quiz-sheet > .sub,.quiz-sheet > .quiz-dice{grid-column:1}
+  .quiz-sheet > .quiz-choices,.quiz-sheet > .quiz-result,.quiz-sheet > .sheet-buttons{grid-column:2}
+  .quiz-sheet > .quiz-choices{grid-row:1 / span 3}
+  .quiz-choice{min-height:52px;font-size:22px}
+  .quiz-result{font-size:14px;margin:10px 0 0}
+  .quiz-sheet .sheet-buttons{margin-top:10px}
+}
+
 /* Typing scores: the dice slots are gone, so the hint and the switch share a line. */
 .entry-area.typing:not([hidden]){display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
 .entry-area.typing .entry-title{margin:0;min-height:0}

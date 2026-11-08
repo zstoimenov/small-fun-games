@@ -87,6 +87,16 @@
       if you'd like a computer opponent.
     </p>
 
+    <div class="row">
+      <span class="row-label">🧮 Math mode</span>
+      <button id="mathToggle" class="switch" type="button" role="switch" aria-checked="false" aria-label="Math mode">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note" id="mathNote" hidden>
+      Before a score goes on the card, work it out: pick the right answer from four.
+    </p>
+
     <details class="more" id="namesBox">
       <summary><span id="namesSummary">Names</span></summary>
       <div id="namesWrap"></div>
@@ -158,6 +168,15 @@
     <button id="menuNew" class="ghost-btn wide" type="button">🔄 New game</button>
     <a class="ghost-btn wide" href="../">🎮 Back to Game Box</a>
 
+    <h3>Settings</h3>
+    <div class="row">
+      <span class="row-label">🧮 Math mode</span>
+      <button id="menuMath" class="switch" type="button" role="switch" aria-checked="false" aria-label="Math mode">
+        <span class="knob"></span>
+      </button>
+    </div>
+    <p class="row-note">Before a score goes on the card, work it out: pick the right answer from four.</p>
+
     <div class="dice-check">
       <h3>Are the dice really random?</h3>
       <p class="muted">
@@ -222,6 +241,22 @@
   </div>
 </div>
 
+<!-- ══ MATH QUIZ ══════════════════════════════════════════════════════════
+     No backdrop close: the answer has to be given (or the box changed) first. -->
+<div id="quiz" class="overlay" hidden>
+  <div class="sheet sheet-xs quiz-sheet">
+    <h2>🧮 Math time!</h2>
+    <p id="quizAsk" class="sub"></p>
+    <div id="quizDice" class="quiz-dice"></div>
+    <div id="quizChoices" class="quiz-choices"></div>
+    <p id="quizResult" class="note quiz-result" hidden></p>
+    <div class="sheet-buttons">
+      <button id="quizBack" class="btn btn-clear" type="button">‹ Other box</button>
+      <button id="quizOk" class="btn btn-go" type="button" hidden>Write it in</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ RESULT ═══════════════════════════════════════════════════════════ -->
 <div id="result" class="overlay" hidden>
   <div class="sheet sheet-sm">
@@ -245,6 +280,7 @@
 <script src="./js/audio.js"></script>
 <script src="./js/ui.js"></script>
 <script src="./js/tutorial.js"></script>
+<script src="./js/quiz.js"></script>
 <script src="./js/app.js"></script>
 </body>
 </html>

@@ -551,7 +551,9 @@ YZ.Ui = (function () {
       row.innerHTML =
         "<span class='rname'>" + (r.p.kind === "cpu" ? "🤖 " : "") + r.p.name + "</span>" +
         "<span class='rbits'>top " + r.t.upper + (r.t.bonus ? " +" + r.t.bonus : "") +
-        " · bottom " + r.t.lower + (r.t.extra ? " +" + r.t.extra : "") + "</span>" +
+        " · bottom " + r.t.lower + (r.t.extra ? " +" + r.t.extra : "") +
+        (r.p.math && r.p.math.asked ? " · 🧮 " + r.p.math.right + " of " + r.p.math.asked + " right" : "") +
+        "</span>" +
         "<span class='rtotal'>" + r.t.total + "</span>";
       el.resultTable.appendChild(row);
     }

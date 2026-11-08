@@ -6,7 +6,7 @@
 "use strict";
 
 (function () {
-  const { Rules, Rng, Ai, Ui, Audio, Tutorial } = window.YZ;
+  const { Rules, Rng, Ai, Ui, Audio, Tutorial, Quiz } = window.YZ;
   const $ = (id) => document.getElementById(id);
 
   const SAVE_KEY = "yatzyDiceSave_v2";
@@ -36,7 +36,8 @@
     seenHowTo: false,
     playing: false,
     flip: false,         // turn the screen around between two human players
-    hideFilled: false    // drop boxes everyone has already scored
+    hideFilled: false,   // drop boxes everyone has already scored
+    math: false          // work out each score from four answers before it's written
   };
 
   function ruleset() { return Rules.get(state.rulesetId); }
@@ -52,10 +53,10 @@
         rulesetId: state.rulesetId, mode: state.mode, entryMode: state.entryMode,
         difficulty: state.difficulty, playerCount: state.playerCount, cpuCount: state.cpuCount,
         names: state.names, muted: state.muted, seenHowTo: state.seenHowTo,
-        flip: state.flip, hideFilled: state.hideFilled,
+        flip: state.flip, hideFilled: state.hideFilled, math: state.math,
         game: state.playing && !state.guided ? {
           players: state.players.map((p) => ({
-            name: p.name, kind: p.kind, difficulty: p.difficulty, card: p.card
+            name: p.name, kind: p.kind, difficulty: p.difficulty, card: p.card, math: p.math
           })),
           turn: state.turn, dice: state.dice, held: state.held,
           rollsLeft: state.rollsLeft, rolled: state.rolled,
@@ -75,7 +76,7 @@
       const s = JSON.parse(raw);
       saved = s.game || null;
       for (const k of ["rulesetId", "mode", "entryMode", "difficulty", "playerCount",
-                       "cpuCount", "muted", "seenHowTo", "flip", "hideFilled"]) {
+                       "cpuCount", "muted", "seenHowTo", "flip", "hideFilled", "math"]) {
         if (s[k] !== undefined) state[k] = s[k];
       }
       if (Array.isArray(s.names)) state.names = s.names;
@@ -134,6 +135,9 @@
     $("flipNote").hidden = !(state.playerCount === 2 && state.flip);
     setSwitch("flipToggle", state.flip);
 
+    setSwitch("mathToggle", state.math);
+    $("mathNote").hidden = !state.math;
+
     $("rulesNote").textContent = rs.blurb;
 
     const names = $("namesWrap");
@@ -177,7 +181,8 @@
         name: (state.names[i] || "").trim() || "Player " + (i + 1),
         kind: "human",
         difficulty: null,
-        card: Rules.emptyCard(rs)
+        card: Rules.emptyCard(rs),
+        math: { right: 0, asked: 0 }
       });
     }
     if (state.playerCount === 1 && state.mode === "play") {
@@ -217,6 +222,7 @@
     setChooser("modeChooser", state.mode);
     state.players = saved.players.map((p) => ({
       name: p.name, kind: p.kind, difficulty: p.difficulty,
+      math: p.math || { right: 0, asked: 0 },
       card: { scores: p.card.scores, jokers: p.card.jokers || 0, manual: p.card.manual || {} }
     }));
     state.turn = Math.min(saved.turn || 0, state.players.length - 1);
@@ -342,7 +348,35 @@
   function pick(catId) {
     if (!state.canPick || !state.preview) return;
     if (state.preview.legal.indexOf(catId) < 0) return;
-    finishTurn(catId, state.preview.scores[catId], false);
+    const points = state.preview.scores[catId];
+    const p = current();
+    const cat = Rules.categoryById(ruleset(), catId);
+    if (state.math && !state.guided && p.kind === "human" && state.dice.length === 5 &&
+        Quiz.wanted(cat, points)) {
+      // The quiz is up; nothing else may pick until it's answered or backed out of.
+      state.canPick = false;
+      Quiz.ask({
+        cat: cat, dice: state.dice.slice(), points: points,
+        onAnswer: (right) => {
+          p.math = p.math || { right: 0, asked: 0 };
+          p.math.asked++;
+          if (right) p.math.right++;
+          finishTurn(catId, points, false);
+        },
+        onBack: () => { updateDerived(); render(); }
+      });
+      render();
+      return;
+    }
+    finishTurn(catId, points, false);
+  }
+
+  function setMath(on) {
+    state.math = on;
+    Audio.tap();
+    save();
+    setSwitch("menuMath", on);
+    renderSetup();
   }
 
   function finishTurn(catId, points, manual) {
@@ -653,7 +687,10 @@
     $("resumeBtn").addEventListener("click", resumeGame);
     $("howtoBtn").addEventListener("click", openHowTo);
 
-    $("menuBtn").addEventListener("click", () => { $("menu").hidden = false; });
+    $("menuBtn").addEventListener("click", () => {
+      setSwitch("menuMath", state.math);
+      $("menu").hidden = false;
+    });
     $("menuClose").addEventListener("click", () => { $("menu").hidden = true; });
     $("menuSound").addEventListener("click", () => setMuted(!state.muted));
     $("menuHowto").addEventListener("click", () => { $("menu").hidden = true; openHowTo(); });
@@ -669,6 +706,8 @@
 
     $("muteBtn").addEventListener("click", () => setMuted(!state.muted));
     $("hideFilledBtn").addEventListener("click", toggleHideFilled);
+    $("mathToggle").addEventListener("click", () => setMath(!state.math));
+    $("menuMath").addEventListener("click", () => setMath(!state.math));
     $("flipToggle").addEventListener("click", () => {
       state.flip = !state.flip;
       Audio.tap();
@@ -715,6 +754,7 @@
       toggleEntry: toggleEntry
     });
     Tutorial.init();
+    Quiz.init();
   }
 
   /* ── Boot-time sanity check ────────────────────────────────────────────── */
