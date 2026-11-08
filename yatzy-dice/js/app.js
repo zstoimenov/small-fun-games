@@ -271,7 +271,10 @@
       const best = legalCats.length
         ? Ai.chooseCategory({ ruleset: rs, card: p.card, dice: state.dice, rollsLeft: 0, difficulty: "hard" })
         : null;
-      state.preview = { scores: scores, legal: legalCats.map((c) => c.id), best: best };
+      // In Math mode the card must not give the answer away, so the boxes the
+      // quiz will ask about are drawn without their numbers.
+      const quiz = state.math && !state.guided && p.kind === "human";
+      state.preview = { scores: scores, legal: legalCats.map((c) => c.id), best: best, quiz: quiz };
     } else {
       state.preview = null;
     }
@@ -351,8 +354,7 @@
     const points = state.preview.scores[catId];
     const p = current();
     const cat = Rules.categoryById(ruleset(), catId);
-    if (state.math && !state.guided && p.kind === "human" && state.dice.length === 5 &&
-        Quiz.wanted(cat, points)) {
+    if (state.preview.quiz && Quiz.wanted(cat, points)) {
       // The quiz is up; nothing else may pick until it's answered or backed out of.
       state.canPick = false;
       Quiz.ask({
@@ -377,6 +379,7 @@
     save();
     setSwitch("menuMath", on);
     renderSetup();
+    if (state.playing) { updateDerived(); render(); }
   }
 
   function finishTurn(catId, points, manual) {

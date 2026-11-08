@@ -225,11 +225,12 @@ YZ.Ui = (function () {
         } else if (state.canPick) {
           const b = document.createElement("button");
           b.type = "button";
-          b.className = "pick" + (v === 0 ? " zero" : "") + (preview.best === cat.id ? " best" : "");
-          b.textContent = v;
-          b.title = preview.best === cat.id
-            ? "Our pick — " + v + " in " + cat.label
-            : v + " in " + cat.label;
+          const secret = isSecret(preview, cat, v);
+          b.className = "pick" + (v === 0 ? " zero" : "") + (preview.best === cat.id ? " best" : "") +
+            (secret ? " secret" : "");
+          b.textContent = secret ? "?" : v;
+          const what = secret ? cat.label : v + " in " + cat.label;
+          b.title = preview.best === cat.id ? "Our pick — " + what : what;
           b.addEventListener("click", () => on.pick && on.pick(cat.id));
           td.appendChild(b);
           td.classList.add("pickable");
@@ -248,6 +249,11 @@ YZ.Ui = (function () {
       tr.appendChild(td);
     });
     return tr;
+  }
+
+  // A box the Math mode quiz will ask about: its score is the answer.
+  function isSecret(preview, cat, v) {
+    return !!(preview && preview.quiz && YZ.Quiz.wanted(cat, v));
   }
 
   function totalRow(label, state, pick, cls) {
@@ -604,7 +610,9 @@ YZ.Ui = (function () {
     } else if (preview && preview.scores) {
       yours = preview.legal.indexOf(catId) < 0
         ? "Your dice can't go here right now."
-        : "Your dice would score " + preview.scores[catId] + " here.";
+        : isSecret(preview, cat, preview.scores[catId])
+          ? "Math mode: pick this box to work out the score."
+          : "Your dice would score " + preview.scores[catId] + " here.";
     }
     el.helpYours.textContent = yours;
     el.helpYours.hidden = !yours;
