@@ -36,6 +36,17 @@ FT.UI = (function () {
     },
     // The talk panel: a verdict or a hint. kind colours it (great/ok/oops).
     talk(html, kind) { const t = $("talk"); t.innerHTML = html; t.className = "talk card" + (kind ? " " + kind : ""); },
+    // Before a pick, the button spot holds a greyed-out hint, so there is
+    // always something at the bottom saying what to do next, and the
+    // layout doesn't jump when the real button arrives.
+    wait(label) {
+      const a = $("acts");
+      a.innerHTML = "";
+      const b = h("button", "btn wait", label);
+      b.type = "button";
+      b.disabled = true;
+      a.appendChild(b);
+    },
     acts(list) {
       const a = $("acts");
       a.innerHTML = "";

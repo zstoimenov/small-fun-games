@@ -36,7 +36,7 @@ FT.Games = FT.Games || {};
       b.appendChild(list);
       P.hearts(sum, MAX);
       P.talk("<b>Moment " + (round + 1) + " of " + lesson.rounds.length + ".</b> Tap what you would say or do.");
-      P.acts([]);
+      P.wait("👆 Pick what you'd do");
     }
 
     function pick(c, btn, list, st, r) {
@@ -102,7 +102,7 @@ FT.Games = FT.Games || {};
       climber();
       P.hearts(rung, N);
       P.talk("<b>Step " + (rung + 1) + " of " + N + ".</b> Pick the question that gets a happy “yes”.");
-      P.acts([]);
+      P.wait("👆 Pick a question");
     }
     function pick(k, btn) {
       const r = lesson.rungs[rung];
