@@ -1,0 +1,16 @@
+{
+  "name": "Friendship Town",
+  "short_name": "Friendship",
+  "description": "Make friends, get along and lead a team: 30 friendly ideas for kids.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fff6f8",
+  "theme_color": "#d63c74",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

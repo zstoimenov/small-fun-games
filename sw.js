@@ -7,12 +7,19 @@
 /* The old per-game service workers (robo-rules/, times-table-blaster/) have been */
 /* retired to self-unregistering stubs — this root worker now covers them.        */
 /* Bump CACHE whenever you want to force old caches to be cleared.                */
-const CACHE = "game-box-v94";
+const CACHE = "game-box-v95";
 
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png",
   "./games.js", "./shared/screen.css",
+
+  "./friendship-town/", "./friendship-town/index.html", "./friendship-town/manifest.webmanifest",
+  "./friendship-town/css/style.css",
+  "./friendship-town/js/lessons.js", "./friendship-town/js/audio.js", "./friendship-town/js/ui.js",
+  "./friendship-town/js/scene.js", "./friendship-town/js/minigames.js", "./friendship-town/js/app.js",
+  "./friendship-town/icons/icon-192.png", "./friendship-town/icons/icon-512.png",
+  "./friendship-town/icons/apple-touch-icon.png",
 
   "./little-city/", "./little-city/index.html", "./little-city/manifest.webmanifest",
   "./little-city/css/style.css",

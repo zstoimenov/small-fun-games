@@ -1,0 +1,438 @@
+/* Friendship Town - one stylesheet, no framework.                             */
+/*                                                                             */
+/* Each place has its own colour (--law, set from lessons.js). Choices turn    */
+/* green, amber or red after a pick, and the best one gets a dashed outline,   */
+/* so the lesson is visible even before the words are read.                    */
+
+:root{
+  --bg:#fff6f8; --ink:#2a1830; --muted:#6a5970;
+  --card:#ffffff; --line:#f0d5de; --shadow:rgba(90,25,60,.13);
+  --accent:#d63c74; --accent-ink:#fff; --go:#1f9d55;
+  --great:#1f9d55; --great-bg:#dff5e8; --ok:#b7791f; --ok-bg:#fdf1d8; --oops:#d03b3b; --oops-bg:#fde3e3;
+  --chip:#fbe7ee; --star:#f4b400; --bubble:#ffffff; --sky:#e8f4ff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#160c14; --ink:#f3e9f1; --muted:#b5a3b3;
+    --card:#26182a; --line:#43304a; --shadow:rgba(0,0,0,.55);
+    --accent:#f07aa4; --accent-ink:#160c14; --go:#3fbf76;
+    --great:#4cc97e; --great-bg:#143325; --ok:#f0b44c; --ok-bg:#3a2c12; --oops:#f07070; --oops-bg:#3a1a1a;
+    --chip:#35223b; --bubble:#33243a; --sky:#1d2236;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#160c14; --ink:#f3e9f1; --muted:#b5a3b3;
+  --card:#26182a; --line:#43304a; --shadow:rgba(0,0,0,.55);
+  --accent:#f07aa4; --accent-ink:#160c14; --go:#3fbf76;
+  --great:#4cc97e; --great-bg:#143325; --ok:#f0b44c; --ok-bg:#3a2c12; --oops:#f07070; --oops-bg:#3a1a1a;
+  --chip:#35223b; --bubble:#33243a; --sky:#1d2236;
+}
+:root[data-theme="light"]{
+  --bg:#fff6f8; --ink:#2a1830; --muted:#6a5970;
+  --card:#ffffff; --line:#f0d5de; --shadow:rgba(90,25,60,.13);
+  --accent:#d63c74; --accent-ink:#fff; --go:#1f9d55;
+  --great:#1f9d55; --great-bg:#dff5e8; --ok:#b7791f; --ok-bg:#fdf1d8; --oops:#d03b3b; --oops-bg:#fde3e3;
+  --chip:#fbe7ee; --bubble:#ffffff; --sky:#e8f4ff;
+}
+
+*{box-sizing:border-box}
+/* Cards are display:flex/grid; without this they'd beat the hidden attribute. */
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:17px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+button{font:inherit; color:inherit; -webkit-tap-highlight-color:transparent; touch-action:manipulation; cursor:pointer}
+button:disabled{cursor:default}
+
+/* ── The frame: every screen fills the window; only lists scroll ─────────── */
+.page{
+  max-width:1800px; margin:0 auto; display:flex; flex-direction:column; gap:12px;
+  padding:calc(8px + env(safe-area-inset-top)) var(--gutter) calc(12px + env(safe-area-inset-bottom));
+}
+body.fit{overflow:hidden}
+body.fit .page{height:var(--app-h); overflow:hidden}
+.screen{display:flex; flex-direction:column; gap:12px}
+body.fit .screen:not([hidden]){flex:1 1 0; min-height:0}
+.intro{margin:0; text-align:center; font-size:18px; font-weight:600; color:var(--muted)}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.top{display:flex; align-items:center; gap:6px; min-height:var(--tap); flex:0 0 auto}
+.top h1{
+  margin:0; flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  text-align:center; font-size:clamp(18px,4vw,26px);
+}
+#back,.link-btn{
+  white-space:nowrap; display:inline-flex; align-items:center; min-height:var(--tap); padding:0 6px;
+  color:var(--ink); font-weight:600; text-decoration:none; border:0; background:none;
+}
+.icon-btn{
+  flex:0 0 auto; width:46px; height:46px; border-radius:50%; padding:0;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  font-size:19px; font-weight:700; line-height:1;
+}
+
+/* ── Cards and buttons ───────────────────────────────────────────────────── */
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 16px;
+  box-shadow:0 2px 8px var(--shadow);
+}
+.card h2{margin:0 0 6px; font-size:21px}
+.card p{margin:0 0 8px}
+.kicker{margin:0; font-size:13px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--law,var(--accent))}
+.btn{
+  min-height:var(--tap); padding:0 22px; border-radius:14px;
+  border:1px solid transparent; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:18px;
+  box-shadow:0 3px 0 rgba(0,0,0,.25);
+}
+.btn.go{background:var(--go); color:#fff}
+.btn.ghost{background:var(--card); color:var(--ink); border-color:var(--line)}
+.btn:active:not(:disabled),.choice:active:not(:disabled),.door:active{transform:translateY(2px); box-shadow:none}
+.actions{display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:4px}
+.actions .btn{flex:1 1 140px}
+
+/* ── Home ────────────────────────────────────────────────────────────────── */
+#home{display:grid; grid-template-rows:auto minmax(0,1fr) auto; gap:12px}
+.chapters{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; min-height:0}
+.chapter-card{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center;
+  min-height:var(--tap); padding:14px 16px; border-radius:20px; min-width:0;
+  background:color-mix(in srgb, var(--law) 9%, var(--card)); border:2px solid var(--law);
+  box-shadow:0 4px 0 var(--law), 0 4px 12px var(--shadow);
+}
+.cc-emoji{font-size:clamp(40px,9vh,84px); line-height:1}
+.cc-text{display:flex; flex-direction:column; gap:2px; align-items:center; min-width:0}
+.cc-text b{font-size:clamp(19px,2.8vh,28px); line-height:1.2}
+.cc-place{font-size:14px; font-weight:700; color:var(--law); text-transform:uppercase; letter-spacing:.06em}
+.cc-stars{font-weight:800; color:var(--star); white-space:nowrap; font-size:16px}
+.tiles{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; max-width:720px; width:100%; justify-self:center}
+.tile{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  min-height:clamp(76px,11vh,120px); padding:8px; border-radius:18px;
+  background:var(--card); border:1px solid var(--line); box-shadow:0 3px 0 var(--line);
+}
+.tile span{font-size:clamp(26px,4vh,40px); line-height:1.1}
+.tile b{font-size:clamp(16px,2vh,20px)}
+.tile small{font-size:14px; color:var(--muted)}
+
+/* ── A place: the idea, then its lessons ─────────────────────────────────── */
+#chapter{display:grid; grid-template-rows:auto minmax(0,1fr); gap:12px}
+.law-card{border-top:6px solid var(--law); position:relative; overflow:auto; min-height:0}
+.law-emoji{position:absolute; right:14px; top:10px; font-size:44px}
+.law-card h2{font-size:26px; padding-right:56px}
+.law-big{font-size:19px; font-weight:700; line-height:1.35}
+.grown-up{font-size:15px; color:var(--muted)}
+.grown-up summary{cursor:pointer; font-weight:600; min-height:40px; display:flex; align-items:center}
+.grown-up p{margin:0}
+.levels{
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); grid-auto-rows:auto;
+  align-content:start; gap:10px; overflow:auto; min-height:0; padding:2px 2px 6px;
+}
+.level-tile{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:10px 8px; min-height:104px;
+  background:var(--card); border:2px solid var(--law); border-radius:18px; box-shadow:0 3px 0 var(--law);
+}
+.level-tile.locked{border-color:var(--line); box-shadow:none; opacity:.55}
+.lt-num{font-size:34px; line-height:1}
+.lt-name{font-weight:700; font-size:15px; line-height:1.25; text-align:center}
+.lt-stars{color:var(--star); font-weight:800; font-size:15px; min-height:20px}
+.level-tile:not(.locked) .lt-stars:not(:has(*)){letter-spacing:.04em}
+@media (min-aspect-ratio:5/4){
+  #chapter{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); grid-template-rows:minmax(0,1fr)}
+  .levels{align-content:safe center}
+}
+
+/* ── Play screens: board, then info, controls and actions ────────────────── */
+.play{display:grid; gap:12px}
+.play-board{min-width:0; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:12px}
+.play-panel{display:flex; flex-direction:column; gap:10px; min-width:0; min-height:0}
+.panel-info{display:flex; flex-direction:column; gap:6px; flex:0 0 auto}
+.goal{display:flex; flex-wrap:wrap; align-items:center; gap:2px 10px}
+.goal-name{font-size:19px; font-weight:800; flex:1 1 auto; min-width:0}
+.goal p{margin:0; flex:1 1 100%; font-size:16px; line-height:1.35; color:var(--muted)}
+.hearts{display:flex; gap:2px; font-size:20px; line-height:1}
+.panel-controls{display:flex; flex-direction:column; gap:10px; min-height:0}
+.panel-acts{display:flex; gap:8px; flex:0 0 auto}
+.panel-acts:empty{display:none}
+.panel-acts .btn{flex:1 1 0; min-width:0; min-height:52px; padding:0 10px; white-space:nowrap}
+.panel-acts .btn.ghost{flex:.7 1 0}
+
+/* The talk panel: a hint before you pick, the verdict after. It has a fixed
+   minimum height so the verdict appearing never shifts the board. */
+.slot{display:grid}
+.talk{margin:0; padding:10px 14px; font-size:16px; line-height:1.4; overflow:auto; border-left:6px solid var(--line); min-height:84px}
+.talk.great{border-left-color:var(--great); background:var(--great-bg)}
+.talk.ok{border-left-color:var(--ok); background:var(--ok-bg)}
+.talk.oops{border-left-color:var(--oops); background:var(--oops-bg)}
+.talk .better{display:block; margin-top:6px; font-weight:600}
+
+/* The stage: a person, their mood and a speech bubble. */
+.stage{
+  position:relative; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:center; gap:14px;
+  padding:clamp(10px,2vh,22px) clamp(12px,2vw,24px); border-radius:22px; overflow:hidden; flex:0 0 auto;
+  background:linear-gradient(180deg, var(--sky), color-mix(in srgb, var(--law,var(--accent)) 14%, var(--card)));
+  border:2px solid color-mix(in srgb, var(--law,var(--accent)) 40%, var(--line));
+}
+.backdrop{position:absolute; right:-10px; bottom:-24px; font-size:clamp(90px,20vh,190px); opacity:.16; pointer-events:none}
+.person{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:2px; min-width:84px}
+.face{font-size:clamp(54px,11vh,110px); line-height:1; display:inline-block}
+.face.nod{animation:nod .5s ease-in-out}
+@keyframes nod{30%{transform:translateY(8px) rotate(-4deg)} 60%{transform:translateY(-2px)}}
+.mood{position:absolute; top:-6px; right:-8px; font-size:clamp(26px,4.5vh,40px)}
+.stage[data-mood="great"] .face{animation:bounce .5s ease-out}
+@keyframes bounce{40%{transform:translateY(-10px) scale(1.05)}}
+.who{font-size:15px; font-weight:800}
+.stage.no-person{grid-template-columns:minmax(0,1fr)}
+.stage.no-person .person{display:none}
+.bubble{
+  position:relative; z-index:1; background:var(--bubble); border-radius:18px; padding:12px 16px;
+  box-shadow:0 2px 8px var(--shadow); border:1px solid var(--line); min-height:64px; display:flex; align-items:center;
+}
+.bubble::before{
+  content:""; position:absolute; left:-10px; top:50%; margin-top:-10px;
+  border:10px solid transparent; border-left:0; border-right-color:var(--bubble);
+}
+.stage.no-person .bubble::before{display:none}
+.bubble p{margin:0; font-size:clamp(17px,2.5vh,22px); line-height:1.35; font-weight:600}
+.bubble .old{opacity:.5}
+.bubble p.narrate{font-style:italic; font-weight:500; color:var(--muted)}
+.bubble .dots{font-weight:800; color:var(--law,var(--accent))}
+.bubble.pop{animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.94)}}
+
+/* Choices: the board's answers, as big rows. */
+.choices{display:grid; gap:10px; align-content:center}
+.choice{
+  position:relative; display:flex; align-items:center; gap:10px; text-align:left;
+  min-height:max(var(--tap), clamp(52px,8.5vh,84px)); padding:8px 16px; border-radius:16px;
+  background:var(--card); border:2px solid var(--line); box-shadow:0 3px 0 var(--line);
+  font-size:clamp(16px,2.3vh,21px); font-weight:600; line-height:1.3;
+}
+.choice:not(:disabled):hover{border-color:var(--law,var(--accent))}
+.choice:disabled{opacity:.55}
+.choice.picked,.choice.best{opacity:1}
+.choice.picked.great{background:var(--great-bg); border-color:var(--great); box-shadow:0 3px 0 var(--great)}
+.choice.picked.ok{background:var(--ok-bg); border-color:var(--ok); box-shadow:0 3px 0 var(--ok)}
+.choice.picked.oops{background:var(--oops-bg); border-color:var(--oops); box-shadow:0 3px 0 var(--oops)}
+.choice.best{border:2px dashed var(--great); box-shadow:none}
+.choice.best::after{content:"⭐"; margin-left:auto; font-size:20px}
+.choice .ce{font-size:30px; line-height:1}
+.choices.two{grid-template-columns:1fr}
+.choices.names{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr))}
+.choices.names .choice{justify-content:center; text-align:center}
+
+/* Name Catcher: the name and the fact to remember. */
+.name-card{
+  display:flex; flex-direction:column; align-items:center; gap:2px; padding:12px; border-radius:18px;
+  background:var(--chip); text-align:center;
+}
+.name-card b{font-size:clamp(28px,5vh,44px); color:var(--law,var(--accent))}
+.name-card span{font-size:clamp(17px,2.4vh,22px)}
+
+/* Smile Street: six doors. */
+.street{justify-content:center}
+.doors{
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(8px,1.6vh,16px);
+  flex:1 1 0; min-height:0; max-height:560px;
+}
+.door{
+  position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  min-height:96px; border-radius:22px 22px 10px 10px;
+  background:color-mix(in srgb, var(--law,var(--accent)) 12%, var(--card)); border:3px solid color-mix(in srgb, var(--law,var(--accent)) 45%, var(--line));
+  box-shadow:0 4px 0 var(--line);
+}
+.door-face{font-size:clamp(44px,9vh,90px); line-height:1; opacity:.55}
+.door-mood{font-size:clamp(24px,4vh,40px); min-height:1.1em}
+.door.open{background:#fff5c2; border-color:#f4b400; animation:peek .25s ease-out}
+.door.open .door-face{opacity:1}
+.door.sad{background:#dbe8ff; border-color:#6b8fd6}
+.door.happy{background:var(--great-bg); border-color:var(--great)}
+@keyframes peek{from{transform:scale(.9)}}
+
+/* Yes Ladder: the stage and a ladder side by side. */
+.ladder-top{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:stretch}
+.ladder{
+  display:flex; flex-direction:column; justify-content:space-between; gap:4px; padding:6px 10px; width:72px;
+  border-left:6px solid #a0522d; border-right:6px solid #a0522d; border-radius:6px;
+}
+.rung{
+  display:grid; place-items:center; min-height:34px; font-size:24px;
+  border-bottom:5px solid #c47a42;
+}
+.rung.done{opacity:.7}
+
+/* ── Wider than tall: board left at full height, panel right ─────────────── */
+@media (min-aspect-ratio:5/4){
+  .play{--panel:clamp(300px,30vw,480px); grid-template-columns:minmax(0,1fr) var(--panel); column-gap:20px}
+  .play-board{overflow:hidden}
+  .panel-controls{flex:1 1 auto}
+  .panel-controls > .slot{flex:1 1 0; min-height:0}
+  .panel-controls .talk{min-height:100px}
+  .panel-acts{margin-top:auto}
+  .talk{font-size:17px}
+}
+@media (min-width:1200px) and (min-height:700px){
+  .goal-name{font-size:23px}
+  .goal p,.talk{font-size:19px}
+  .hearts{font-size:26px}
+  .panel-acts .btn{min-height:60px; font-size:20px}
+}
+
+/* ── Taller than wide: info, board, controls, actions ────────────────────── */
+@media (max-aspect-ratio:5/4){
+  .play{grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto auto; gap:8px}
+  .play-panel{display:contents}
+  .panel-info{grid-row:1}
+  .play-board{grid-row:2; justify-content:flex-start; gap:10px}
+  .panel-controls{grid-row:3}
+  .panel-acts{grid-row:4}
+  .talk{min-height:72px; max-height:150px}
+  .tiles{max-width:none}
+}
+
+/* Upright phone: every line counts. */
+@media (max-aspect-ratio:5/4) and (max-width:600px){
+  .chapters{grid-template-columns:1fr; gap:10px}
+  .chapter-card{flex-direction:row; text-align:left; justify-content:flex-start; padding:10px 14px; gap:14px}
+  .cc-text{align-items:flex-start}
+  .cc-emoji{font-size:44px}
+  .cc-text b{font-size:19px}
+  .intro{font-size:16px}
+  .top h1{font-size:19px}
+  .goal-name{font-size:17px}
+  .goal p{font-size:14px}
+  .hearts{font-size:17px}
+  .stage{gap:10px; padding:8px 12px}
+  .person{min-width:64px}
+  .face{font-size:52px}
+  .mood{font-size:24px}
+  .who{font-size:13px}
+  .bubble{padding:8px 12px; min-height:52px}
+  .bubble p{font-size:16px}
+  .choices{gap:7px}
+  .choice{font-size:15px; padding:6px 12px; min-height:var(--tap)}
+  .talk{font-size:14px; padding:8px 12px; min-height:64px; max-height:120px}
+  .levels{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .level-tile{min-height:96px; padding:8px 6px}
+  .lt-num{font-size:30px}
+  .chapter-card{padding:8px 12px}
+  .cc-place{font-size:13px}
+  .cc-emoji{font-size:40px}
+  .tile{min-height:60px; flex-direction:row; gap:10px}
+  .tile small{display:none}
+  .law-card h2{font-size:22px}
+  .law-big{font-size:17px}
+  .door{min-height:80px}
+}
+/* A medium-height portrait window: stack, but scale the stage with height. */
+@media (max-aspect-ratio:5/4) and (min-width:601px){
+  .play-board{justify-content:center}
+  .chapters{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* A phone held sideways: about 360px of height. The header moves into the
+   top of the panel so the board keeps every pixel. */
+@media (max-height:520px) and (orientation:landscape){
+  .page{position:relative; gap:8px; padding-top:calc(4px + env(safe-area-inset-top)); padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+  .top{min-height:42px}
+  .top h1{font-size:17px}
+  .icon-btn{width:42px; height:42px; font-size:17px}
+  #back,.link-btn{min-height:42px}
+  .intro{display:none}
+  .play{--panel:320px; column-gap:12px}
+  .page:has(> .play:not([hidden])) > .top{position:absolute; top:calc(4px + env(safe-area-inset-top)); right:var(--gutter); width:320px; z-index:2; background:var(--bg)}
+  .play-panel{padding-top:46px; gap:6px}
+  .goal-name{font-size:15px}
+  .goal p{font-size:13px}
+  .hearts{font-size:16px}
+  .talk{font-size:14px; padding:6px 10px; min-height:0}
+  .panel-controls .talk{min-height:0}
+  .panel-acts .btn{min-height:44px; font-size:16px}
+  .play-board{gap:6px}
+  .stage{padding:6px 10px; gap:8px; border-radius:16px}
+  .face{font-size:44px}
+  .mood{font-size:22px}
+  .who{font-size:13px}
+  .person{min-width:56px}
+  .bubble{padding:6px 10px; min-height:40px}
+  .bubble p{font-size:15px}
+  .choices{gap:5px}
+  .choice{min-height:44px; font-size:14px; padding:4px 10px; border-radius:12px}
+  .name-card{padding:4px}
+  .name-card b{font-size:24px}
+  .door{min-height:0}
+  .door-face{font-size:40px}
+  .rung{min-height:24px; font-size:18px}
+  .chapters{grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px}
+  .chapter-card{padding:8px; gap:4px}
+  .cc-emoji{font-size:36px}
+  .cc-text b{font-size:16px}
+  .cc-place{font-size:13px}
+  .tile{min-height:60px; flex-direction:row; gap:8px}
+  .tile small{display:none}
+  .law-card{padding:10px 12px}
+  .law-card h2{font-size:19px}
+  .law-big{font-size:15px}
+  .level-tile{min-height:84px; padding:6px}
+  .lt-num{font-size:26px}
+  .levels{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+}
+
+/* ── Lists: the Friend Book and the grown-ups' page ──────────────────────── */
+.list{display:grid; grid-template-rows:auto minmax(0,1fr); gap:12px}
+#grown{grid-template-rows:minmax(0,1fr)}
+.list-scroll{overflow:auto; min-height:0}
+.stickers{display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; padding:2px}
+.book-head{grid-column:1 / -1; margin:10px 0 0; font-size:19px}
+.book-head:first-child{margin-top:0}
+.sticker{
+  display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; padding:12px 10px;
+  border-radius:20px; background:color-mix(in srgb, var(--law,var(--accent)) 12%, var(--card));
+  border:3px solid var(--law,var(--accent)); box-shadow:0 3px 0 var(--law,var(--accent));
+}
+.sticker.empty{background:var(--card); border:3px dashed var(--line); box-shadow:none; color:var(--muted)}
+.st-e{font-size:40px; line-height:1}
+.sticker b{font-size:16px; line-height:1.3}
+.sticker small{color:var(--star); font-weight:800; font-size:14px}
+.sticker.empty small{color:var(--muted); font-weight:500}
+.sticker.big{margin:6px auto 10px; max-width:320px; transform:rotate(-2deg)}
+.sticker.big .st-e{font-size:56px}
+.sticker.big b{font-size:19px}
+.grown-intro{margin-bottom:12px; max-width:900px}
+.grown-intro p{font-size:16px}
+#ideas{display:grid; gap:12px; max-width:900px}
+.idea-card{border-top:6px solid var(--law)}
+.idea-card > p{color:var(--muted); font-size:15px}
+.idea-list{margin:0; padding-left:26px}
+.idea-list li{margin:8px 0; font-size:16px}
+.idea-list li span{color:var(--muted); font-size:15px}
+
+/* ── Dialogs ─────────────────────────────────────────────────────────────── */
+.sheet{
+  width:min(520px,calc(100vw - 32px)); max-height:calc(var(--app-h) - 32px); overflow:auto;
+  border:0; border-radius:24px; padding:20px; background:var(--card); color:var(--ink);
+  box-shadow:0 10px 40px rgba(0,0,0,.35); text-align:center;
+}
+.sheet::backdrop{background:rgba(20,8,20,.55)}
+.sheet h2{margin:4px 0 8px; font-size:26px}
+.sheet p{margin:0 0 10px; font-size:17px}
+.big-stars{font-size:46px; color:var(--star); letter-spacing:.08em; line-height:1.1}
+.help-list{list-style:none; margin:0 0 12px; padding:0; text-align:left; display:grid; gap:10px}
+.help-list li{display:grid; grid-template-columns:36px 1fr; gap:8px; align-items:start; font-size:17px}
+.help-list span{font-size:24px; line-height:1.2}
+@media (max-height:520px) and (orientation:landscape){
+  .sheet{padding:12px 16px}
+  .big-stars{font-size:32px}
+  .sheet h2{font-size:21px; margin:0 0 4px}
+  .sticker.big{margin:2px auto 6px; padding:6px}
+  .sticker.big .st-e{font-size:34px}
+  .help-list{grid-template-columns:1fr 1fr; gap:6px 12px}
+  .help-list li{font-size:15px}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important}
+}

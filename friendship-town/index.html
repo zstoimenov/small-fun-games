@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Friendship Town</title>
+<meta name="description" content="You're the new kid in town. Make friends, get along and lead a team, and learn 30 friendly ideas as you go.">
+<meta name="theme-color" content="#e8467c">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Friendship Town">
+<link rel="stylesheet" href="../shared/screen.css">
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body class="fit">
+<main class="page">
+
+  <header class="top">
+    <a id="back" href="../" title="Back to games">&lsaquo; Games</a>
+    <button id="up" class="link-btn" type="button" hidden>&lsaquo; Back</button>
+    <h1 id="title">Friendship Town</h1>
+    <button id="mute" class="icon-btn" type="button" aria-pressed="false" aria-label="Sound on">&#128266;</button>
+    <button id="help" class="icon-btn" type="button" aria-label="How to play">?</button>
+  </header>
+
+  <!-- Home: the four places in town, then the Friend Book and the grown-ups' page. -->
+  <section id="home" class="screen" hidden>
+    <p class="intro">You're the new kid in town. Make some friends!</p>
+    <div id="chapters" class="chapters"></div>
+    <div class="tiles">
+      <button id="bookBtn" class="tile" type="button"><span aria-hidden="true">&#128210;</span><b>Friend Book</b><small id="bookTile"></small></button>
+      <button id="grownBtn" class="tile" type="button"><span aria-hidden="true">&#128106;</span><b>For grown-ups</b><small>The 30 ideas</small></button>
+    </div>
+  </section>
+
+  <!-- A place: its big idea, then its lessons. -->
+  <section id="chapter" class="screen" hidden>
+    <div class="card law-card">
+      <span class="law-emoji" id="lawEmoji" aria-hidden="true"></span>
+      <p class="kicker" id="lawKicker"></p>
+      <h2 id="lawName"></h2>
+      <p class="law-big" id="lawSays"></p>
+      <details class="grown-up">
+        <summary>In grown-up words</summary>
+        <p id="lawGrown"></p>
+      </details>
+    </div>
+    <div id="levels" class="levels"></div>
+  </section>
+
+  <!-- A lesson. Every kind (a scene, a mini-game) fills the same four parts:
+       the board, then a panel of info, controls and actions. -->
+  <section id="play" class="screen play" hidden>
+    <div class="play-board" id="board"></div>
+    <div class="play-panel">
+      <div class="panel-info">
+        <div class="goal">
+          <span class="goal-name" id="goalName"></span>
+          <span class="hearts" id="hearts" aria-label="Friendship"></span>
+          <p id="goalText"></p>
+        </div>
+      </div>
+      <div class="panel-controls"><div class="slot"><div class="talk card" id="talk" aria-live="polite"></div></div></div>
+      <div class="panel-acts" id="acts"></div>
+    </div>
+  </section>
+
+  <!-- The Friend Book: a sticker for every lesson. -->
+  <section id="book" class="screen list" hidden>
+    <p class="intro" id="bookInfo"></p>
+    <div class="list-scroll"><div id="stickers" class="stickers"></div></div>
+  </section>
+
+  <!-- For grown-ups: every idea next to the lesson that teaches it. -->
+  <section id="grown" class="screen list" hidden>
+    <div class="list-scroll">
+      <div class="card grown-intro">
+        <h2>For grown-ups</h2>
+        <p>Friendship Town retells the 30 ideas in Dale Carnegie's book <i>How to Win Friends and Influence People</i> (1936) as everyday kid moments. The words, people and stories are our own.</p>
+        <p>The book's own rule runs through every lesson: <b>mean it</b>. Fake praise and tricks never score in this game.</p>
+        <p>A good way to use it: play a lesson together, then ask "When could you try that this week?"</p>
+      </div>
+      <div id="ideas"></div>
+    </div>
+  </section>
+
+</main>
+
+<dialog id="winDialog" class="sheet" aria-labelledby="winTitle">
+  <div class="big-stars" id="winStars" aria-hidden="true"></div>
+  <h2 id="winTitle">You did it!</h2>
+  <div class="sticker big" id="winSticker"></div>
+  <p id="winText"></p>
+  <div class="actions">
+    <button id="winAgain" class="btn ghost" type="button">Play again</button>
+    <button id="winNext" class="btn go" type="button">Next &rsaquo;</button>
+  </div>
+</dialog>
+
+<dialog id="helpDialog" class="sheet" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">How to play</h2>
+  <ul class="help-list">
+    <li><span>&#127968;</span> You just moved to Friendship Town. Visit the 4 places, one at a time.</li>
+    <li><span>&#128172;</span> Something happens. Pick what you would say or do.</li>
+    <li><span>&#10084;&#65039;</span> Kind and honest choices fill the friendship hearts.</li>
+    <li><span>&#11088;</span> Fill all the hearts for 3 stars. Every lesson gives you a sticker for your Friend Book.</li>
+    <li><span>&#127918;</span> Some lessons are little games: smile at neighbours, learn names, be a great listener.</li>
+  </ul>
+  <div class="actions"><button id="helpClose" class="btn go" type="button">Let's go!</button></div>
+</dialog>
+
+<script src="./js/lessons.js"></script>
+<script src="./js/audio.js"></script>
+<script src="./js/ui.js"></script>
+<script src="./js/scene.js"></script>
+<script src="./js/minigames.js"></script>
+<script src="./js/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
+  }
+</script>
+</body>
+</html>

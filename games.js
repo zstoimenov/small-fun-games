@@ -13,7 +13,8 @@ const CATEGORIES = [
   { id: "science", label: "Science",         emoji: "🔬" },
   { id: "language", label: "Languages",      emoji: "🗣️" },
   { id: "arts",   label: "Arts & Music",     emoji: "🎨" },
-  { id: "sport",  label: "Sport",            emoji: "⚽" }
+  { id: "sport",  label: "Sport",            emoji: "⚽" },
+  { id: "life",   label: "Life Skills",      emoji: "💛" }
 ];
 // Tags a game can carry on top of its one category. Each gets a pill and a shelf.
 const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub: "games about real jobs" } };
@@ -29,6 +30,20 @@ const TAGS = { jobs: { label: "Jobs", emoji: "👷", shelf: "Discover jobs", sub
 // generated from `category`, `players`, `age`, `tags` and `highlights`; don't
 // hand-write them.
 const GAMES = [
+  {
+    title: "Friendship Town",
+    folder: "friendship-town",
+    compass: ["helper", "leader"],
+    hook: "Make friends and learn to get along",
+    emoji: "🤝",
+    added: "2026-11-09",
+    category: "life",
+    players: [1, 1],
+    age: 8,
+    blurb: "You're the new kid in town. Visit Maple Street, Sunny Hill School, the football club and Fair Day, where you run the class stall. In each lesson something happens: your brother spills juice on your drawing, a teammate says the ball was in when it wasn't. You pick what to say, and you see how people feel about it. Kind, honest choices fill the friendship hearts. Mini-games teach you to smile at neighbours, remember names and really listen. 30 lessons retell the ideas in Dale Carnegie's book How to Win Friends and Influence People for kids. Every lesson gives you a sticker for your Friend Book, and there is a page for grown-ups.",
+    colors: ["#f06292", "#ffb74d"],
+    highlights: ["💬 30 lessons", "📒 Sticker book"]
+  },
   {
     title: "Little City",
     folder: "little-city",
