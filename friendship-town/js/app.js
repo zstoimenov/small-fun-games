@@ -23,18 +23,37 @@ FT.allLessons = () => FT.CHAPTERS.flatMap((c) => c.lessons);
     try { localStorage.setItem("gamebox:progress:friendship-town", JSON.stringify({ stars: got, max: all.length * 3, at: Date.now() })); } catch (e) { /* ignore */ }
   }
 
-  let ch = null, idx = 0, stop = null;
+  let ch = null, idx = 0, stop = null, screen = "home";
   const TITLES = { home: "Friendship Town", book: "Friend Book", grown: "For grown-ups" };
+  // Every screen below home gets a history entry, so a phone's back swipe
+  // (or the browser's back button) steps out one screen at a time instead of
+  // leaving the game. The ‹ Back button goes the same way, through history,
+  // so the two never disagree.
+  const DEPTH = { home: 0, chapter: 1, book: 1, grown: 1, play: 2 };
+  const depthNow = () => (history.state && history.state.ftDepth) || 0;
 
   function show(name) {
     if (stop) { stop(); stop = null; }
+    if (DEPTH[name] > depthNow()) history.pushState({ ftDepth: DEPTH[name] }, "");
+    screen = name;
     ["home", "chapter", "play", "book", "grown"].forEach((s) => { $(s).hidden = s !== name; });
     $("back").hidden = name !== "home";
     $("up").hidden = name === "home";
     $("up").innerHTML = "&lsaquo; " + (name === "play" && ch ? ch.place.split(" ").pop() : "Home");
     $("title").textContent = TITLES[name] || (name === "chapter" ? ch.place : ch.lessons[idx].name);
-    $("up").onclick = () => { FT.Audio.click(); if (name === "play") openChapter(ch.id); else goHome(); };
     window.scrollTo(0, 0);
+  }
+  $("up").addEventListener("click", () => { FT.Audio.click(); history.back(); });
+
+  // Back from anywhere: close what's open, then show the screen one level up.
+  window.addEventListener("popstate", () => {
+    closeDialogs();
+    if (depthNow() === 1 && ch && screen === "play") openChapter(ch.id);
+    else if (depthNow() < DEPTH[screen]) goHome();
+  });
+  let chosen = true;
+  function closeDialogs() {
+    document.querySelectorAll("dialog[open]").forEach((d) => { chosen = true; d.close(); });
   }
 
   function goHome() {
@@ -63,15 +82,21 @@ FT.allLessons = () => FT.CHAPTERS.flatMap((c) => c.lessons);
     save();
     FT.Audio.win();
     const next = idx + 1 < ch.lessons.length;
+    chosen = false;
     FT.UI.win(stars, l, text + (first ? " A new sticker for your Friend Book!" : ""), next);
   }
 
-  $("winAgain").addEventListener("click", () => { FT.Audio.click(); $("winDialog").close(); play(idx); });
+  $("winAgain").addEventListener("click", () => { FT.Audio.click(); chosen = true; $("winDialog").close(); play(idx); });
   $("winNext").addEventListener("click", () => {
     FT.Audio.click();
+    chosen = true;
     $("winDialog").close();
-    if (idx + 1 < ch.lessons.length) play(idx + 1); else openChapter(ch.id);
+    if (idx + 1 < ch.lessons.length) play(idx + 1); else history.back();
   });
+  // Closed some other way (Escape, Android's back gesture): the lesson is
+  // saved, so step back to the place's lesson list rather than leaving a
+  // finished lesson on screen.
+  $("winDialog").addEventListener("close", () => { if (!chosen) { chosen = true; history.back(); } });
   $("bookBtn").addEventListener("click", () => { FT.Audio.click(); FT.UI.book(starsOf); show("book"); });
   $("grownBtn").addEventListener("click", () => { FT.Audio.click(); FT.UI.grown(); show("grown"); });
 
@@ -91,6 +116,8 @@ FT.allLessons = () => FT.CHAPTERS.flatMap((c) => c.lessons);
 
   setMute(!!store.muted);
   report();
+  // A reload mid-game starts again at home.
+  if (depthNow()) history.replaceState({ ftDepth: 0 }, "");
   goHome();
   if (!store.seenHelp) { store.seenHelp = true; save(); $("helpDialog").showModal(); }
 })();

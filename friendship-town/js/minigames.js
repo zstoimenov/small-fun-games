@@ -35,7 +35,7 @@ FT.Games = FT.Games || {};
     const later = (fn, ms) => timers.push(setTimeout(fn, ms));
     function count() { P.talk("<b>😊 " + smiled + "</b> smiles · " + (VISITS - shown) + " neighbours still to come"); }
     function start() {
-      P.acts([]);
+      P.wait("😊 Tap the neighbours!");
       count();
       next();
     }
@@ -143,7 +143,7 @@ FT.Games = FT.Games || {};
       });
       b.appendChild(list);
       P.talk(kind === "name" ? "<b>Who is this?</b> Tap their name." : "<b>Remember what they told you?</b>");
-      P.acts([]);
+      P.wait("👆 Tap a name");
     }
     draw();
     return () => {};
@@ -241,7 +241,7 @@ FT.Games = FT.Games || {};
       });
       b.appendChild(list);
       P.talk("<b>Your turn!</b> " + esc(q.question));
-      P.acts([]);
+      P.wait("👆 Pick an answer");
     }
     story();
     return () => { state = "idle"; clear(); };
