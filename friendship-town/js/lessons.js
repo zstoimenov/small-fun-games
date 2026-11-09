@@ -13,7 +13,7 @@ FT.CHAPTERS = [
       {
         id: "p1-1", emoji: "🤐", name: "No moaning, no blaming",
         tip: "Fix it kindly. Don't blame.",
-        grown: "Don't criticise, condemn or complain.",
+        grown: "Skip criticism, blame and complaints. They make people defensive.",
         type: "scene",
         intro: "Your little brother Max has made a mess. How do you react?",
         who: { name: "Max", emoji: "👦" }, where: "🏠",
@@ -47,7 +47,7 @@ FT.CHAPTERS = [
       {
         id: "p1-2", emoji: "💐", name: "Say thanks and mean it",
         tip: "Notice real good things. Say them.",
-        grown: "Give honest and sincere appreciation.",
+        grown: "Notice what people do well, and tell them honestly.",
         type: "scene",
         intro: "Mrs Rossi next door grows the best roses on Maple Street.",
         who: { name: "Mrs Rossi", emoji: "👵" }, where: "🌹",
@@ -66,9 +66,9 @@ FT.CHAPTERS = [
             ] },
           { say: "Mrs Rossi gives you a cookie. It is a bit burnt on the bottom.",
             choices: [
-              { text: "“Thank you! The top is so crunchy. Thanks for thinking of me.”", good: 2,
-                reply: "Mrs Rossi: “You're a sweetheart. I'll bake more!”",
-                why: "You found something true to praise, and you thanked her for the kindness." },
+              { text: "“Thank you! It smells yummy. Thanks for thinking of me.”", good: 2,
+                reply: "Mrs Rossi: “You're a sweetheart. Next batch won't be burnt!”",
+                why: "You found something true to say, and you thanked her for the kindness." },
               { text: "Eat it quickly and say “Thanks.”", good: 1,
                 reply: "Mrs Rossi: “You're welcome, dear.”",
                 why: "Polite, but she may not know you liked it. Say a little more." },
@@ -81,7 +81,7 @@ FT.CHAPTERS = [
       {
         id: "p1-3", emoji: "🧠", name: "Think about what they want",
         tip: "Ask: what do they want? Then find a deal.",
-        grown: "Think about what the other person wants, and help them get it while you get what you need.",
+        grown: "Start from what the other person wants, and show how they can get it too.",
         type: "scene",
         intro: "You and Max both want something. Can you both get it?",
         who: { name: "Max", emoji: "👦" }, where: "🏠",
@@ -124,7 +124,7 @@ FT.CHAPTERS = [
       {
         id: "p2-1", emoji: "🔍", name: "Be curious about people",
         tip: "Ask real questions. Care about the answer.",
-        grown: "Become genuinely interested in other people.",
+        grown: "Take a real interest in other people.",
         type: "scene",
         intro: "It's lunchtime at your new school. Someone is sitting alone.",
         who: { name: "Leo", emoji: "🧒" }, where: "🏫",
@@ -132,7 +132,7 @@ FT.CHAPTERS = [
           { say: "Leo is sitting alone at lunch. He is drawing a big dinosaur.",
             choices: [
               { text: "“Cool dino! What kind is it? Why do you like them?”", good: 2,
-                reply: "Leo: “It's a Stegosaurus! Do you want to see more?”",
+                reply: "Leo: “Thanks! Want me to tell you about it?”",
                 why: "Real questions show you care about him. People love that." },
               { text: "“Nice.” Then eat your sandwich.", good: 1,
                 reply: "Leo: “Thanks.” He goes back to his drawing.",
@@ -158,7 +158,7 @@ FT.CHAPTERS = [
       {
         id: "p2-2", emoji: "😊", name: "Smile!",
         tip: "A real smile says hello.",
-        grown: "Smile.",
+        grown: "Greet people with a warm, real smile.",
         type: "smile",
         intro: "Neighbours pop up on Maple Street. Smile and wave at each one!",
         where: "🏘️"
@@ -166,7 +166,7 @@ FT.CHAPTERS = [
       {
         id: "p2-3", emoji: "🏷️", name: "Remember names",
         tip: "A name is a gift. Use it.",
-        grown: "Remember that a person's name is the sweetest sound to them, and use it.",
+        grown: "Learn people's names and use them. A person's own name matters a lot to them.",
         type: "names",
         intro: "Meet five new classmates. Try to remember each name.",
         where: "🏫",
@@ -181,7 +181,7 @@ FT.CHAPTERS = [
       {
         id: "p2-4", emoji: "👂", name: "Listen well",
         tip: "Listen first. Let friends talk about them.",
-        grown: "Be a good listener and encourage others to talk about themselves.",
+        grown: "Listen well, and get others talking about themselves.",
         type: "listen",
         intro: "Priya has big news. Listen closely to her stories.",
         who: { name: "Priya", emoji: "👧🏽" }, where: "🛝",
@@ -212,7 +212,7 @@ FT.CHAPTERS = [
       {
         id: "p2-5", emoji: "🎯", name: "Talk about their world",
         tip: "Talk about what they love.",
-        grown: "Talk in terms of the other person's interests.",
+        grown: "Talk about the things the other person cares about.",
         type: "scene",
         intro: "On the school bus, shy Sam sits alone with a small chess set.",
         who: { name: "Sam", emoji: "🧑" }, where: "🚌",
@@ -220,7 +220,7 @@ FT.CHAPTERS = [
           { say: "Sam is quiet. He holds a little chess set on his lap.",
             choices: [
               { text: "“Is that a travel chess set? What's your best move?”", good: 2,
-                reply: "Sam: “It's called a fork! Want me to show you?”",
+                reply: "Sam: “I just learned a cool trick! Want to hear?”",
                 why: "He lit up because you asked about his favourite thing." },
               { text: "“Want to play tag at lunch?”", good: 1,
                 reply: "Sam: “Um. Maybe.” He holds his chess set tighter.",
@@ -246,7 +246,7 @@ FT.CHAPTERS = [
       {
         id: "p2-6", emoji: "🌟", name: "Make others feel special",
         tip: "Say what's great about them. Mean it.",
-        grown: "Make the other person feel important, and do it sincerely.",
+        grown: "Help people feel valued, and mean it.",
         type: "scene",
         intro: "Mia is good at art. Class is about to start.",
         who: { name: "Mia", emoji: "👧" }, where: "🎨",
@@ -289,7 +289,7 @@ FT.CHAPTERS = [
       {
         id: "p3-1", emoji: "🕊️", name: "Skip the argument",
         tip: "You can't win a quarrel. Skip it.",
-        grown: "The only way to get the best of an argument is to avoid it.",
+        grown: "Steer clear of arguments. Nobody really wins one.",
         type: "scene",
         intro: "Noah loves to say who's right at football club.",
         who: { name: "Noah", emoji: "👦🏻" }, where: "⚽",
@@ -323,7 +323,7 @@ FT.CHAPTERS = [
       {
         id: "p3-2", emoji: "🤝", name: "Respect other ideas",
         tip: "You can disagree without saying “wrong”.",
-        grown: "Show respect for the other person's opinions. Never say “you're wrong.”",
+        grown: "Respect other people's views. Don't tell them flatly that they're wrong.",
         type: "scene",
         intro: "Priya has strong opinions about football. You see it differently.",
         who: { name: "Priya", emoji: "👧🏽" }, where: "⚽",
@@ -357,7 +357,7 @@ FT.CHAPTERS = [
       {
         id: "p3-3", emoji: "🙋", name: "Say sorry, fast",
         tip: "Own it quickly. Say sorry.",
-        grown: "If you are wrong, admit it quickly and clearly.",
+        grown: "When you're wrong, say so quickly and clearly.",
         type: "scene",
         intro: "You made a mistake. What do you do next?",
         who: { name: "Zara", emoji: "👧🏾" }, where: "⚽",
@@ -391,7 +391,7 @@ FT.CHAPTERS = [
       {
         id: "p3-4", emoji: "🌤️", name: "Start in a friendly way",
         tip: "Begin kind. Then ask.",
-        grown: "Begin in a friendly way.",
+        grown: "Open a tricky conversation in a friendly way.",
         type: "scene",
         intro: "You want something from Noah. How you start matters.",
         who: { name: "Noah", emoji: "👦🏻" }, where: "⚽",
@@ -425,7 +425,7 @@ FT.CHAPTERS = [
       {
         id: "p3-5", emoji: "👍", name: "Start with yes",
         tip: "Start with things you agree on.",
-        grown: "Get the other person saying “yes, yes” immediately.",
+        grown: "Start with points you agree on, so the talk begins with “yes”.",
         type: "ladder",
         intro: "Climb the ladder. Start with easy yes questions about things you both like.",
         who: { name: "Sam", emoji: "🧑" }, where: "🎭",
@@ -452,7 +452,7 @@ FT.CHAPTERS = [
       {
         id: "p3-6", emoji: "💬", name: "Let them talk",
         tip: "Ask. Listen. Don't talk over.",
-        grown: "Let the other person do a great deal of the talking.",
+        grown: "Let the other person do most of the talking.",
         type: "scene",
         intro: "Zara is in a chatty mood. You have plenty to say too.",
         who: { name: "Zara", emoji: "👧🏾" }, where: "⚽",
@@ -486,9 +486,9 @@ FT.CHAPTERS = [
       {
         id: "p3-7", emoji: "💡", name: "Make it their idea",
         tip: "Let them find the idea themselves.",
-        grown: "Let the other person feel the idea is theirs.",
+        grown: "Let people reach the idea themselves, so it feels like theirs.",
         type: "scene",
-        intro: "You think the team needs a pre-match cheer. Priya is organiser.",
+        intro: "You think the team needs a pre-match cheer. Priya is the organiser.",
         who: { name: "Priya", emoji: "👧🏽" }, where: "⚽",
         rounds: [
           { say: "You think the team should do a cheer before matches. Priya is in charge.",
@@ -520,7 +520,7 @@ FT.CHAPTERS = [
       {
         id: "p3-8", emoji: "👟", name: "Stand in their shoes",
         tip: "Ask: how would I feel?",
-        grown: "Honestly try to see things from the other person's point of view.",
+        grown: "Honestly try to see things from where the other person stands.",
         type: "scene",
         intro: "Everyone else has gone home. You're waiting at the gate.",
         who: { name: "Dad", emoji: "👨" }, where: "🚗",
@@ -554,7 +554,7 @@ FT.CHAPTERS = [
       {
         id: "p3-9", emoji: "🫶", name: "Be kind about feelings",
         tip: "Say: that sounds hard. Stay close.",
-        grown: "Be sympathetic to the other person's ideas and desires.",
+        grown: "Show you understand how they feel and what they want.",
         type: "scene",
         intro: "Zara is having a really bad day. A kind friend sits close.",
         who: { name: "Zara", emoji: "👧🏾" }, where: "⚽",
@@ -588,7 +588,7 @@ FT.CHAPTERS = [
       {
         id: "p3-10", emoji: "🌈", name: "See the good in people",
         tip: "Trust their good side.",
-        grown: "Appeal to the nobler motives people have.",
+        grown: "Appeal to people's better nature.",
         type: "scene",
         intro: "Noah can do the right thing. Help him find his good side.",
         who: { name: "Noah", emoji: "👦🏻" }, where: "⚽",
@@ -622,7 +622,7 @@ FT.CHAPTERS = [
       {
         id: "p3-11", emoji: "🎬", name: "Show, don't just tell",
         tip: "Show it. A picture beats a speech.",
-        grown: "Dramatise your ideas.",
+        grown: "Bring your ideas to life. Show, don't only tell.",
         type: "scene",
         intro: "Coach Jo is busy. How do you make your idea clear?",
         who: { name: "Coach Jo", emoji: "🧑‍🦰" }, where: "⚽",
@@ -656,7 +656,7 @@ FT.CHAPTERS = [
       {
         id: "p3-12", emoji: "🏁", name: "Make it a fun challenge",
         tip: "Turn a chore into a game.",
-        grown: "Throw down a challenge.",
+        grown: "Turn the job into a friendly challenge.",
         type: "scene",
         intro: "Boring jobs get done faster when they are a game.",
         who: { name: "Noah", emoji: "👦🏻" }, where: "⚽",
@@ -699,7 +699,7 @@ FT.CHAPTERS = [
       {
         id: "p4-1", emoji: "🍋", name: "Start with praise",
         tip: "Say something true and good first.",
-        grown: "Begin with praise and honest appreciation.",
+        grown: "Open with honest praise before anything else.",
         type: "scene",
         intro: "You're the captain of the class stall at the school fair.",
         who: { name: "Ollie", emoji: "🧒🏼" }, where: "🎪",
@@ -733,7 +733,7 @@ FT.CHAPTERS = [
       {
         id: "p4-2", emoji: "🪄", name: "Fix mistakes gently",
         tip: "Hint kindly. Don't point and shout.",
-        grown: "Call attention to people's mistakes indirectly.",
+        grown: "Point out mistakes gently and indirectly.",
         type: "scene",
         intro: "A sign has a mistake. Be gentle.",
         who: { name: "Ruby", emoji: "👱‍♀️" }, where: "🎪",
@@ -767,7 +767,7 @@ FT.CHAPTERS = [
       {
         id: "p4-3", emoji: "🙊", name: "Own your mistakes first",
         tip: "Share your slip-ups, then help.",
-        grown: "Talk about your own mistakes before criticising the other person.",
+        grown: "Mention your own mistakes before anyone else's.",
         type: "scene",
         intro: "Kai keeps making small mistakes. You've made some too.",
         who: { name: "Kai", emoji: "👦🏽" }, where: "🎪",
@@ -801,7 +801,7 @@ FT.CHAPTERS = [
       {
         id: "p4-4", emoji: "❓", name: "Ask, don't order",
         tip: "Ask: what do you think?",
-        grown: "Ask questions instead of giving direct orders.",
+        grown: "Ask questions rather than giving orders.",
         type: "scene",
         intro: "Captains who ask get great ideas back.",
         who: { name: "Ruby", emoji: "👱‍♀️" }, where: "🎪",
@@ -835,7 +835,7 @@ FT.CHAPTERS = [
       {
         id: "p4-5", emoji: "🛡️", name: "Let them save face",
         tip: "Help quietly. Don't shame them.",
-        grown: "Let the other person save face.",
+        grown: "Let people keep their pride when they slip up.",
         type: "scene",
         intro: "When someone slips up in public, help them feel okay.",
         who: { name: "Kai", emoji: "👦🏽" }, where: "🎪",
@@ -869,7 +869,7 @@ FT.CHAPTERS = [
       {
         id: "p4-6", emoji: "👏", name: "Cheer every step",
         tip: "Notice small wins and say so.",
-        grown: "Praise every improvement, however small.",
+        grown: "Praise each improvement, even a small one, warmly and specifically.",
         type: "scene",
         intro: "Max is only six. Every little step counts for him.",
         who: { name: "Max", emoji: "👦" }, where: "🎪",
@@ -903,7 +903,7 @@ FT.CHAPTERS = [
       {
         id: "p4-7", emoji: "🏅", name: "A name to live up to",
         tip: "Say the good things you see.",
-        grown: "Give the other person a fine reputation to live up to.",
+        grown: "Tell people the good you see in them, and they tend to live up to it.",
         type: "scene",
         intro: "People often become what you tell them they are.",
         who: { name: "Ollie", emoji: "🧒🏼" }, where: "🎪",
@@ -937,7 +937,7 @@ FT.CHAPTERS = [
       {
         id: "p4-8", emoji: "🧩", name: "Make mistakes easy to fix",
         tip: "Say: it's an easy fix. Show how.",
-        grown: "Encourage, and make faults seem easy to correct.",
+        grown: "Encourage, and make mistakes look easy to fix.",
         type: "scene",
         intro: "Kai is stuck on something small and feels hopeless.",
         who: { name: "Kai", emoji: "👦🏽" }, where: "🎪",
@@ -971,7 +971,7 @@ FT.CHAPTERS = [
       {
         id: "p4-9", emoji: "🎁", name: "Make helping happy",
         tip: "Show what's in it for everyone.",
-        grown: "Make the other person happy about doing the thing you suggest.",
+        grown: "Make people glad to do what you suggest.",
         type: "scene",
         intro: "The fair is over. Some jobs are left. Make helping feel good.",
         who: { name: "Ruby", emoji: "👱‍♀️" }, where: "🎪",
