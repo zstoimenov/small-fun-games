@@ -309,6 +309,29 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
   text-transform:uppercase;color:var(--muted);
   padding:11px 7px 4px;
 }
+.section-row td:first-child{white-space:nowrap}
+
+/* Whose turn it is: the whole column is tinted and framed, the header becomes
+   a solid tab, and the other players' numbers step back. */
+.scorecard .turn-col{
+  background:color-mix(in srgb, var(--accent) 10%, transparent);
+  box-shadow:inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent);
+}
+.scorecard thead th.player-col.turn-head{
+  background:var(--accent);color:#fff;font-size:14px;border-radius:12px 12px 0 0;border-bottom-color:var(--accent);
+}
+.scorecard thead th.turn-head::after{content:" ▸ your turn";font-weight:600;opacity:.9}
+.scorecard thead th.cpu.turn-head::after{content:" ▸ thinking"}
+.scorecard .turn-foot{
+  box-shadow:inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent), inset 0 -2px 0 var(--accent);
+  border-radius:0 0 12px 12px;
+}
+.scorecard.has-turn td.cell:not(.turn-col){opacity:.6}
+.scorecard.has-turn td.cell.zeroed:not(.turn-col){opacity:.4}
+tr.flash > *{animation:row-flash 1.3s ease}
+@keyframes row-flash{0%,45%{background:color-mix(in srgb, var(--gold) 40%, transparent)}}
+@media (prefers-reduced-motion:reduce){ tr.flash > *{animation-duration:2.5s} }
+
 .cat-row th.cat-name{text-align:left;font-weight:600;padding:0}
 .cat-help{
   font:inherit;font-weight:600;text-align:left;width:100%;
@@ -592,4 +615,47 @@ body.peeking .card-wrap{padding-bottom:76px}
   .setup-sheet .sub{margin:0 0 4px; font-size:13px}
   .setup-sheet .more{margin-top:4px}
   .setup-sheet .sheet-buttons{margin-top:8px}
+}
+
+/* ── Still to play ──────────────────────────────────────────────────────────
+   One chip per open box. Green scores now, gold is the suggested pick, dashed
+   is one die away, faded is nothing. Above the Roll button so the action stays
+   last. */
+.todo{margin:2px 0 12px;text-align:left}
+.todo-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 2px 6px;font-size:14px}
+.todo-head span{color:var(--muted);font-size:13px;white-space:nowrap}
+.todo-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
+.todo-chip{
+  font:inherit;display:flex;justify-content:space-between;align-items:center;gap:6px;
+  min-height:42px;padding:4px 10px;border-radius:12px;cursor:pointer;text-align:left;
+  border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:13px;font-weight:700;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.todo-chip span{line-height:1.15}
+.todo-chip b{font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.todo-chip:active{transform:translateY(1px)}
+.todo-chip.now{border-color:var(--good);background:color-mix(in srgb, var(--good) 12%, var(--card))}
+.todo-chip.now b{color:var(--good)}
+.todo-chip.best{
+  border-color:var(--gold);background:color-mix(in srgb, var(--gold) 18%, var(--card));
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--gold) 40%, transparent);
+}
+.todo-chip.best b{color:var(--ink)}
+.todo-chip.near{border-style:dashed;border-color:var(--accent2)}
+.todo-chip.near b{color:var(--accent2)}
+.todo-chip.zero,.todo-chip.no{opacity:.55}
+
+@media (min-width:900px) and (min-height:600px) and (orientation:landscape){
+  .todo{margin:0}
+  .todo-chips{grid-template-columns:repeat(3,1fr)}
+  .todo-chip{min-height:46px;font-size:14px}
+}
+/* Phones have no height to spare: one row that swipes sideways, and the
+   header tab drops its "your turn" so narrow columns don't wrap. */
+@media (max-width:600px), (max-height:520px) and (orientation:landscape){
+  .scorecard thead th.turn-head::after{content:none}
+  .todo{margin:0 0 8px}
+  .todo-head{margin-bottom:4px}
+  .todo-chips{display:flex;overflow-x:auto;overscroll-behavior:contain;padding-bottom:2px}
+  .todo-chip{flex:0 0 auto;min-height:40px}
 }

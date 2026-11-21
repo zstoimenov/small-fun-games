@@ -162,6 +162,103 @@ YZ.Ui = (function () {
     body.appendChild(totalRow("TOTAL", state, (t) => t.total, "grand"));
     statusRows(state, ruleset).forEach((r) => body.appendChild(r));
     table.appendChild(body);
+    markTurnColumn(table, state);
+    renderTodo(state);
+  }
+
+  // The name in the header is easy to miss, so the whole column of the player
+  // whose turn it is gets tinted and framed: "whose card is this?" is answered
+  // wherever the card happens to be scrolled.
+  function markTurnColumn(table, state) {
+    table.classList.toggle("has-turn", !state.guided);
+    if (state.guided) return;
+    const col = state.turn + 1;
+    const rows = Array.from(table.rows).filter((tr) => tr.cells.length === state.players.length + 1);
+    rows.forEach((tr) => tr.cells[col].classList.add("turn-col"));
+    rows[0].cells[col].classList.add("turn-head");
+    rows[rows.length - 1].cells[col].classList.add("turn-foot");
+  }
+
+  // "Still to play": every open box as a chip, so the plan is on screen even
+  // while the card is scrolled. After a roll each chip says what these dice
+  // would do there. Tapping one only finds the row: scoring stays on the card,
+  // so a stray tap can't spend a box.
+  function renderTodo(state) {
+    const box = el.todo;
+    const p = state.players[state.turn];
+    if (!p || state.guided || !state.playing) { box.hidden = true; return; }
+    box.hidden = false;
+    const rs = Rules.get(state.rulesetId);
+    const open = Rules.openCategories(rs, p.card);
+    const pv = state.preview;
+    const rolled = !!(pv && pv.scores);
+    const canReroll = rolled && state.rollsLeft > 0;
+    const t = Rules.totals(rs, p.card);
+    const bonus = t.bonus ? "Top bonus won!"
+      : Rules.bonusReachable(rs, p.card) ? "Top bonus: " + t.bonusNeeded + " to go"
+      : "Top bonus missed";
+
+    const head = document.createElement("div");
+    head.className = "todo-head";
+    head.innerHTML = "<strong></strong><span></span>";
+    head.firstChild.textContent = (p.kind === "cpu" ? "🤖 " : "") + p.name + " still needs " + open.length;
+    head.lastChild.textContent = bonus;
+
+    const chips = document.createElement("div");
+    chips.className = "todo-chips";
+    for (const cat of open) {
+      const b = document.createElement("button");
+      b.type = "button";
+      let cls = "", tag, say;
+      const v = rolled ? pv.scores[cat.id] : null;
+      if (!rolled) {
+        tag = "max " + Rules.maxScore(cat); say = "up to " + Rules.maxScore(cat);
+      } else if (pv.legal.indexOf(cat.id) < 0) {
+        cls = "no"; tag = "–"; say = "not allowed with this hand";
+      } else if (isSecret(pv, cat, v)) {
+        cls = "now"; tag = "?"; say = "you work it out";
+      } else if (v > 0) {
+        cls = pv.best === cat.id ? "now best" : "now";
+        tag = (pv.best === cat.id ? "★ +" : "+") + v; say = v + " now";
+      } else if (canReroll && cat.section === "lower" && oneAway(state.dice, rs, p.card, cat.id)) {
+        cls = "near"; tag = "close"; say = "one die away";
+      } else {
+        cls = "zero"; tag = canReroll ? "–" : "0"; say = "nothing with these dice";
+      }
+      b.className = "todo-chip" + (cls ? " " + cls : "");
+      b.innerHTML = "<span></span><b></b>";
+      b.firstChild.textContent = cat.label;
+      b.lastChild.textContent = tag;
+      b.setAttribute("aria-label", cat.label + ": " + say);
+      b.addEventListener("click", () => jumpToRow(cat.id));
+      chips.appendChild(b);
+    }
+    box.replaceChildren(head, chips);
+  }
+
+  // Would changing just one die make this box score? Thirty tries at most.
+  function oneAway(dice, rs, card, id) {
+    for (let i = 0; i < 5; i++) {
+      for (let f = 1; f <= 6; f++) {
+        if (f === dice[i]) continue;
+        const d = dice.slice();
+        d[i] = f;
+        if (Rules.scoreFor(d, rs, card, id) > 0) return true;
+      }
+    }
+    return false;
+  }
+
+  // Same container-coordinate scrolling as scrollToBest, for the same reason.
+  function jumpToRow(id) {
+    const wrap = document.querySelector(".card-wrap");
+    const row = wrap && wrap.querySelector("tr[data-cat='" + id + "']");
+    if (!row) return;
+    const top = row.offsetTop - (wrap.clientHeight - row.offsetHeight) / 2;
+    wrap.scrollTop = Math.max(0, Math.min(top, wrap.scrollHeight - wrap.clientHeight));
+    row.classList.remove("flash");
+    void row.offsetWidth; // restart the animation on a second tap
+    row.classList.add("flash");
   }
 
   function th(text) {
@@ -175,14 +272,16 @@ YZ.Ui = (function () {
     tr.className = "section-row";
     const c = document.createElement("td");
     c.textContent = label;
-    c.colSpan = cols + 1;
     tr.appendChild(c);
+    // Empty cells rather than one wide one, so the turn column stays unbroken.
+    for (let i = 0; i < cols; i++) tr.appendChild(document.createElement("td"));
     return tr;
   }
 
   function categoryRow(cat, state, ruleset, preview) {
     const tr = document.createElement("tr");
     tr.className = "cat-row";
+    tr.dataset.cat = cat.id;
 
     // The name is its own tap target: that's the in-game rules reference.
     const name = document.createElement("th");
@@ -626,7 +725,7 @@ YZ.Ui = (function () {
       "setup", "game", "result", "help", "toast", "coach", "peekBtn", "peekPill",
       "diceArea", "diceRow", "diceHint", "rollBtn", "rollLabel", "rollsLeft",
       "entryArea", "entryDice", "entryTitle", "entryClear", "entryToggle", "keypad",
-      "scorecard", "turnName", "turnMeta",
+      "scorecard", "turnName", "turnMeta", "todo",
       "resultTitle", "resultIcon", "resultTable",
       "helpTitle", "helpText", "helpDice", "helpScore", "helpMissWrap", "helpMiss", "helpYours"
     ];
