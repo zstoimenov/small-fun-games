@@ -823,4 +823,20 @@
   if ("serviceWorker" in navigator) {
     addEventListener("load", () => navigator.serviceWorker.register("../sw.js").catch(() => {}));
   }
+
+  /* ── Keep the screen on ───────────────────────────────────────────────── */
+  /* A turn can sit idle while a kid thinks, and a dark tablet mid-game reads  */
+  /* as "it broke". The browser drops the lock whenever the page is hidden, so */
+  /* we ask again each time it comes back. Unsupported or refused (low battery,*/
+  /* no HTTPS) just means the screen sleeps as normal.                         */
+  let wakeLock = null;
+  async function keepAwake() {
+    if (!("wakeLock" in navigator) || document.visibilityState !== "visible" || wakeLock) return;
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", () => { wakeLock = null; });
+    } catch (e) { wakeLock = null; }
+  }
+  document.addEventListener("visibilitychange", keepAwake);
+  keepAwake();
 })();
