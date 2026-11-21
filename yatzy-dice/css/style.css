@@ -618,10 +618,11 @@ body.peeking .card-wrap{padding-bottom:76px}
 }
 
 /* ── Still to play ──────────────────────────────────────────────────────────
-   One chip per open box. Green scores now, gold is the suggested pick, dashed
-   is one die away, faded is nothing. Above the Roll button so the action stays
-   last. */
-.todo{margin:2px 0 12px;text-align:left}
+   My own dice only. One chip per open box, under the keypad. Green scores
+   now, gold is the suggested pick, faded is nothing. */
+.todo{margin:12px 0 0;text-align:left}
+/* Typing scores lays the entry area out in a row; the chips take a line of their own. */
+.entry-area.typing .todo{flex:1 0 100%}
 .todo-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 2px 6px;font-size:14px}
 .todo-head span{color:var(--muted);font-size:13px;white-space:nowrap}
 .todo-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
@@ -641,20 +642,19 @@ body.peeking .card-wrap{padding-bottom:76px}
   box-shadow:0 0 0 2px color-mix(in srgb, var(--gold) 40%, transparent);
 }
 .todo-chip.best b{color:var(--ink)}
-.todo-chip.near{border-style:dashed;border-color:var(--accent2)}
-.todo-chip.near b{color:var(--accent2)}
 .todo-chip.zero,.todo-chip.no{opacity:.55}
 
 @media (min-width:900px) and (min-height:600px) and (orientation:landscape){
   .todo{margin:0}
   .todo-chips{grid-template-columns:repeat(3,1fr)}
+  .entry-area.typing .todo{margin-top:18px}
   .todo-chip{min-height:46px;font-size:14px}
 }
 /* Phones have no height to spare: one row that swipes sideways, and the
    header tab drops its "your turn" so narrow columns don't wrap. */
 @media (max-width:600px), (max-height:520px) and (orientation:landscape){
   .scorecard thead th.turn-head::after{content:none}
-  .todo{margin:0 0 8px}
+  .todo{margin:8px 0 0}
   .todo-head{margin-bottom:4px}
   .todo-chips{display:flex;overflow-x:auto;overscroll-behavior:contain;padding-bottom:2px}
   .todo-chip{flex:0 0 auto;min-height:40px}

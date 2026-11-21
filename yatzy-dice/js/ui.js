@@ -179,20 +179,20 @@ YZ.Ui = (function () {
     rows[rows.length - 1].cells[col].classList.add("turn-foot");
   }
 
-  // "Still to play": every open box as a chip, so the plan is on screen even
-  // while the card is scrolled. After a roll each chip says what these dice
-  // would do there. Tapping one only finds the row: scoring stays on the card,
-  // so a stray tap can't spend a box.
+  // "Still to play", for My own dice only: every open box as a chip, so the
+  // plan is on screen even while the card is scrolled. Once the five dice are
+  // tapped in, each chip says what they would score there. Tapping one only
+  // finds the row: scoring stays on the card, so a stray tap can't spend a box.
+  // On-screen dice mode leaves it out by choice, to keep that screen calm.
   function renderTodo(state) {
     const box = el.todo;
     const p = state.players[state.turn];
-    if (!p || state.guided || !state.playing) { box.hidden = true; return; }
+    if (!p || state.guided || !state.playing || state.mode !== "card") { box.hidden = true; return; }
     box.hidden = false;
     const rs = Rules.get(state.rulesetId);
     const open = Rules.openCategories(rs, p.card);
     const pv = state.preview;
     const rolled = !!(pv && pv.scores);
-    const canReroll = rolled && state.rollsLeft > 0;
     const t = Rules.totals(rs, p.card);
     const bonus = t.bonus ? "Top bonus won!"
       : Rules.bonusReachable(rs, p.card) ? "Top bonus: " + t.bonusNeeded + " to go"
@@ -220,10 +220,8 @@ YZ.Ui = (function () {
       } else if (v > 0) {
         cls = pv.best === cat.id ? "now best" : "now";
         tag = (pv.best === cat.id ? "★ +" : "+") + v; say = v + " now";
-      } else if (canReroll && cat.section === "lower" && oneAway(state.dice, rs, p.card, cat.id)) {
-        cls = "near"; tag = "close"; say = "one die away";
       } else {
-        cls = "zero"; tag = canReroll ? "–" : "0"; say = "nothing with these dice";
+        cls = "zero"; tag = "0"; say = "nothing with these dice";
       }
       b.className = "todo-chip" + (cls ? " " + cls : "");
       b.innerHTML = "<span></span><b></b>";
@@ -234,19 +232,6 @@ YZ.Ui = (function () {
       chips.appendChild(b);
     }
     box.replaceChildren(head, chips);
-  }
-
-  // Would changing just one die make this box score? Thirty tries at most.
-  function oneAway(dice, rs, card, id) {
-    for (let i = 0; i < 5; i++) {
-      for (let f = 1; f <= 6; f++) {
-        if (f === dice[i]) continue;
-        const d = dice.slice();
-        d[i] = f;
-        if (Rules.scoreFor(d, rs, card, id) > 0) return true;
-      }
-    }
-    return false;
   }
 
   // Same container-coordinate scrolling as scrollToBest, for the same reason.
