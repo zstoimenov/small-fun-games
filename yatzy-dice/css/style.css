@@ -538,9 +538,9 @@ tr.flash > *{animation:row-flash 1.3s ease}
   .dice-area[hidden],.entry-area[hidden]{display:none}
 
   /* Five dice and four gaps fill the column, up to a size that still looks like dice. */
-  .dice-area .dice-row{--die:min(112px, calc((100cqi - 64px) / 5));gap:16px;margin:auto 0 0}
-  .dice-area .die{width:var(--die);height:var(--die);padding:calc(var(--die) * .14);border-radius:calc(var(--die) * .22)}
-  .dice-area .die .pip{max-width:calc(var(--die) * .19);max-height:calc(var(--die) * .19)}
+  .dice-area .dice-row{--die-size:min(112px, calc((100cqi - 64px) / 5));gap:16px;margin:auto 0 0}
+  .dice-area .die{width:var(--die-size);height:var(--die-size);padding:calc(var(--die-size) * .14);border-radius:calc(var(--die-size) * .22)}
+  .dice-area .die .pip{max-width:calc(var(--die-size) * .19);max-height:calc(var(--die-size) * .19)}
   .dice-hint{font-size:15px;margin:18px 0 auto}
   .btn-roll{max-width:none;min-height:72px;font-size:21px;margin-top:16px}
   .rolls-left{font-size:14px}
@@ -548,10 +548,10 @@ tr.flash > *{animation:row-flash 1.3s ease}
   /* Own dice: the chosen five and the keypad grow the same way, the hint on top. */
   .entry-area{gap:18px}
   .entry-area .entry-title{font-size:15px;margin:auto 0 0}
-  .entry-row{--die:min(84px, calc((100cqi - 190px) / 5));gap:12px}
+  .entry-row{--die-size:min(84px, calc((100cqi - 190px) / 5));gap:12px}
   .entry-row .dice-row{gap:10px}
-  #entryDice .die{width:var(--die);height:var(--die);padding:calc(var(--die) * .14);border-radius:calc(var(--die) * .22)}
-  #entryDice .die .pip{max-width:calc(var(--die) * .19);max-height:calc(var(--die) * .19)}
+  #entryDice .die{width:var(--die-size);height:var(--die-size);padding:calc(var(--die-size) * .14);border-radius:calc(var(--die-size) * .22)}
+  #entryDice .die .pip{max-width:calc(var(--die-size) * .19);max-height:calc(var(--die-size) * .19)}
   .mini-btn{width:60px;height:60px;font-size:22px}
   .mini-btn.pill-btn{width:auto;font-size:17px;padding:0 20px}
   .keypad{--key:min(96px, calc((100cqi - 60px) / 6));gap:12px;margin:auto 0 0}
