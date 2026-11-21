@@ -183,7 +183,7 @@ YZ.Ui = (function () {
   // plan is on screen even while the card is scrolled. Once the five dice are
   // tapped in, each chip says what they would score there. Tapping one only
   // finds the row: scoring stays on the card, so a stray tap can't spend a box.
-  // On-screen dice don't get it: there the card already previews every roll.
+  // On-screen dice mode leaves it out by choice, to keep that screen calm.
   function renderTodo(state) {
     const box = el.todo;
     const p = state.players[state.turn];
