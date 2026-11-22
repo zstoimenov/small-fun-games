@@ -142,26 +142,18 @@ YZ.Ui = (function () {
     const upper = ruleset.categories.filter((c) => c.section === "upper" && stillOpen(c));
     const lower = ruleset.categories.filter((c) => c.section === "lower" && stillOpen(c));
 
-    if (upper.length) {
-      body.appendChild(sectionRow("Top half", state.players.length));
-      for (const cat of upper) body.appendChild(categoryRow(cat, state, ruleset, preview));
-    }
-
-    body.appendChild(upperTotalRow(state, ruleset));
+    // Only the boxes, the bonus and the total: the whole card has to fit the
+    // screen, so the running sums and "best possible" lines went. The total is
+    // a footer that stays pinned when a phone has to scroll the rest.
+    for (const cat of upper) body.appendChild(categoryRow(cat, state, ruleset, preview));
     body.appendChild(bonusRow(state, ruleset));
-
-    if (lower.length) {
-      body.appendChild(sectionRow("Bottom half", state.players.length));
-      for (const cat of lower) body.appendChild(categoryRow(cat, state, ruleset, preview));
-    }
-
-    body.appendChild(totalRow("Bottom total", state, (t) => t.lower, "sub"));
-
+    for (const cat of lower) body.appendChild(categoryRow(cat, state, ruleset, preview));
     if (ruleset.extraBonus) body.appendChild(extraRow(state, ruleset));
-
-    body.appendChild(totalRow("TOTAL", state, (t) => t.total, "grand"));
-    statusRows(state, ruleset).forEach((r) => body.appendChild(r));
     table.appendChild(body);
+
+    const foot = document.createElement("tfoot");
+    foot.appendChild(totalRow("Total", state, (t) => t.total, "grand"));
+    table.appendChild(foot);
     markTurnColumn(table, state);
     renderTodo(state);
   }
@@ -179,11 +171,12 @@ YZ.Ui = (function () {
     rows[rows.length - 1].cells[col].classList.add("turn-foot");
   }
 
-  // "Still to play", for My own dice only: every open box as a chip, so the
-  // plan is on screen even while the card is scrolled. Once the five dice are
-  // tapped in, each chip says what they would score there. Tapping one only
-  // finds the row: scoring stays on the card, so a stray tap can't spend a box.
-  // On-screen dice mode leaves it out by choice, to keep that screen calm.
+  // "Still to play", for My own dice only: every open box as a chip. CSS shows
+  // it only on wide screens, where the column beside the card has the room;
+  // upright, the card fits the screen and is the one place to pick. Once the
+  // five dice are tapped in, each chip says what they would score there, and
+  // tapping it writes the score, the same as tapping the card (Undo makes a
+  // stray tap cheap). On-screen dice leave it out, to keep that screen calm.
   function renderTodo(state) {
     const box = el.todo;
     const p = state.players[state.turn];
@@ -228,7 +221,11 @@ YZ.Ui = (function () {
       b.firstChild.textContent = cat.label;
       b.lastChild.textContent = tag;
       b.setAttribute("aria-label", cat.label + ": " + say);
-      b.addEventListener("click", () => jumpToRow(cat.id));
+      const canWrite = rolled && state.canPick && pv.legal.indexOf(cat.id) >= 0;
+      b.addEventListener("click", () => {
+        if (canWrite && on.pick) on.pick(cat.id);
+        else jumpToRow(cat.id);
+      });
       chips.appendChild(b);
     }
     box.replaceChildren(head, chips);
@@ -252,31 +249,21 @@ YZ.Ui = (function () {
     return c;
   }
 
-  function sectionRow(label, cols) {
-    const tr = document.createElement("tr");
-    tr.className = "section-row";
-    const c = document.createElement("td");
-    c.textContent = label;
-    tr.appendChild(c);
-    // Empty cells rather than one wide one, so the turn column stays unbroken.
-    for (let i = 0; i < cols; i++) tr.appendChild(document.createElement("td"));
-    return tr;
-  }
-
   function categoryRow(cat, state, ruleset, preview) {
     const tr = document.createElement("tr");
     tr.className = "cat-row";
     tr.dataset.cat = cat.id;
 
-    // The name is its own tap target: that's the in-game rules reference.
+    // The name is its own tap target: that's the in-game rules reference, and
+    // where the "max" now lives, to keep every row one line high.
     const name = document.createElement("th");
     name.className = "cat-name";
     name.scope = "row";
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "cat-help";
-    btn.innerHTML = cat.label + " <span class='qmark'>?</span>" +
-      "<span class='cat-max'>max " + Rules.maxScore(cat) + "</span>";
+    btn.textContent = cat.label;
+    btn.title = "How " + cat.label + " scores";
     btn.addEventListener("click", () => on.catHelp && on.catHelp(cat.id));
     name.appendChild(btn);
     tr.appendChild(name);
@@ -312,7 +299,9 @@ YZ.Ui = (function () {
           const secret = isSecret(preview, cat, v);
           b.className = "pick" + (v === 0 ? " zero" : "") + (preview.best === cat.id ? " best" : "") +
             (secret ? " secret" : "");
-          b.textContent = secret ? "?" : v;
+          // A 0 drawn as a number reads like a score already written; the dash
+          // says "nothing here" and the button frame says it can still be taken.
+          b.textContent = secret ? "?" : v === 0 ? "–" : v;
           const what = secret ? cat.label : v + " in " + cat.label;
           b.title = preview.best === cat.id ? "Our pick — " + what : what;
           b.addEventListener("click", () => on.pick && on.pick(cat.id));
@@ -348,74 +337,18 @@ YZ.Ui = (function () {
     name.textContent = label;
     name.scope = "row";
     tr.appendChild(name);
-    for (const p of state.players) {
+    const values = state.players.map((p) => pick(Rules.totals(ruleset, p.card)));
+    const lead = Math.max.apply(null, values);
+    values.forEach((v) => {
       const td = document.createElement("td");
-      td.textContent = pick(Rules.totals(ruleset, p.card));
-      tr.appendChild(td);
-    }
-    return tr;
-  }
-
-  // Top total, with how far ahead of or behind the bonus pace each player is.
-  function upperTotalRow(state, ruleset) {
-    const tr = document.createElement("tr");
-    tr.className = "total-row sub";
-    const name = document.createElement("th");
-    name.scope = "row";
-    name.innerHTML = "Top total <span class='muted'>vs 3 of each</span>";
-    tr.appendChild(name);
-    for (const p of state.players) {
-      const td = document.createElement("td");
-      td.textContent = Rules.totals(ruleset, p.card).upper;
-      const pace = Rules.upperPace(ruleset, p.card);
-      if (pace !== null) {
-        const s = document.createElement("span");
-        s.className = "pace " + (pace >= 0 ? "up" : "down");
-        s.textContent = (pace > 0 ? "+" : "") + pace;
-        td.appendChild(s);
+      td.textContent = v;
+      if (values.length > 1 && v === lead && v > 0) {
+        td.classList.add("lead");
+        td.title = "In the lead";
       }
       tr.appendChild(td);
-    }
+    });
     return tr;
-  }
-
-  // Boxes left, the best total still reachable and, with company, the gap to
-  // whoever is in front.
-  function statusRows(state, ruleset) {
-    const rows = [];
-    const totals = state.players.map((p) => Rules.totals(ruleset, p.card).total);
-    const lead = Math.max.apply(null, totals);
-    const row = (label, cell) => {
-      const tr = document.createElement("tr");
-      tr.className = "total-row status-row";
-      const name = document.createElement("th");
-      name.scope = "row";
-      name.textContent = label;
-      tr.appendChild(name);
-      state.players.forEach((p, i) => {
-        const td = document.createElement("td");
-        cell(td, p, i);
-        tr.appendChild(td);
-      });
-      rows.push(tr);
-    };
-    row("Boxes left", (td, p) => {
-      td.textContent = Rules.openCategories(ruleset, p.card).length;
-    });
-    row("Best possible", (td, p) => {
-      td.textContent = Rules.bestPossible(ruleset, p.card);
-    });
-    if (state.players.length > 1) {
-      row("Behind leader", (td, p, i) => {
-        const gap = lead - totals[i];
-        if (gap > 0) td.textContent = "−" + gap;
-        else {
-          td.textContent = "Top";
-          td.className = "got-bonus";
-        }
-      });
-    }
-    return rows;
   }
 
   function bonusRow(state, ruleset) {

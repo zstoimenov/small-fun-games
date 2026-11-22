@@ -294,7 +294,10 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 }
 /* Player names stay put while the boxes scroll under them. */
 .scorecard thead th{position:sticky;top:0;z-index:2;background:var(--card)}
-.scorecard{width:100%;border-collapse:collapse;font-size:14px}
+/* height:100% lets the rows share out whatever height the card has, so the
+   whole card fits a tablet held either way; on a phone it scrolls instead,
+   with the names pinned on top and the total pinned underneath. */
+.scorecard{width:100%;height:100%;border-collapse:collapse;font-size:14px}
 .scorecard th,.scorecard td{padding:6px 7px;text-align:center}
 .scorecard thead th{
   font-size:13px;color:var(--muted);font-weight:800;
@@ -304,12 +307,6 @@ body.flipped .overlay .sheet{transform:rotate(180deg)}
 .scorecard thead th.player-col.cpu::before{content:"🤖 "}
 .scorecard th:first-child{text-align:left;width:46%}
 
-.section-row td{
-  text-align:left;font-size:13px;font-weight:800;letter-spacing:.7px;
-  text-transform:uppercase;color:var(--muted);
-  padding:11px 7px 4px;
-}
-.section-row td:first-child{white-space:nowrap}
 
 /* Whose turn it is: the whole column is tinted and framed, the header becomes
    a solid tab, and the other players' numbers step back. */
@@ -336,27 +333,25 @@ tr.flash > *{animation:row-flash 1.3s ease}
 .cat-help{
   font:inherit;font-weight:600;text-align:left;width:100%;
   background:none;border:none;color:var(--ink);cursor:pointer;
-  padding:9px 7px;border-radius:10px;font-size:14px;
+  padding:5px 7px;border-radius:10px;font-size:14px;
 }
-.cat-help .qmark{
-  display:inline-grid;place-items:center;width:16px;height:16px;
-  border-radius:50%;background:var(--chip);color:var(--chipink);
-  font-size:13px;font-weight:800;vertical-align:1px;margin-left:3px;
-}
-.cat-max{display:block;font-size:13px;font-weight:500;color:var(--muted);line-height:1.2}
+.cat-help:hover{text-decoration:underline dotted var(--muted)}
 .cat-row:nth-child(odd){background:color-mix(in srgb, var(--line) 22%, transparent)}
 
-.cell{min-width:52px;height:42px;font-weight:700;font-variant-numeric:tabular-nums}
+/* Every body row gets the same height, so the spare height is shared out
+   evenly instead of all landing on the one row without a fixed size. */
+.scorecard tbody tr{height:34px}
+.cell{min-width:52px;font-weight:700;font-variant-numeric:tabular-nums}
 .cell.filled{color:var(--ink)}
 .cell.zeroed{color:var(--muted);opacity:.65}
 .cell.manual::after{content:"✏️";font-size:9px;margin-left:2px;opacity:.55}
 .cell.locked{color:var(--muted);opacity:.4}
 .pick{
   font:inherit;font-weight:800;font-size:15px;cursor:pointer;
-  min-width:44px;min-height:38px;padding:6px 8px;border-radius:11px;
+  min-width:44px;min-height:30px;padding:2px 8px;border-radius:11px;
   border:1.5px dashed var(--accent2);background:transparent;color:var(--accent2);
 }
-.pick.zero{color:var(--muted);border-color:var(--line)}
+.pick.zero{color:color-mix(in srgb, var(--muted) 60%, transparent);border-color:var(--line);font-weight:600}
 .pick.best{
   border-style:solid;border-width:2.5px;border-color:var(--gold);
   background:var(--chip);color:var(--chipink);
@@ -368,17 +363,18 @@ tr.flash > *{animation:row-flash 1.3s ease}
 .total-row{background:color-mix(in srgb, var(--accent2) 8%, transparent)}
 .total-row th{text-align:left;font-size:13px;font-weight:800;padding:9px 7px}
 .total-row td{font-weight:800;font-variant-numeric:tabular-nums}
-.total-row.grand th,.total-row.grand td{font-size:17px;padding:11px 7px}
-.total-row.grand{background:color-mix(in srgb, var(--accent) 14%, transparent)}
+.total-row.grand th,.total-row.grand td{font-size:17px;padding:10px 7px}
+/* Pinned to the bottom of the card, so it needs a solid background. */
+.scorecard tfoot th,.scorecard tfoot td{
+  position:sticky;bottom:0;z-index:2;
+  background:color-mix(in srgb, var(--accent2) 12%, var(--card));
+  border-top:2px solid var(--line);
+}
+.scorecard tfoot td.turn-col{background:color-mix(in srgb, var(--accent) 16%, var(--card))}
+.scorecard tfoot td.lead::after{content:" 👑";font-size:13px}
 .total-row .muted{font-size:13px;font-weight:600}
 .got-bonus{color:var(--good)}
 .cell.on-pace{color:var(--good)}
-.pace{display:block;font-size:13px;font-weight:700;line-height:1.1}
-.pace.up{color:var(--good)}
-.pace.down{color:var(--muted)}
-.status-row{background:none}
-.status-row th,.status-row td{font-size:13px;font-weight:700;padding:7px;color:var(--muted)}
-.status-row td.got-bonus{color:var(--good)}
 .help-miss-label{margin:12px 0 4px !important}
 .help-yours{font-weight:700}
 
@@ -547,14 +543,15 @@ tr.flash > *{animation:row-flash 1.3s ease}
 
   /* Own dice: the chosen five and the keypad grow the same way, the hint on top. */
   .entry-area{gap:18px}
-  .entry-area .entry-title{font-size:15px;margin:auto 0 0}
+  /* Top-aligned, so the still-needs chips get the room underneath. */
+  .entry-area .entry-title{font-size:15px;margin:0}
   .entry-row{--die-size:min(84px, calc((100cqi - 190px) / 5));gap:12px}
   .entry-row .dice-row{gap:10px}
   #entryDice .die{width:var(--die-size);height:var(--die-size);padding:calc(var(--die-size) * .14);border-radius:calc(var(--die-size) * .22)}
   #entryDice .die .pip{max-width:calc(var(--die-size) * .19);max-height:calc(var(--die-size) * .19)}
   .mini-btn{width:60px;height:60px;font-size:22px}
   .mini-btn.pill-btn{width:auto;font-size:17px;padding:0 20px}
-  .keypad{--key:min(96px, calc((100cqi - 60px) / 6));gap:12px;margin:auto 0 0}
+  .keypad{--key:min(84px, calc((100cqi - 60px) / 6));gap:12px;margin:0}
   .key{width:var(--key);height:var(--key);border-radius:18px}
   .key .die.mini{width:calc(var(--key) * .74);height:calc(var(--key) * .74);padding:calc(var(--key) * .1);border-radius:calc(var(--key) * .16)}
   .key .die.mini .pip{max-width:calc(var(--key) * .13);max-height:calc(var(--key) * .13)}
@@ -620,7 +617,8 @@ body.peeking .card-wrap{padding-bottom:76px}
 /* ── Still to play ──────────────────────────────────────────────────────────
    My own dice only. One chip per open box, under the keypad. Green scores
    now, gold is the suggested pick, faded is nothing. */
-.todo{margin:12px 0 0;text-align:left}
+/* Upright screens leave it out: the card fits and is where you pick. */
+.todo{margin:12px 0 0;text-align:left;display:none}
 /* Typing scores lays the entry area out in a row; the chips take a line of their own. */
 .entry-area.typing .todo{flex:1 0 100%}
 .todo-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:0 2px 6px;font-size:14px}
@@ -645,7 +643,7 @@ body.peeking .card-wrap{padding-bottom:76px}
 .todo-chip.zero,.todo-chip.no{opacity:.55}
 
 @media (min-width:900px) and (min-height:600px) and (orientation:landscape){
-  .todo{margin:0}
+  .todo:not([hidden]){display:block;margin:0;flex:1 1 auto;min-height:0;overflow:auto}
   .todo-chips{grid-template-columns:repeat(3,1fr)}
   .entry-area.typing .todo{margin-top:18px}
   .todo-chip{min-height:46px;font-size:14px}
@@ -654,8 +652,4 @@ body.peeking .card-wrap{padding-bottom:76px}
    header tab drops its "your turn" so narrow columns don't wrap. */
 @media (max-width:600px), (max-height:520px) and (orientation:landscape){
   .scorecard thead th.turn-head::after{content:none}
-  .todo{margin:8px 0 0}
-  .todo-head{margin-bottom:4px}
-  .todo-chips{display:flex;overflow-x:auto;overscroll-behavior:contain;padding-bottom:2px}
-  .todo-chip{flex:0 0 auto;min-height:40px}
 }

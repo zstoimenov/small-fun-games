@@ -40,6 +40,12 @@
     math: false          // work out each score from four answers before it's written
   };
 
+  // Own-dice games only. Real dice get tapped in by small fingers, so a score
+  // in the wrong box has to be cheap to take back. On-screen dice skip it:
+  // undoing there would hand the player a free re-roll.
+  let undoStack = [];
+  const UNDO_MAX = 30;
+
   function ruleset() { return Rules.get(state.rulesetId); }
   function current() { return state.players[state.turn]; }
 
@@ -112,6 +118,8 @@
     }
   }
 
+  let namesShownFor = 0;
+
   function setSwitch(id, on) {
     $(id).setAttribute("aria-checked", on ? "true" : "false");
   }
@@ -139,6 +147,16 @@
     $("mathNote").hidden = !state.math;
 
     $("rulesNote").textContent = rs.blurb;
+
+    // With company, the names are the first thing worth changing: a card that
+    // says Mia, Dad and Mum is easier to follow than Player 1, 2 and 3. Opened
+    // only when the count changes, so closing it by hand sticks. Not on a
+    // sideways phone: there the open list would push Start off the screen.
+    if (state.playerCount !== namesShownFor) {
+      const short = window.matchMedia("(max-height:520px)").matches;
+      $("namesBox").open = state.playerCount > 1 && !short;
+      namesShownFor = state.playerCount;
+    }
 
     const names = $("namesWrap");
     names.innerHTML = "";
@@ -201,6 +219,7 @@
 
   function startGame() {
     cpuReset();
+    undoStack = [];
     state.players = makePlayers();
     state.turn = 0;
     state.guided = false;
@@ -215,6 +234,7 @@
 
   function resumeGame() {
     cpuReset();
+    undoStack = [];
     // Back to the rules the game was started with, and the sheet shows them so
     // the next new game starts from what was actually being played.
     for (const k of ["rulesetId", "mode", "entryMode"]) if (saved[k] !== undefined) state[k] = saved[k];
@@ -303,7 +323,33 @@
     Ui.renderTurn(state);
     Ui.renderScorecard(state);
     Ui.coach(state.guided ? coachLine() : null);
+    renderUndo();
     applyFlip();
+  }
+
+  function renderUndo() {
+    const b = $("undoBtn");
+    const last = undoStack[undoStack.length - 1];
+    b.hidden = state.mode !== "card" || state.guided;
+    b.disabled = !last;
+    const label = last ? "Undo " + last.label : "Nothing to undo yet";
+    b.title = label;
+    b.setAttribute("aria-label", label);
+  }
+
+  function undo() {
+    const snap = undoStack.pop();
+    if (!snap || state.mode !== "card") return;
+    state.players.forEach((p, i) => { p.card = snap.cards[i]; });
+    state.turn = snap.turn;
+    state.playing = true;
+    newTurn();
+    // The dice come back too, so the right box is one tap away.
+    state.dice = snap.dice;
+    Audio.release();
+    render();
+    save();
+    Ui.toast("Took back " + snap.label);
   }
 
   /* ── Rolling ───────────────────────────────────────────────────────────── */
@@ -386,6 +432,15 @@
     const rs = ruleset();
     const p = current();
     const cat = Rules.categoryById(rs, catId);
+    if (state.mode === "card" && !state.guided) {
+      undoStack.push({
+        cards: state.players.map((pl) => JSON.parse(JSON.stringify(pl.card))),
+        turn: state.turn,
+        dice: state.dice.slice(),
+        label: p.name + "'s " + cat.label + " " + points
+      });
+      if (undoStack.length > UNDO_MAX) undoStack.shift();
+    }
     const res = Rules.commit(rs, p.card, catId, points, {
       dice: state.dice.length === 5 ? state.dice : null,
       manual: manual
@@ -708,6 +763,7 @@
     });
 
     $("muteBtn").addEventListener("click", () => setMuted(!state.muted));
+    $("undoBtn").addEventListener("click", undo);
     $("hideFilledBtn").addEventListener("click", toggleHideFilled);
     $("mathToggle").addEventListener("click", () => setMath(!state.math));
     $("menuMath").addEventListener("click", () => setMath(!state.math));
