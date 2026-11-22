@@ -575,9 +575,11 @@
   }
 
   function clearEntry() {
+    if (!state.dice.length) return;
     state.dice = [];
     Audio.release();
     render();
+    Ui.toast("✕ Dice cleared. Tap in the new ones.");
   }
 
   function toggleEntry() {
@@ -586,6 +588,9 @@
     Audio.tap();
     save();
     render();
+    Ui.toast(state.entryMode === "type"
+      ? "✏️ Typing scores: tap a box and type what it scored"
+      : "🎲 Back to tapping in the dice");
   }
 
   /* ── Typing a score by hand ────────────────────────────────────────────── */
@@ -673,6 +678,9 @@
     renderHideFilled();
     save();
     render();
+    Ui.toast(state.hideFilled
+      ? "🙈 Hiding boxes everyone has filled"
+      : "👀 Showing every box again");
   }
 
   function setMuted(v) {
@@ -762,7 +770,11 @@
       renderSetup();
     });
 
-    $("muteBtn").addEventListener("click", () => setMuted(!state.muted));
+    // Each top-bar button says what it just changed, the same way Undo does.
+    $("muteBtn").addEventListener("click", () => {
+      setMuted(!state.muted);
+      Ui.toast(state.muted ? "🔇 Sound off" : "🔊 Sound on");
+    });
     $("undoBtn").addEventListener("click", undo);
     $("hideFilledBtn").addEventListener("click", toggleHideFilled);
     $("mathToggle").addEventListener("click", () => setMath(!state.math));

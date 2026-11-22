@@ -380,9 +380,11 @@ tr.flash > *{animation:row-flash 1.3s ease}
 
 /* ── Toast, confetti ────────────────────────────────────────────────────── */
 
+/* At the top, where it covers the turn line for a moment rather than the
+   pinned Total the player is about to check. */
 .toast{
-  position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
-  transform:translate(-50%,14px);z-index:45;
+  position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));
+  transform:translate(-50%,-14px);z-index:45;
   background:var(--ink);color:var(--card);
   padding:11px 17px;border-radius:999px;font-size:14px;font-weight:600;
   box-shadow:0 10px 26px var(--shadow);opacity:0;transition:opacity .22s,transform .22s;

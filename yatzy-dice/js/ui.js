@@ -444,9 +444,10 @@ YZ.Ui = (function () {
       el.entryDice.appendChild(d);
     }
     const typing = state.entryMode === "type";
-    el.entryTitle.textContent = typing
-      ? "Tap a box to type its score"
-      : "Tap in your five dice. ✏️ types scores instead.";
+    // Tapping in dice needs no caption: the empty slots and the keypad say it,
+    // and each button says what it did when it is pressed.
+    el.entryTitle.textContent = "Tap a box to type its score";
+    el.entryTitle.hidden = !typing;
     el.keypad.hidden = typing;
     el.entryArea.classList.toggle("typing", typing);
     el.entryDice.hidden = typing;
