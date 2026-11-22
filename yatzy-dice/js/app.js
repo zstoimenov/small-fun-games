@@ -149,12 +149,19 @@
     $("rulesNote").textContent = rs.blurb;
 
     // With company, the names are the first thing worth changing: a card that
-    // says Mia, Dad and Mum is easier to follow than Player 1, 2 and 3. Opened
-    // only when the count changes, so closing it by hand sticks. Not on a
-    // sideways phone: there the open list would push Start off the screen.
+    // says Mia, Dad and Mum is easier to follow than Player 1, 2 and 3. So the
+    // fold opens while any of them is still a default, and stays shut once the
+    // family's own names are saved. Decided only when the count changes, so
+    // opening or closing it by hand sticks. Not on a sideways phone: there the
+    // open list would push Start off the screen.
     if (state.playerCount !== namesShownFor) {
       const short = window.matchMedia("(max-height:520px)").matches;
-      $("namesBox").open = state.playerCount > 1 && !short;
+      let unnamed = false;
+      for (let i = 0; i < state.playerCount; i++) {
+        const n = (state.names[i] || "").trim();
+        if (!n || n === "Player " + (i + 1)) unnamed = true;
+      }
+      $("namesBox").open = state.playerCount > 1 && unnamed && !short;
       namesShownFor = state.playerCount;
     }
 
